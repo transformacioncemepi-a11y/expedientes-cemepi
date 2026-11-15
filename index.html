@@ -1,0 +1,1176 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+</head>
+<body>
+<script src="config.js"></script>
+<script>
+/* La app pide sus servicios a window.claude.use(); aquí los entrega el puente con Supabase
+   en cuanto la persona inicia sesión (ver supabase-puente.js). */
+(() => { let resolver; const listo = new Promise(r => resolver = r);
+  window.__cemepi = { resolve: resolver };
+  window.claude = { use: nombre => listo.then(api => api.use(nombre)) }; })();
+</script>
+<title>Expedientes CEMEPI</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: CEMEPI-blue app bar with the logo on top; below it, the patient roster (left) and the open file with folder tabs (right). One pane at a time on phones. */
+:root{
+  --brand:#0560bd; --brand-deep:#044f9c; --on-brand:#ffffff;
+  --bg:#eef3fa; --surface:#ffffff; --sunk:#e3ebf6; --line:#cfdbeb; --fg:#0f2340; --muted:#55688a;
+  --accent:#0560bd; --accent-fg:#ffffff; --accent-soft:#dbe8f8;
+  --ok:#227a48; --ok-soft:#d9f0e2; --warn:#9c5f06; --warn-soft:#f7e9cf; --bad:#b3322a; --bad-soft:#f8dcd9;
+  --f-display:"Nunito","Nunito Sans",system-ui,sans-serif; --f-body:"Nunito Sans",system-ui,sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --brand:#0a4f9a; --brand-deep:#083f7c; --on-brand:#ffffff;
+  --bg:#0b1424; --surface:#111d31; --sunk:#172741; --line:#24375a; --fg:#e4ecf8; --muted:#97a9c6;
+  --accent:#6aa9f5; --accent-fg:#06182f; --accent-soft:#16325a;
+  --ok:#6cc58b; --ok-soft:#163323; --warn:#e3a54a; --warn-soft:#382a12; --bad:#ef7f75; --bad-soft:#3d1d1b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --brand:#0a4f9a; --brand-deep:#083f7c; --on-brand:#ffffff;
+  --bg:#0b1424; --surface:#111d31; --sunk:#172741; --line:#24375a; --fg:#e4ecf8; --muted:#97a9c6;
+  --accent:#6aa9f5; --accent-fg:#06182f; --accent-soft:#16325a;
+  --ok:#6cc58b; --ok-soft:#163323; --warn:#e3a54a; --warn-soft:#382a12; --bad:#ef7f75; --bad-soft:#3d1d1b; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font:14px/1.5 var(--f-body);}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--brand)}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+.shell{display:grid;grid-template-rows:auto 1fr;height:100%;min-height:0}
+.appbar{background:var(--brand);color:var(--on-brand);display:flex;align-items:center;gap:14px;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.appbar img{width:46px;height:auto;border-radius:8px;display:block;flex:none}
+.appbar .ttl{min-width:0;flex:1}
+.appbar h1{font-size:19px;font-weight:800;letter-spacing:-.01em;line-height:1.15}
+.appbar small{display:block;font-size:12px;opacity:.85;letter-spacing:.02em}
+.appbar .btn{background:var(--on-brand);color:var(--brand);border-color:var(--on-brand);font-weight:700}
+.appbar .btn:hover{background:var(--sunk)}
+.app{display:grid;grid-template-columns:320px 1fr;min-height:0}
+.roster{border-right:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;min-height:0}
+.tools{display:flex;flex-direction:column;gap:8px;padding:14px 16px 12px max(16px,env(safe-area-inset-left,0px))}
+.search{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:transparent;border-radius:999px;padding:3px 10px;font-size:12px;cursor:pointer;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--fg)}
+.list{flex:1;overflow:auto;border-top:1px solid var(--line)}
+.row{display:grid;grid-template-columns:1fr auto;gap:2px 8px;width:100%;text-align:left;padding:10px 16px 10px max(16px,env(safe-area-inset-left,0px));border:0;border-bottom:1px solid var(--line);background:transparent;cursor:pointer}
+.row:hover{background:var(--sunk)}
+.row[aria-current="true"]{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.row .n{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .f{font:12px var(--f-mono);color:var(--muted)}
+.row .t{font-size:12px;color:var(--muted);grid-column:1/-1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.empty-list{padding:24px 16px;color:var(--muted)}
+
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:7px 12px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--sunk)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.danger.armed{background:var(--bad);color:var(--surface)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.sm{padding:4px 9px;font-size:12px}
+
+.pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;letter-spacing:.02em;white-space:nowrap}
+.p-activo{background:var(--ok-soft);color:var(--ok)}
+.p-pausa{background:var(--warn-soft);color:var(--warn)}
+.p-alta{background:var(--sunk);color:var(--muted)}
+.p-riesgo{background:var(--bad-soft);color:var(--bad)}
+.p-riesgo-m{background:var(--warn-soft);color:var(--warn)}
+
+.detail{min-width:0;overflow:auto;padding-block:0 40px}
+.wrap{max-width:980px;margin:0 auto;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
+.head{padding-block:24px 0;display:flex;flex-direction:column;gap:12px}
+.head-top{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.head h2{font-size:26px;letter-spacing:-.02em}
+.meta{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--muted);font-size:13px}
+.meta b{color:var(--fg);font-weight:500}
+.back{display:none}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-top:8px;overflow-x:auto}
+.tab{border:1px solid transparent;border-bottom:0;background:transparent;padding:9px 14px;border-radius:var(--r) var(--r) 0 0;cursor:pointer;color:var(--muted);font-weight:500;white-space:nowrap;margin-bottom:-1px}
+.tab[aria-selected="true"]{background:var(--surface);border-color:var(--line);color:var(--fg)}
+.panel{background:var(--surface);border:1px solid var(--line);border-top:0;border-radius:0 0 var(--r) var(--r);padding:20px;display:flex;flex-direction:column;gap:22px}
+
+fieldset{border:0;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px 16px}
+legend{font:700 12px var(--f-display);text-transform:uppercase;letter-spacing:.08em;color:var(--accent);padding:0;margin-bottom:10px;grid-column:1/-1}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fld.wide{grid-column:1/-1}
+.fld label{font-size:12px;font-weight:500;color:var(--muted)}
+.fld input,.fld select,.fld textarea{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+.fld textarea{min-height:76px;resize:vertical;line-height:1.5}
+.apunte{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13.5px}
+.doc-sec{display:flex;flex-direction:column;gap:12px}
+.sec-h{font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--accent)}
+.fmt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.fmt{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:8px;align-items:flex-start;background:var(--bg)}
+.fmt-h{display:flex;gap:8px;align-items:flex-start;justify-content:space-between;width:100%}
+.fmt p{margin:0;font-size:12.5px;color:var(--muted);flex:1}
+.p-r-bajo{background:var(--ok-soft);color:var(--ok)}
+.p-r-moderado{background:var(--warn-soft);color:var(--warn)}
+.p-r-alto{background:var(--bad-soft);color:var(--bad)}
+.banner.bad{background:var(--bad-soft)}
+.builder{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}
+.builder-form{display:flex;flex-direction:column;gap:12px;min-width:0}
+.mat{position:sticky;top:12px;max-height:75vh;overflow:auto;border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--bg)}
+.mat-item{border-top:1px solid var(--line);padding-top:8px;display:flex;flex-direction:column;gap:4px}
+.mat-h{display:flex;gap:8px;align-items:center;justify-content:space-between;font-size:12px;font-weight:600}
+.mat-x{font-size:12px;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+@media (max-width:1000px){.builder{grid-template-columns:1fr}.mat{position:static;max-height:none}}
+.adminbox{display:flex;gap:12px 16px;align-items:center;flex-wrap:wrap;padding:14px 16px;border:1px dashed var(--line);border-radius:var(--r);background:var(--bg)}
+.fld .hint{font-size:11.5px;color:var(--muted);line-height:1.4}
+.fld input:disabled,.fld select:disabled,.fld textarea:disabled{opacity:.85}
+.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:14px}
+.status{font-size:12px;color:var(--muted)}
+.spacer{flex:1}
+
+.notes{display:flex;flex-direction:column;gap:10px}
+.note{border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:8px;background:var(--bg)}
+.note-h{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.note-h .num{font:500 12px var(--f-mono);color:var(--accent)}
+.note-h h3{font-size:15px}
+.note-h .by{font-size:12px;color:var(--muted)}
+.note dl{display:grid;grid-template-columns:150px 1fr;gap:4px 14px;margin:0}
+.note dt{font-size:12px;color:var(--muted)}
+.note dd{margin:0;white-space:pre-wrap;min-width:0;overflow-wrap:anywhere}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+td.res{white-space:pre-wrap;min-width:220px}
+
+.welcome{padding-block:64px;display:flex;flex-direction:column;gap:14px;max-width:560px}
+.welcome h2{font-size:28px;letter-spacing:-.02em}
+.welcome p{margin:0;color:var(--muted)}
+.banner{padding:10px 14px;border-radius:var(--r);background:var(--warn-soft);color:var(--fg);font-size:13px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.notice{font-size:12px;color:var(--muted);padding:12px 16px 16px max(16px,env(safe-area-inset-left,0px));border-top:1px solid var(--line)}
+.toast{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:9px 14px;border-radius:var(--r);font-size:13px;opacity:0;transform:translateY(6px);transition:.2s;pointer-events:none}
+.toast.on{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+
+@media (max-width:800px){
+  .app{grid-template-columns:1fr}
+  .app.open .roster{display:none}
+  .app:not(.open) .detail{display:none}
+  .back{display:inline-block}
+  .wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .panel{padding:16px}
+  .note dl{grid-template-columns:1fr}
+  .roster{border-right:0}
+  .appbar img{width:38px}
+  .appbar h1{font-size:16px}
+  .appbar small{display:none}
+  .appbar .btn{padding:6px 10px}
+}
+.firma-box{display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--line);padding-top:14px}
+.firma-prev{min-height:80px;display:grid;place-items:center;border:1px dashed var(--line);border-radius:var(--r);background:#fff;padding:8px}
+.firma-prev img{max-height:110px;max-width:100%}
+.firma-pad{display:flex;flex-direction:column;gap:8px}
+.firma-pad canvas{width:100%;max-width:600px;aspect-ratio:3/1;height:auto;background:#fff;border:1px solid var(--line);border-radius:var(--r);touch-action:none;cursor:crosshair}
+.grupo{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 16px 6px max(16px,env(safe-area-inset-left,0px));background:var(--sunk);border-bottom:1px solid var(--line);font:700 11px var(--f-display);text-transform:uppercase;letter-spacing:.08em;color:var(--accent);position:sticky;top:0;z-index:1}
+.subgrupo{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 16px 6px max(16px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line);font:600 12px var(--f-body);color:var(--fg);background:var(--surface);box-shadow:inset 3px 0 0 var(--accent-soft)}
+.subgrupo span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.subgrupo b{font-weight:600;color:var(--muted)}
+.grupo b{font:600 11px var(--f-body);color:var(--muted);letter-spacing:0}
+.datos{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px 16px;align-items:end}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:14px}
+.card-h{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.card-h h3{font-size:15px}
+.steps{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none}
+.steps li{display:flex;gap:12px;align-items:flex-start}
+.steps b.n{flex:none;width:26px;height:26px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font:700 13px var(--f-display)}
+.gen{display:flex;flex-direction:column;gap:14px}
+.gsec{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:12px}
+.gsec input{font-weight:700;color:var(--accent);border:1px dashed var(--line);border-radius:6px;padding:6px 9px;background:var(--bg)}
+.gsec textarea{width:100%;min-height:110px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);line-height:1.55;resize:vertical}
+.thinking{display:flex;gap:10px;align-items:center;padding:14px;border-radius:var(--r);background:var(--accent-soft)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--accent);animation:pulse 1.1s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.25}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.dot{animation:none}}
+.adv{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.hidden-ia .ia-only{display:none}
+</style>
+
+<div class="shell">
+<header class="appbar">
+  <img src="data:image/png;base64,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" alt="Logotipo de CEMEPI">
+  <div class="ttl"><h1>Expedientes psicológicos</h1><small>CEMEPI · www.cemepi.com.mx</small></div>
+  <button class="btn" id="terBtn" type="button" data-act="terapeutas">Terapeutas</button>
+  <span class="sesion" id="sesionInfo"></span>
+  <button class="btn" id="perfilBtn" type="button" data-act="perfil">Mis datos de firma</button>
+  <button class="btn" id="salirBtn" type="button" data-act="salir">Cerrar sesión</button>
+  <button class="btn" id="newBtn" type="button" data-act="new">+ Nuevo expediente</button>
+</header>
+<div class="app" id="app">
+  <aside class="roster">
+    <div class="tools">
+      <select class="search" id="sedeF" aria-label="Filtrar por sede"></select>
+      <select class="search" id="terF" aria-label="Filtrar por terapeuta"></select>
+      <input class="search" id="q" type="search" placeholder="Iniciales, folio o fecha de nacimiento" aria-label="Buscar expediente por iniciales, folio o fecha de nacimiento (dd/mm/aaaa)">
+    </div>
+    <div class="list" id="list"><div class="empty-list">Cargando expedientes…</div></div>
+    <div class="notice">Solo iniciales y folio. Nunca nombres completos, teléfonos, correos ni domicilios.</div>
+  </aside>
+  <main class="detail" id="detail"></main>
+</div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const today = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
+const fmtDate = d => { if(!d) return "—"; const [y,m,dd] = d.split("-"); return `${dd}/${m}/${y}`; };
+const age = d => { if(!d) return ""; const b=new Date(d+"T00:00"), n=new Date(); let a=n.getFullYear()-b.getFullYear(); if(n<new Date(n.getFullYear(),b.getMonth(),b.getDate())) a--; return isNaN(a)?"":a; };
+const SEDES = ["Victoria","Calzada de Guadalupe","Lindavista","Insurgentes","Reforma","Iztacalco","Atizapán","Bosques de Santa Fe"];
+/* Clave de sede dentro del folio: CEMEPI-PSI-<CLAVE>-<AÑO>-<XXXX>. SSD = sin sede asignada todavía. */
+const SEDE_COD = {"Victoria":"VIC","Calzada de Guadalupe":"CGU","Lindavista":"LIN","Insurgentes":"INS","Reforma":"REF","Iztacalco":"IZT","Atizapán":"ATI","Bosques de Santa Fe":"BSF"};
+const codSede = s => SEDE_COD[s] || "SSD";
+/* Ajusta la clave de sede de un folio conservando año y terminación; los folios antiguos (EXP-…) no se tocan */
+function folioConSede(folio, sede){
+  const m = /^CEMEPI-PSI-(?:([A-Z]{3})-)?(\d{4})-([A-Z0-9]+)$/.exec(folio||"");
+  return m ? `CEMEPI-PSI-${codSede(sede)}-${m[2]}-${m[3]}` : folio;
+}
+const PEND = "Dato pendiente de recabar";
+const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const fechaLarga = d => { if(!d) return PEND; const [y,m,dd]=d.split("-").map(Number); return `${dd} de ${MESES[m-1]} de ${y}`; };
+const NOTA_ACLARATORIA = "Nota aclaratoria; El presente documento se elabora con fines exclusivamente de orientación, con base en lo observado y valorado durante el proceso terapéutico. No constituye un dictamen psicológico, peritaje, ni documento con alcances forenses o judiciales. Sus alcances se limitan a la comprensión terapéutica del momento actual de la consultante y pueden modificarse de acuerdo con la continuidad del proceso terapéutico y la evolución observada";
+
+/* Convierte lo escrito en iniciales: "Juan Luis Mora R." -> "J.L.M.R."; "jlmr" o "J.L.M.R." se respetan. */
+function iniciales(v){
+  const toks = String(v||"").normalize("NFC").split(/[\s.,\-_/]+/).map(t=>t.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g,"")).filter(Boolean);
+  if (!toks.length) return "";
+  const letras = (toks.length===1 && toks[0].length<=6) ? [...toks[0]] : toks.map(t=>t[0]);
+  return letras.slice(0,8).map(c=>c.toUpperCase()+".").join("");
+}
+
+/* ================= Formatos =================
+   ia:false se arma con los datos; ia:true lo redacta Claude a partir de las notas. */
+const FORMATOS = {
+  constancia_inicio:{ nombre:"Constancia de inicio de proceso", riesgo:"bajo", ia:false, titulo:"Constancia de inicio de proceso de atención psicológica",
+    desc:"Hace constar el inicio de la atención. Sin información clínica.", dest:"A QUIEN CORRESPONDA\nPRESENTE" },
+  constancia_asistencia:{ nombre:"Constancia de asistencia", riesgo:"bajo", ia:false, titulo:"Constancia de asistencia a sesiones",
+    desc:"Acredita las fechas de sesión, tomadas de las fechas de tus notas.", dest:"A QUIEN CORRESPONDA\nPRESENTE" },
+  carta_proceso:{ nombre:"Carta de proceso de atención", riesgo:"bajo", ia:true, titulo:"Carta de proceso de atención psicológica", dest:"A QUIEN CORRESPONDA\nPRESENTE",
+    desc:"Inicio, modalidad, frecuencia y continuidad. Sin diagnósticos ni contenidos de sesión.",
+    guia:["Párrafos sin título (titulo vacío): existencia del proceso y fecha de inicio; modalidad y frecuencia si las notas las mencionan (si no, Dato pendiente de recabar); número de sesiones registradas; continuidad prevista.",
+      "No incluyas diagnósticos, conflictos familiares, relatos íntimos ni contenidos de sesión. Distingue continuidad propuesta de atención realizada."],
+    ph:"Opcional: a quién va dirigida y para qué la solicitan." },
+  referencia_psiquiatria:{ nombre:"Carta de referencia a psiquiatría", riesgo:"moderado", ia:true, titulo:"Carta de referencia a Psiquiatría", dest:"Médico(a) especialista en Psiquiatría\nPRESENTE",
+    desc:"Solicita valoración psiquiátrica con la información clínica mínima necesaria.",
+    guia:["Primer párrafo sin título: se refiere a la persona (iniciales, folio, edad) en atención en CEMEPI desde la primera sesión, para valoración por Psiquiatría.",
+      "Secciones con título: Motivo de la referencia; Antecedentes y evolución relevantes; Observaciones clínicas; Valoración de riesgo; Impresión diagnóstica (solo si las notas dan fundamento; si no, omite la sección); Medicación y tratamientos referidos; Solicitud.",
+      "Último párrafo sin título: el proceso psicoterapéutico continúa en CEMEPI y se solicita contrarreferencia."],
+    ph:"Opcional: institución o médico al que se refiere, urgencia, qué se espera de la valoración." },
+  reporte:{ nombre:"Reporte psicológico", riesgo:"moderado", ia:true, ident:true, titulo:"Reporte psicológico", dest:"",
+    desc:"Motivo, metodología, hallazgos, análisis, conclusiones y recomendaciones.",
+    guia:["Secciones con título: Motivo del reporte; Antecedentes relevantes; Metodología (solo lo realmente realizado según las notas: entrevistas, número de sesiones, instrumentos); Hallazgos; Análisis clínico; Conclusiones (con alcance y limitaciones); Recomendaciones.",
+      "No conviertas el reporte en dictamen pericial. No opines sobre capacidad parental, culpabilidad ni veracidad de declaraciones."],
+    ph:"Recomendado: quién lo solicita, para qué y con qué autorización. Indica si hay contexto de custodia, juzgado, violencia o protección de menores." },
+  evaluacion:{ nombre:"Evaluación psicológica", riesgo:"moderado", ia:true, ident:true, titulo:"Informe de evaluación psicológica", dest:"",
+    desc:"Instrumentos aplicados, resultados, integración, alcances y limitaciones.",
+    guia:["Secciones con título: Motivo de la evaluación; Instrumentos aplicados; Condiciones de aplicación; Observaciones durante la evaluación; Resultados; Integración e interpretación; Conclusiones; Recomendaciones; Alcances y limitaciones.",
+      "Incluye solo instrumentos que las notas indiquen como aplicados. No interpretes puntuaciones sin versión, baremo y condiciones; si faltan, indícalo como dato pendiente y como advertencia. No reproduzcas reactivos protegidos."],
+    ph:"Recomendado: instrumentos aplicados con versión y puntuaciones, y quién solicita la evaluación." },
+  carta_tutores:{ nombre:"Carta informativa a tutores", riesgo:"moderado", ia:true, titulo:"Carta informativa", dest:"Nombre del tutor o familiar: ______________________________\nPRESENTE",
+    desc:"Para madre, padre o tutor: propósito, recomendaciones generales y siguientes pasos.",
+    guia:["Párrafos sin título, lenguaje accesible, respetuoso y no acusatorio: propósito de la carta; información o recomendaciones generales; qué se solicita, por qué y cuáles son los siguientes pasos; cierre cordial.",
+      "No reveles contenidos confidenciales de las sesiones del menor."],
+    ph:"Opcional: qué necesitas pedir o informar a la familia." },
+  orientacion:{ nombre:"Hoja de orientación y referencia institucional", riesgo:"alto", ia:true, titulo:"Hoja de orientación y referencia institucional",
+    desc:"Orienta a un familiar hacia una institución especializada. No equivale a denuncia.",
+    guia:["Secciones con título en este orden: Nombre del familiar o acompañante (texto: ______________________________); Relación con la persona menor de edad; Institución recomendada (por defecto: Procuraduría de Protección de Derechos de Niñas, Niños y Adolescentes de la Ciudad de México, DIF CDMX, salvo que las indicaciones digan otra); Motivo general de orientación; Finalidad de la referencia; Datos oficiales de contacto (texto exacto: Dato pendiente de recabar (verificar en la fuente oficial antes de entregar)); Alcance del documento (texto: La presente hoja tiene fines de orientación. No equivale a una denuncia, notificación formal, valoración pericial ni determinación de violencia.).",
+      "En advertencias indica si las notas muestran indicadores de riesgo, violencia o vulneración de derechos que requieran actuación institucional adicional, urgente u obligatoria."],
+    ph:"Opcional: relación del acompañante con el menor e institución, si es otra." },
+  resumen_alta:{ nombre:"Resumen clínico de alta", riesgo:"moderado", ia:true, ident:true, titulo:"Resumen clínico de alta", dest:"",
+    desc:"Cierre del proceso: evolución, objetivos alcanzados, motivo de alta y recomendaciones.",
+    guia:["Secciones con título: Periodo de atención; Motivo de consulta; Evolución durante el proceso; Objetivos trabajados y alcanzados; Motivo de alta; Recomendaciones."],
+    ph:"Opcional: fecha y motivo del alta." },
+  expediente:{ nombre:"Expediente clínico", riesgo:"moderado", ia:true, interno:true, ident:true, titulo:"Expediente clínico psicológico",
+    desc:"Organiza tus notas en la estructura del expediente institucional. Uso interno.",
+    guia:["Secciones con título: Motivo de consulta; Fuente de información; Historia del problema actual; Antecedentes personales y familiares relevantes; Contexto relacional y social; Factores de riesgo y protección; Observaciones clínicas; Formulación clínica (dificultades, hipótesis de trabajo sustentadas, recursos personales y familiares, necesidades de atención); Impresión diagnóstica (solo con fundamento suficiente; si no, Dato pendiente de recabar); Plan de atención; Notas de evolución.",
+      "En Notas de evolución escribe un párrafo por cada fecha de nota, empezando con la fecha en formato dd/mm/aaaa, con lo clínicamente relevante, intervenciones, respuesta observada, acuerdos y plan de continuidad. Respeta lo escrito: no lo reinterpretes."],
+    ph:"Opcional: indicaciones adicionales." },
+  oficio_autoridad:{ nombre:"Oficio de remisión a autoridad", riesgo:"alto", ia:true, titulo:"Oficio de remisión de información", dest:"______________________________\n(Autoridad solicitante)\nPRESENTE",
+    desc:"Responde a un requerimiento de juzgado o fiscalía con lo estrictamente procedente.",
+    guia:["Primer párrafo sin título: en atención al requerimiento (número de oficio, expediente y fecha según indicaciones; si faltan, Dato pendiente de recabar) se remite la información que se indica.",
+      "Secciones con título: Información que se remite (solo lo solicitado y legalmente procedente; síntesis clínica mínima); Carácter de la información (clínica, no pericial; basada en el proceso terapéutico; el expediente original permanece bajo resguardo de CEMEPI).",
+      "Último párrafo sin título: cierre institucional.",
+      "En advertencias recuerda: verificar autenticidad y competencia de la autoridad, alcance exacto de lo solicitado, fundamento legal, protección de datos de terceros, registro de la entrega y revisión jurídica antes de enviar. No modifiques notas para la controversia."],
+    ph:"Necesario: autoridad, número de oficio y de expediente, fecha y qué información solicitan exactamente." },
+  cambio_terapeuta:{ nombre:"Carta de cambio de terapeuta", riesgo:"moderado", ia:true, titulo:"Carta de continuidad de atención", dest:"A la persona consultante\nPRESENTE",
+    desc:"Informa la continuidad de la atención con otro profesional asignado por CEMEPI.",
+    guia:["Párrafos sin título: motivo general del cambio (administrativo o clínico, sin detalles innecesarios); la continuidad será proporcionada por otro profesional asignado por CEMEPI (nombre según indicaciones o Dato pendiente de recabar); el expediente y la confidencialidad se conservan; siguientes pasos y fecha prevista de la próxima sesión si se conoce; cierre cordial."],
+    ph:"Recomendado: motivo general del cambio, profesional que recibe el caso y fecha de la próxima sesión." },
+  supervision:{ nombre:"Retroalimentación de supervisión", riesgo:"bajo", ia:true, titulo:"Retroalimentación de supervisión documental", sinNotas:true,
+    desc:"Revisa un informe de un terapeuta y redacta retroalimentación formativa.",
+    guia:["Revisa el informe pegado en las indicaciones como supervisor de calidad documental: precisión del lenguaje, sustento, separación entre hechos y relatos, neutralidad, confidencialidad, coherencia metodológica, conclusiones, alcance de recomendaciones, riesgo de interpretación jurídica, ortografía y claridad.",
+      "Secciones con título: Fortalezas del documento; Aspectos a mejorar (para cada uno: el texto original, por qué es un problema y una redacción alternativa); Retroalimentación para el terapeuta (cálida, profesional y formativa, sin tono punitivo)."],
+    ph:"Pega aquí el informe que quieres revisar." },
+  consentimiento:{ nombre:"Consentimiento informado", riesgo:"moderado", ia:false, titulo:"Consentimiento informado para la atención psicológica",
+    desc:"Formato base para firma. Borrador sujeto a revisión jurídica." },
+};
+const ORDEN = ["constancia_inicio","constancia_asistencia","carta_proceso","referencia_psiquiatria","reporte","evaluacion","carta_tutores","orientacion","resumen_alta","expediente","oficio_autoridad","cambio_terapeuta","supervision","consentimiento"];
+const RIESGO_TXT = {bajo:"Riesgo bajo", moderado:"Riesgo moderado", alto:"Riesgo alto"};
+
+/* ---------- Estado ---------- */
+const S = { db:null, user:null, uid:null, canWrite:true, sample:null, pacientes:new Map(), loaded:false, sel:null, view:"inicio", tab:"notas",
+  q:"", sedeF:(()=>{ try{ return localStorage.getItem("cemepi.sede")||"todas"; }catch{ return "todas"; } })(), notas:[], docs:[], unsubN:null, unsubD:null, perfil:{}, gen:null, ctl:null, dirty:false, stale:false,
+  terapeutas:new Map(), terEdit:null, terF:(()=>{ try{ return localStorage.getItem("cemepi.ter")||"todos"; }catch{ return "todos"; } })() };
+/* Directorio de terapeutas (compartido en la app): nombre completo, cédula y sede. uid enlaza la ficha con una cuenta de claude.ai, si la tiene. */
+const terOrden = () => [...S.terapeutas.values()].sort((a,b)=>(a.nombre||"").localeCompare(b.nombre||"","es"));
+const miTerapeuta = () => S.uid ? [...S.terapeutas.values()].find(t=>t.uid===S.uid) : null;
+const terEtiqueta = t => t ? `${t.nombre||"Sin nombre"}${t.cedula?` · Céd. ${t.cedula}`:""}` : "Sin terapeuta asignado";
+
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(toast.h); toast.h=setTimeout(()=>t.classList.remove("on"),3200); }
+function errMsg(e){ if(e?.code==="quota_exceeded") return "Se alcanzó el límite de almacenamiento. Elimina registros antiguos para continuar.";
+  if(e?.code==="invalid_argument") return "No tienes permiso para guardar cambios aquí."; return "No se pudo guardar. Revisa tu conexión e inténtalo de nuevo."; }
+const fechaHora = t => new Date(t).toLocaleString("es-MX",{dateStyle:"medium",timeStyle:"short"});
+
+function ctxOf(p){
+  const f=p?.ficha||{}, pf=S.perfil||{};
+  const notas=[...S.notas].sort((a,b)=>(a.fecha||"").localeCompare(b.fecha||"")||(a.creado||0)-(b.creado||0));
+  /* El documento lo firma el terapeuta asignado al expediente; si no hay, quien está usando la app */
+  const ter = f.terapeutaId ? S.terapeutas.get(f.terapeutaId) : null;
+  const propio = !ter || (ter.uid && ter.uid===S.uid);
+  const sede = f.sede || ter?.sede || pf.sede || "";
+  return { p, f, ini:f.nombre||PEND, folio:p?.folio||"", edad:age(f.fechaNac), primera:f.primeraSesion||"",
+    sede, prof:ter?.nombre||pf.nombre||"______________________________", ced:ter?.cedula||pf.cedula||"______________", notas,
+    firma:propio?(pf.firma||""):"", firmaW:pf.firmaW||600, firmaH:pf.firmaH||200,
+    lugar: sede==="Atizapán" ? "Atizapán de Zaragoza, Estado de México" : "Ciudad de México" };
+}
+const identRows = c => [["Iniciales del consultante",c.ini],["Folio",c.folio||PEND],["Edad",c.edad!==""?`${c.edad} años`:PEND],["Sede",c.sede||PEND],
+  ["Primera sesión",c.primera?fechaLarga(c.primera):PEND],["Profesional responsable",c.prof]];
+const quien = c => `la persona consultante identificada con las iniciales ${c.ini} y el folio ${c.folio}`;
+const enCemepi = c => `en el Centro Mexicano de Plenitud Humana, S.C. (CEMEPI)${c.sede?`, sede ${c.sede}`:""}`;
+
+/* Formatos que se arman sin IA */
+function contenidoFijo(tipo, c){
+  const t=FORMATOS[tipo];
+  if (tipo==="constancia_inicio") return { destinatario:t.dest, advertencias:[], secciones:[
+    {titulo:"",texto:`Por medio de la presente se hace constar que ${quien(c)} inició un proceso de atención psicológica ${enCemepi(c)} el ${fechaLarga(c.primera)}, a cargo de ${c.prof}.`},
+    {titulo:"",texto:"Se extiende la presente a solicitud de la persona interesada, para los fines que estime convenientes. Este documento no contiene información clínica."}]};
+  if (tipo==="constancia_asistencia"){ const fechas=[...new Set(c.notas.map(n=>n.fecha).filter(Boolean))];
+    return { destinatario:t.dest, advertencias: fechas.length?["Las fechas se toman de tus notas. Verifica que cada una corresponda a una sesión a la que la persona asistió."]:["No hay notas con fecha: agrega las fechas de asistencia antes de emitir."], secciones:[
+    {titulo:"",texto:`Por medio de la presente se hace constar que ${quien(c)} asistió a sesiones de atención psicológica ${enCemepi(c)}, a cargo de ${c.prof}, en las siguientes fechas:`},
+    {titulo:"",texto:fechas.length?fechas.map(fmtDate).join(", "):PEND},
+    {titulo:"",texto:"Se extiende la presente a solicitud de la persona interesada, para los fines que estime convenientes. Este documento no contiene información clínica."}]}; }
+  if (tipo==="consentimiento") return { destinatario:"", advertencias:["Borrador base: debe revisarse jurídicamente y ajustarse a las políticas de CEMEPI antes de usarse.","En menores de edad, considera la representación legal y la participación del propio menor conforme a su edad y madurez."], secciones:[
+    {titulo:"",texto:`Yo, la persona consultante identificada con el folio ${c.folio}${c.ini!==PEND?` (iniciales ${c.ini})`:""}, o su representante legal, declaro que el Centro Mexicano de Plenitud Humana, S.C. (CEMEPI) me ha informado de manera clara sobre lo siguiente:`},
+    {titulo:"Naturaleza del servicio",texto:"La atención psicológica es un proceso profesional de acompañamiento orientado a comprender y atender las dificultades que motivan la consulta, desde una perspectiva integrativa, relacional y humanista."},
+    {titulo:"Objetivos, metodología y alcances",texto:"Los objetivos se acuerdan con la persona consultante y se revisan durante el proceso. La metodología incluye entrevistas, intervenciones terapéuticas y, cuando se requiera, evaluaciones psicológicas. Los resultados no pueden garantizarse y dependen de múltiples factores."},
+    {titulo:"Beneficios, limitaciones y riesgos",texto:"El proceso puede favorecer el bienestar, la comprensión de la propia experiencia y el desarrollo de recursos personales. En algunos momentos pueden surgir emociones intensas o incomodidad, que se trabajarán dentro del proceso."},
+    {titulo:"Alternativas",texto:"Se me informó que existen otras alternativas de atención y que, cuando sea pertinente, se me podrá referir a otros profesionales o instituciones."},
+    {titulo:"Confidencialidad y sus excepciones",texto:"La información compartida es confidencial y está protegida por el secreto profesional, salvo en los casos previstos por la ley, como un riesgo grave para la vida o la integridad propia o de terceros, o un requerimiento formal de autoridad competente. En tales casos se compartirá solo la información estrictamente necesaria."},
+    {titulo:"Tratamiento de datos personales",texto:"Mis datos personales, incluidos los datos sensibles de salud, se tratarán conforme al aviso de privacidad de CEMEPI, que me fue dado a conocer."},
+    {titulo:"Condiciones de participación",texto:`Frecuencia, duración, horarios, cancelaciones y honorarios: ${PEND}.`},
+    {titulo:"Derechos de la persona consultante",texto:"Puedo hacer preguntas en cualquier momento, recibir información sobre mi proceso y retirar este consentimiento cuando lo decida, sin que ello afecte mi trato en CEMEPI."},
+    {titulo:"Declaración",texto:"He leído y comprendido la información anterior, se resolvieron mis dudas y otorgo mi consentimiento para iniciar la atención psicológica.\n\n\nNombre y firma de la persona consultante o de su representante legal: ______________________________\n\nFecha: ____ / ____ / ________"}]};
+}
+
+/* Instrucciones para Claude: criterios institucionales del prompt maestro, en breve */
+function promptDe(tipo, c, indicaciones){
+  const t=FORMATOS[tipo];
+  const notas = t.sinNotas ? "" : c.notas.map(n=>`[${fmtDate(n.fecha)}]\n${n.texto}`).join("\n\n").slice(-60000);
+  return `Eres el asistente de documentación clínica del Centro Mexicano de Plenitud Humana, S.C. (CEMEPI), un centro de atención psicológica en Ciudad de México y Estado de México con visión integrativa, relacional y humanista.
+
+Redacta el cuerpo del documento "${t.nombre}" a partir de las notas del terapeuta.
+
+CRITERIOS OBLIGATORIOS
+- Fidelidad: usa solo lo que dicen las notas y las indicaciones. Nunca inventes antecedentes, sesiones, resultados, instrumentos, diagnósticos ni intervenciones. Si falta un dato necesario escribe exactamente "${PEND}".
+- Distingue siempre lo que la persona o terceros refieren ("refiere", "la madre refiere"), lo que el terapeuta observó directamente y las hipótesis clínicas. No presentes hipótesis como hechos.
+- Lenguaje neutral, prudente y respetuoso, en español de México. Describe experiencias y conductas sin etiquetar a la persona; reconoce recursos y factores protectores; no atribuyas intenciones ni juicios morales; no alarmes. No uses lenguaje neutral para ocultar indicadores reales de riesgo.
+- Confidencialidad: refiérete a la persona solo por sus iniciales. No incluyas nombres completos, teléfonos, correos, domicilios ni datos de terceros identificables; si aparecen en las notas, omítelos y avísalo en advertencias.
+- No es un dictamen pericial: no concluyas sobre culpabilidad, capacidad parental, custodia ni veracidad de declaraciones.
+- Usa "organización" o "centro de atención psicológica", nunca "empresa" ni "clínica".
+- Formato del texto: párrafos en prosa separados por una línea en blanco. Sin viñetas, sin numeración romana, sin Markdown, sin negritas.
+- No incluyas encabezado, título del documento, fecha, lugar, destinatario, firma ni nota aclaratoria: se agregan automáticamente.
+
+ESTRUCTURA DE ESTE DOCUMENTO
+${t.guia.map(g=>"- "+g).join("\n")}
+
+DATOS DEL EXPEDIENTE
+- Iniciales: ${c.ini}
+- Folio: ${c.folio}
+- Edad: ${c.edad!==""?c.edad+" años":PEND}
+- Fecha de primera sesión: ${c.primera?fechaLarga(c.primera):PEND}
+- Notas registradas: ${c.notas.length}${c.notas.length?`, del ${fechaLarga(c.notas[0].fecha)} al ${fechaLarga(c.notas[c.notas.length-1].fecha)}`:""}
+- Profesional responsable: ${c.prof.startsWith("___")?PEND:c.prof}
+- Sede: ${c.sede||PEND}
+- Fecha del documento: ${fechaLarga(today())}
+
+INDICACIONES DEL TERAPEUTA
+${indicaciones||"(ninguna)"}
+${t.sinNotas?"":`
+NOTAS DEL TERAPEUTA (en orden cronológico)
+${notas||"(sin notas)"}`}
+
+RESPUESTA
+Responde solo con un objeto JSON con esta forma:
+{"secciones":[{"titulo":"Motivo de la referencia","texto":"Primer párrafo.\\n\\nSegundo párrafo."}],"advertencias":["Dato que falta o riesgo que el terapeuta debe revisar antes de emitir."]}
+Usa "titulo": "" para párrafos sin título. En "advertencias" incluye datos faltantes importantes, posibles indicadores de riesgo (suicida, violencia, abuso, vulneración de derechos de menores) con la recomendación de valorar medidas de protección, y cualquier dato sensible que hayas omitido. Si no hay advertencias, usa una lista vacía.`;
+}
+
+/* ================= Word (.docx) ================= */
+const X = s => String(s??"").replace(/[&<>"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
+const R = (t, o={}) => `<w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/>${o.b?"<w:b/>":""}<w:color w:val="${o.color||"0F2340"}"/><w:sz w:val="${o.sz||20}"/><w:szCs w:val="${o.sz||20}"/></w:rPr><w:t xml:space="preserve">${X(t)}</w:t></w:r>`;
+const RL = (t, o) => String(t??"").split("\n").map((l,i)=>(i?"<w:r><w:br/></w:r>":"")+R(l,o)).join("");
+const P = (runs, o={}) => `<w:p><w:pPr>${o.keep?"<w:keepNext/>":""}${o.border?`<w:pBdr><w:bottom w:val="single" w:sz="12" w:space="4" w:color="0560BD"/></w:pBdr>`:""}<w:spacing w:before="${o.before||0}" w:after="${o.after||0}"/>${o.jc?`<w:jc w:val="${o.jc}"/>`:""}</w:pPr>${runs}</w:p>`;
+const BD = ["top","left","bottom","right","insideH","insideV"].map(s=>`<w:${s} w:val="single" w:sz="4" w:space="0" w:color="B8C7DD"/>`).join("");
+const fila = (label, v="", h=420) => `<w:tr><w:trPr><w:trHeight w:val="${h}"/><w:cantSplit/></w:trPr><w:tc><w:tcPr><w:tcW w:w="3400" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="EAF1FB"/><w:vAlign w:val="center"/></w:tcPr>${P(R(label,{sz:18,color:"334A6B"}))}</w:tc><w:tc><w:tcPr><w:tcW w:w="6500" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>${P(RL(v))}</w:tc></w:tr>`;
+const tabla = rows => `<w:tbl><w:tblPr><w:tblW w:w="9900" w:type="dxa"/><w:tblBorders>${BD}</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="50" w:type="dxa"/><w:left w:w="100" w:type="dxa"/><w:bottom w:w="50" w:type="dxa"/><w:right w:w="100" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid><w:gridCol w:w="3400"/><w:gridCol w:w="6500"/></w:tblGrid>${rows}</w:tbl>`;
+const encabezado = folio => { const cx=640080, cy=552000;
+  const logo = `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="1" name="Logotipo CEMEPI"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="1" name="logo.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rIdLogo"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`;
+  return `<w:tbl><w:tblPr><w:tblW w:w="9900" w:type="dxa"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid><w:gridCol w:w="1300"/><w:gridCol w:w="5200"/><w:gridCol w:w="3400"/></w:tblGrid><w:tr>
+    <w:tc><w:tcPr><w:tcW w:w="1300" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>${P(logo)}</w:tc>
+    <w:tc><w:tcPr><w:tcW w:w="5200" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>${P(R("Centro Mexicano de Plenitud Humana, S.C.",{b:1,sz:24,color:"0560BD"}))}${P(R("CEMEPI · Atención psicológica · www.cemepi.com.mx",{sz:17,color:"55688A"}))}</w:tc>
+    <w:tc><w:tcPr><w:tcW w:w="3400" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>${P(R("Folio",{sz:17,color:"55688A"}),{jc:"right"})}${P(R(folio||"________________",{b:1,sz:20}),{jc:"right"})}</w:tc>
+  </w:tr></w:tbl>${P("",{border:1,after:160})}`; };
+const imgXml = (rid, cx, cy, id, name) => `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${id}" name="${name}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${id}" name="${name}.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`;
+/* Firma: si el profesional cargó una, va centrada sobre la línea (máx. 1.9" de ancho y 0.75" de alto) */
+const firmaImgXml = c => { if (!c.firma) return ""; const r=c.firmaH/c.firmaW, maxW=1737360, maxH=685800;
+  let cx=maxW, cy=Math.round(cx*r); if (cy>maxH){ cy=maxH; cx=Math.round(cy/r); }
+  return P(imgXml("rIdFirma",cx,cy,2,"Firma"),{jc:"center"}); };
+const firmaXml = c => P("",{before:c.firma?300:900}) + firmaImgXml(c) + P(R("______________________________"),{jc:"center"}) + P(R(c.prof,{b:1}),{jc:"center",before:40})
+  + P(R(`Psicólogo(a) · Cédula profesional: ${c.ced}`,{sz:18}),{jc:"center"}) + P(R(`Centro Mexicano de Plenitud Humana, S.C.${c.sede?` · Sede ${c.sede}`:""}`,{sz:18,color:"55688A"}),{jc:"center"});
+function bloques(g, c){
+  const t=FORMATOS[g.tipo], k=g.contenido||{};
+  return [{title:t.titulo},{right:`${g.lugar||c.lugar}, a ${fechaLarga(g.fecha||today())}`}, ...(k.destinatario?[{dest:k.destinatario}]:[]),
+    ...(t.ident?[{table:identRows(c)}]:[]),
+    ...(k.secciones||[]).flatMap(s=>[...(s.titulo?[{h:s.titulo}]:[]),{p:(s.texto&&s.texto.trim())?s.texto:PEND}]), {firma:true}];
+}
+function bloquesXml(bl, c){
+  return bl.map(b=>{
+    if (b.title) return P(R(b.title.toUpperCase(),{b:1,sz:24,color:"0560BD"}),{jc:"center",before:120,after:200});
+    if (b.right) return P(R(b.right),{jc:"right",after:240});
+    if (b.dest) return P(RL(b.dest,{b:1}),{after:240});
+    if (b.h) return P(R(b.h,{b:1,sz:21,color:"0560BD"}),{before:220,after:80,keep:1});
+    if (b.table) return tabla(b.table.map(([k,v])=>fila(k,v)).join("")) + P("",{after:120});
+    if (b.firma) return firmaXml(c);
+    if (b.p!=null) return String(b.p).split(/\n{2,}/).map(par=>P(RL(par),{jc:"both",after:120})).join("");
+    return "";
+  }).join("");
+}
+function textoPlano(bl, c){
+  return bl.map(b=> b.title?b.title.toUpperCase() : b.right?b.right : b.dest?b.dest : b.h?`\n${b.h}` : b.p!=null?b.p
+    : b.table?b.table.map(([k,x])=>`${k}: ${x}`).join("\n") : b.firma?`\n\n______________________________\n${c.prof}\nPsicólogo(a) · Cédula profesional: ${c.ced}\nCentro Mexicano de Plenitud Humana, S.C.${c.sede?` · Sede ${c.sede}`:""}` : "").join("\n\n")
+    + `\n\n${NOTA_ACLARATORIA}`;
+}
+function hojaAdminXml(c){
+  const f=c.f||{}, H=t=>P(R(t.toUpperCase(),{b:1,color:"0560BD",sz:19}),{before:260,after:80,keep:1});
+  return P(R("HOJA ADMINISTRATIVA DE DATOS DE CONTACTO",{b:1,sz:24,color:"0560BD"}),{jc:"center",after:120})
+    + H("Vinculación con el expediente") + tabla(fila("Iniciales del consultante",f.nombre)+fila("Sede",c.sede)+fila("Primera sesión",f.primeraSesion?fmtDate(f.primeraSesion):"")+fila("Psicólogo(a) tratante",c.prof.startsWith("___")?"":c.prof))
+    + H("Datos del consultante") + tabla(fila("Nombre completo")+fila("Fecha de nacimiento",f.fechaNac?fmtDate(f.fechaNac):"")+fila("Teléfono")+fila("Teléfono alterno")+fila("Correo electrónico")+fila("Domicilio","",900))
+    + H("Contacto de emergencia") + tabla(fila("Nombre")+fila("Parentesco")+fila("Teléfono"))
+    + H("Representante legal o tutor (si el consultante es menor de edad)") + tabla(fila("Nombre")+fila("Parentesco o calidad")+fila("Documento con el que acredita la representación")+fila("Teléfono")+fila("Correo electrónico")+fila("Restricciones judiciales o de custodia conocidas","",900))
+    + P(R("Documento confidencial con datos personales. Se resguarda en el archivo administrativo, separado del expediente clínico, con acceso limitado al personal autorizado. Los datos se tratan conforme al aviso de privacidad de CEMEPI. No se envía por mensajería una vez llenado.",{sz:17,color:"55688A"}),{before:240,jc:"both"})
+    + P("",{before:700})
+    + `<w:tbl><w:tblPr><w:tblW w:w="9900" w:type="dxa"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid><w:gridCol w:w="4650"/><w:gridCol w:w="600"/><w:gridCol w:w="4650"/></w:tblGrid><w:tr>
+      <w:tc><w:tcPr><w:tcW w:w="4650" w:type="dxa"/><w:tcBorders><w:top w:val="single" w:sz="6" w:space="0" w:color="0F2340"/></w:tcBorders></w:tcPr>${P(R("Nombre y firma de quien proporciona los datos",{sz:17}),{jc:"center",before:60})}</w:tc>
+      <w:tc><w:tcPr><w:tcW w:w="600" w:type="dxa"/></w:tcPr>${P("")}</w:tc>
+      <w:tc><w:tcPr><w:tcW w:w="4650" w:type="dxa"/><w:tcBorders><w:top w:val="single" w:sz="6" w:space="0" w:color="0F2340"/></w:tcBorders></w:tcPr>${P(R("Nombre y firma de quien captura (equipo administrativo)",{sz:17}),{jc:"center",before:60})}${P(R("Fecha: ____ / ____ / ________",{sz:17}),{jc:"center",before:60})}</w:tc>
+    </w:tr></w:tbl>`;
+}
+function docxBlob(folio, cuerpoXml){
+  const firmaB64 = cuerpoXml.includes('r:embed="rIdFirma"') ? ((S.perfil.firma||"").split(",")[1]||"") : "";
+  const NS = `xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"`;
+  const doc = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ${NS}><w:body>${encabezado(folio)}${cuerpoXml}<w:sectPr><w:footerReference w:type="default" r:id="rIdFooter"/><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1000" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="500" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+  const footer = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:ftr ${NS}><w:p><w:pPr><w:jc w:val="both"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t xml:space="preserve">${X(NOTA_ACLARATORIA)}</w:t></w:r></w:p></w:ftr>`;
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial" w:cs="Arial"/><w:color w:val="0F2340"/><w:sz w:val="20"/><w:szCs w:val="20"/><w:lang w:val="es-MX"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="276" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults></w:styles>`;
+  const types = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/></Types>`;
+  const rels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`;
+  const docRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rIdFooter" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/><Relationship Id="rIdLogo" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/logo.png"/>${firmaB64?`<Relationship Id="rIdFirma" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/firma.png"/>`:""}</Relationships>`;
+  const zip = new JSZip();
+  zip.file("[Content_Types].xml", types); zip.file("_rels/.rels", rels);
+  zip.file("word/document.xml", doc); zip.file("word/styles.xml", styles); zip.file("word/footer1.xml", footer);
+  zip.file("word/_rels/document.xml.rels", docRels);
+  zip.file("word/media/logo.png", (document.querySelector(".appbar img")?.src||"").split(",")[1]||"", {base64:true});
+  if (firmaB64) zip.file("word/media/firma.png", firmaB64, {base64:true});
+  return zip.generateAsync({type:"blob"});
+}
+async function descargar(nombre, folio, cuerpoXml){
+  if (typeof JSZip === "undefined"){ toast("No se pudo preparar el archivo de Word. Recarga la página e inténtalo de nuevo."); return; }
+  const dl = await window.claude?.use?.("downloads");
+  if (!dl){ toast("La descarga no está disponible en esta vista. Abre la página en claude.ai."); return; }
+  try{ const blob = await docxBlob(folio, cuerpoXml); await dl.save({filename:nombre, data:blob}); toast("Documento descargado. Ábrelo en Word para revisarlo."); }
+  catch(e){ if(e?.code!=="declined") toast("No se pudo descargar el documento."); }
+}
+const slug = s => s.normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"");
+
+/* ================= PDF editable (campos de formulario) =================
+   Mismo contenido que el Word: cada sección es un campo de texto que se puede corregir
+   en Acrobat Reader, Vista Previa o el celular. Encabezado, firma y nota aclaratoria van fijos. */
+const limpiarPdf = s => String(s??"").replace(/\r/g,"").replace(/\t/g," ").replace(/[^\n\x20-\x7E -ÿ–—‘’“”•…€]/g," ");
+function envolver(text, font, size, maxW){
+  const out=[];
+  for (const par of limpiarPdf(text).split("\n")){
+    if (!par.trim()){ out.push(""); continue; }
+    let line="";
+    for (const w of par.split(/ +/)){
+      const t = line ? line+" "+w : w;
+      if (font.widthOfTextAtSize(t,size) <= maxW) line=t;
+      else { if (line) out.push(line); line=w; while (font.widthOfTextAtSize(line,size) > maxW && line.length>1){ let k=line.length-1; while(k>1 && font.widthOfTextAtSize(line.slice(0,k),size)>maxW) k--; out.push(line.slice(0,k)); line=line.slice(k); } }
+    }
+    out.push(line);
+  }
+  return out;
+}
+async function pdfEditable(g, c){
+  const {PDFDocument, StandardFonts, rgb, TextAlignment} = PDFLib;
+  const t=FORMATOS[g.tipo], k=g.contenido||{};
+  const pdf = await PDFDocument.create();
+  pdf.setTitle(t.titulo); pdf.setAuthor("CEMEPI · Centro Mexicano de Plenitud Humana, S.C."); pdf.setLanguage("es-MX");
+  const font = await pdf.embedFont(StandardFonts.Helvetica), bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const b64 = (document.querySelector(".appbar img")?.src||"").split(",")[1];
+  const logo = b64 ? await pdf.embedPng(Uint8Array.from(atob(b64), ch=>ch.charCodeAt(0))) : null;
+  const form = pdf.getForm();
+  const W=612, H=792, M=54, CW=W-2*M, FS=10, LH=12.6;
+  const azul=rgb(0.02,0.376,0.741), tinta=rgb(0.06,0.14,0.25), gris=rgb(0.33,0.41,0.54), celda=rgb(0.918,0.945,0.984), borde=rgb(0.72,0.78,0.87), fondo=rgb(0.975,0.983,1);
+  const nota = envolver(NOTA_ACLARATORIA, font, 7, CW), pieH = nota.length*8.6, BASE = 26 + pieH + 16;
+  let page, y, nCampo=0;
+  const nueva = () => {
+    page = pdf.addPage([W,H]); y = H-M;
+    nota.forEach((l,i)=>page.drawText(l,{x:M, y:26+(nota.length-1-i)*8.6, size:7, font, color:gris}));
+    const pg = `Folio ${c.folio} · Página ${pdf.getPageCount()}`;
+    page.drawText(pg,{x:W-M-font.widthOfTextAtSize(pg,7), y:26+pieH+4, size:7, font, color:gris});
+  };
+  const espacio = h => { if (y - h < BASE) nueva(); };
+  const texto = (s, o={}) => { const f=o.b?bold:font, sz=o.size||FS; page.drawText(limpiarPdf(s),{x:o.x??M, y, size:sz, font:f, color:o.color||tinta}); };
+  const centro = (s, sz, f, color) => page.drawText(limpiarPdf(s),{x:(W-f.widthOfTextAtSize(limpiarPdf(s),sz))/2, y, size:sz, font:f, color});
+  const campo = (valor, alto, o={}) => {
+    const f = form.createTextField(o.name || `campo_${++nCampo}`);
+    if (o.multi!==false) f.enableMultiline();
+    f.setText(limpiarPdf(valor));
+    f.addToPage(page,{x:o.x??M, y:y-alto, width:o.w??CW, height:alto, font, textColor:tinta, borderColor:borde, borderWidth:0.6, backgroundColor:fondo});
+    f.setFontSize(o.size||FS); if (o.right) f.setAlignment(TextAlignment.Right);
+    y -= alto;
+  };
+  /* Texto largo: se reparte en varios campos si no cabe en una página */
+  const campoLargo = (valor, nombre) => {
+    let lineas = envolver(valor, font, FS, CW-10); if (!lineas.length) lineas=[""];
+    let parte = 0;
+    while (lineas.length){
+      const cabe = Math.floor((y - BASE - 8) / LH);
+      if (cabe < 3){ nueva(); continue; }
+      const trozo = lineas.splice(0, cabe);
+      campo(trozo.join("\n"), trozo.length*LH + 8, {name:`${nombre}${parte++?"_"+parte:""}`});
+      y -= 6;
+    }
+  };
+
+  nueva();
+  /* Encabezado */
+  if (logo) page.drawImage(logo,{x:M, y:y-42, width:48, height:42});
+  y -= 15; texto("Centro Mexicano de Plenitud Humana, S.C.",{x:M+58, b:1, size:13, color:azul});
+  y -= 14; texto("CEMEPI · Atención psicológica · www.cemepi.com.mx",{x:M+58, size:8.5, color:gris});
+  const fol = c.folio||"________________";
+  page.drawText("Folio",{x:W-M-font.widthOfTextAtSize("Folio",8), y:y+16, size:8, font, color:gris});
+  page.drawText(limpiarPdf(fol),{x:W-M-bold.widthOfTextAtSize(limpiarPdf(fol),11), y:y+2, size:11, font:bold, color:tinta});
+  y -= 18; page.drawLine({start:{x:M,y}, end:{x:W-M,y}, thickness:1.5, color:azul});
+  y -= 28; centro(t.titulo.toUpperCase(), 13, bold, azul);
+  y -= 16;
+  campo(`${g.lugar||c.lugar}, a ${fechaLarga(g.fecha||today())}`, 18, {x:W-M-320, w:320, multi:false, right:true, name:"lugar_y_fecha"});
+  y -= 14;
+  if (k.destinatario){ const ln=envolver(k.destinatario,font,FS,CW-10); campo(k.destinatario, ln.length*LH+8, {name:"destinatario"}); y -= 14; }
+  if (t.ident){
+    for (const [lab,val] of identRows(c)){
+      espacio(18);
+      page.drawRectangle({x:M, y:y-18, width:170, height:18, color:celda, borderColor:borde, borderWidth:0.5});
+      page.drawRectangle({x:M+170, y:y-18, width:CW-170, height:18, borderColor:borde, borderWidth:0.5});
+      y -= 12.5; texto(lab,{x:M+5, size:8.5, color:gris}); texto(val,{x:M+176, size:9.5}); y -= 5.5;
+    }
+    y -= 14;
+  }
+  /* Secciones */
+  (k.secciones||[]).forEach((s,i)=>{
+    if (s.titulo){ espacio(16 + 3*LH + 8); y -= 11; texto(s.titulo,{b:1, size:10.5, color:azul}); y -= 7; }
+    else espacio(3*LH + 8);
+    campoLargo((s.texto&&s.texto.trim())?s.texto:PEND, `seccion_${i+1}`);
+    y -= 4;
+  });
+  /* Firma */
+  let firmaImg=null;
+  if (c.firma){ try{ firmaImg = await pdf.embedPng(Uint8Array.from(atob(c.firma.split(",")[1]), ch=>ch.charCodeAt(0))); }catch(e){ console.warn("firma", e); } }
+  espacio(firmaImg?165:110);
+  if (firmaImg){ y -= 10; let fw=140, fh=fw*firmaImg.height/firmaImg.width; if (fh>54){ fh=54; fw=fh*firmaImg.width/firmaImg.height; }
+    page.drawImage(firmaImg,{x:W/2-fw/2, y:y-fh, width:fw, height:fh}); y -= fh+2; }
+  else y -= 60;
+  page.drawLine({start:{x:W/2-110,y}, end:{x:W/2+110,y}, thickness:0.8, color:tinta});
+  y -= 14; centro(c.prof, 10, bold, tinta);
+  y -= 13; centro(`Psicólogo(a) · Cédula profesional: ${c.ced}`, 9, font, tinta);
+  y -= 12; centro(`Centro Mexicano de Plenitud Humana, S.C.${c.sede?` · Sede ${c.sede}`:""}`, 9, font, gris);
+  form.updateFieldAppearances(font);
+  return pdf.save();
+}
+async function descargarPdf(nombre, g, c){
+  if (typeof PDFLib === "undefined"){ toast("No se pudo preparar el PDF. Recarga la página e inténtalo de nuevo."); return; }
+  const dl = await window.claude?.use?.("downloads");
+  if (!dl){ toast("La descarga no está disponible en esta vista. Abre la página en claude.ai."); return; }
+  try{ const bytes = await pdfEditable(g, c); await dl.save({filename:nombre, data:bytes}); toast("PDF descargado. Puedes corregir el texto directamente en el archivo."); }
+  catch(e){ if(e?.code!=="declined"){ console.warn(e); toast("No se pudo generar el PDF."); } }
+}
+
+/* ---------- Copiar y revisar datos sensibles ---------- */
+async function copiar(text){
+  try{ await navigator.clipboard.writeText(text); toast("Copiado. Pégalo donde lo necesites."); }
+  catch{ const ta=document.createElement("textarea"); ta.value=text; ta.setAttribute("readonly",""); ta.style.cssText="position:fixed;opacity:0;top:0;left:0";
+    document.body.appendChild(ta); ta.select(); let ok=false; try{ ok=document.execCommand("copy"); }catch{} ta.remove();
+    toast(ok?"Copiado. Pégalo donde lo necesites.":"No se pudo copiar automáticamente. Selecciona el texto y cópialo."); }
+}
+const SENSIBLES = [[/\b[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d\b/i,"una CURP"],[/[\w.+-]+@[\w-]+\.[\w.-]+/,"un correo"],[/(?:\+?52[\s-]?)?\b(?:\d[\s-]?){9}\d\b/,"un teléfono"]];
+let armed=null;
+function arm(btn, key, label){ if(armed===key) return true; armed=key; document.querySelectorAll(".armed").forEach(b=>b.classList.remove("armed"));
+  btn.classList.add("armed"); btn.dataset.orig=btn.textContent; btn.textContent=label; setTimeout(()=>{ if(armed===key){armed=null; btn.classList.remove("armed"); btn.textContent=btn.dataset.orig;} },4000); return false; }
+function revisarSensibles(btn, key, text){
+  const hits = SENSIBLES.filter(([re])=>re.test(text)).map(([,n])=>n);
+  if (!hits.length) return true;
+  if (arm(btn, key, "Continuar de todos modos")){ armed=null; return true; }
+  toast(`El texto parece incluir ${hits.join(" y ")}. Si es un dato del consultante, quítalo antes de continuar.`);
+  return false;
+}
+
+/* Búsqueda por iniciales (con o sin puntos), folio o fecha de nacimiento (20/10/1987, 20-10-1987, 1987-10-20, 20/10/87, 20/10 o 1987) */
+function coincide(p, q){
+  q = String(q||"").trim().toLowerCase(); if (!q) return true;
+  const f=p.ficha||{}, ini=(f.nombre||"").toLowerCase(), fol=(p.folio||"").toLowerCase();
+  if (ini.includes(q) || fol.includes(q)) return true;
+  const sinPuntos = s => s.replace(/[.\s]/g,"");
+  if (sinPuntos(q) && sinPuntos(ini).includes(sinPuntos(q))) return true;
+  if (!f.fechaNac) return false;
+  const [y,m,d]=f.fechaNac.split("-"), d1=String(+d), m1=String(+m), yy=y.slice(2);
+  const formas=[f.fechaNac, `${d}/${m}/${y}`, `${d1}/${m1}/${y}`, `${d}/${m}/${yy}`, `${d1}/${m1}/${yy}`];
+  const norm = s => s.replace(/[-.\s]/g,"/");
+  return formas.some(x=>norm(x).includes(norm(q)));
+}
+
+/* ================= Vistas ================= */
+function renderList(){
+  const el=$("#list");
+  if (!S.db){ el.innerHTML=`<div class="empty-list">${S.loaded?"":"Cargando expedientes…"}</div>`; return; }
+  if (!S.loaded){ el.innerHTML=`<div class="empty-list">Cargando expedientes…</div>`; return; }
+  const q=S.q.toLowerCase(), todos=[...S.pacientes.values()];
+  /* Selector de sede con conteo */
+  const cuenta = s => todos.filter(p=>(p.ficha?.sede||"")===s).length;
+  const otras = [...new Set(todos.map(p=>p.ficha?.sede||""))].filter(s=>s && !SEDES.includes(s));  /* sedes que ya no están en la lista */
+  const grupos = [...SEDES, ...otras, ""];
+  const opts = [["todas",`Todas las sedes (${todos.length})`], ...[...SEDES, ...otras].map(s=>[s,`${s}${SEDE_COD[s]?" · "+SEDE_COD[s]:""} (${cuenta(s)})`]), ...(cuenta("")?[["",`Sin sede (${cuenta("")})`]]:[])];
+  if (S.sedeF!=="todas" && !opts.some(([v])=>v===S.sedeF)) S.sedeF="todas";
+  $("#sedeF").innerHTML = opts.map(([v,l])=>`<option value="${esc(v)}"${v===S.sedeF?" selected":""}>${esc(l)}</option>`).join("");
+  /* Selector de terapeuta: los de la sede elegida, más "Mis expedientes" si la cuenta está enlazada */
+  const mio=miTerapeuta(), enSede=p=>S.sedeF==="todas"||(p.ficha?.sede||"")===S.sedeF;
+  const tersSede=terOrden().filter(t=>S.sedeF==="todas"||(t.sede||"")===S.sedeF||todos.some(p=>enSede(p)&&p.ficha?.terapeutaId===t.id));
+  const terOpts=[["todos","Todos los terapeutas"], ...(mio?[["mios",`Mis expedientes (${mio.nombre})`]]:[]), ...tersSede.map(t=>[t.id,terEtiqueta(t)]), ["sin","Sin terapeuta asignado"]];
+  if (!terOpts.some(([v])=>v===S.terF)) S.terF="todos";
+  $("#terF").innerHTML = terOpts.map(([v,l])=>`<option value="${esc(v)}"${v===S.terF?" selected":""}>${esc(l)}</option>`).join("");
+  if (!todos.length){ el.innerHTML=`<div class="empty-list">Aún no hay expedientes. Usa <b>+ Nuevo expediente</b> para abrir el primero.</div>`; return; }
+  const pasaTer = p => { const id=p.ficha?.terapeutaId||""; return S.terF==="todos" || (S.terF==="mios" ? (mio && id===mio.id) : S.terF==="sin" ? !id : id===S.terF); };
+  const arr=todos.filter(p=>enSede(p) && pasaTer(p) && coincide(p, q)).sort((a,b)=>(b.actualizado||0)-(a.actualizado||0));
+  if (!arr.length){ el.innerHTML=`<div class="empty-list">${q?"Ningún expediente coincide con la búsqueda.":"No hay expedientes con este filtro."}</div>`; return; }
+  const fila = p => { const f=p.ficha||{}; return `<button class="row" type="button" data-id="${esc(p.id)}" aria-current="${p.id===S.sel}">
+    <span class="n">${esc(f.nombre||"Sin iniciales")}</span><span class="f">${f.fechaNac&&age(f.fechaNac)!==""?age(f.fechaNac)+" años":""}</span>
+    <span class="t"><span class="f">${esc(p.folio||"")}</span>${f.primeraSesion?" · desde "+fmtDate(f.primeraSesion):""}</span></button>`; };
+  /* Dentro de cada sede, un subgrupo por terapeuta con su nombre completo y cédula */
+  const porTerapeuta = lista => {
+    if (S.terF!=="todos") return lista.map(fila).join("");
+    const ids=[...terOrden().map(t=>t.id).filter(id=>lista.some(p=>p.ficha?.terapeutaId===id)), ""];
+    return ids.map(id=>{ const g=lista.filter(p=>(p.ficha?.terapeutaId||"")===id || (id==="" && p.ficha?.terapeutaId && !S.terapeutas.has(p.ficha.terapeutaId))); if(!g.length) return "";
+      return `<div class="subgrupo"><span>${esc(terEtiqueta(S.terapeutas.get(id)))}</span><b>${g.length}</b></div>${g.map(fila).join("")}`; }).join("");
+  };
+  if (S.sedeF!=="todas"){ el.innerHTML=porTerapeuta(arr); return; }
+  el.innerHTML=grupos.map(s=>{ const g=arr.filter(p=>(p.ficha?.sede||"")===s); if(!g.length) return "";
+    return `<div class="grupo"><span>${esc(s||"Sin sede")}</span><b>${g.length}</b></div>${porTerapeuta(g)}`; }).join("");
+}
+function render(){
+  const d=$("#detail"); S.dirty=false; S.stale=false;
+  const p=S.pacientes.get(S.sel);
+  $("#app").classList.toggle("open", !!p || S.view==="perfil" || S.view==="terapeutas");
+  if (S.view==="perfil"){ d.innerHTML=perfilHtml(); activarPad(); return; }
+  if (S.view==="terapeutas"){ d.innerHTML=terapeutasHtml(); return; }
+  if (!p){ d.innerHTML=inicioHtml(); return; }
+  d.innerHTML=expedienteHtml(p);
+}
+function inicioHtml(){
+  const sinPerfil = !S.perfil.nombre;
+  return `<div class="wrap"><div class="welcome">
+    <small style="color:var(--accent);font-weight:700;letter-spacing:.06em;text-transform:uppercase">CEMEPI · Piloto</small>
+    <h2>Expedientes y documentos psicológicos</h2>
+    <ol class="steps">
+      <li><b class="n">1</b><div><b>Abre el expediente</b> con las iniciales, la fecha de nacimiento y la fecha de la primera sesión.</div></li>
+      <li><b class="n">2</b><div><b>Pega tus notas</b> de cada sesión, solo con iniciales.</div></li>
+      <li><b class="n">3</b><div><b>Elige un documento</b>: Claude lo redacta con tus notas, lo revisas y lo descargas en Word con la nota aclaratoria al pie.</div></li>
+    </ol>
+    ${sinPerfil?`<p class="banner">Antes de empezar, captura <b>Mis datos de firma</b> (nombre, cédula y sede). Aparecen en la firma de cada documento. <button class="btn sm" type="button" data-act="perfil">Capturar ahora</button></p>`:""}
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="button" data-act="new">+ Nuevo expediente</button><button class="btn" type="button" data-act="hoja">Hoja administrativa en blanco (Word)</button></div>
+    ${!S.canWrite?`<p class="banner">Tienes acceso de solo lectura.</p>`:""}
+  </div></div>`;
+}
+/* ---------- Firma: imagen subida o trazo dibujado ----------
+   Quita el fondo claro, recorta márgenes y reduce a máximo 600×200 px (PNG transparente). */
+function procesarFirma(fuente, w0, h0){
+  const c=document.createElement("canvas"); c.width=w0; c.height=h0; const x=c.getContext("2d", {willReadFrequently:true});
+  x.drawImage(fuente,0,0,w0,h0);
+  const d=x.getImageData(0,0,w0,h0), px=d.data; let minX=w0,minY=h0,maxX=-1,maxY=-1;
+  for (let i=0;i<px.length;i+=4){
+    const lum=px[i]*0.299+px[i+1]*0.587+px[i+2]*0.114;
+    if (px[i+3]<20 || lum>200){ px[i+3]=0; continue; }
+    const k=i/4, X=k%w0, Y=(k/w0)|0; if(X<minX)minX=X; if(X>maxX)maxX=X; if(Y<minY)minY=Y; if(Y>maxY)maxY=Y;
+  }
+  if (maxX<0) return null;
+  x.putImageData(d,0,0);
+  const m=6; minX=Math.max(0,minX-m); minY=Math.max(0,minY-m); maxX=Math.min(w0-1,maxX+m); maxY=Math.min(h0-1,maxY+m);
+  const cw=maxX-minX+1, ch=maxY-minY+1, s=Math.min(1,600/cw,200/ch);
+  const o=document.createElement("canvas"); o.width=Math.max(1,Math.round(cw*s)); o.height=Math.max(1,Math.round(ch*s));
+  o.getContext("2d").drawImage(c,minX,minY,cw,ch,0,0,o.width,o.height);
+  return {src:o.toDataURL("image/png"), w:o.width, h:o.height};
+}
+function leerPerfilForm(){ const v={}; document.querySelectorAll("#frmPerfil [data-k]").forEach(el=>v[el.dataset.k]=el.value.trim()); S.perfilDraft=v; return v; }
+function activarPad(){
+  const cv=$("#padFirma"); if(!cv) return;
+  const ctx=cv.getContext("2d"); ctx.lineWidth=3.2; ctx.lineCap="round"; ctx.lineJoin="round"; ctx.strokeStyle="#0f2340";
+  let on=false; S.trazo=false;
+  const pos=e=>{ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height]; };
+  cv.onpointerdown=e=>{ on=true; cv.setPointerCapture(e.pointerId); const [x,y]=pos(e); ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+0.1,y+0.1); ctx.stroke(); S.trazo=true; };
+  cv.onpointermove=e=>{ if(!on) return; const [x,y]=pos(e); ctx.lineTo(x,y); ctx.stroke(); };
+  cv.onpointerup=cv.onpointercancel=()=>{ on=false; };
+}
+function perfilHtml(){
+  const pf={...(S.perfil||{}), ...(S.perfilDraft||{})};
+  return `<div class="wrap" style="padding-block:24px"><div class="card">
+    <div class="card-h"><h3>Mis datos de firma</h3><button class="btn sm" type="button" data-act="home">Cerrar</button></div>
+    <p class="status" style="margin:0">Se usan en la firma de todos tus documentos. Solo tú los ves.</p>
+    <form id="frmPerfil" class="datos">
+      <div class="fld" style="grid-column:1/-1"><label for="pf-nombre">Nombre del profesional, como aparecerá en la firma</label><input id="pf-nombre" data-k="nombre" type="text" value="${esc(pf.nombre||"")}" placeholder="Psic. Nombre Apellido"></div>
+      <div class="fld"><label for="pf-cedula">Cédula profesional</label><input id="pf-cedula" data-k="cedula" type="text" value="${esc(pf.cedula||"")}"></div>
+      <div class="fld"><label for="pf-sede">Sede</label><select id="pf-sede" data-k="sede"><option value="">Seleccionar</option>${SEDES.map(s=>`<option value="${s}"${s===pf.sede?" selected":""}>${s}</option>`).join("")}</select></div>
+    </form>
+    <section class="firma-box">
+      <div class="card-h"><b>Firma (opcional)</b><span class="status">Se coloca sobre la línea de firma en los documentos Word y PDF.</span></div>
+      <div class="firma-prev" id="firmaPrev">${S.firmaTmp ? `<img src="${S.firmaTmp.src}" alt="Vista previa de tu firma">` : `<span class="status">Sin firma cargada</span>`}</div>
+      ${S.dibujando ? `<div class="firma-pad"><canvas id="padFirma" width="600" height="200" aria-label="Área para dibujar tu firma"></canvas>
+          <span class="status">Firma con el dedo, el lápiz o el mouse dentro del recuadro.</span>
+          <div class="actions" style="border-top:0;padding-top:0"><button class="btn sm primary" type="button" data-act="usarTrazo">Usar esta firma</button><button class="btn sm" type="button" data-act="limpiarTrazo">Limpiar</button><button class="btn sm" type="button" data-act="cancelarTrazo">Cancelar</button></div></div>`
+        : `<div class="actions" style="border-top:0;padding-top:0">
+          <label class="btn sm" for="firmaFile">Subir imagen de mi firma</label><input id="firmaFile" type="file" accept="image/png,image/jpeg" hidden>
+          <button class="btn sm" type="button" data-act="dibujarFirma">Dibujar mi firma</button>
+          ${S.firmaTmp?`<button class="btn sm danger" type="button" data-act="quitarFirma">Quitar firma</button>`:""}</div>`}
+      <span class="status">Es una imagen de tu firma autógrafa, no la e.firma del SAT. Solo tú la ves en la app; quien reciba el documento sí la verá.</span>
+    </section>
+    <div class="actions"><button class="btn primary" type="button" data-act="savePerfil">Guardar mis datos</button></div>
+  </div></div>`;
+}
+/* ---------- Terapeutas por sede ---------- */
+function terapeutasHtml(){
+  const ro=!S.esDireccion, todos=[...S.pacientes.values()], mio=miTerapeuta();
+  /* Cuentas de acceso que la Dirección puede vincular (las ya vinculadas a otro terapeuta no se ofrecen) */
+  const usadas=new Set(terOrden().filter(t=>t.uid && t.id!==S.terEdit?.id).map(t=>t.uid));
+  const cuentasLibres=[...(S.cuentas||new Map()).entries()].filter(([id])=>!usadas.has(id));
+  const cuenta = id => todos.filter(p=>p.ficha?.terapeutaId===id).length;
+  const ed = S.terEdit;
+  const form = ed ? `<form id="frmTer" class="note">
+      <div class="note-h"><h3>${ed.id?"Editar terapeuta":"Agregar terapeuta"}</h3></div>
+      <div class="datos">
+        <div class="fld" style="grid-column:1/-1"><label for="tr-nombre">Nombre completo *</label><input id="tr-nombre" data-k="nombre" type="text" value="${esc(ed.nombre||"")}" placeholder="Psic. Nombre Apellido Apellido"></div>
+        <div class="fld"><label for="tr-cedula">Cédula profesional</label><input id="tr-cedula" data-k="cedula" type="text" value="${esc(ed.cedula||"")}"></div>
+        <div class="fld"><label for="tr-sede">Sede</label><select id="tr-sede" data-k="sede"><option value="">Sin sede</option>${SEDES.map(s=>`<option value="${s}"${s===ed.sede?" selected":""}>${s} (${SEDE_COD[s]})</option>`).join("")}</select></div>
+        <div class="fld" style="grid-column:1/-1"><label for="tr-uid">Cuenta de acceso a la app</label><select id="tr-uid" data-k="uid"><option value="">Sin cuenta (no usa la app)</option>${cuentasLibres.map(([id,c])=>`<option value="${esc(id)}"${id===ed.uid?" selected":""}>${esc(c.email||id)}</option>`).join("")}</select>
+          <small class="hint">Al vincular su cuenta, el terapeuta verá solo los expedientes que tenga asignados. Las cuentas se crean en Supabase → Authentication → Users.</small></div>
+      </div>
+      <div class="actions"><button class="btn primary" type="button" data-act="saveTer">Guardar terapeuta</button><button class="btn" type="button" data-act="cancelTer">Cancelar</button></div>
+    </form>` : "";
+  const otras=[...new Set(terOrden().map(t=>t.sede||""))].filter(s=>s&&!SEDES.includes(s));
+  const secciones=[...SEDES,...otras,""].map(s=>{
+    const ts=terOrden().filter(t=>(t.sede||"")===s); if(!ts.length) return "";
+    return `<section class="doc-sec"><h3 class="sec-h">${esc(s||"Sin sede")}${SEDE_COD[s]?` · ${SEDE_COD[s]}`:""}</h3><div class="fmt-grid">${ts.map(t=>`<article class="fmt">
+        <div class="fmt-h"><b>${esc(t.nombre||"Sin nombre")}</b>${t.id===mio?.id?`<span class="pill p-activo">Eres tú</span>`:""}</div>
+        <p>Cédula profesional: <b class="mono">${esc(t.cedula||"—")}</b><br>Expedientes asignados: <b>${cuenta(t.id)}</b>${S.esDireccion?`<br>Cuenta: <b>${esc(t.uid?(S.cuentas?.get(t.uid)?.email||"vinculada"):"sin cuenta")}</b>`:""}</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn sm primary" type="button" data-act="verTer" data-id="${esc(t.id)}">Ver expedientes</button>
+          ${ro?"":`<button class="btn sm" type="button" data-act="editTer" data-id="${esc(t.id)}">Editar</button>
+          ${cuenta(t.id)?"":`<button class="btn sm danger" type="button" data-act="delTer" data-id="${esc(t.id)}">Eliminar</button>`}`}
+        </div></article>`).join("")}</div></section>`; }).join("");
+  return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:18px">
+    <div class="card-h"><h2 style="font-size:24px">Terapeutas por sede</h2><span style="display:flex;gap:8px">${ro||ed?"":`<button class="btn primary" type="button" data-act="newTer">+ Agregar terapeuta</button>`}<button class="btn" type="button" data-act="home">Cerrar</button></span></div>
+    <p class="status" style="margin:0">Cada terapeuta aparece en su sede con su nombre completo y cédula profesional. Sus datos se usan en la firma de los documentos de los expedientes que tenga asignados. ${S.esDireccion?"Si un terapeuta usa la app, vincula su cuenta al editarlo: así solo verá sus expedientes.":"Solo la Dirección puede agregar o modificar terapeutas."}</p>
+    ${form}
+    ${secciones || (ed?"":`<p class="status" style="margin:0">Aún no hay terapeutas registrados. Usa <b>+ Agregar terapeuta</b>.</p>`)}
+  </div>`;
+}
+function expedienteHtml(p){
+  const f=p.ficha||{}, ro=!S.canWrite, e=age(f.fechaNac);
+  const tabs=[["notas",`Notas (${S.notas.length})`],["documentos",`Documentos (${S.docs.length})`]];
+  return `<div class="wrap"><div class="head">
+      <div><button class="btn sm back" type="button" data-act="back">← Expedientes</button></div>
+      <div class="head-top"><div style="min-width:0"><span class="mono" style="color:var(--accent);font-size:12px">${esc(p.folio||"")}</span><h2>${esc(f.nombre||"Sin iniciales")}</h2></div></div>
+      <div class="meta"><span>Sede <b>${esc(f.sede||"Sin sede")}</b></span><span>Terapeuta <b>${esc(terEtiqueta(S.terapeutas.get(f.terapeutaId)))}</b></span><span>Edad <b>${e!==""?e+" años":"—"}</b></span><span>Primera sesión <b class="mono">${fmtDate(f.primeraSesion)}</b></span><span>Notas <b>${S.notas.length}</b></span></div>
+      <div id="staleBox"></div>
+      <section class="card">
+        <div class="card-h"><h3>Datos del expediente</h3><span class="status">Solo estos datos. Lo demás sale de tus notas.</span></div>
+        <form id="frm" class="datos">
+          <div class="fld"><label for="fi-nombre">Iniciales *</label><input id="fi-nombre" data-k="nombre" type="text" maxlength="16" value="${esc(f.nombre||"")}" placeholder="Ej. J.L.M.R."${ro?" disabled":""}></div>
+          <div class="fld"><label for="fi-nac">Fecha de nacimiento</label><input id="fi-nac" data-k="fechaNac" type="date" value="${esc(f.fechaNac||"")}"${ro?" disabled":""}></div>
+          <div class="fld"><label for="fi-primera">Primera sesión</label><input id="fi-primera" data-k="primeraSesion" type="date" value="${esc(f.primeraSesion||"")}"${ro?" disabled":""}></div>
+          <div class="fld"><label for="fi-sede">Sede</label><select id="fi-sede" data-k="sede"${ro?" disabled":""}><option value="">Sin sede</option>${SEDES.map(s=>`<option value="${s}"${s===f.sede?" selected":""}>${s} (${SEDE_COD[s]})</option>`).join("")}</select></div>
+          <div class="fld" style="grid-column:span 2"><label for="fi-ter">Terapeuta</label><select id="fi-ter" data-k="terapeutaId"${ro?" disabled":""}><option value="">Sin asignar</option>
+            ${[...terOrden().filter(t=>(t.sede||"")===(f.sede||"")), ...terOrden().filter(t=>(t.sede||"")!==(f.sede||""))].map(t=>`<option value="${esc(t.id)}"${t.id===f.terapeutaId?" selected":""}>${esc(terEtiqueta(t))}${t.sede&&t.sede!==f.sede?` (${esc(t.sede)})`:""}</option>`).join("")}</select></div>
+          ${ro?"":`<div class="fld"><button class="btn primary" type="button" data-act="save">Guardar datos</button></div>`}
+        </form>
+        <div class="actions" style="border-top:0;padding-top:0"><span class="status">Si escribes un nombre completo se convierte en iniciales al guardar. El folio lleva la clave de la sede (${esc(codSede(f.sede))}); si cambias la sede, el folio se actualiza y el anterior queda registrado.</span><span class="spacer"></span>
+          <button class="btn sm" type="button" data-act="hoja">Hoja administrativa (Word)</button>${!S.esDireccion?"":`<button class="btn sm danger" type="button" data-act="del">Eliminar expediente</button>`}</div>
+      </section>
+      <div class="tabs" role="tablist">${tabs.map(([k,l])=>`<button class="tab" role="tab" type="button" data-tab="${k}" aria-selected="${S.tab===k}">${l}</button>`).join("")}</div>
+    </div>
+    <div class="panel" id="panel">${S.tab==="notas"?notasHtml(p,ro):(S.gen?generadorHtml(p,ro):documentosHtml(p,ro))}</div></div>`;
+}
+function notasHtml(p, ro){
+  const ns=[...S.notas].sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||"")||(b.creado||0)-(a.creado||0));
+  return `${ro?"":`<form id="frmNota" class="note">
+      <div class="note-h"><h3>Agregar nota</h3><span class="by">Copia de tu libreta, celular o computadora y pégala aquí.</span></div>
+      <div class="fld" style="max-width:200px"><label for="nt-fecha">Fecha de la sesión</label><input id="nt-fecha" data-k="fecha" type="date" value="${today()}"></div>
+      <div class="fld"><label for="nt-texto">Nota</label><textarea id="nt-texto" data-k="texto" style="min-height:160px" placeholder="Pega aquí tu nota de sesión…" aria-describedby="nt-h"></textarea>
+        <small class="hint" id="nt-h">Solo iniciales. Puedes distinguir lo que la persona refiere, lo que observaste y tus hipótesis; Claude respetará esa diferencia.</small></div>
+      <div class="actions"><button class="btn primary" type="button" data-act="saveNota">Guardar nota</button></div>
+    </form>`}
+    <div class="notes">${ns.length?ns.map(n=>`<article class="note">
+      <div class="note-h"><span class="num">Sesión</span><h3>${fmtDate(n.fecha)}</h3><span class="spacer"></span>
+        <button class="btn sm" type="button" data-act="copyNota" data-id="${esc(n.id)}">Copiar</button>${ro?"":`<button class="btn sm danger" type="button" data-act="delNota" data-id="${esc(n.id)}">Eliminar</button>`}</div>
+      <div class="apunte">${esc(n.texto)}</div></article>`).join(""):`<p class="status" style="margin:0">Aún no hay notas. Pega la primera arriba.</p>`}</div>`;
+}
+function documentosHtml(p, ro){
+  return `<section class="doc-sec">
+      <div><h3 class="sec-h">Crear un documento</h3><p class="status" style="margin:4px 0 0">${S.sample?"Claude redacta el documento con tus notas. Tú lo revisas, lo corriges si hace falta y lo descargas en Word.":"Para los formatos que redacta Claude, la app prepara las instrucciones con tus notas: las pegas en claude.ai y regresas la respuesta aquí. Después lo revisas y lo descargas en Word o PDF."}</p></div>
+      <div class="fmt-grid">${ORDEN.map(k=>{ const t=FORMATOS[k], off=false; return `<article class="fmt">
+        <div class="fmt-h"><b>${esc(t.nombre)}</b><span class="pill p-r-${t.riesgo}">${RIESGO_TXT[t.riesgo]}</span></div>
+        <p>${esc(t.desc)}</p><div style="display:flex;gap:6px;flex-wrap:wrap">${t.ia?`<span class="pill p-alta">Redacta Claude</span>`:`<span class="pill p-alta">Formato fijo</span>`}${t.interno?`<span class="pill p-r-moderado">Uso interno</span>`:""}</div>
+        ${ro?"":`<button class="btn sm" type="button" data-act="newDoc" data-tipo="${k}"${off?" disabled":""}>Crear</button>`}</article>`; }).join("")}</div>
+    </section>
+    <section class="doc-sec">
+      <h3 class="sec-h">Documentos guardados</h3>
+      ${S.docs.length?`<div class="tbl-wrap"><table><thead><tr><th>Documento</th><th>Fecha</th><th></th></tr></thead><tbody>
+        ${S.docs.map(d=>`<tr><td><b>${esc(FORMATOS[d.tipo]?.nombre||d.tipo)}</b></td><td class="mono">${fmtDate(d.fecha)}</td>
+          <td style="white-space:nowrap">${d.contenido?`<button class="btn sm" type="button" data-act="openDoc" data-id="${esc(d.id)}">Abrir</button>
+          <button class="btn sm" type="button" data-act="wordDoc" data-id="${esc(d.id)}">Word</button>
+          <button class="btn sm" type="button" data-act="pdfSaved" data-id="${esc(d.id)}">PDF</button>`:`<span class="status">Formato anterior</span>`}
+          ${ro?"":`<button class="btn sm danger" type="button" data-act="delDoc" data-id="${esc(d.id)}">Eliminar</button>`}</td></tr>`).join("")}
+      </tbody></table></div>`:`<p class="status" style="margin:0">Todavía no hay documentos guardados en este expediente.</p>`}
+    </section>`;
+}
+function generadorHtml(p, ro){
+  const g=S.gen, t=FORMATOS[g.tipo], k=g.contenido;
+  const aviso = t.riesgo==="alto" ? `<div class="banner bad">Documento de riesgo alto: requiere revisión humana especializada antes de emitirse.</div>`
+    : t.interno ? `<div class="banner">Uso interno: contiene el expediente organizado. No se comparte por Signal ni WhatsApp.</div>`
+    : t.riesgo==="moderado" ? `<div class="banner">Contiene información clínica. Verifica que el destinatario esté autorizado y que solo incluya lo necesario.</div>` : "";
+  /* Sin conexión directa a Claude: copiar instrucciones → claude.ai → pegar la respuesta */
+  if (t.ia && !k && !S.sample){
+    const manual = `<div class="fld"><label for="g-ind">${t.sinNotas?"Informe a revisar":"Indicaciones para Claude (opcional)"}</label>
+      <textarea id="g-ind" style="min-height:${t.sinNotas?220:90}px" placeholder="${esc(t.ph)}">${esc(g.indicaciones||"")}</textarea></div>
+      <ol class="steps">
+        <li><b class="n">1</b><div><b>Copia las instrucciones.</b> Incluyen ${t.sinNotas?"el informe":`tus ${S.notas.length} nota${S.notas.length===1?"":"s"}`} y los criterios de CEMEPI.<br><button class="btn sm primary" type="button" data-act="copiarPrompt" style="margin-top:6px">Copiar instrucciones para Claude</button></div></li>
+        <li><b class="n">2</b><div><b>Abre <a href="https://claude.ai/new" target="_blank" rel="noopener">claude.ai</a></b>, pégalas en un chat nuevo y envíalas. Espera a que Claude termine de responder.</div></li>
+        <li><b class="n">3</b><div style="flex:1;min-width:0"><b>Copia toda la respuesta de Claude</b> y pégala aquí:
+          <textarea id="g-resp" style="width:100%;min-height:140px;margin-top:6px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg)" placeholder='La respuesta empieza con { "secciones": …'></textarea>
+          <button class="btn sm primary" type="button" data-act="usarRespuesta" style="margin-top:6px">Usar esta respuesta</button></div></li>
+      </ol>`;
+    return `<div class="note-h"><button class="btn sm" type="button" data-act="cancelDoc">← Documentos</button><h3>${esc(t.nombre)}</h3><span class="pill p-r-${t.riesgo}">${RIESGO_TXT[t.riesgo]}</span></div>${aviso}${manual}`;
+  }
+  const pre = t.ia && !k && !g.loading ? `<div class="fld"><label for="g-ind">${t.sinNotas?"Informe a revisar":"Indicaciones para Claude"}</label>
+      <textarea id="g-ind" style="min-height:${t.sinNotas?220:90}px" placeholder="${esc(t.ph)}">${esc(g.indicaciones||"")}</textarea></div>
+      <p class="status" style="margin:0">${t.sinNotas?"Claude revisará el informe pegado.":`Claude usará tus ${S.notas.length} nota${S.notas.length===1?"":"s"} de este expediente${S.notas.length?"":" (aún no hay notas: el documento saldrá con datos pendientes)"}.`}</p>
+      <div class="actions"><button class="btn primary" type="button" data-act="generar">Redactar con Claude</button></div>` : "";
+  const cargando = g.loading ? `<div class="thinking"><span class="dot"></span><div style="flex:1"><b>Claude está redactando el documento…</b><br><span class="status">Puede tardar entre 30 segundos y 2 minutos.</span></div><button class="btn sm" type="button" data-act="stop">Detener</button></div>` : "";
+  const editor = k ? `<div class="gen">
+      ${(k.advertencias||[]).length?`<div class="banner" style="display:block"><b>Revisa antes de emitir</b><ul class="adv">${k.advertencias.map(a=>`<li>${esc(a)}</li>`).join("")}</ul></div>`:""}
+      <div class="datos"><div class="fld"><label for="g-fecha">Fecha del documento</label><input id="g-fecha" type="date" value="${esc(g.fecha||today())}"></div>
+        <div class="fld" style="grid-column:span 2"><label for="g-lugar">Lugar</label><input id="g-lugar" type="text" value="${esc(g.lugar||ctxOf(p).lugar)}"></div></div>
+      ${t.dest!==undefined||k.destinatario?`<div class="fld"><label for="g-dest">Destinatario</label><textarea id="g-dest" style="min-height:66px">${esc(k.destinatario||"")}</textarea></div>`:""}
+      ${k.secciones.map((s,i)=>`<div class="gsec"><input id="g-t-${i}" aria-label="Título de la sección ${i+1}" value="${esc(s.titulo)}" placeholder="(Párrafo sin título)"><textarea id="g-x-${i}" aria-label="Texto de la sección ${i+1}">${esc(s.texto)}</textarea></div>`).join("")}
+      <p class="status" style="margin:0">Puedes corregir cualquier texto aquí, o después dentro del PDF editable. Al descargar se agregan el encabezado de CEMEPI, ${t.ident?"la tabla de identificación, ":""}tu firma con cédula y la nota aclaratoria al pie.</p>
+      <div class="actions">
+        <button class="btn primary" type="button" data-act="downloadDoc">Descargar Word</button>
+        <button class="btn primary" type="button" data-act="pdfDoc">Descargar PDF editable</button>
+        ${ro?"":`<button class="btn" type="button" data-act="saveDoc">Guardar en el expediente</button>`}
+        <button class="btn" type="button" data-act="copyDoc">Copiar texto</button>
+        ${t.ia?`<span class="spacer"></span><button class="btn" type="button" data-act="regenerar">Redactar de nuevo</button>`:""}<span class="status" id="saveSt"></span></div>
+    </div>` : "";
+  return `<div class="note-h"><button class="btn sm" type="button" data-act="cancelDoc">← Documentos</button><h3>${esc(t.nombre)}</h3><span class="pill p-r-${t.riesgo}">${RIESGO_TXT[t.riesgo]}</span></div>
+    ${aviso}${pre}${cargando}${editor}`;
+}
+function leerGen(){
+  const g=S.gen; if(!g?.contenido) return g;
+  g.fecha=$("#g-fecha")?.value||g.fecha; g.lugar=$("#g-lugar")?.value.trim()||g.lugar;
+  if ($("#g-dest")) g.contenido.destinatario=$("#g-dest").value.trim();
+  g.contenido.secciones=g.contenido.secciones.map((s,i)=>({titulo:($(`#g-t-${i}`)?.value??s.titulo).trim(), texto:($(`#g-x-${i}`)?.value??s.texto).trim()}));
+  return g;
+}
+
+/* ================= Suscripciones ================= */
+function watch(){
+  if (S.unsubN){ S.unsubN(); S.unsubN=null; } if (S.unsubD){ S.unsubD(); S.unsubD=null; } S.notas=[]; S.docs=[];
+  if (!S.db || !S.sel) return;
+  S.unsubN = S.db.collection("notas").where("pacienteId","==",S.sel).onSnapshot(snap=>{
+    S.notas = snap.docs.map(d=>({id:d.id,...d.data()}));
+    if (S.dirty || S.gen) markStale(); else render();
+  }, e=>console.warn("notas",e));
+  S.unsubD = S.db.collection("documentos").where("pacienteId","==",S.sel).onSnapshot(snap=>{
+    S.docs = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.creado||0)-(a.creado||0));
+    if (S.gen) return; if (S.dirty) markStale(); else render();
+  }, e=>console.warn("documentos",e));
+}
+function markStale(){ const b=$("#staleBox"); if(!b||S.stale||S.gen) return; S.stale=true;
+  b.innerHTML=`<div class="banner">Este expediente se actualizó en otra ventana. <button class="btn sm" type="button" data-act="reload">Ver cambios</button> <span class="status">(se descartan los cambios sin guardar)</span></div>`; }
+
+/* ================= Acciones ================= */
+function select(id){ S.sel=id; S.view="exp"; S.tab="notas"; S.gen=null; watch(); renderList(); render(); $("#detail").scrollTop=0; }
+async function crear(){
+  if (!S.db){ toast("La base de datos no está disponible en esta vista."); return; }
+  if (!S.canWrite){ toast("Tienes acceso de solo lectura."); return; }
+  /* Terapeuta por omisión: el elegido en el filtro, o el enlazado con esta cuenta */
+  const terapeutaId = S.terapeutas.has(S.terF) ? S.terF : (miTerapeuta()?.id || "");
+  const ter = S.terapeutas.get(terapeutaId);
+  const sede = S.sedeF!=="todas" && S.sedeF!=="" ? S.sedeF : (ter?.sede || S.perfil.sede || "");
+  const n=new Date(), folio=`CEMEPI-PSI-${codSede(sede)}-${n.getFullYear()}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
+  const ref=S.db.collection("pacientes").doc();
+  const doc={folio, ficha:{nombre:"",fechaNac:"",primeraSesion:today(),sede,terapeutaId}, creado:Date.now(), actualizado:Date.now(), creadoPor:S.uid||""};
+  try{ await ref.set(doc); S.pacientes.set(ref.id,{id:ref.id,...doc}); select(ref.id); setTimeout(()=>$("#fi-nombre")?.focus(),50); toast(`Expediente ${folio} creado. Escribe las iniciales.`); }
+  catch(e){ toast(errMsg(e)); }
+}
+async function generar(p){
+  const g=S.gen, t=FORMATOS[g.tipo];
+  g.indicaciones=$("#g-ind")?.value.trim()||"";
+  if (t.sinNotas && !g.indicaciones){ toast("Pega el informe que quieres revisar."); return; }
+  if (!S.sample){ toast("La redacción con Claude no está disponible en esta vista."); return; }
+  g.loading=true; g.contenido=null; render();
+  S.ctl=new AbortController();
+  try{
+    const r = await S.sample.json(promptDe(g.tipo, ctxOf(p), g.indicaciones), {modelTier:"complex", signal:S.ctl.signal, cache:false});
+    const secs = Array.isArray(r?.secciones) ? r.secciones.filter(s=>s&&typeof s.texto==="string").map(s=>({titulo:String(s.titulo||""),texto:s.texto})) : [];
+    if (!secs.length) throw {code:"invalid_json"};
+    g.contenido={destinatario:t.dest||"", secciones:secs, advertencias:Array.isArray(r.advertencias)?r.advertencias.map(String):[]};
+    g.fecha=today(); g.lugar=ctxOf(p).lugar;
+  }catch(e){
+    const m={not_granted:"Claude no tiene permiso en esta página. Puedes activarlo en los permisos del artefacto.",sampling_disabled:"Claude no está disponible para esta cuenta.",
+      rate_limited:"Hiciste muchas solicitudes seguidas o alcanzaste tu límite de uso. Espera un momento e intenta de nuevo.",refused:"Claude no pudo redactar este documento con esas notas. Revisa el contenido e intenta de nuevo.",
+      invalid_json:"La respuesta llegó incompleta. Intenta de nuevo.",prompt_too_large:"Las notas son demasiado largas para un solo documento. Usa menos notas o resume las más antiguas.",session_expired:"Tu sesión expiró. Vuelve a iniciar sesión en claude.ai."};
+    if (e?.code!=="cancelled") toast(m[e?.code]||"No se pudo redactar el documento. Intenta de nuevo.");
+  }finally{ g.loading=false; S.ctl=null; if (S.gen===g) render(); }
+}
+
+document.addEventListener("click", async ev => {
+  const b=ev.target.closest("button"); if(!b||b.disabled) return;
+  if (b.classList.contains("row")) return select(b.dataset.id);
+  if (b.dataset.tab){ if((S.dirty||S.gen?.contenido) && !arm(b,"tab"+b.dataset.tab,"¿Descartar cambios?")) return; armed=null; S.ctl?.abort(); S.tab=b.dataset.tab; S.gen=null; return render(); }
+  const a=b.dataset.act; if(!a) return;
+  const p=S.pacientes.get(S.sel);
+  if (a==="new") return crear();
+  if (a==="perfil"){ S.view="perfil"; S.perfilDraft=null; S.dibujando=false;
+    S.firmaTmp = S.perfil.firma ? {src:S.perfil.firma, w:S.perfil.firmaW||600, h:S.perfil.firmaH||200} : null; return render(); }
+  if (a==="dibujarFirma"){ leerPerfilForm(); S.dibujando=true; return render(); }
+  if (a==="cancelarTrazo"){ leerPerfilForm(); S.dibujando=false; return render(); }
+  if (a==="limpiarTrazo"){ const cv=$("#padFirma"); cv.getContext("2d").clearRect(0,0,cv.width,cv.height); S.trazo=false; return; }
+  if (a==="usarTrazo"){ const cv=$("#padFirma"); if(!S.trazo){ toast("Dibuja tu firma dentro del recuadro."); return; }
+    const r=procesarFirma(cv, cv.width, cv.height); if(!r){ toast("No se detectó ningún trazo."); return; }
+    leerPerfilForm(); S.firmaTmp=r; S.dibujando=false; render(); toast("Firma lista. Pulsa Guardar mis datos para conservarla."); return; }
+  if (a==="quitarFirma"){ leerPerfilForm(); S.firmaTmp=null; render(); toast("Firma quitada. Pulsa Guardar mis datos para confirmar."); return; }
+  if (a==="home"){ S.view=S.sel?"exp":"inicio"; S.terEdit=null; return render(); }
+  /* Terapeutas */
+  if (a==="terapeutas"){ S.view="terapeutas"; S.terEdit=null; return render(); }
+  if (a==="newTer"){ S.terEdit={sede:S.sedeF!=="todas"?S.sedeF:""}; render(); setTimeout(()=>$("#tr-nombre")?.focus(),30); return; }
+  if (a==="editTer"){ const t=S.terapeutas.get(b.dataset.id); if(!t) return; S.terEdit={...t}; render(); return; }
+  if (a==="cancelTer"){ S.terEdit=null; return render(); }
+  if (a==="saveTer"){
+    const v={}; document.querySelectorAll("#frmTer [data-k]").forEach(el=>v[el.dataset.k]=el.value.trim());
+    if (v.nombre.length<5){ toast("Escribe el nombre completo del terapeuta."); $("#tr-nombre").focus(); return; }
+    try{ if (S.terEdit.id) await S.db.doc("terapeutas/"+S.terEdit.id).update({...v, actualizado:Date.now()});
+         else await S.db.collection("terapeutas").add({uid:"", ...v, creado:Date.now(), creadoPor:S.uid||""});
+         S.terEdit=null; toast("Terapeuta guardado"); render(); }
+    catch(e){ toast(errMsg(e)); } return;
+  }
+  if (a==="delTer"){ if(!arm(b,"dt"+b.dataset.id,"¿Eliminar?")) return; armed=null;
+    try{ await S.db.doc("terapeutas/"+b.dataset.id).delete(); toast("Terapeuta eliminado"); }catch(e){ toast(errMsg(e)); } return; }
+  /* Redacción con Claude en modo copiar y pegar */
+  if (a==="copiarPrompt"){ const g=S.gen, t=FORMATOS[g.tipo]; g.indicaciones=$("#g-ind")?.value.trim()||"";
+    if (t.sinNotas && !g.indicaciones){ toast("Pega primero el informe que quieres revisar."); return; }
+    return copiar(promptDe(g.tipo, ctxOf(p), g.indicaciones)); }
+  if (a==="usarRespuesta"){ const g=S.gen, t=FORMATOS[g.tipo], txt=($("#g-resp")?.value||"").trim();
+    g.indicaciones=$("#g-ind")?.value.trim()||g.indicaciones||"";
+    const i=txt.indexOf("{"), j=txt.lastIndexOf("}"); let r=null;
+    try{ r = i>=0 && j>i ? JSON.parse(txt.slice(i,j+1)) : null; }catch{ r=null; }
+    const secs = Array.isArray(r?.secciones) ? r.secciones.filter(s=>s&&typeof s.texto==="string").map(s=>({titulo:String(s.titulo||""),texto:s.texto})) : [];
+    if (!secs.length){ toast("No se reconoció la respuesta. Copia la respuesta completa de Claude, desde la primera llave { hasta la última }."); return; }
+    g.contenido={destinatario:t.dest||"", secciones:secs, advertencias:Array.isArray(r.advertencias)?r.advertencias.map(String):[]};
+    g.fecha=today(); g.lugar=ctxOf(p).lugar; render(); $("#detail").scrollTop=0; toast("Respuesta cargada. Revísala antes de descargar."); return; }
+  if (a==="verTer"){ const t=S.terapeutas.get(b.dataset.id); if(!t) return;
+    S.sedeF=t.sede||"todas"; S.terF=t.id; S.q=""; $("#q").value="";
+    try{ localStorage.setItem("cemepi.sede",S.sedeF); localStorage.setItem("cemepi.ter",S.terF); }catch{}
+    S.view=S.sel?"exp":"inicio"; renderList(); render(); toast(`Expedientes de ${t.nombre}`); return; }
+  if (a==="hoja"){ const c=ctxOf(p); return descargar(`Hoja-administrativa-${p?.folio||"en-blanco"}.docx`, p?.folio||"", hojaAdminXml(c)); }
+  if (a==="back"){ S.ctl?.abort(); S.sel=null; S.view="inicio"; S.gen=null; watch(); renderList(); return render(); }
+  if (a==="reload"){ S.gen=null; return render(); }
+  if (a==="savePerfil"){
+    const v=leerPerfilForm();
+    if (!S.uid){ toast("Inicia sesión en claude.ai para guardar tus datos."); return; }
+    if (S.firmaTmp){ v.firma=S.firmaTmp.src; v.firmaW=S.firmaTmp.w; v.firmaH=S.firmaTmp.h; } else { v.firma=""; v.firmaW=0; v.firmaH=0; }
+    if (v.firma.length>200000){ toast("La imagen de la firma es demasiado grande. Usa una imagen más pequeña o dibújala."); return; }
+    try{ await S.db.doc(`data/users/${S.uid}/perfil`).set(v); S.perfil=v; S.perfilDraft=null; toast("Datos de firma guardados"); S.view=S.sel?"exp":"inicio"; render(); }
+    catch(e){ toast(errMsg(e)); } return;
+  }
+  if (a==="save"){
+    const v={}; document.querySelectorAll("#frm [data-k]").forEach(el=>v[el.dataset.k]=el.value.trim());
+    v.nombre=iniciales(v.nombre); if (v.nombre.length<4){ toast("Escribe al menos dos iniciales del consultante."); $("#fi-nombre").focus(); return; }
+    const nuevoFolio = folioConSede(p.folio, v.sede), cambio = nuevoFolio!==p.folio;
+    const upd = {ficha:v, actualizado:Date.now()};
+    if (cambio){ upd.folio=nuevoFolio; upd.foliosAnteriores=[...(p.foliosAnteriores||[]), p.folio]; }
+    try{ S.dirty=false; await S.db.doc("pacientes/"+S.sel).update(upd); toast(cambio?`Datos guardados. Nuevo folio: ${nuevoFolio}`:"Datos guardados"); }
+    catch(e){ toast(errMsg(e)); } return;
+  }
+  if (a==="del"){
+    if(!arm(b,"del","Confirmar: eliminar todo")) return; armed=null;
+    try{ for (const col of ["notas","documentos"]){ const ss=await S.db.collection(col).where("pacienteId","==",S.sel).get(); for (const d of ss.docs) await S.db.doc(`${col}/${d.id}`).delete(); }
+      await S.db.doc("pacientes/"+S.sel).delete(); S.pacientes.delete(S.sel); S.sel=null; S.view="inicio"; watch(); renderList(); render(); toast("Expediente eliminado"); }
+    catch(e){ toast(errMsg(e)); } return;
+  }
+  /* Notas */
+  if (a==="copyNota") return copiar(S.notas.find(n=>n.id===b.dataset.id)?.texto||"");
+  if (a==="saveNota"){
+    const fecha=$("#nt-fecha").value, texto=$("#nt-texto").value.trim();
+    if (!texto){ toast("Pega o escribe la nota."); $("#nt-texto").focus(); return; }
+    if (!fecha){ toast("Indica la fecha de la sesión."); return; }
+    if (!revisarSensibles(b,"nota",texto)) return;
+    try{ S.dirty=false; await S.db.collection("notas").add({pacienteId:S.sel, fecha, texto, creado:Date.now(), autor:S.uid||""});
+      await S.db.doc("pacientes/"+S.sel).update({actualizado:Date.now()}); toast("Nota guardada"); }
+    catch(e){ S.dirty=true; toast(errMsg(e)); } return;
+  }
+  if (a==="delNota"){ if(!arm(b,"dn"+b.dataset.id,"¿Eliminar?")) return; armed=null;
+    try{ await S.db.doc("notas/"+b.dataset.id).delete(); toast("Nota eliminada"); }catch(e){ toast(errMsg(e)); } return; }
+  /* Documentos */
+  if (a==="newDoc"){ const tipo=b.dataset.tipo, t=FORMATOS[tipo];
+    S.gen={tipo, indicaciones:"", contenido: t.ia?null:contenidoFijo(tipo, ctxOf(p)), fecha:today(), lugar:ctxOf(p).lugar}; render(); $("#detail").scrollTop=0; return; }
+  if (a==="openDoc"){ const d=S.docs.find(x=>x.id===b.dataset.id); if(!d?.contenido) return;
+    S.gen={id:d.id, tipo:d.tipo, indicaciones:d.indicaciones||"", contenido:JSON.parse(JSON.stringify(d.contenido)), fecha:d.fecha, lugar:d.lugar}; render(); $("#detail").scrollTop=0; return; }
+  if (a==="wordDoc"){ const d=S.docs.find(x=>x.id===b.dataset.id); if(!d?.contenido) return; const c=ctxOf(p);
+    return descargar(`${slug(FORMATOS[d.tipo].nombre)}-${p.folio}-${d.fecha||today()}.docx`, p.folio, bloquesXml(bloques(d,c),c)); }
+  if (a==="pdfSaved"){ const d=S.docs.find(x=>x.id===b.dataset.id); if(!d?.contenido) return;
+    return descargarPdf(`${slug(FORMATOS[d.tipo].nombre)}-${p.folio}-${d.fecha||today()}.pdf`, d, ctxOf(p)); }
+  if (a==="delDoc"){ if(!arm(b,"dd"+b.dataset.id,"¿Eliminar?")) return; armed=null;
+    try{ await S.db.doc("documentos/"+b.dataset.id).delete(); toast("Documento eliminado"); }catch(e){ toast(errMsg(e)); } return; }
+  if (a==="cancelDoc"){ if(S.gen?.contenido && !S.gen.guardado && !arm(b,"cd","¿Descartar documento?")) return; armed=null; S.ctl?.abort(); S.gen=null; return render(); }
+  if (a==="generar") return generar(p);
+  if (a==="stop"){ S.ctl?.abort(); return; }
+  if (a==="regenerar"){ if(!arm(b,"rg","¿Reemplazar el texto actual?")) return; armed=null; S.gen.contenido=null; render(); return; }
+  if (a==="copyDoc"){ const g=leerGen(), c=ctxOf(p); return copiar(textoPlano(bloques(g,c),c)); }
+  if (a==="downloadDoc"||a==="saveDoc"||a==="pdfDoc"){
+    const g=leerGen(), c=ctxOf(p), todo=[g.contenido.destinatario,...g.contenido.secciones.map(s=>s.titulo+"\n"+s.texto)].join("\n");
+    if (!revisarSensibles(b, a, todo)) return;
+    if (a==="pdfDoc") return descargarPdf(`${slug(FORMATOS[g.tipo].nombre)}-${p.folio}-${g.fecha||today()}.pdf`, g, c);
+    if (a==="downloadDoc") return descargar(`${slug(FORMATOS[g.tipo].nombre)}-${p.folio}-${g.fecha||today()}.docx`, p.folio, bloquesXml(bloques(g,c),c));
+    const st=$("#saveSt"); st.textContent="Guardando…";
+    const data={tipo:g.tipo, fecha:g.fecha, lugar:g.lugar, indicaciones:g.indicaciones||"", contenido:g.contenido};
+    try{ if (g.id) await S.db.doc("documentos/"+g.id).update({...data, actualizado:Date.now()});
+         else { const ref=await S.db.collection("documentos").add({...data, pacienteId:S.sel, creado:Date.now(), autor:S.uid||""}); g.id=ref.id; }
+         g.guardado=true; st.textContent="Guardado"; toast("Documento guardado en el expediente"); }
+    catch(e){ st.textContent=""; toast(errMsg(e)); } return;
+  }
+});
+document.addEventListener("change", ev => {
+  if (ev.target.id==="firmaFile"){
+    const file=ev.target.files?.[0]; if(!file) return;
+    if (!/^image\/(png|jpeg)$/.test(file.type)){ toast("Sube una imagen PNG o JPG de tu firma."); return; }
+    const url=URL.createObjectURL(file), img=new Image();
+    img.onload=()=>{ const s=Math.min(1,1600/img.naturalWidth), r=procesarFirma(img, Math.round(img.naturalWidth*s), Math.round(img.naturalHeight*s)); URL.revokeObjectURL(url);
+      if(!r){ toast("No se distinguió la firma. Usa una foto con fondo blanco y tinta oscura."); return; }
+      leerPerfilForm(); S.firmaTmp=r; render(); toast("Firma cargada. Pulsa Guardar mis datos para conservarla."); };
+    img.onerror=()=>{ URL.revokeObjectURL(url); toast("No se pudo leer la imagen."); };
+    img.src=url; return;
+  }
+  if (ev.target.id==="sedeF"){ S.sedeF=ev.target.value; try{ localStorage.setItem("cemepi.sede", S.sedeF); }catch{} renderList(); }
+  if (ev.target.id==="terF"){ S.terF=ev.target.value; try{ localStorage.setItem("cemepi.ter", S.terF); }catch{} renderList(); }
+});
+document.addEventListener("input", ev => {
+  if (ev.target.id==="q"){ S.q=ev.target.value; return renderList(); }
+  if (ev.target.closest("#frm, #frmNota")) S.dirty=true;
+  if (S.gen && ev.target.closest(".gen")) S.gen.guardado=false;
+});
+
+/* ================= Arranque ================= */
+render();
+(async () => {
+  const use = n => window.claude?.use?.(n) ?? Promise.resolve(null);
+  const [db, user, sample] = await Promise.all([use("db"), use("user"), use("sample")]);
+  S.db=db; S.user=user; S.sample=sample;
+  if (!db){ S.loaded=true; $("#list").innerHTML=`<div class="empty-list">No se pudo conectar con la base de datos.</div>`; $("#newBtn").disabled=true; return; }
+  if (user){ try{ S.uid=await user.id(); }catch{} try{ if(await user.can("data.write")===false) S.canWrite=false; }catch{}
+    try{ S.esDireccion = (await user.can("direccion"))===true; }catch{} }
+  /* La Dirección ve las cuentas de acceso para vincularlas con el directorio de terapeutas */
+  if (S.esDireccion) db.collection("cuentas").onSnapshot(snap=>{ S.cuentas=new Map(snap.docs.map(d=>[d.id,d.data()])); if (S.view==="terapeutas" && !S.terEdit) render(); }, e=>console.warn("cuentas", e));
+  if (!S.canWrite) $("#newBtn").disabled=true;
+  if (S.uid){ try{ const d=await db.doc(`data/users/${S.uid}/perfil`).get(); if(d.exists) S.perfil=d.data()||{}; }catch{} }
+  if (!S.sel) render();
+  const timer=setTimeout(()=>{ if(!S.loaded) $("#list").innerHTML=`<div class="empty-list">No se pudo conectar con la base de expedientes todavía. Revisa tu conexión; la lista aparecerá en cuanto responda.</div>`; },10000);
+  db.collection("terapeutas").onSnapshot(snap=>{
+    S.terapeutas=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}]));
+    renderList();
+    if (S.view==="terapeutas" && !S.terEdit) render();
+    else if (S.sel && !S.dirty && !S.gen) render();
+  }, e=>console.warn("terapeutas", e));
+  db.collection("pacientes").onSnapshot(snap=>{
+    if (!snap.metadata.fromCache){ S.loaded=true; clearTimeout(timer); } else if (snap.size) S.loaded=true;
+    S.pacientes=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}]));
+    renderList();
+    if (S.sel && !S.pacientes.has(S.sel)){ S.sel=null; S.view="inicio"; watch(); render(); return; }
+    if (S.sel){ if (S.dirty || S.gen) markStale(); else render(); }
+    else if (S.view!=="perfil" && !(S.view==="terapeutas" && S.terEdit)) render();
+  }, e=>{ clearTimeout(timer); S.loaded=true; $("#list").innerHTML=`<div class="empty-list">No tienes acceso a los expedientes con este enlace.</div>`; });
+})();
+})();
+</script>
+
+<style>
+:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+html,body{height:100%;margin:0}
+*,*::before,*::after{box-sizing:border-box}
+img{max-width:100%}
+[hidden]{display:none!important}
+.login{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:var(--bg);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.login-card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px 24px;display:flex;flex-direction:column;gap:14px;box-shadow:0 10px 30px rgba(5,96,189,.08)}
+.login-card .marca{display:flex;align-items:center;gap:12px}
+.login-card .marca img{width:52px;border-radius:8px}
+.login-card h1{font:800 20px var(--f-display);color:var(--accent);margin:0}
+.login-card small{color:var(--muted)}
+.login-card form{display:flex;flex-direction:column;gap:12px}
+.login-card .fld input{width:100%}
+.lg-msg{min-height:1.2em;font-size:13px;color:var(--bad)}
+.link{background:none;border:0;color:var(--accent);padding:0;cursor:pointer;font:inherit;text-decoration:underline;align-self:flex-start}
+.sesion{font-size:11.5px;opacity:.85;white-space:nowrap}
+@media (max-width:800px){.sesion{display:none}}
+</style>
+<div class="login" id="login" hidden>
+  <div class="login-card">
+    <div class="marca"><img id="lgLogo" alt="Logotipo de CEMEPI"><div><h1>Expedientes CEMEPI</h1><small>Acceso para el equipo</small></div></div>
+    <form id="lgForm">
+      <div class="fld"><label for="lgEmail">Correo</label><input id="lgEmail" type="email" autocomplete="username" required></div>
+      <div class="fld"><label for="lgPass">Contraseña</label><input id="lgPass" type="password" autocomplete="current-password" required></div>
+      <button class="btn primary" id="lgBtn" type="submit">Entrar</button>
+      <button class="link" id="lgOlvide" type="button">Olvidé mi contraseña</button>
+    </form>
+    <form id="lgNueva" hidden>
+      <div class="fld"><label for="lgPass2">Nueva contraseña (mínimo 10 caracteres)</label><input id="lgPass2" type="password" autocomplete="new-password" required></div>
+      <button class="btn primary" type="submit">Guardar contraseña</button>
+    </form>
+    <div class="lg-msg" id="lgMsg" role="alert"></div>
+    <small>Información clínica confidencial. Solo personal autorizado de CEMEPI.</small>
+  </div>
+</div>
+<script>document.getElementById("lgLogo").src = document.querySelector(".appbar img").src;</script>
+<script type="module" src="supabase-puente.js"></script>
+</body>
+</html>
