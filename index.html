@@ -924,8 +924,10 @@ function regParrafo(p, re){
   let h=esc(p); if (re) h=h.replace(re, m=>`<mark>${m}</mark>`);
   h=h.replace(/^(ARTÍCULO \d+(?: BIS(?: \d+)?)?\.(?: [A-ZÁÉÍÓÚÑ ,]{4,}\.)?)/, "<b>$1</b>");
   return `<p>${h}</p>`; }
+const RFC_OK = /^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/;
+const regTxt = p => typeof p==="string" ? p.replace(/\{\{RFC_EMPLEADOR\}\}/g, S.reg?.rfc_empleador||"") : p;
 function regCuerpoHtml(){
-  const c=S.reg.contenido||[], q=(S.regQ||"").trim(), re=q.length>=3?regPatron(q):null;
+  const c=(S.reg.contenido||[]).map(sec=>({...sec, parrafos:sec.parrafos.map(regTxt)})), q=(S.regQ||"").trim(), re=q.length>=3?regPatron(q):null;
   if (!re) return c.map((sec,i)=>`<section class="reg-sec" id="reg-${i}"><h3>${esc(sec.titulo)}</h3>${sec.parrafos.map(p=>regParrafo(p)).join("")}</section>`).join("");
   let n=0; const out=c.map(sec=>{ const ps=sec.parrafos.filter(p=>typeof p==="string" && (re.lastIndex=0, re.test(p))); re.lastIndex=0;
     n+=ps.length; return ps.length?`<section class="reg-sec"><h3>${esc(sec.titulo)}</h3>${ps.map(p=>regParrafo(p,re)).join("")}</section>`:""; }).join("");
@@ -946,9 +948,10 @@ function reglamentoHtml(){
     const fila=u=>`<tr><td><b>${esc(u.nombre||u.email)}</b><br><span class="status">${esc(ROL_TXT[u.rol]||u.rol)} · ${esc(u.sede||"Todas las sedes")}</span></td><td>${fecha.has(u.id)?esc(fmtFechaHora(fecha.get(u.id))):`<span class="pill estado-pendiente">Pendiente</span>`}</td></tr>`;
     control=`<details class="reg-control no-print"><summary><b>Constancias de recepción:</b> ${si.length} de ${act.length} cuentas activas${S.rol==="administrativo"?` de ${esc(S.miSede)}`:""}</summary>
       <div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Confirmó</th></tr></thead><tbody>${[...no,...si].map(fila).join("")}</tbody></table></div></details>`; }
-  const ley = S.regLeyEdit ? `<div class="reg-ley no-print"><textarea id="regLey" rows="3" style="width:100%">${esc(r.leyenda||"")}</textarea>
-      <div style="display:flex;gap:6px;margin-top:6px"><button class="btn sm primary" type="button" data-act="saveRegLey">Guardar leyenda</button><button class="btn sm" type="button" data-act="cancelRegLey">Cancelar</button></div></div>`
-    : `<div class="reg-ley"><b>Vigencia:</b> ${esc(r.leyenda||"Sin leyenda")}${dir?` <button class="btn sm no-print" type="button" data-act="editRegLey">Editar leyenda</button>`:""}</div>`;
+  const ley = S.regLeyEdit ? `<div class="reg-ley no-print"><label for="regLey"><b>Leyenda de vigencia</b></label><textarea id="regLey" rows="3" style="width:100%">${esc(r.leyenda||"")}</textarea>
+      <label for="regRfc" style="display:block;margin-top:6px"><b>RFC del empleador</b> (aparece en la identificación del centro)</label><input id="regRfc" type="text" maxlength="13" value="${esc(r.rfc_empleador||"")}" style="text-transform:uppercase">
+      <div style="display:flex;gap:6px;margin-top:6px"><button class="btn sm primary" type="button" data-act="saveRegLey">Guardar</button><button class="btn sm" type="button" data-act="cancelRegLey">Cancelar</button></div></div>`
+    : `<div class="reg-ley"><b>Vigencia:</b> ${esc(r.leyenda||"Sin leyenda")}${dir?` <button class="btn sm no-print" type="button" data-act="editRegLey">Editar leyenda y RFC</button>`:""}</div>`;
   return `<div class="wrap reg" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">${cab}
     <div class="reg-cab"><div><b>Centro Mexicano de Plenitud Humana, S.C.</b> · ${esc(r.titulo)} · Versión: ${esc(r.version)}</div>${ley}
       <span class="status">Aplica al personal subordinado en nómina de CEMEPI (artículo 1). Cualquier reforma se acuerda en la Comisión Mixta y se deposita ante el CFCRL (artículo 102).</span></div>
@@ -1014,7 +1017,7 @@ function ctrValores(c){
   return { ART_C: d.sexo==="Masculino"?"EL":"LA", NOMBRE: ctrNombre(d)||"[Dato pendiente]", INE:P_(d.ine).toUpperCase(), NACIONALIDAD:P_(d.nacionalidad),
     EDAD:P_(d.edad), SEXO:P_(d.sexo), ESTADO_CIVIL:P_(d.estado_civil), CURP:P_(d.curp).toUpperCase(), RFC:P_(d.rfc).toUpperCase(),
     DOMICILIO:dom||"[Dato pendiente]", NSS:P_(d.nss), SALARIO: c.salario!=null?fmtSalario(c.salario):"[salario pendiente: lo registra la Dirección]",
-    SALARIO_LETRA: c.salario!=null?numeroALetras(c.salario):"[Dato pendiente]", FECHA_ALTA: c.fecha_alta?fechaAltaLarga(c.fecha_alta):"[fecha de alta ante el IMSS pendiente]" };
+    SALARIO_LETRA: c.salario!=null?numeroALetras(c.salario):"[Dato pendiente]", RFC_EMPLEADOR: c.rfc_empleador||"[RFC del empleador pendiente]", FECHA_ALTA: c.fecha_alta?fechaAltaLarga(c.fecha_alta):"[fecha de alta ante el IMSS pendiente]" };
 }
 const ctrSust = (t, v) => t.replace(/\{\{([A-Z_]+)\}\}/g, (m,k)=>v[k]??m);
 const ctrCentrado = p => /^(D E C L A R A C I O N E S|C L A U S U L A S|PROTESTAMOS LO NECESARIO EN DERECHO)$/.test(p);
@@ -1060,11 +1063,13 @@ function contratoHtml(c, propio){
   const alta = `<section class="note"><div class="note-h"><h3>Lo registra la Dirección</h3></div>
     ${dir && !firmado ? `<form class="datos">
         <div class="fld"><label for="ctrAlta">Fecha de alta ante el IMSS</label><input id="ctrAlta" type="date" value="${esc(c.fecha_alta||"")}"></div>
+        <div class="fld"><label for="ctrRfcEmp">RFC del empleador</label><input id="ctrRfcEmp" type="text" maxlength="13" value="${esc(c.rfc_empleador||"")}" style="text-transform:uppercase"><small class="hint">Por omisión, el de CEMEPI</small></div>
         <div class="fld"><label for="ctrSalario">Salario diario (pesos)</label><input id="ctrSalario" type="number" step="0.01" min="0" inputmode="decimal" value="${c.salario!=null?esc(c.salario):""}"></div>
         <div class="fld" style="grid-column:1/-1"><label>Salario en letra (automático)</label><input id="ctrLetra" type="text" value="${esc(c.salario!=null?numeroALetras(c.salario):"")}" disabled></div></form>
-      <div><button class="btn sm primary" type="button" data-act="saveAlta">Guardar fecha y salario</button></div>
-      <span class="status">La fecha de alta es también la fecha de celebración del contrato. Cambiar la fecha o el salario anula las firmas existentes.</span>`
+      <div><button class="btn sm primary" type="button" data-act="saveAlta">Guardar datos de la Dirección</button></div>
+      <span class="status">La fecha de alta es también la fecha de celebración del contrato. Cambiar la fecha, el RFC del empleador o el salario anula las firmas existentes.</span>`
       : `<p style="margin:0">Fecha de alta ante el IMSS: ${c.fecha_alta?`<b>${esc(fechaAltaLarga(c.fecha_alta))}</b>`:`<span class="pill estado-pendiente">Pendiente</span>`}<br>
+        RFC del empleador: <b>${esc(c.rfc_empleador||"")}</b><br>
         Salario diario: ${c.salario!=null?`<b>$${esc(fmtSalario(c.salario))}</b> (${esc(numeroALetras(c.salario))})`:`<span class="pill estado-pendiente">Pendiente</span>`}</p>`}</section>`;
   const tieneFirma=!!S.perfil?.firma;
   const acciones=[];
@@ -1336,8 +1341,9 @@ document.addEventListener("click", async ev => {
     return cargarAdmin("reglamento"); }
   if (a==="editRegLey"){ S.regLeyEdit=true; return render(); }
   if (a==="cancelRegLey"){ S.regLeyEdit=false; return render(); }
-  if (a==="saveRegLey"){ const t=$("#regLey").value.trim();
-    try{ await S.api.guardarLeyenda(S.reg.id,t); S.reg.leyenda=t; S.regLeyEdit=false; toast("Leyenda actualizada"); }catch(e){ toast(e?.message||"No se pudo guardar."); } return render(); }
+  if (a==="saveRegLey"){ const t=$("#regLey").value.trim(), rfc=$("#regRfc").value.trim().toUpperCase();
+    if (!RFC_OK.test(rfc)){ toast("El RFC del empleador no es válido (12 caracteres persona moral, 13 persona física)."); return; }
+    try{ await S.api.guardarLeyenda(S.reg.id,t,rfc); S.reg.leyenda=t; S.reg.rfc_empleador=rfc; S.regLeyEdit=false; toast("Leyenda y RFC actualizados"); }catch(e){ toast(e?.message||"No se pudo guardar."); } return render(); }
   if (a==="contratos"){ S.view="contratos"; S.ctrSel=null; S.ctrPl=null; S.ctrs=undefined; render(); return cargarAdmin("contratos"); }
   if (a==="listaCtr"){ S.ctrSel=null; return render(); }
   if (a==="verCtr"){ S.ctrSel=b.dataset.id; render(); $("#detail").scrollTop=0; return; }
@@ -1347,8 +1353,9 @@ document.addEventListener("click", async ev => {
     try{ const n=await S.api.guardarContrato(c.id,{datos:d}); S.ctrs=S.ctrs.map(x=>x.id===n.id?n:x); toast(ctrFaltantes(n).length?"Datos guardados. Aún faltan algunos.":"Datos guardados."); }catch(e){ toast(e?.message||"No se pudieron guardar los datos."); } return render(); }
   if (a==="saveAlta"){ const c=S.ctrs.find(x=>x.id===S.ctrSel), f=$("#ctrAlta").value||null, sv=$("#ctrSalario").value.trim(), sal=sv===""?null:Math.round(Number(sv)*100)/100;
     if (sal!=null && !(sal>0)){ toast("Escribe un salario diario mayor que cero."); return; }
-    if ((c.firma_trabajador||c.firma_cemepi) && !arm(b,"alta","Guardar y anular firmas")) return; armed=null;
-    try{ const n=await S.api.guardarContrato(c.id,{fecha_alta:f, salario:sal}); S.ctrs=S.ctrs.map(x=>x.id===n.id?n:x); toast("Fecha de alta y salario guardados."); }catch(e){ toast(e?.message||"No se pudo guardar la fecha."); } return render(); }
+    const rfcE=$("#ctrRfcEmp").value.trim().toUpperCase(); if (!RFC_OK.test(rfcE)){ toast("El RFC del empleador no es válido (12 caracteres persona moral, 13 persona física)."); return; }
+    if ((c.firma_trabajador||c.firma_cemepi) && (f!==c.fecha_alta || sal!==(c.salario==null?null:Number(c.salario)) || rfcE!==c.rfc_empleador) && !arm(b,"alta","Guardar y anular firmas")) return; armed=null;
+    try{ const n=await S.api.guardarContrato(c.id,{fecha_alta:f, salario:sal, rfc_empleador:rfcE}); S.ctrs=S.ctrs.map(x=>x.id===n.id?n:x); toast("Datos de la Dirección guardados."); }catch(e){ toast(e?.message||"No se pudo guardar la fecha."); } return render(); }
   if (a==="firmarCtr" || a==="firmarCemepi"){ const c=S.ctrs.find(x=>a==="firmarCtr"?x.user_id===S.uid:x.id===S.ctrSel);
     if(!arm(b,"firma"+a,"¿Firmar? Confirma")) return; armed=null;
     const f=S.perfil.firma, w=S.perfil.firmaW||null, h=S.perfil.firmaH||null;
