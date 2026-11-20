@@ -252,11 +252,11 @@ const cemepi = {
   async editarUsuario(id, nombre, cedula, telefono){ const { error } = await sb.rpc("editar_datos_usuario", { p_id: id, p_nombre: nombre, p_cedula: cedula, p_telefono: telefono });
     if (error) fallo(error); avisar("terapeutas"); },
   async cambiarMiContrasena(pass){ const { error } = await sb.auth.updateUser({ password: pass }); if (error) fallo(error); },
-  async reglamento(){ const { data, error } = await sb.from("reglamento").select("id,titulo,version,leyenda,rfc_empleador,contenido,publicado_en").eq("vigente", true).order("publicado_en", { ascending: false }).limit(1);
+  async reglamento(){ const { data, error } = await sb.from("reglamento").select("id,titulo,version,leyenda,rfc_empleador,razon_social,registro_patronal,contenido,publicado_en").eq("vigente", true).order("publicado_en", { ascending: false }).limit(1);
     if (error) fallo(error); return data?.[0] || null; },
   async acuses(regId){ const { data, error } = await sb.from("reglamento_acuses").select("user_id,fecha").eq("reglamento_id", regId); if (error) fallo(error); return data || []; },
   async acusar(regId){ const { error } = await sb.from("reglamento_acuses").insert({ reglamento_id: regId }); if (error) fallo(error); },
-  async guardarLeyenda(regId, leyenda, rfc_empleador){ const { error } = await sb.from("reglamento").update({ leyenda, rfc_empleador }).eq("id", regId); if (error) fallo(error); },
+  async guardarLeyenda(regId, cambios){ const { error } = await sb.from("reglamento").update(cambios).eq("id", regId); if (error) fallo(error); },
   async plantillaContrato(){ const { data, error } = await sb.from("contrato_plantilla").select("id,nombre,version,cuerpo").eq("vigente", true).order("creado", { ascending: false }).limit(1);
     if (error) fallo(error); return data?.[0] || null; },
   async contratos(){ const { data, error } = await sb.from("contratos").select("*"); if (error) fallo(error); return data || []; },
