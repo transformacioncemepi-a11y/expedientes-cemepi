@@ -262,6 +262,15 @@ const cemepi = {
   async contratos(){ const { data, error } = await sb.from("contratos").select("*"); if (error) fallo(error); return data || []; },
   async crearContrato(datos){ const { data, error } = await sb.from("contratos").insert({ datos }).select().single(); if (error) fallo(error); return data; },
   async guardarContrato(id, cambios){ const { data, error } = await sb.from("contratos").update(cambios).eq("id", id).select().single(); if (error) fallo(error); return data; },
+  async portalExpediente(expId){
+    const [a, r] = await Promise.all([
+      sb.from("accesos_consultante").select("expediente_id,creado_en,vence,revocado,intentos_fallidos,bloqueado_hasta,accesos,ultimo_acceso").eq("expediente_id", expId).maybeSingle(),
+      sb.from("reportes_liberados").select("id,documento_id,titulo,fecha,liberado_en,revocado,revocado_en").eq("expediente_id", expId).order("liberado_en", { ascending: false })]);
+    if (a.error) fallo(a.error); if (r.error) fallo(r.error); return { acceso: a.data, reportes: r.data || [] }; },
+  async liberarReporte(docId, confirma){ const { error } = await sb.rpc("liberar_reporte", { p_documento: docId, p_confirma_representante: !!confirma }); if (error) fallo(error); },
+  async retirarReporte(id){ const { error } = await sb.rpc("retirar_reporte", { p_id: id }); if (error) fallo(error); },
+  async generarCodigo(expId){ const { data, error } = await sb.rpc("generar_codigo_consultante", { p_expediente: expId }); if (error) fallo(error); return data; },
+  async revocarCodigo(expId){ const { error } = await sb.rpc("revocar_codigo_consultante", { p_expediente: expId }); if (error) fallo(error); },
   async resumenUso(desde){ const { data, error } = await sb.rpc("resumen_uso", { p_desde: desde.toISOString() }); if (error) fallo(error); return data || []; },
 };
 window.__cemepi.resolve({ use: async n => ({ db, user, downloads, cemepi })[n] ?? null });

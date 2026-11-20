@@ -1214,10 +1214,42 @@ function documentosHtml(p, ro){
         ${S.docs.map(d=>`<tr><td><b>${esc(FORMATOS[d.tipo]?.nombre||d.tipo)}</b></td><td class="mono">${fmtDate(d.fecha)}</td>
           <td style="white-space:nowrap">${d.contenido?`<button class="btn sm" type="button" data-act="openDoc" data-id="${esc(d.id)}">Abrir</button>
           <button class="btn sm" type="button" data-act="wordDoc" data-id="${esc(d.id)}">Word</button>
-          <button class="btn sm" type="button" data-act="pdfSaved" data-id="${esc(d.id)}">PDF</button>`:`<span class="status">Formato anterior</span>`}
+          <button class="btn sm" type="button" data-act="pdfSaved" data-id="${esc(d.id)}">PDF</button>
+          ${!ro && LIBERABLES.includes(d.tipo) && S.api?`<button class="btn sm primary" type="button" data-act="liberarDoc" data-id="${esc(d.id)}">${(S.portalData?.reportes||[]).some(l=>l.documento_id===d.id&&!l.revocado)?"Actualizar en el portal":"Compartir con el consultante"}</button>`:""}`:`<span class="status">Formato anterior</span>`}
           ${ro?"":`<button class="btn sm danger" type="button" data-act="delDoc" data-id="${esc(d.id)}">Eliminar</button>`}</td></tr>`).join("")}
       </tbody></table></div>`:`<p class="status" style="margin:0">Todavía no hay documentos guardados en este expediente.</p>`}
-    </section>`;
+    </section>${ro||!S.api?"":portalHtml(p)}`;
+}
+/* ---------- Portal del consultante: reportes liberados y código de acceso ---------- */
+const LIBERABLES = ["reporte","evaluacion"];
+const urlPortal = () => location.origin + location.pathname.replace(/[^/]*$/,"") + "consulta.html";
+const esMenor = p => { const f=p?.ficha?.fechaNac; if (!f) return false; const [y,m,d]=f.split("-").map(Number); const h=new Date(); return (h.getFullYear()-y-((h.getMonth()+1<m||(h.getMonth()+1===m&&h.getDate()<d))?1:0))<18; };
+async function cargarPortal(expId){
+  try{ S.portalData = await S.api.portalExpediente(expId); }catch(e){ S.portalData = {error: e?.message||"No se pudo cargar el portal."}; }
+  if (S.sel===expId && S.tab!=="notas" && !S.gen) render();
+}
+function portalHtml(p){
+  if (S.portalFor!==p.id){ S.portalFor=p.id; S.portalData=null; S.codigoNuevo=null; if (S.api) cargarPortal(p.id); }
+  const d=S.portalData;
+  const cab=`<h3 class="sec-h">Portal del consultante</h3><p class="status" style="margin:4px 0 8px">El consultante entra en <b>${esc(urlPortal())}</b> con el folio, su fecha de nacimiento y un código que le entregas en persona. Solo ve los reportes y evaluaciones psicológicas que compartas; no necesita cuenta ni correo.</p>`;
+  if (!d) return `<section class="doc-sec">${cab}<p class="status" style="margin:0">Cargando…</p></section>`;
+  if (d.error) return `<section class="doc-sec">${cab}<p class="status" style="margin:0">${esc(d.error)}</p></section>`;
+  const a=d.acceso, vig=a && !a.revocado && new Date(a.vence)>new Date();
+  const codigo = S.codigoNuevo ? `<div class="banner" style="display:block"><b>Código de acceso: <span class="mono" style="font-size:20px;letter-spacing:.08em">${esc(S.codigoNuevo)}</span></b><br>Anótalo y entrégalo en persona al consultante${esMenor(p)?" o a su representante legal":""}. <b>No se vuelve a mostrar</b> y no se envía por WhatsApp ni Signal. Si se pierde, genera uno nuevo (el anterior deja de funcionar).</div>` : "";
+  const bloq = a?.bloqueado_hasta && new Date(a.bloqueado_hasta)>new Date();
+  const estado = vig ? `Código activo hasta el ${esc(fmtDate(a.vence.slice(0,10)))} · ${a.accesos} consulta${a.accesos===1?"":"s"}${a.ultimo_acceso?` · última: ${esc(fmtFH(a.ultimo_acceso))}`:""}${bloq?" · <b>bloqueado 15 min por intentos fallidos</b>":""}`
+    : (a ? "El código está revocado o vencido." : "Aún no hay código de acceso.");
+  const libs=d.reportes||[], act=libs.filter(l=>!l.revocado);
+  return `<section class="doc-sec">${cab}${codigo}
+    <p style="margin:0 0 8px">${estado}</p>
+    <div class="usr-fila">${p.ficha?.fechaNac?`<button class="btn sm primary" type="button" data-act="genCodigo">${vig?"Generar código nuevo":"Generar código de acceso"}</button>`:`<span class="status">Registra la fecha de nacimiento del expediente para generar el código.</span>`}
+      ${vig?`<button class="btn sm danger" type="button" data-act="revCodigo">Revocar código</button>`:""}</div>
+    <h4 style="margin:14px 0 6px">Reportes compartidos (${act.length})</h4>
+    ${libs.length?`<div class="tbl-wrap"><table><thead><tr><th>Documento</th><th>Compartido</th><th>Estado</th><th></th></tr></thead><tbody>${libs.map(l=>`<tr><td><b>${esc(l.titulo)}</b><br><span class="status">del ${esc(fmtDate(l.fecha))}</span></td><td>${esc(fmtFH(l.liberado_en))}</td>
+      <td>${l.revocado?`<span class="pill estado-suspendido">Retirado</span>`:`<span class="pill estado-activo">Visible</span>`}</td><td>${l.revocado?"":`<button class="btn sm" type="button" data-act="retirarLib" data-id="${esc(l.id)}">Retirar</button>`}</td></tr>`).join("")}</tbody></table></div>`
+      :`<p class="status" style="margin:0">Aún no compartes reportes. Usa <b>Compartir con el consultante</b> en un reporte o evaluación guardados.</p>`}
+    <p class="status" style="margin:8px 0 0">Se comparte una copia fija del documento guardado, sin las advertencias internas. Si lo corriges, vuelve a compartirlo para actualizarlo.${esMenor(p)?" <b>Consultante menor de edad:</b> antes de compartir verifica la representación legal, las autorizaciones y cualquier restricción judicial.":""}</p>
+  </section>`;
 }
 function generadorHtml(p, ro){
   const g=S.gen, t=FORMATOS[g.tipo], k=g.contenido;
@@ -1493,6 +1525,17 @@ document.addEventListener("click", async ev => {
     S.gen={tipo, indicaciones:"", contenido: t.ia?null:contenidoFijo(tipo, ctxOf(p)), fecha:today(), lugar:ctxOf(p).lugar}; render(); $("#detail").scrollTop=0; return; }
   if (a==="openDoc"){ const d=S.docs.find(x=>x.id===b.dataset.id); if(!d?.contenido) return;
     S.gen={id:d.id, tipo:d.tipo, indicaciones:d.indicaciones||"", contenido:JSON.parse(JSON.stringify(d.contenido)), fecha:d.fecha, lugar:d.lugar}; render(); $("#detail").scrollTop=0; return; }
+  if (a==="liberarDoc"){ const menor=esMenor(p);
+    if (!arm(b,"lib"+b.dataset.id, menor?"Verifiqué representación legal: compartir":"¿Compartir? Confirmar")) return; armed=null;
+    try{ await S.api.liberarReporte(b.dataset.id, menor); toast("Reporte compartido en el portal del consultante."); }catch(e){ toast(e?.message||"No se pudo compartir."); }
+    return cargarPortal(p.id); }
+  if (a==="retirarLib"){ if (!arm(b,"ret"+b.dataset.id,"¿Retirar del portal?")) return; armed=null;
+    try{ await S.api.retirarReporte(b.dataset.id); toast("Reporte retirado del portal."); }catch(e){ toast(e?.message||"No se pudo retirar."); } return cargarPortal(p.id); }
+  if (a==="genCodigo"){ const hay=S.portalData?.acceso && !S.portalData.acceso.revocado;
+    if (hay && !arm(b,"gc","El anterior dejará de servir: confirmar")) return; armed=null;
+    try{ S.codigoNuevo = await S.api.generarCodigo(p.id); toast("Código generado. Anótalo: no se vuelve a mostrar."); }catch(e){ toast(e?.message||"No se pudo generar el código."); } return cargarPortal(p.id); }
+  if (a==="revCodigo"){ if (!arm(b,"rc","¿Revocar el código?")) return; armed=null;
+    try{ await S.api.revocarCodigo(p.id); S.codigoNuevo=null; toast("Código revocado: el consultante ya no puede entrar."); }catch(e){ toast(e?.message||"No se pudo revocar."); } return cargarPortal(p.id); }
   if (a==="wordDoc"){ const d=S.docs.find(x=>x.id===b.dataset.id); if(!d?.contenido) return; const c=ctxOf(p);
     return descargar(`${slug(FORMATOS[d.tipo].nombre)}-${p.folio}-${d.fecha||today()}.docx`, p.folio, bloquesXml(bloques(d,c),c)); }
   if (a==="pdfSaved"){ const d=S.docs.find(x=>x.id===b.dataset.id); if(!d?.contenido) return;
@@ -1661,6 +1704,7 @@ details.note summary{cursor:pointer}
       <button class="btn primary" id="lgBtn" type="submit">Entrar</button>
       <button class="link" id="lgOlvide" type="button">Olvidé mi contraseña</button>
       <p class="lg-alt">¿Eres nuevo en el equipo? <button class="link" id="lgIrRegistro" type="button">Solicita tu cuenta</button></p>
+      <p class="lg-alt">¿Eres consultante? <a href="consulta.html">Consulta tus reportes</a></p>
     </form>
     <form id="lgRegistro" hidden>
       <h2 class="lg-h">Solicitud de cuenta</h2>
