@@ -926,7 +926,7 @@ function regCuerpoHtml(){
     n+=ps.length; return ps.length?`<section class="reg-sec"><h3>${esc(sec.titulo)}</h3>${ps.map(p=>regParrafo(p,re)).join("")}</section>`:""; }).join("");
   return `<p class="status">${n} ${n===1?"párrafo contiene":"párrafos contienen"} “${esc(q)}”.</p>${out}`; }
 function reglamentoHtml(){
-  const cab=`<div class="card-h no-print"><h2 style="font-size:24px">Reglamento Interior de Trabajo</h2><span style="display:flex;gap:8px">${S.reg?`<button class="btn" type="button" data-act="imprimirReg">Imprimir o guardar PDF</button>`:""}<button class="btn" type="button" data-act="home">Cerrar</button></span></div>`;
+  const cab=`<div class="card-h no-print"><h2 style="font-size:24px">Reglamento Interior de Trabajo</h2><span style="display:flex;gap:8px"><button class="btn" type="button" data-act="home">Cerrar</button></span></div>`;
   if (S.reg===undefined || (S.reg===null && S.regCargando)) return `<div class="wrap" style="padding-block:24px">${cab}<p class="status">Cargando reglamento…</p></div>`;
   if (!S.reg) return `<div class="wrap" style="padding-block:24px">${cab}<p class="status">Aún no hay un reglamento publicado.</p></div>`;
   const r=S.reg, adm=["superusuario","direccion","administrativo"].includes(S.rol), dir=["superusuario","direccion"].includes(S.rol);
@@ -1155,9 +1155,6 @@ document.addEventListener("click", async ev => {
   if (a==="sedes"){ S.view="sedes"; S.sedeEdit=null; S.sedesTodas=null; render(); return cargarAdmin("sedes"); }
   if (a==="reglamento"){ S.view="reglamento"; S.reg=undefined; S.regQ=""; S.regLeyEdit=false; render(); return cargarAdmin("reglamento"); }
   if (a==="irReg"){ if (S.regQ){ S.regQ=""; $("#regBuscar").value=""; $("#regCuerpo").innerHTML=regCuerpoHtml(); } $(`#reg-${b.dataset.i}`)?.scrollIntoView({behavior:"smooth",block:"start"}); return; }
-  if (a==="imprimirReg"){ const prev=S.regQ; if (prev){ S.regQ=""; $("#regCuerpo").innerHTML=regCuerpoHtml(); }
-    document.body.classList.add("imp-reg"); window.print(); document.body.classList.remove("imp-reg");
-    if (prev){ S.regQ=prev; $("#regCuerpo").innerHTML=regCuerpoHtml(); } return; }
   if (a==="acusarReg"){ if(!arm(b,"acuse","¿Confirmar recepción y lectura?")) return; armed=null;
     try{ await S.api.acusar(S.reg.id); toast("Constancia registrada. Gracias."); }catch(e){ toast(e?.message||"No se pudo registrar la constancia."); }
     return cargarAdmin("reglamento"); }
@@ -1406,11 +1403,8 @@ img{max-width:100%}
 .reg-sec h3{font-size:17px;margin:0 0 8px;color:var(--accent)}
 .reg-sec p{margin:0 0 10px;line-height:1.6;text-align:justify;hyphens:auto}
 .reg-sec mark{background:#ffe58a;color:inherit;border-radius:3px}
-@media print{
-  body.imp-reg .appbar, body.imp-reg .roster, body.imp-reg .no-print, body.imp-reg .toast{display:none!important}
-  html:has(body.imp-reg), body.imp-reg, body.imp-reg .shell, body.imp-reg .app, body.imp-reg .detail{display:block!important;height:auto!important;overflow:visible!important;background:#fff!important;color:#000!important}
-  body.imp-reg .reg-sec{break-inside:auto} body.imp-reg .reg-sec h3{break-after:avoid;color:#000}
-}
+/* El reglamento no se imprime (decisión de la Dirección, 2026-11-20) */
+@media print{ body:has(.reg) .shell{display:none!important} body:has(.reg)::after{content:"El Reglamento Interior de Trabajo se consulta solo dentro de la app.";display:block;padding:40px;font:16px sans-serif} }
 .usr-edit{display:flex;flex-direction:column;gap:10px}
 .usr-edit fieldset{border:1px solid var(--line);border-radius:10px;padding:8px 12px 10px;margin:0;display:flex;flex-direction:column;gap:6px;min-width:0}
 .usr-edit legend{font-size:12px;font-weight:700;padding:0 4px}
