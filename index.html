@@ -971,8 +971,8 @@ const CTR_CAMPOS = [
   {k:"calle", l:"Calle, número y colonia", req:1, ancho:1}, {k:"poblacion", l:"Alcaldía o municipio", req:1},
   {k:"entidad", l:"Entidad federativa", req:1}, {k:"cp", l:"Código postal", req:1, re:/^\d{5}$/, h:"5 dígitos"},
   {k:"nss", l:"Número de seguridad social (IMSS)", req:1, re:/^\d{11}$/, h:"11 dígitos"},
-  {k:"salario", l:"Salario diario (pesos)", req:1, re:/^\d+(\.\d{1,2})?$/, t:"number", h:"Ej. 373.67"},
 ];
+const ctrSinDireccion = c => !c.fecha_alta || c.salario==null;
 const ctrNombre = d => [d.paterno, d.materno, d.nombres].filter(Boolean).join(" ").toUpperCase();
 const apocope = t => t.replace(/VEINTIUNO$/,"VEINTIÚN").replace(/UNO$/,"UN");
 function numeroALetras(n){
@@ -1005,7 +1005,7 @@ function ctrEstado(c){
   if (c.firma_trabajador && c.firma_cemepi) return {t:"Firmado por ambas partes", cl:"estado-activo"};
   if (c.firma_trabajador) return {t:"Falta firma de CEMEPI", cl:"estado-pendiente"};
   if (ctrFaltantes(c).length) return {t:"Capturando datos", cl:"estado-pendiente"};
-  if (!c.fecha_alta) return {t:"Falta fecha de alta IMSS", cl:"estado-pendiente"};
+  if (ctrSinDireccion(c)) return {t:"Falta alta IMSS o salario (Dirección)", cl:"estado-pendiente"};
   return {t:"Falta firma del profesionista", cl:"estado-pendiente"};
 }
 function ctrValores(c){
@@ -1013,8 +1013,8 @@ function ctrValores(c){
   const dom=[d.calle,d.poblacion,d.entidad,d.cp].filter(x=>String(x||"").trim()).join(", ").toUpperCase();
   return { ART_C: d.sexo==="Masculino"?"EL":"LA", NOMBRE: ctrNombre(d)||"[Dato pendiente]", INE:P_(d.ine).toUpperCase(), NACIONALIDAD:P_(d.nacionalidad),
     EDAD:P_(d.edad), SEXO:P_(d.sexo), ESTADO_CIVIL:P_(d.estado_civil), CURP:P_(d.curp).toUpperCase(), RFC:P_(d.rfc).toUpperCase(),
-    DOMICILIO:dom||"[Dato pendiente]", NSS:P_(d.nss), SALARIO: d.salario?fmtSalario(d.salario):"[Dato pendiente]",
-    SALARIO_LETRA: d.salario?numeroALetras(d.salario):"[Dato pendiente]", FECHA_ALTA: c.fecha_alta?fechaAltaLarga(c.fecha_alta):"[fecha de alta ante el IMSS pendiente]" };
+    DOMICILIO:dom||"[Dato pendiente]", NSS:P_(d.nss), SALARIO: c.salario!=null?fmtSalario(c.salario):"[salario pendiente: lo registra la Dirección]",
+    SALARIO_LETRA: c.salario!=null?numeroALetras(c.salario):"[Dato pendiente]", FECHA_ALTA: c.fecha_alta?fechaAltaLarga(c.fecha_alta):"[fecha de alta ante el IMSS pendiente]" };
 }
 const ctrSust = (t, v) => t.replace(/\{\{([A-Z_]+)\}\}/g, (m,k)=>v[k]??m);
 const ctrCentrado = p => /^(D E C L A R A C I O N E S|C L A U S U L A S|PROTESTAMOS LO NECESARIO EN DERECHO)$/.test(p);
@@ -1039,7 +1039,7 @@ function ctrFormHtml(c){
       : `<input id="ck-${k.k}" data-ck="${k.k}" type="${k.t||"text"}" ${k.t==="number"?'step="any" inputmode="decimal"':""} value="${esc(v)}" ${k.re&&!k.t?'style="text-transform:uppercase"':""}>`;
     return `<div class="fld"${k.ancho?' style="grid-column:1/-1"':""}><label for="ck-${k.k}">${esc(k.l)}${k.req?" *":""}</label>${ctl}${k.h?`<small class="hint">${esc(k.h)}</small>`:""}</div>`; };
   return `<form id="frmCtr" class="datos">${CTR_CAMPOS.map(campo).join("")}
-    <div class="fld" style="grid-column:1/-1"><label>Salario en letra (automático)</label><input type="text" id="ctrLetra" value="${esc(d.salario?numeroALetras(d.salario):"")}" disabled></div></form>
+</form>
     <h4 style="margin:14px 0 6px">Beneficiarios en caso de fallecimiento o desaparición *</h4>
     <div class="tbl-wrap"><table><thead><tr><th>Nombre completo</th><th>Edad</th><th>Parentesco o relación</th><th>%</th></tr></thead><tbody>
       ${bs.slice(0,4).map((b,i)=>`<tr><td><input data-bk="${i}.nombre" value="${esc(b.nombre||"")}" aria-label="Nombre del beneficiario ${i+1}"></td><td><input data-bk="${i}.edad" type="number" min="0" value="${esc(b.edad||"")}" style="width:70px" aria-label="Edad"></td><td><input data-bk="${i}.parentesco" value="${esc(b.parentesco||"")}" aria-label="Parentesco"></td><td><input data-bk="${i}.pct" type="number" min="0" max="100" value="${esc(b.pct||"")}" style="width:70px" aria-label="Porcentaje"></td></tr>`).join("")}
@@ -1057,13 +1057,18 @@ function contratoHtml(c, propio){
       <p class="status" style="margin:0">Datos personales confidenciales: solo los ven tú y la Dirección. ${c.firma_trabajador?"<b>Si cambias algo, tu firma (y la de CEMEPI, si ya existe) se anulará y habrá que volver a firmar.</b>":""}</p>
       ${ctrFormHtml(c)}<div class="actions"><button class="btn primary" type="button" data-act="saveCtr">Guardar mis datos</button></div></section>`
     : `<section class="note"><div class="note-h"><h3>Datos del profesionista</h3></div>${tabla0(c)}</section>`;
-  const alta = `<section class="note"><div class="note-h"><h3>Fecha de alta ante el IMSS</h3></div>
-    ${dir && !firmado ? `<div class="usr-fila"><input id="ctrAlta" type="date" value="${esc(c.fecha_alta||"")}" aria-label="Fecha de alta ante el IMSS"><button class="btn sm primary" type="button" data-act="saveAlta">Guardar fecha de alta</button></div>
-      <span class="status">Es también la fecha de celebración que aparece en el contrato. Cambiarla anula las firmas existentes.</span>`
-      : `<p style="margin:0">${c.fecha_alta?esc(fechaAltaLarga(c.fecha_alta)):`<span class="pill estado-pendiente">Pendiente</span> La registra la Dirección.`}</p>`}</section>`;
+  const alta = `<section class="note"><div class="note-h"><h3>Lo registra la Dirección</h3></div>
+    ${dir && !firmado ? `<form class="datos">
+        <div class="fld"><label for="ctrAlta">Fecha de alta ante el IMSS</label><input id="ctrAlta" type="date" value="${esc(c.fecha_alta||"")}"></div>
+        <div class="fld"><label for="ctrSalario">Salario diario (pesos)</label><input id="ctrSalario" type="number" step="0.01" min="0" inputmode="decimal" value="${c.salario!=null?esc(c.salario):""}"></div>
+        <div class="fld" style="grid-column:1/-1"><label>Salario en letra (automático)</label><input id="ctrLetra" type="text" value="${esc(c.salario!=null?numeroALetras(c.salario):"")}" disabled></div></form>
+      <div><button class="btn sm primary" type="button" data-act="saveAlta">Guardar fecha y salario</button></div>
+      <span class="status">La fecha de alta es también la fecha de celebración del contrato. Cambiar la fecha o el salario anula las firmas existentes.</span>`
+      : `<p style="margin:0">Fecha de alta ante el IMSS: ${c.fecha_alta?`<b>${esc(fechaAltaLarga(c.fecha_alta))}</b>`:`<span class="pill estado-pendiente">Pendiente</span>`}<br>
+        Salario diario: ${c.salario!=null?`<b>$${esc(fmtSalario(c.salario))}</b> (${esc(numeroALetras(c.salario))})`:`<span class="pill estado-pendiente">Pendiente</span>`}</p>`}</section>`;
   const tieneFirma=!!S.perfil?.firma;
   const acciones=[];
-  if (propio && !c.firma_trabajador) acciones.push(falt.length||!c.fecha_alta ? `<span class="status">Para firmar: ${falt.length?"completa tus datos":"falta la fecha de alta que registra la Dirección"}.</span>`
+  if (propio && !c.firma_trabajador) acciones.push(falt.length||ctrSinDireccion(c) ? `<span class="status">Para firmar: ${falt.length?"completa tus datos":"falta que la Dirección registre la fecha de alta y el salario"}.</span>`
     : tieneFirma ? `<button class="btn primary" type="button" data-act="firmarCtr">Firmar mi contrato</button>` : `<span class="status">Primero guarda tu firma en <b>Mis datos de firma</b>.</span>`);
   if (propio && c.firma_trabajador && !c.firma_cemepi) acciones.push(`<button class="btn sm" type="button" data-act="retirarCtr">Retirar mi firma</button>`);
   if (su && c.firma_trabajador && !c.firma_cemepi) acciones.push(tieneFirma?`<button class="btn primary" type="button" data-act="firmarCemepi">Firmar por CEMEPI</button>`:`<span class="status">Guarda tu firma en <b>Mis datos de firma</b> para firmar por CEMEPI.</span>`);
@@ -1081,7 +1086,7 @@ function contratoHtml(c, propio){
   </div>`;
 }
 function tabla0(c){ const d=c.datos||{}, v=ctrValores(c), bs=(d.beneficiarios||[]).filter(b=>b.nombre);
-  const rows=[["Nombre",v.NOMBRE],["Clave de elector",v.INE],["Nacionalidad",v.NACIONALIDAD],["Edad",v.EDAD],["Sexo",v.SEXO],["Estado civil",v.ESTADO_CIVIL],["CURP",v.CURP],["RFC",v.RFC],["Domicilio",v.DOMICILIO],["NSS",v.NSS],["Salario diario",`${v.SALARIO} (${v.SALARIO_LETRA})`],["Beneficiarios",bs.map(b=>`${b.nombre} (${b.parentesco}, ${b.edad} años, ${b.pct}%)`).join("; ")||"[Dato pendiente]"]];
+  const rows=[["Nombre",v.NOMBRE],["Clave de elector",v.INE],["Nacionalidad",v.NACIONALIDAD],["Edad",v.EDAD],["Sexo",v.SEXO],["Estado civil",v.ESTADO_CIVIL],["CURP",v.CURP],["RFC",v.RFC],["Domicilio",v.DOMICILIO],["NSS",v.NSS],["Salario diario (Dirección)",`${v.SALARIO} (${v.SALARIO_LETRA})`],["Beneficiarios",bs.map(b=>`${b.nombre} (${b.parentesco}, ${b.edad} años, ${b.pct}%)`).join("; ")||"[Dato pendiente]"]];
   return `<div class="tbl-wrap"><table><tbody>${rows.map(([k,x])=>`<tr><th style="width:34%">${esc(k)}</th><td>${esc(x)}</td></tr>`).join("")}</tbody></table></div>`; }
 function contratosHtml(){
   if (!S.ctrPl && S.ctrs===undefined) return `<div class="wrap" style="padding-block:24px"><p class="status">Cargando contratos…</p></div>`;
@@ -1089,7 +1094,7 @@ function contratosHtml(){
   const dir=["superusuario","direccion"].includes(S.rol);
   if (!dir){ const c=(S.ctrs||[]).find(x=>x.user_id===S.uid);
     if (!c) return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:14px"><div class="card-h"><h2 style="font-size:22px">Mi contrato</h2><button class="btn" type="button" data-act="home">Cerrar</button></div>
-      <p>Aquí capturas los datos de tu contrato individual de trabajo con CEMEPI (${esc(S.ctrPl.nombre)}). La Dirección registra tu fecha de alta ante el IMSS; después firmas tú y al final firma el representante legal de CEMEPI.</p>
+      <p>Aquí capturas los datos de tu contrato individual de trabajo con CEMEPI (${esc(S.ctrPl.nombre)}). La Dirección registra tu fecha de alta ante el IMSS y tu salario; después firmas tú y al final firma el representante legal de CEMEPI.</p>
       <div><button class="btn primary" type="button" data-act="nuevoCtr">Comenzar mi contrato</button></div></div>`;
     return contratoHtml(c, true); }
   if (S.ctrSel){ const c=(S.ctrs||[]).find(x=>x.id===S.ctrSel); if (c) return contratoHtml(c, c.user_id===S.uid); }
@@ -1099,7 +1104,7 @@ function contratosHtml(){
     .sort((a,b)=>(a.u.sede||"").localeCompare(b.u.sede||"")||(a.u.nombre||"").localeCompare(b.u.nombre||""));
   return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">
     <div class="card-h"><h2 style="font-size:24px">Contratos de psicólogos(as)</h2><button class="btn" type="button" data-act="home">Cerrar</button></div>
-    <p class="status" style="margin:0">Cada psicólogo(a) captura sus datos y firma desde <b>Contratos</b>. La Dirección registra la fecha de alta ante el IMSS y el representante legal firma por CEMEPI. Datos personales confidenciales: no se comparten por mensajería.</p>
+    <p class="status" style="margin:0">Cada psicólogo(a) captura sus datos y firma desde <b>Contratos</b>. La Dirección registra la fecha de alta ante el IMSS y el salario, y el representante legal firma por CEMEPI. Datos personales confidenciales: no se comparten por mensajería.</p>
     <div class="tbl-wrap"><table><thead><tr><th>Psicólogo(a)</th><th>Sede</th><th>Alta IMSS</th><th>Estado</th><th></th></tr></thead><tbody>
       ${filas.map(({u,c})=>{ const e=ctrEstado(c); return `<tr><td><b>${esc(u.nombre||"Sin nombre")}</b><br><span class="status">${esc(u.email||"")}</span></td><td>${esc(u.sede||"")}</td><td>${c?.fecha_alta?esc(fmtDate(c.fecha_alta)):"—"}</td><td><span class="pill ${e.cl}">${esc(e.t)}</span></td>
         <td>${c?`<button class="btn sm" type="button" data-act="verCtr" data-id="${c.id}">Abrir</button>`:`<span class="status">Aún no lo inicia</span>`}</td></tr>`; }).join("") || `<tr><td colspan="5">No hay psicólogos(as) activos.</td></tr>`}
@@ -1340,9 +1345,10 @@ document.addEventListener("click", async ev => {
   if (a==="saveCtr"){ const c=S.ctrs.find(x=>x.user_id===S.uid); const d=ctrLeerForm();
     if (c.firma_trabajador && !arm(b,"ctrsave","Guardar y anular mi firma")) return; armed=null;
     try{ const n=await S.api.guardarContrato(c.id,{datos:d}); S.ctrs=S.ctrs.map(x=>x.id===n.id?n:x); toast(ctrFaltantes(n).length?"Datos guardados. Aún faltan algunos.":"Datos guardados."); }catch(e){ toast(e?.message||"No se pudieron guardar los datos."); } return render(); }
-  if (a==="saveAlta"){ const c=S.ctrs.find(x=>x.id===S.ctrSel), f=$("#ctrAlta").value||null;
+  if (a==="saveAlta"){ const c=S.ctrs.find(x=>x.id===S.ctrSel), f=$("#ctrAlta").value||null, sv=$("#ctrSalario").value.trim(), sal=sv===""?null:Math.round(Number(sv)*100)/100;
+    if (sal!=null && !(sal>0)){ toast("Escribe un salario diario mayor que cero."); return; }
     if ((c.firma_trabajador||c.firma_cemepi) && !arm(b,"alta","Guardar y anular firmas")) return; armed=null;
-    try{ const n=await S.api.guardarContrato(c.id,{fecha_alta:f}); S.ctrs=S.ctrs.map(x=>x.id===n.id?n:x); toast("Fecha de alta guardada."); }catch(e){ toast(e?.message||"No se pudo guardar la fecha."); } return render(); }
+    try{ const n=await S.api.guardarContrato(c.id,{fecha_alta:f, salario:sal}); S.ctrs=S.ctrs.map(x=>x.id===n.id?n:x); toast("Fecha de alta y salario guardados."); }catch(e){ toast(e?.message||"No se pudo guardar la fecha."); } return render(); }
   if (a==="firmarCtr" || a==="firmarCemepi"){ const c=S.ctrs.find(x=>a==="firmarCtr"?x.user_id===S.uid:x.id===S.ctrSel);
     if(!arm(b,"firma"+a,"¿Firmar? Confirma")) return; armed=null;
     const f=S.perfil.firma, w=S.perfil.firmaW||null, h=S.perfil.firmaH||null;
@@ -1511,7 +1517,7 @@ document.addEventListener("change", ev => {
 });
 document.addEventListener("input", ev => {
   if (ev.target.id==="q"){ S.q=ev.target.value; return renderList(); }
-  if (ev.target.dataset?.ck==="salario"){ const l=$("#ctrLetra"); if (l) l.value=/^\d+(\.\d{1,2})?$/.test(ev.target.value)?numeroALetras(ev.target.value):""; }
+  if (ev.target.id==="ctrSalario"){ const l=$("#ctrLetra"); if (l) l.value=/^\d+(\.\d{1,2})?$/.test(ev.target.value)?numeroALetras(ev.target.value):""; }
   if (ev.target.id==="regBuscar"){ S.regQ=ev.target.value; $("#regCuerpo").innerHTML=regCuerpoHtml(); return; }
   if (ev.target.closest("#frm, #frmNota")) S.dirty=true;
   if (S.gen && ev.target.closest(".gen")) S.gen.guardado=false;
