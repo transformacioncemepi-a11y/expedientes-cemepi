@@ -105,6 +105,7 @@ async function cargarSedesRegistro(){
     (data || []).map(s => `<option value="${s.nombre.replace(/"/g, "&quot;")}">${s.nombre}</option>`).join("");
 }
 $("#rgTipo").addEventListener("change", () => { $("#rgCedulaFld").hidden = !$("#rgTipo").value.startsWith("psicologo");
+  $("#rgDirNota").hidden = $("#rgTipo").value !== "direccion";
   $("#rgModNota").hidden = !$("#rgTipo").value.endsWith("comision"); });
 
 /* ---------- Inicio de sesión, solicitud de cuenta y cuenta pendiente ---------- */
@@ -157,7 +158,7 @@ async function esperarAcceso(){
         const tel = $("#rgTel").value.trim(), sede = $("#rgSede").value, pass = $("#rgPass").value;
         if (nombre.split(/\s+/).length < 2){ aviso("Escribe tu nombre completo."); return; }
         if (tipo === "psicologo" && cedula.length < 5){ aviso("Escribe tu cédula profesional."); return; }
-        if (!sede){ aviso("Selecciona tu sede."); return; }
+        if (!sede && tipo !== "direccion"){ aviso("Selecciona tu sede."); return; }
         if (tel.replace(/\D/g, "").length < 10){ aviso("Escribe un teléfono de 10 dígitos."); return; }
         if (pass.length < 10){ aviso("La contraseña debe tener al menos 10 caracteres."); return; }
         $("#rgBtn").disabled = true;
@@ -189,9 +190,11 @@ sb.auth.onAuthStateChange((evento) => {
 });
 
 const { usuario, perfil } = await esperarAcceso();
+/* Permisos adicionales que el superusuario le otorgó a esta persona */
+const { data: permRows } = await sb.from("permisos").select("permiso").eq("user_id", usuario.id);
 login.hidden = true;
 const rol = perfil.rol;
-const ROL_TXT = { superusuario: "Superusuario", direccion: "Dirección", administrativo: "Administrativo", psicologo: "Psicólogo(a)" };
+const ROL_TXT = { superusuario: "Superusuario", direccion: "Directivo(a)", administrativo: "Administrativo", psicologo: "Psicólogo(a)" };
 document.body.dataset.rol = rol;
 $("#sesionInfo").textContent = `${usuario.email} · ${ROL_TXT[rol] || rol}${perfil.sede ? " · " + perfil.sede : ""}`;
 document.addEventListener("click", ev => { if (ev.target.closest('[data-act="salir"]')) sb.auth.signOut().then(() => location.reload()); });
@@ -241,6 +244,9 @@ const downloads = {
 const fallo = e => { throw { code: "invalid_argument", message: e?.message || String(e) }; };
 const cemepi = {
   rol, sede: perfil.sede || "", nombre: perfil.nombre || "", uid: usuario.id, email: usuario.email, modalidad: perfil.modalidad || null,
+  permisos: (permRows || []).map(r => r.permiso),
+  async permisosTodos(){ const { data, error } = await sb.from("permisos").select("user_id,permiso,otorgado_en"); if (error) fallo(error); return data || []; },
+  async otorgarPermiso(id, permiso, activo){ const { error } = await sb.rpc("otorgar_permiso", { p_id: id, p_permiso: permiso, p_activo: !!activo }); if (error) fallo(error); },
   async cambiarModalidad(id, m){ const { error } = await sb.rpc("cambiar_modalidad", { p_id: id, p_modalidad: m }); if (error) fallo(error); },
   async sedes(todas){ let q = sb.from("sedes").select("*").order("nombre"); if (!todas) q = q.eq("activa", true);
     const { data, error } = await q; if (error) fallo(error); return data || []; },
