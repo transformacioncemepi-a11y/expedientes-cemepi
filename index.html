@@ -720,12 +720,17 @@ function inicioHtml(){
   return `<div class="wrap"><div class="welcome">
     <small style="color:var(--accent);font-weight:700;letter-spacing:.06em;text-transform:uppercase">CEMEPI · Piloto</small>
     <h2>Expedientes y documentos psicológicos</h2>
-    <ol class="steps">
+    ${S.rol==="administrativo" && !tengo("supervision_clinica") ? `<ol class="steps">
+      <li><b class="n">1</b><div><b>Abre el expediente</b> de un nuevo consultante de tu sede con sus iniciales, su fecha de nacimiento y la fecha de la primera sesión.</div></li>
+      <li><b class="n">2</b><div><b>Asigna al terapeuta</b> que lo atenderá. Solo él (y la Dirección) verá y escribirá las notas clínicas.</div></li>
+      <li><b class="n">3</b><div><b>Descarga la hoja administrativa</b> en Word para capturar ahí los datos de contacto. Se resguarda aparte del expediente y no se envía por mensajería.</div></li>
+    </ol>
+    <p class="status" style="margin:0">Por confidencialidad, las notas de sesión y los documentos clínicos solo los ven el terapeuta asignado y la Dirección. En <b>Usuarios</b> autorizas las cuentas de tu sede.</p>` : `<ol class="steps">
       <li><b class="n">1</b><div><b>Abre el expediente</b> con las iniciales, la fecha de nacimiento y la fecha de la primera sesión.</div></li>
       <li><b class="n">2</b><div><b>Pega tus notas</b> de cada sesión, solo con iniciales.</div></li>
       <li><b class="n">3</b><div><b>Elige un documento</b>: Claude lo redacta con tus notas, lo revisas y lo descargas en Word con la nota aclaratoria al pie.</div></li>
-    </ol>
-    ${sinPerfil?`<p class="banner">Antes de empezar, captura <b>Mis datos de firma</b> (nombre, cédula y sede). Aparecen en la firma de cada documento. <button class="btn sm" type="button" data-act="perfil">Capturar ahora</button></p>`:""}
+    </ol>`}
+    ${sinPerfil && S.rol!=="administrativo"?`<p class="banner">Antes de empezar, captura <b>Mis datos de firma</b> (nombre, cédula y sede). Aparecen en la firma de cada documento. <button class="btn sm" type="button" data-act="perfil">Capturar ahora</button></p>`:""}
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="button" data-act="new">+ Nuevo expediente</button><button class="btn" type="button" data-act="hoja">Hoja administrativa en blanco (Word)</button></div>
     ${!S.canWrite?`<p class="banner">Tienes acceso de solo lectura.</p>`:""}
   </div></div>`;
@@ -867,7 +872,7 @@ function usuariosHtml(){
   const opRol=(sel)=>rolesAsignables().map(r=>`<option value="${r}"${r===sel?" selected":""}>${ROL_TXT[r]}</option>`).join("");
   const opSede=(sel)=>`${S.rol==="administrativo"?"":`<option value="">Sin sede</option>`}${sedesAsignables().map(s=>`<option value="${esc(s)}"${s===sel?" selected":""}>${esc(s)}</option>`).join("")}`;
   const datos=u=>`<b>${esc(u.nombre||"Sin nombre")}</b><br><span class="status">${esc(u.email)}${u.telefono?" · "+esc(u.telefono):""}${u.cedula?" · Céd. "+esc(u.cedula):""}</span>`;
-  const filaPend=u=>`<tr><td>${datos(u)}</td><td>${esc(ROL_TXT[u.rol_solicitado]||ROL_TXT[u.rol]||"")}${modPill({...u, rol:u.rol_solicitado||u.rol})}<br><span class="status">${esc(u.sede||"Sin sede")}</span></td>
+  const filaPend=u=>`<tr><td>${datos(u)}</td><td>${(u.rol_solicitado||u.rol)==="psicologo"?modPill({...u, rol:"psicologo"}).replace(/^<br>/,""):esc(ROL_TXT[u.rol_solicitado]||ROL_TXT[u.rol]||"")}<br><span class="status">${esc(u.sede||"Sin sede")}</span></td>
     <td>${puedeGestionar(u)?`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
       <select id="ar-rol-${u.id}" aria-label="Rol">${opRol(u.rol_solicitado||u.rol)}</select>
       <select id="ar-sede-${u.id}" aria-label="Sede">${opSede(u.sede)}</select>
@@ -894,7 +899,7 @@ function usuariosHtml(){
         <button class="btn sm primary" type="button" data-act="savePassUsr" data-id="${u.id}">Asignar contraseña</button></div>
         <span class="status">Reemplaza la contraseña que la persona eligió. Compártela en persona o por un canal seguro (nunca junto con el correo en el mismo mensaje) y pídele que la cambie en <b>Mis datos de firma</b>. La bitácora registra quién la cambió, no la contraseña.</span></fieldset>
       <div><button class="btn sm" type="button" data-act="cancelUsr">Cerrar</button></div></div></td></tr>`
-    : `<tr><td>${datos(u)}</td><td><span class="badge-rol">${esc(ROL_TXT[u.rol]||u.rol)}</span>${modPill(u)}<br><span class="status">${esc(u.sede||"Todas las sedes")}</span></td>
+    : `<tr><td>${datos(u)}</td><td>${u.rol==="psicologo"?modPill(u).replace(/^<br>/,""):`<span class="badge-rol">${esc(ROL_TXT[u.rol]||u.rol)}</span>`}<br><span class="status">${esc(u.sede||"Todas las sedes")}</span></td>
       <td><span class="pill estado-${u.estado}">${EST_TXT[u.estado]}</span> ${puedeGestionar(u)?`<button class="btn sm" type="button" data-act="editUsr" data-id="${u.id}">Editar cuenta</button>`:""}${u.id===S.uid?` <span class="status">(tú)</span>`:""}</td></tr>`;
   const act=activos.filter(u=>!(u.rol==="psicologo" && u.modalidad==="comision")), comis=activos.filter(u=>u.rol==="psicologo" && u.modalidad==="comision");
   const tabla=(t,rows,fn,vacio)=>`<section class="doc-sec"><h3 class="sec-h">${t} (${rows.length})</h3>${rows.length?`<div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Rol y sede</th><th></th></tr></thead><tbody>${rows.map(fn).join("")}</tbody></table></div>`:`<p class="status" style="margin:0">${vacio}</p>`}</section>`;
@@ -1279,14 +1284,14 @@ function expedienteHtml(p){
   const f=p.ficha||{}, ro=!S.canWrite, e=age(f.fechaNac);
   const admin = S.rol==="administrativo" && !tengo("supervision_clinica");   /* administrativo: ve los datos del expediente, no el contenido clínico */
   const tabs=admin ? [] : [["notas",`Notas (${S.notas.length})`],["documentos",`Documentos (${S.docs.length})`]];
-  const sedesOpc = admin ? [S.miSede] : SEDES;
+  const sedesOpc = S.rol==="administrativo" ? [S.miSede] : SEDES;
   return `<div class="wrap"><div class="head">
       <div><button class="btn sm back" type="button" data-act="back">← Expedientes</button></div>
       <div class="head-top"><div style="min-width:0"><span class="mono" style="color:var(--accent);font-size:12px">${esc(p.folio||"")}</span><h2>${esc(f.nombre||"Sin iniciales")}</h2></div></div>
-      <div class="meta"><span>Sede <b>${esc(f.sede||"Sin sede")}</b></span><span>Terapeuta <b>${esc(terEtiqueta(S.terapeutas.get(f.terapeutaId)))}</b></span><span>Edad <b>${e!==""?e+" años":"—"}</b></span><span>Primera sesión <b class="mono">${fmtDate(f.primeraSesion)}</b></span><span>Notas <b>${S.notas.length}</b></span></div>
+      <div class="meta"><span>Sede <b>${esc(f.sede||"Sin sede")}</b></span><span>Terapeuta <b>${esc(terEtiqueta(S.terapeutas.get(f.terapeutaId)))}</b></span><span>Edad <b>${e!==""?e+" años":"—"}</b></span><span>Primera sesión <b class="mono">${fmtDate(f.primeraSesion)}</b></span>${admin?"":`<span>Notas <b>${S.notas.length}</b></span>`}</div>
       <div id="staleBox"></div>
       <section class="card">
-        <div class="card-h"><h3>Datos del expediente</h3><span class="status">Solo estos datos. Lo demás sale de tus notas.</span></div>
+        <div class="card-h"><h3>Datos del expediente</h3><span class="status">${admin?"Datos de identificación y asignación. El contenido clínico lo registra el terapeuta.":"Solo estos datos. Lo demás sale de tus notas."}</span></div>
         <form id="frm" class="datos">
           <div class="fld"><label for="fi-nombre">Iniciales *</label><input id="fi-nombre" data-k="nombre" type="text" maxlength="16" value="${esc(f.nombre||"")}" placeholder="Ej. J.L.M.R."${ro?" disabled":""}></div>
           <div class="fld"><label for="fi-nac">Fecha de nacimiento</label><input id="fi-nac" data-k="fechaNac" type="date" value="${esc(f.fechaNac||"")}"${ro?" disabled":""}></div>
