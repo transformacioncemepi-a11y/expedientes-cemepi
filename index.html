@@ -774,6 +774,13 @@ function perfilHtml(){
       <span class="status">Es una imagen de tu firma autógrafa, no la e.firma del SAT. Solo tú la ves en la app; quien reciba el documento sí la verá.</span>
     </section>
     <div class="actions"><button class="btn primary" type="button" data-act="savePerfil">Guardar mis datos</button></div>
+    <section class="firma-box">
+      <div class="card-h"><b>Cambiar mi contraseña</b><span class="status">Mínimo 10 caracteres. Si alguien te asignó una, cámbiala aquí por una que solo tú conozcas.</span></div>
+      <div class="usr-fila">
+        <input id="mp-pass" type="password" autocomplete="new-password" placeholder="Nueva contraseña" aria-label="Nueva contraseña" style="flex:1 1 200px">
+        <input id="mp-pass2" type="password" autocomplete="new-password" placeholder="Repite la nueva contraseña" aria-label="Repite la nueva contraseña" style="flex:1 1 200px">
+        <button class="btn primary" type="button" data-act="saveMiPass">Cambiar mi contraseña</button></div>
+    </section>
   </div></div>`;
 }
 /* ---------- Terapeutas por sede ---------- */
@@ -821,6 +828,9 @@ const rolesAsignables = () => S.rol==="superusuario" ? ["superusuario","direccio
 const sedesAsignables = () => S.rol==="administrativo" ? [S.miSede] : SEDES;
 const puedeGestionar = u => u.id!==S.uid && (S.rol==="superusuario" || (S.rol==="direccion" && ["administrativo","psicologo"].includes(u.rol))
   || (S.rol==="administrativo" && ["administrativo","psicologo"].includes(u.rol) && u.sede===S.miSede));
+/* Contraseña aleatoria legible (sin caracteres que se confunden: 0/O, 1/l/I) */
+function generarContrasena(){ const c="ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789", r=crypto.getRandomValues(new Uint32Array(12));
+  const t=[...r].map(n=>c[n%c.length]).join(""); return `${t.slice(0,4)}-${t.slice(4,8)}-${t.slice(8)}`; }
 const fmtDur = s => { s=Number(s)||0; const h=Math.floor(s/3600), m=Math.round((s%3600)/60); return h ? `${h} h ${m} min` : `${m} min`; };
 async function cargarAdmin(tipo){
   try{
@@ -844,12 +854,25 @@ function usuariosHtml(){
       <select id="ar-sede-${u.id}" aria-label="Sede">${opSede(u.sede)}</select>
       <button class="btn sm primary" type="button" data-act="autorizarUsr" data-id="${u.id}">Autorizar</button>
       <button class="btn sm danger" type="button" data-act="rechazarUsr" data-id="${u.id}">Rechazar</button></div>`:`<span class="status">Lo autoriza ${u.sede?"su sede o ":""}la Dirección</span>`}</td></tr>`;
-  const filaUsr=u=>S.usrEdit===u.id ? `<tr><td>${datos(u)}</td><td colspan="2"><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-      <select id="eu-rol" aria-label="Rol">${opRol(u.rol)}</select><select id="eu-sede" aria-label="Sede">${opSede(u.sede)}</select>
-      <select id="eu-estado" aria-label="Estado">${["activo","suspendido","rechazado","pendiente"].map(e=>`<option value="${e}"${e===u.estado?" selected":""}>${EST_TXT[e]}</option>`).join("")}</select>
-      <button class="btn sm primary" type="button" data-act="saveUsr" data-id="${u.id}">Guardar</button><button class="btn sm" type="button" data-act="cancelUsr">Cancelar</button></div></td></tr>`
+  const filaUsr=u=>S.usrEdit===u.id ? `<tr><td>${datos(u)}</td><td colspan="2"><div class="usr-edit">
+      <fieldset><legend>Rol, sede y estado</legend><div class="usr-fila">
+        <select id="eu-rol" aria-label="Rol">${opRol(u.rol)}</select><select id="eu-sede" aria-label="Sede">${opSede(u.sede)}</select>
+        <select id="eu-estado" aria-label="Estado">${["activo","suspendido","rechazado","pendiente"].map(e=>`<option value="${e}"${e===u.estado?" selected":""}>${EST_TXT[e]}</option>`).join("")}</select>
+        <button class="btn sm primary" type="button" data-act="saveUsr" data-id="${u.id}">Guardar</button></div></fieldset>
+      <fieldset><legend>Datos de la persona</legend><div class="usr-fila">
+        <input id="eu-nombre" type="text" value="${esc(u.nombre||"")}" placeholder="Nombre completo" aria-label="Nombre completo" style="flex:2 1 220px">
+        <input id="eu-cedula" type="text" value="${esc(u.cedula||"")}" placeholder="Cédula profesional" aria-label="Cédula profesional" style="flex:1 1 120px">
+        <input id="eu-tel" type="tel" value="${esc(u.telefono||"")}" placeholder="Teléfono" aria-label="Teléfono" style="flex:1 1 120px">
+        <button class="btn sm primary" type="button" data-act="saveDatosUsr" data-id="${u.id}">Guardar datos</button></div></fieldset>
+      <fieldset><legend>Contraseña</legend><div class="usr-fila">
+        <input id="eu-pass" type="password" autocomplete="new-password" minlength="10" placeholder="Nueva contraseña (mínimo 10 caracteres)" aria-label="Nueva contraseña" style="flex:2 1 220px">
+        <button class="btn sm" type="button" data-act="verPassUsr">Mostrar</button>
+        <button class="btn sm" type="button" data-act="genPassUsr">Generar segura</button>
+        <button class="btn sm primary" type="button" data-act="savePassUsr" data-id="${u.id}">Asignar contraseña</button></div>
+        <span class="status">Reemplaza la contraseña que la persona eligió. Compártela en persona o por un canal seguro (nunca junto con el correo en el mismo mensaje) y pídele que la cambie en <b>Mis datos de firma</b>. La bitácora registra quién la cambió, no la contraseña.</span></fieldset>
+      <div><button class="btn sm" type="button" data-act="cancelUsr">Cerrar</button></div></div></td></tr>`
     : `<tr><td>${datos(u)}</td><td><span class="badge-rol">${esc(ROL_TXT[u.rol]||u.rol)}</span><br><span class="status">${esc(u.sede||"Todas las sedes")}</span></td>
-      <td><span class="pill estado-${u.estado}">${EST_TXT[u.estado]}</span> ${puedeGestionar(u)?`<button class="btn sm" type="button" data-act="editUsr" data-id="${u.id}">Cambiar</button>`:""}${u.id===S.uid?` <span class="status">(tú)</span>`:""}</td></tr>`;
+      <td><span class="pill estado-${u.estado}">${EST_TXT[u.estado]}</span> ${puedeGestionar(u)?`<button class="btn sm" type="button" data-act="editUsr" data-id="${u.id}">Editar cuenta</button>`:""}${u.id===S.uid?` <span class="status">(tú)</span>`:""}</td></tr>`;
   const tabla=(t,rows,fn,vacio)=>`<section class="doc-sec"><h3 class="sec-h">${t} (${rows.length})</h3>${rows.length?`<div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Rol y sede</th><th></th></tr></thead><tbody>${rows.map(fn).join("")}</tbody></table></div>`:`<p class="status" style="margin:0">${vacio}</p>`}</section>`;
   return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:18px">
     <div class="card-h"><h2 style="font-size:24px">Usuarios</h2><span style="display:flex;gap:8px;align-items:center">
@@ -1093,6 +1116,22 @@ document.addEventListener("click", async ev => {
   if (a==="cancelUsr"){ S.usrEdit=null; return render(); }
   if (a==="saveUsr"){ try{ await S.api.gestionar(b.dataset.id,$("#eu-estado").value,$("#eu-rol").value,$("#eu-sede").value); S.usrEdit=null; toast("Cuenta actualizada"); }
     catch(e){ toast(e?.message||"No se pudo actualizar."); } return cargarAdmin("usuarios"); }
+  if (a==="saveDatosUsr"){ const nombre=$("#eu-nombre").value.trim();
+    if (nombre.length<5){ toast("Escribe el nombre completo."); return; }
+    try{ await S.api.editarUsuario(b.dataset.id,nombre,$("#eu-cedula").value.trim(),$("#eu-tel").value.trim()); toast("Datos actualizados"); }
+    catch(e){ toast(e?.message||"No se pudieron guardar los datos."); } return cargarAdmin("usuarios"); }
+  if (a==="verPassUsr"){ const i=$("#eu-pass"); i.type=i.type==="password"?"text":"password"; b.textContent=i.type==="password"?"Mostrar":"Ocultar"; return; }
+  if (a==="genPassUsr"){ const i=$("#eu-pass"); i.value=generarContrasena(); i.type="text"; const v=b.parentNode.querySelector('[data-act="verPassUsr"]'); if(v) v.textContent="Ocultar"; i.select(); return; }
+  if (a==="savePassUsr"){ const p=$("#eu-pass").value;
+    if (p.length<10){ toast("La contraseña debe tener al menos 10 caracteres."); return; }
+    if(!arm(b,"pw"+b.dataset.id,"¿Reemplazar su contraseña?")) return; armed=null; b.classList.remove("armed"); b.textContent=b.dataset.orig;
+    try{ await S.api.asignarContrasena(b.dataset.id,p); $("#eu-pass").value=""; toast("Contraseña asignada. Compártela por un canal seguro."); }
+    catch(e){ toast(e?.message||"No se pudo asignar la contraseña."); } return; }
+  if (a==="saveMiPass"){ const p=$("#mp-pass").value, p2=$("#mp-pass2").value;
+    if (p.length<10){ toast("Usa al menos 10 caracteres."); return; }
+    if (p!==p2){ toast("Las dos contraseñas no coinciden."); return; }
+    try{ await S.api.cambiarMiContrasena(p); $("#mp-pass").value=""; $("#mp-pass2").value=""; toast("Tu contraseña se cambió."); }
+    catch(e){ toast(/different|same/i.test(e?.message||"")?"La nueva contraseña debe ser distinta de la actual.":(e?.message||"No se pudo cambiar la contraseña.")); } return; }
   if (a==="newSede"){ S.sedeEdit={activa:true}; render(); setTimeout(()=>$("#sd-nombre")?.focus(),30); return; }
   if (a==="editSede"){ S.sedeEdit={...S.sedesTodas.find(s=>s.id===b.dataset.id)}; return render(); }
   if (a==="cancelSede"){ S.sedeEdit=null; return render(); }
@@ -1293,6 +1332,11 @@ img{max-width:100%}
 .lg-check input{margin-top:3px}
 .lg-msg.ok{color:var(--ok)}
 .uso-barra{height:8px;border-radius:4px;background:var(--accent);min-width:2px}
+.usr-edit{display:flex;flex-direction:column;gap:10px}
+.usr-edit fieldset{border:1px solid var(--line);border-radius:10px;padding:8px 12px 10px;margin:0;display:flex;flex-direction:column;gap:6px;min-width:0}
+.usr-edit legend{font-size:12px;font-weight:700;padding:0 4px}
+.usr-fila{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.usr-fila input{min-width:0}
 .badge-rol{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
 .estado-pendiente{background:var(--warn-soft);color:var(--warn)}
 .estado-activo{background:var(--ok-soft);color:var(--ok)}

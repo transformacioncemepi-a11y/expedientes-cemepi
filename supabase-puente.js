@@ -248,6 +248,10 @@ const cemepi = {
     if (error) fallo(error); return data || []; },
   async gestionar(id, estado, nuevoRol, sede){ const { error } = await sb.rpc("gestionar_usuario", { p_id: id, p_estado: estado, p_rol: nuevoRol, p_sede: sede || "" });
     if (error) fallo(error); avisar("terapeutas"); },
+  async asignarContrasena(id, pass){ const { error } = await sb.rpc("asignar_contrasena", { p_id: id, p_password: pass }); if (error) fallo(error); },
+  async editarUsuario(id, nombre, cedula, telefono){ const { error } = await sb.rpc("editar_datos_usuario", { p_id: id, p_nombre: nombre, p_cedula: cedula, p_telefono: telefono });
+    if (error) fallo(error); avisar("terapeutas"); },
+  async cambiarMiContrasena(pass){ const { error } = await sb.auth.updateUser({ password: pass }); if (error) fallo(error); },
   async resumenUso(desde){ const { data, error } = await sb.rpc("resumen_uso", { p_desde: desde.toISOString() }); if (error) fallo(error); return data || []; },
 };
 window.__cemepi.resolve({ use: async n => ({ db, user, downloads, cemepi })[n] ?? null });
