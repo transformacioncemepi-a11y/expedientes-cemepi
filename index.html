@@ -48,9 +48,9 @@ button,input,select,textarea{font:inherit;color:inherit}
 .mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 
 .shell{display:grid;grid-template-rows:auto 1fr;height:100%;min-height:0}
-.appbar{background:var(--brand);color:var(--on-brand);display:flex;align-items:center;gap:14px;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.appbar{background:var(--brand);color:var(--on-brand);display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .appbar img{width:46px;height:auto;border-radius:8px;display:block;flex:none}
-.appbar .ttl{min-width:0;flex:1}
+.appbar .ttl{min-width:0;flex:1 1 230px}
 .appbar h1{font-size:19px;font-weight:800;letter-spacing:-.01em;line-height:1.15}
 .appbar small{display:block;font-size:12px;opacity:.85;letter-spacing:.02em}
 .appbar .btn{background:var(--on-brand);color:var(--brand);border-color:var(--on-brand);font-weight:700}
@@ -208,6 +208,7 @@ td.res{white-space:pre-wrap;min-width:220px}
   <button class="btn" id="usoBtn" type="button" data-act="uso" hidden>Tiempo de uso</button>
   <button class="btn" id="terBtn" type="button" data-act="terapeutas">Terapeutas</button>
   <button class="btn" id="regBtn" type="button" data-act="reglamento">Reglamento</button>
+  <button class="btn" id="ctrBtn" type="button" data-act="contratos" hidden>Contratos</button>
   <span class="sesion" id="sesionInfo"></span>
   <button class="btn" id="perfilBtn" type="button" data-act="perfil">Mis datos de firma</button>
   <button class="btn" id="salirBtn" type="button" data-act="salir">Cerrar sesión</button>
@@ -434,12 +435,12 @@ const P = (runs, o={}) => `<w:p><w:pPr>${o.keep?"<w:keepNext/>":""}${o.border?`<
 const BD = ["top","left","bottom","right","insideH","insideV"].map(s=>`<w:${s} w:val="single" w:sz="4" w:space="0" w:color="B8C7DD"/>`).join("");
 const fila = (label, v="", h=420) => `<w:tr><w:trPr><w:trHeight w:val="${h}"/><w:cantSplit/></w:trPr><w:tc><w:tcPr><w:tcW w:w="3400" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="EAF1FB"/><w:vAlign w:val="center"/></w:tcPr>${P(R(label,{sz:18,color:"334A6B"}))}</w:tc><w:tc><w:tcPr><w:tcW w:w="6500" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>${P(RL(v))}</w:tc></w:tr>`;
 const tabla = rows => `<w:tbl><w:tblPr><w:tblW w:w="9900" w:type="dxa"/><w:tblBorders>${BD}</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="50" w:type="dxa"/><w:left w:w="100" w:type="dxa"/><w:bottom w:w="50" w:type="dxa"/><w:right w:w="100" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid><w:gridCol w:w="3400"/><w:gridCol w:w="6500"/></w:tblGrid>${rows}</w:tbl>`;
-const encabezado = folio => { const cx=640080, cy=552000;
+const encabezado = (folio, etiqueta="Folio") => { const cx=640080, cy=552000;
   const logo = `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="1" name="Logotipo CEMEPI"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="1" name="logo.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rIdLogo"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`;
   return `<w:tbl><w:tblPr><w:tblW w:w="9900" w:type="dxa"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid><w:gridCol w:w="1300"/><w:gridCol w:w="5200"/><w:gridCol w:w="3400"/></w:tblGrid><w:tr>
     <w:tc><w:tcPr><w:tcW w:w="1300" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>${P(logo)}</w:tc>
     <w:tc><w:tcPr><w:tcW w:w="5200" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>${P(R("Centro Mexicano de Plenitud Humana, S.C.",{b:1,sz:24,color:"0560BD"}))}${P(R("CEMEPI · Atención psicológica · www.cemepi.com.mx",{sz:17,color:"55688A"}))}</w:tc>
-    <w:tc><w:tcPr><w:tcW w:w="3400" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>${P(R("Folio",{sz:17,color:"55688A"}),{jc:"right"})}${P(R(folio||"________________",{b:1,sz:20}),{jc:"right"})}</w:tc>
+    <w:tc><w:tcPr><w:tcW w:w="3400" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>${P(R(etiqueta,{sz:17,color:"55688A"}),{jc:"right"})}${P(R(folio||"________________",{b:1,sz:20}),{jc:"right"})}</w:tc>
   </w:tr></w:tbl>${P("",{border:1,after:160})}`; };
 const imgXml = (rid, cx, cy, id, name) => `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${id}" name="${name}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${id}" name="${name}.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`;
 /* Firma: si el profesional cargó una, va centrada sobre la línea (máx. 1.9" de ancho y 0.75" de alto) */
@@ -486,21 +487,22 @@ function hojaAdminXml(c){
       <w:tc><w:tcPr><w:tcW w:w="4650" w:type="dxa"/><w:tcBorders><w:top w:val="single" w:sz="6" w:space="0" w:color="0F2340"/></w:tcBorders></w:tcPr>${P(R("Nombre y firma de quien captura (equipo administrativo)",{sz:17}),{jc:"center",before:60})}${P(R("Fecha: ____ / ____ / ________",{sz:17}),{jc:"center",before:60})}</w:tc>
     </w:tr></w:tbl>`;
 }
-function docxBlob(folio, cuerpoXml){
+function docxBlob(folio, cuerpoXml, extras=[], etiqueta){
   const firmaB64 = cuerpoXml.includes('r:embed="rIdFirma"') ? ((S.perfil.firma||"").split(",")[1]||"") : "";
   const NS = `xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"`;
-  const doc = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ${NS}><w:body>${encabezado(folio)}${cuerpoXml}<w:sectPr><w:footerReference w:type="default" r:id="rIdFooter"/><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1000" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="500" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+  const doc = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ${NS}><w:body>${encabezado(folio, etiqueta)}${cuerpoXml}<w:sectPr><w:footerReference w:type="default" r:id="rIdFooter"/><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1000" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="500" w:gutter="0"/></w:sectPr></w:body></w:document>`;
   const footer = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:ftr ${NS}><w:p><w:pPr><w:jc w:val="both"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t xml:space="preserve">${X(NOTA_ACLARATORIA)}</w:t></w:r></w:p></w:ftr>`;
   const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial" w:cs="Arial"/><w:color w:val="0F2340"/><w:sz w:val="20"/><w:szCs w:val="20"/><w:lang w:val="es-MX"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="276" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults></w:styles>`;
   const types = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/></Types>`;
   const rels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`;
-  const docRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rIdFooter" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/><Relationship Id="rIdLogo" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/logo.png"/>${firmaB64?`<Relationship Id="rIdFirma" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/firma.png"/>`:""}</Relationships>`;
+  const docRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rIdFooter" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/><Relationship Id="rIdLogo" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/logo.png"/>${firmaB64?`<Relationship Id="rIdFirma" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/firma.png"/>`:""}${extras.map(e=>`<Relationship Id="${e.rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${e.file}"/>`).join("")}</Relationships>`;
   const zip = new JSZip();
   zip.file("[Content_Types].xml", types); zip.file("_rels/.rels", rels);
   zip.file("word/document.xml", doc); zip.file("word/styles.xml", styles); zip.file("word/footer1.xml", footer);
   zip.file("word/_rels/document.xml.rels", docRels);
   zip.file("word/media/logo.png", (document.querySelector(".appbar img")?.src||"").split(",")[1]||"", {base64:true});
   if (firmaB64) zip.file("word/media/firma.png", firmaB64, {base64:true});
+  for (const e of extras) zip.file(`word/media/${e.file}`, e.b64, {base64:true});
   return zip.generateAsync({type:"blob"});
 }
 async function descargar(nombre, folio, cuerpoXml){
@@ -698,13 +700,14 @@ function renderList(){
 function render(){
   const d=$("#detail"); S.dirty=false; S.stale=false;
   const p=S.pacientes.get(S.sel);
-  $("#app").classList.toggle("open", !!p || ["perfil","terapeutas","usuarios","sedes","uso","reglamento"].includes(S.view));
+  $("#app").classList.toggle("open", !!p || ["perfil","terapeutas","usuarios","sedes","uso","reglamento","contratos"].includes(S.view));
   if (S.view==="perfil"){ d.innerHTML=perfilHtml(); activarPad(); return; }
   if (S.view==="terapeutas"){ d.innerHTML=terapeutasHtml(); return; }
   if (S.view==="usuarios"){ d.innerHTML=usuariosHtml(); return; }
   if (S.view==="sedes"){ d.innerHTML=sedesHtml(); return; }
   if (S.view==="uso"){ d.innerHTML=usoHtml(); return; }
   if (S.view==="reglamento"){ d.innerHTML=reglamentoHtml(); return; }
+  if (S.view==="contratos"){ d.innerHTML=contratosHtml(); return; }
   if (!p){ d.innerHTML=inicioHtml(); return; }
   d.innerHTML=expedienteHtml(p);
 }
@@ -840,6 +843,8 @@ async function cargarAdmin(tipo){
     if (tipo==="sedes"){ S.sedesTodas = await S.api.sedes(true); S.usuarios = S.usuarios || await S.api.usuarios(); }
     if (tipo==="reglamento"){ S.reg = await S.api.reglamento(); S.regAcuses = S.reg ? await S.api.acuses(S.reg.id) : [];
       if (["superusuario","direccion","administrativo"].includes(S.rol)) S.usuarios = await S.api.usuarios(); }
+    if (tipo==="contratos"){ const [pl, ls] = await Promise.all([S.api.plantillaContrato(), S.api.contratos()]); S.ctrPl=pl; S.ctrs=ls;
+      if (["superusuario","direccion"].includes(S.rol)) S.usuarios = await S.api.usuarios(); }
     if (tipo==="uso"){ const d=new Date(); if (S.usoDias===1) d.setHours(0,0,0,0); else d.setDate(d.getDate()-S.usoDias); S.uso = await S.api.resumenUso(d); }
   }catch(e){ toast(e?.message||"No se pudo cargar la información."); }
   if (S.view===tipo) render();
@@ -952,6 +957,172 @@ function reglamentoHtml(){
       <nav class="reg-indice" aria-label="Índice">${(r.contenido||[]).map((sec,i)=>`<button type="button" class="btn sm" data-act="irReg" data-i="${i}">${esc(sec.titulo.replace(/^(Capítulo \d+)\. .*/,"$1").replace(/^(Anexo [IV]+|Anexo operativo)\..*/,"$1").replace(/^Constancia de elaboración.*/,"Firmas"))}</button>`).join("")}</nav></div>
     <div id="regCuerpo" class="reg-cuerpo">${regCuerpoHtml()}</div>
   </div>`; }
+/* ---------- Contratos individuales de psicólogos(as) ----------
+   La persona titular captura sus datos y firma; la Dirección registra la fecha de alta ante el IMSS;
+   el superusuario (representante legal) firma por CEMEPI. Las reglas se validan también en la base de datos. */
+const CTR_CAMPOS = [
+  {k:"paterno", l:"Apellido paterno", req:1}, {k:"materno", l:"Apellido materno"}, {k:"nombres", l:"Nombre(s)", req:1},
+  {k:"ine", l:"Clave de elector (credencial INE)", req:1, re:/^[A-Z0-9]{18}$/i, h:"18 caracteres"},
+  {k:"nacionalidad", l:"Nacionalidad", req:1}, {k:"edad", l:"Edad (años)", req:1, re:/^\d{2}$/, t:"number"},
+  {k:"sexo", l:"Sexo", req:1, op:["Femenino","Masculino"]},
+  {k:"estado_civil", l:"Estado civil", req:1, op:["Soltero(a)","Casado(a)","Unión libre","Divorciado(a)","Viudo(a)"]},
+  {k:"curp", l:"CURP", req:1, re:/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/i, h:"18 caracteres"},
+  {k:"rfc", l:"RFC (con homoclave)", req:1, re:/^[A-ZÑ&]{4}\d{6}[A-Z0-9]{3}$/i, h:"13 caracteres"},
+  {k:"calle", l:"Calle, número y colonia", req:1, ancho:1}, {k:"poblacion", l:"Alcaldía o municipio", req:1},
+  {k:"entidad", l:"Entidad federativa", req:1}, {k:"cp", l:"Código postal", req:1, re:/^\d{5}$/, h:"5 dígitos"},
+  {k:"nss", l:"Número de seguridad social (IMSS)", req:1, re:/^\d{11}$/, h:"11 dígitos"},
+  {k:"salario", l:"Salario diario (pesos)", req:1, re:/^\d+(\.\d{1,2})?$/, t:"number", h:"Ej. 373.67"},
+];
+const ctrNombre = d => [d.paterno, d.materno, d.nombres].filter(Boolean).join(" ").toUpperCase();
+const apocope = t => t.replace(/VEINTIUNO$/,"VEINTIÚN").replace(/UNO$/,"UN");
+function numeroALetras(n){
+  const U=["","UNO","DOS","TRES","CUATRO","CINCO","SEIS","SIETE","OCHO","NUEVE","DIEZ","ONCE","DOCE","TRECE","CATORCE","QUINCE","DIECISÉIS","DIECISIETE","DIECIOCHO","DIECINUEVE","VEINTE","VEINTIUNO","VEINTIDÓS","VEINTITRÉS","VEINTICUATRO","VEINTICINCO","VEINTISÉIS","VEINTISIETE","VEINTIOCHO","VEINTINUEVE"];
+  const D=["","","","TREINTA","CUARENTA","CINCUENTA","SESENTA","SETENTA","OCHENTA","NOVENTA"];
+  const C=["","CIENTO","DOSCIENTOS","TRESCIENTOS","CUATROCIENTOS","QUINIENTOS","SEISCIENTOS","SETECIENTOS","OCHOCIENTOS","NOVECIENTOS"];
+  const menorMil = x => { if (x===100) return "CIEN"; const c=Math.floor(x/100), r=x%100; let t=C[c];
+    const rr = r<30 ? U[r] : D[Math.floor(r/10)] + (r%10 ? " Y "+U[r%10] : ""); return [t, rr].filter(Boolean).join(" "); };
+  const enteros = x => { if (x===0) return "CERO"; const m=Math.floor(x/1e6), k=Math.floor((x%1e6)/1000), r=x%1000; const p=[];
+    if (m) p.push(m===1 ? "UN MILLÓN" : apocope(enteros(m))+" MILLONES");
+    if (k) p.push(k===1 ? "MIL" : apocope(menorMil(k))+" MIL");
+    if (r) p.push(menorMil(r)); return p.join(" "); };
+  const v=Math.round(Number(n)*100), e=Math.floor(v/100), cts=String(v%100).padStart(2,"0");
+  const pal=apocope(enteros(e)), suf = /(MILLÓN|MILLONES)$/.test(pal) ? " DE PESOS" : (e===1?" PESO":" PESOS");
+  return `${pal}${suf} ${cts}/100 M.N.`;
+}
+const fmtSalario = n => Number(n).toLocaleString("es-MX",{minimumFractionDigits:2, maximumFractionDigits:2});
+const fechaAltaLarga = f => { if (!f) return ""; const [y,m,d]=f.split("-").map(Number); return new Date(y,m-1,d).toLocaleDateString("es-MX",{weekday:"long",day:"numeric",month:"long",year:"numeric"}); };
+function ctrFaltantes(c){
+  const d=c?.datos||{}, f=[];
+  for (const k of CTR_CAMPOS){ const v=String(d[k.k]??"").trim(); if (k.req && !v) f.push(k.l); else if (v && k.re && !k.re.test(v)) f.push(`${k.l} (${k.h||"formato"})`); }
+  const bs=(d.beneficiarios||[]).filter(b=>b.nombre?.trim());
+  if (!bs.length) f.push("Al menos un beneficiario");
+  else { const tot=bs.reduce((a,b)=>a+Number(b.pct||0),0); if (Math.abs(tot-100)>0.01) f.push(`Porcentajes de beneficiarios (suman ${tot}%, deben sumar 100%)`);
+    if (bs.some(b=>!b.parentesco?.trim()||!String(b.edad??"").trim())) f.push("Edad y parentesco de cada beneficiario"); }
+  return f;
+}
+function ctrEstado(c){
+  if (!c) return {t:"Sin iniciar", cl:"estado-pendiente"};
+  if (c.firma_trabajador && c.firma_cemepi) return {t:"Firmado por ambas partes", cl:"estado-activo"};
+  if (c.firma_trabajador) return {t:"Falta firma de CEMEPI", cl:"estado-pendiente"};
+  if (ctrFaltantes(c).length) return {t:"Capturando datos", cl:"estado-pendiente"};
+  if (!c.fecha_alta) return {t:"Falta fecha de alta IMSS", cl:"estado-pendiente"};
+  return {t:"Falta firma del profesionista", cl:"estado-pendiente"};
+}
+function ctrValores(c){
+  const d=c.datos||{}, P_=v=>v&&String(v).trim()?String(v).trim():"[Dato pendiente]";
+  const dom=[d.calle,d.poblacion,d.entidad,d.cp].filter(x=>String(x||"").trim()).join(", ").toUpperCase();
+  return { ART_C: d.sexo==="Masculino"?"EL":"LA", NOMBRE: ctrNombre(d)||"[Dato pendiente]", INE:P_(d.ine).toUpperCase(), NACIONALIDAD:P_(d.nacionalidad),
+    EDAD:P_(d.edad), SEXO:P_(d.sexo), ESTADO_CIVIL:P_(d.estado_civil), CURP:P_(d.curp).toUpperCase(), RFC:P_(d.rfc).toUpperCase(),
+    DOMICILIO:dom||"[Dato pendiente]", NSS:P_(d.nss), SALARIO: d.salario?fmtSalario(d.salario):"[Dato pendiente]",
+    SALARIO_LETRA: d.salario?numeroALetras(d.salario):"[Dato pendiente]", FECHA_ALTA: c.fecha_alta?fechaAltaLarga(c.fecha_alta):"[fecha de alta ante el IMSS pendiente]" };
+}
+const ctrSust = (t, v) => t.replace(/\{\{([A-Z_]+)\}\}/g, (m,k)=>v[k]??m);
+const ctrCentrado = p => /^(D E C L A R A C I O N E S|C L A U S U L A S|PROTESTAMOS LO NECESARIO EN DERECHO)$/.test(p);
+const ctrEtiqueta = p => (p.match(/^((?:[IVX]+|PRIMERA|SEGUNDA|TERCERA|CUARTA|QUINTA|SEXTA|SÉPTIMA|OCTAVA|NOVENA|DÉCIMA(?: [A-ZÉ]+)?|VIGÉSIMA(?: [A-ZÉ]+)?)\.-)/)||[])[1]||"";
+const FIRMA_REP = {nombre:"ROMEL MONROY BARRÓN", cargo:"REPRESENTANTE LEGAL DE CEMEPI"};
+const fmtFH = f => f ? new Date(f).toLocaleString("es-MX",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}) : "";
+function ctrVistaHtml(c){
+  const v=ctrValores(c), d=c.datos||{}, bs=(d.beneficiarios||[]).filter(b=>b.nombre?.trim());
+  return (S.ctrPl?.cuerpo||[]).map((p,i)=>{
+    if (p==="{{BENEFICIARIOS}}") return `<div class="tbl-wrap"><table><thead><tr><th>Nombre</th><th>Edad</th><th>Parentesco o relación</th><th>%</th></tr></thead><tbody>${bs.length?bs.map(b=>`<tr><td>${esc(b.nombre.toUpperCase())}</td><td>${esc(b.edad||"")}</td><td>${esc(b.parentesco||"")}</td><td>${esc(b.pct||"")}</td></tr>`).join(""):`<tr><td colspan="4">[Beneficiarios pendientes]</td></tr>`}</tbody></table></div>`;
+    if (p==="{{FIRMAS}}") { const caja=(tit,img,nom,car,f)=>`<div class="ctr-firma"><b>${tit}</b><div class="ctr-firma-img">${img?`<img src="${img}" alt="Firma">`:""}</div><div class="ctr-linea"></div><b>${esc(nom)}</b>${car?`<span>${esc(car)}</span>`:""}${f?`<small>Firma registrada en la app: ${esc(fmtFH(f))}</small>`:""}</div>`;
+      return `<div class="ctr-firmas">${caja("POR “CEMEPI”",c.firma_cemepi,FIRMA_REP.nombre,FIRMA_REP.cargo,c.firma_cemepi_en)}${caja("“EL PROFESIONISTA”",c.firma_trabajador,v.NOMBRE,"",c.firma_trabajador_en)}</div>`; }
+    const t=esc(ctrSust(p,v)).replace(/\[[^\]]*pendiente[^\]]*\]/gi, m=>`<mark>${m}</mark>`);
+    if (i===0 || ctrCentrado(p)) return `<p class="ctr-c"><b>${t}</b></p>`;
+    const e=ctrEtiqueta(p); return `<p>${e?`<b>${esc(e)}</b>${t.slice(esc(e).length)}`:t}</p>`;
+  }).join("");
+}
+function ctrFormHtml(c){
+  const d=c.datos||{}, bs=[...(d.beneficiarios||[])]; while (bs.length<4) bs.push({});
+  const campo=k=>{ const v=d[k.k]??(k.k==="nacionalidad"?"Mexicana":"");
+    const ctl = k.op ? `<select id="ck-${k.k}" data-ck="${k.k}"><option value=""></option>${k.op.map(o=>`<option${o===v?" selected":""}>${o}</option>`).join("")}</select>`
+      : `<input id="ck-${k.k}" data-ck="${k.k}" type="${k.t||"text"}" ${k.t==="number"?'step="any" inputmode="decimal"':""} value="${esc(v)}" ${k.re&&!k.t?'style="text-transform:uppercase"':""}>`;
+    return `<div class="fld"${k.ancho?' style="grid-column:1/-1"':""}><label for="ck-${k.k}">${esc(k.l)}${k.req?" *":""}</label>${ctl}${k.h?`<small class="hint">${esc(k.h)}</small>`:""}</div>`; };
+  return `<form id="frmCtr" class="datos">${CTR_CAMPOS.map(campo).join("")}
+    <div class="fld" style="grid-column:1/-1"><label>Salario en letra (automático)</label><input type="text" id="ctrLetra" value="${esc(d.salario?numeroALetras(d.salario):"")}" disabled></div></form>
+    <h4 style="margin:14px 0 6px">Beneficiarios en caso de fallecimiento o desaparición *</h4>
+    <div class="tbl-wrap"><table><thead><tr><th>Nombre completo</th><th>Edad</th><th>Parentesco o relación</th><th>%</th></tr></thead><tbody>
+      ${bs.slice(0,4).map((b,i)=>`<tr><td><input data-bk="${i}.nombre" value="${esc(b.nombre||"")}" aria-label="Nombre del beneficiario ${i+1}"></td><td><input data-bk="${i}.edad" type="number" min="0" value="${esc(b.edad||"")}" style="width:70px" aria-label="Edad"></td><td><input data-bk="${i}.parentesco" value="${esc(b.parentesco||"")}" aria-label="Parentesco"></td><td><input data-bk="${i}.pct" type="number" min="0" max="100" value="${esc(b.pct||"")}" style="width:70px" aria-label="Porcentaje"></td></tr>`).join("")}
+    </tbody></table></div>`;
+}
+function ctrLeerForm(){
+  const d={}; document.querySelectorAll("[data-ck]").forEach(el=>{ let v=el.value.trim(); const k=CTR_CAMPOS.find(x=>x.k===el.dataset.ck); if (k?.re && !k.t) v=v.toUpperCase(); d[el.dataset.ck]=v; });
+  const bs=[]; document.querySelectorAll("[data-bk]").forEach(el=>{ const [i,f]=el.dataset.bk.split("."); (bs[i]=bs[i]||{})[f]=el.value.trim(); });
+  d.beneficiarios=bs.filter(b=>b&&b.nombre); return d;
+}
+function contratoHtml(c, propio){
+  const dir=["superusuario","direccion"].includes(S.rol), su=S.rol==="superusuario", est=ctrEstado(c), firmado=!!(c.firma_trabajador&&c.firma_cemepi);
+  const falt=ctrFaltantes(c), nom=ctrNombre(c.datos||{})||"Sin nombre capturado";
+  const datos = propio && !firmado ? `<section class="note"><div class="note-h"><h3>Mis datos para el contrato</h3></div>
+      <p class="status" style="margin:0">Datos personales confidenciales: solo los ven tú y la Dirección. ${c.firma_trabajador?"<b>Si cambias algo, tu firma (y la de CEMEPI, si ya existe) se anulará y habrá que volver a firmar.</b>":""}</p>
+      ${ctrFormHtml(c)}<div class="actions"><button class="btn primary" type="button" data-act="saveCtr">Guardar mis datos</button></div></section>`
+    : `<section class="note"><div class="note-h"><h3>Datos del profesionista</h3></div>${tabla0(c)}</section>`;
+  const alta = `<section class="note"><div class="note-h"><h3>Fecha de alta ante el IMSS</h3></div>
+    ${dir && !firmado ? `<div class="usr-fila"><input id="ctrAlta" type="date" value="${esc(c.fecha_alta||"")}" aria-label="Fecha de alta ante el IMSS"><button class="btn sm primary" type="button" data-act="saveAlta">Guardar fecha de alta</button></div>
+      <span class="status">Es también la fecha de celebración que aparece en el contrato. Cambiarla anula las firmas existentes.</span>`
+      : `<p style="margin:0">${c.fecha_alta?esc(fechaAltaLarga(c.fecha_alta)):`<span class="pill estado-pendiente">Pendiente</span> La registra la Dirección.`}</p>`}</section>`;
+  const tieneFirma=!!S.perfil?.firma;
+  const acciones=[];
+  if (propio && !c.firma_trabajador) acciones.push(falt.length||!c.fecha_alta ? `<span class="status">Para firmar: ${falt.length?"completa tus datos":"falta la fecha de alta que registra la Dirección"}.</span>`
+    : tieneFirma ? `<button class="btn primary" type="button" data-act="firmarCtr">Firmar mi contrato</button>` : `<span class="status">Primero guarda tu firma en <b>Mis datos de firma</b>.</span>`);
+  if (propio && c.firma_trabajador && !c.firma_cemepi) acciones.push(`<button class="btn sm" type="button" data-act="retirarCtr">Retirar mi firma</button>`);
+  if (su && c.firma_trabajador && !c.firma_cemepi) acciones.push(tieneFirma?`<button class="btn primary" type="button" data-act="firmarCemepi">Firmar por CEMEPI</button>`:`<span class="status">Guarda tu firma en <b>Mis datos de firma</b> para firmar por CEMEPI.</span>`);
+  if (su && firmado) acciones.push(`<button class="btn sm danger" type="button" data-act="reabrirCtr">Reabrir contrato (anula ambas firmas)</button>`);
+  const firmas = `<section class="note"><div class="note-h"><h3>Firmas</h3></div>
+    <p style="margin:0">“EL PROFESIONISTA”: ${c.firma_trabajador?`✓ firmado el ${esc(fmtFH(c.firma_trabajador_en))}`:"pendiente"}<br>POR “CEMEPI” (representante legal): ${c.firma_cemepi?`✓ firmado el ${esc(fmtFH(c.firma_cemepi_en))}`:"pendiente"}</p>
+    <div class="usr-fila">${acciones.join("")}</div>
+    <span class="status">La firma es la imagen de tu firma autógrafa guardada en la app, con fecha y hora; no es la e.firma del SAT. Conviene firmar además el ejemplar impreso.</span></section>`;
+  return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">
+    <div class="card-h"><h2 style="font-size:22px">${propio?"Mi contrato":esc(nom)}</h2><span style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" type="button" data-act="wordCtr">Descargar Word</button>${!propio?`<button class="btn" type="button" data-act="listaCtr">Volver a la lista</button>`:""}<button class="btn" type="button" data-act="home">Cerrar</button></span></div>
+    <div><span class="pill ${est.cl}">${esc(est.t)}</span>${falt.length?` <span class="status">Falta: ${esc(falt.join(" · "))}</span>`:""}</div>
+    ${datos}${alta}${firmas}
+    <details class="note"><summary><b>Ver el contrato completo</b></summary><div class="ctr-doc">${ctrVistaHtml(c)}</div></details>
+  </div>`;
+}
+function tabla0(c){ const d=c.datos||{}, v=ctrValores(c), bs=(d.beneficiarios||[]).filter(b=>b.nombre);
+  const rows=[["Nombre",v.NOMBRE],["Clave de elector",v.INE],["Nacionalidad",v.NACIONALIDAD],["Edad",v.EDAD],["Sexo",v.SEXO],["Estado civil",v.ESTADO_CIVIL],["CURP",v.CURP],["RFC",v.RFC],["Domicilio",v.DOMICILIO],["NSS",v.NSS],["Salario diario",`${v.SALARIO} (${v.SALARIO_LETRA})`],["Beneficiarios",bs.map(b=>`${b.nombre} (${b.parentesco}, ${b.edad} años, ${b.pct}%)`).join("; ")||"[Dato pendiente]"]];
+  return `<div class="tbl-wrap"><table><tbody>${rows.map(([k,x])=>`<tr><th style="width:34%">${esc(k)}</th><td>${esc(x)}</td></tr>`).join("")}</tbody></table></div>`; }
+function contratosHtml(){
+  if (!S.ctrPl && S.ctrs===undefined) return `<div class="wrap" style="padding-block:24px"><p class="status">Cargando contratos…</p></div>`;
+  if (!S.ctrPl) return `<div class="wrap" style="padding-block:24px"><p class="status">No hay una plantilla de contrato publicada.</p><button class="btn" type="button" data-act="home">Cerrar</button></div>`;
+  const dir=["superusuario","direccion"].includes(S.rol);
+  if (!dir){ const c=(S.ctrs||[]).find(x=>x.user_id===S.uid);
+    if (!c) return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:14px"><div class="card-h"><h2 style="font-size:22px">Mi contrato</h2><button class="btn" type="button" data-act="home">Cerrar</button></div>
+      <p>Aquí capturas los datos de tu contrato individual de trabajo con CEMEPI (${esc(S.ctrPl.nombre)}). La Dirección registra tu fecha de alta ante el IMSS; después firmas tú y al final firma el representante legal de CEMEPI.</p>
+      <div><button class="btn primary" type="button" data-act="nuevoCtr">Comenzar mi contrato</button></div></div>`;
+    return contratoHtml(c, true); }
+  if (S.ctrSel){ const c=(S.ctrs||[]).find(x=>x.id===S.ctrSel); if (c) return contratoHtml(c, c.user_id===S.uid); }
+  const porUid=new Map((S.ctrs||[]).map(c=>[c.user_id,c])), us=(S.usuarios||[]).filter(u=>u.rol==="psicologo" && u.estado==="activo");
+  const extra=(S.ctrs||[]).filter(c=>!us.some(u=>u.id===c.user_id));
+  const filas=[...us.map(u=>({u, c:porUid.get(u.id)})), ...extra.map(c=>({u:(S.usuarios||[]).find(x=>x.id===c.user_id)||{nombre:ctrNombre(c.datos||{}),email:""}, c}))]
+    .sort((a,b)=>(a.u.sede||"").localeCompare(b.u.sede||"")||(a.u.nombre||"").localeCompare(b.u.nombre||""));
+  return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">
+    <div class="card-h"><h2 style="font-size:24px">Contratos de psicólogos(as)</h2><button class="btn" type="button" data-act="home">Cerrar</button></div>
+    <p class="status" style="margin:0">Cada psicólogo(a) captura sus datos y firma desde <b>Contratos</b>. La Dirección registra la fecha de alta ante el IMSS y el representante legal firma por CEMEPI. Datos personales confidenciales: no se comparten por mensajería.</p>
+    <div class="tbl-wrap"><table><thead><tr><th>Psicólogo(a)</th><th>Sede</th><th>Alta IMSS</th><th>Estado</th><th></th></tr></thead><tbody>
+      ${filas.map(({u,c})=>{ const e=ctrEstado(c); return `<tr><td><b>${esc(u.nombre||"Sin nombre")}</b><br><span class="status">${esc(u.email||"")}</span></td><td>${esc(u.sede||"")}</td><td>${c?.fecha_alta?esc(fmtDate(c.fecha_alta)):"—"}</td><td><span class="pill ${e.cl}">${esc(e.t)}</span></td>
+        <td>${c?`<button class="btn sm" type="button" data-act="verCtr" data-id="${c.id}">Abrir</button>`:`<span class="status">Aún no lo inicia</span>`}</td></tr>`; }).join("") || `<tr><td colspan="5">No hay psicólogos(as) activos.</td></tr>`}
+    </tbody></table></div></div>`;
+}
+/* Word del contrato con ambas firmas (si existen) */
+function ctrWordXml(c){
+  const v=ctrValores(c), d=c.datos||{}, bs=(d.beneficiarios||[]).filter(b=>b.nombre), ext=[];
+  const img=(data, w, h, rid, id)=>{ if (!data) return ""; ext.push({rid, file:rid+".png", b64:data.split(",")[1]||""}); const r=(h||1)/(w||1); let cx=1737360, cy=Math.round(cx*r); if (cy>685800){ cy=685800; cx=Math.round(cy/r); } return P(imgXml(rid,cx,cy,id,"Firma"),{jc:"center"}); };
+  const celda=(w, inner)=>`<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/></w:tcPr>${inner}</w:tc>`;
+  const tblB=rows=>`<w:tbl><w:tblPr><w:tblW w:w="9900" w:type="dxa"/><w:tblBorders>${BD}</w:tblBorders><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid><w:gridCol w:w="4600"/><w:gridCol w:w="1000"/><w:gridCol w:w="3300"/><w:gridCol w:w="1000"/></w:tblGrid>${rows}</w:tbl>`;
+  const filaB=(a,b,c2,d2,bold)=>`<w:tr>${[[4600,a],[1000,b],[3300,c2],[1000,d2]].map(([w,t])=>celda(w,P(R(t,{b:bold,sz:18})))).join("")}</w:tr>`;
+  const cuerpo=(S.ctrPl.cuerpo||[]).map((p,i)=>{
+    if (p==="{{BENEFICIARIOS}}") return tblB(filaB("NOMBRE","EDAD","PARENTESCO O RELACIÓN","%",1)+(bs.length?bs:[{},{},{}]).map(b=>filaB((b.nombre||"").toUpperCase(),b.edad||"",b.parentesco||"",b.pct||"")).join(""))+P("",{after:120});
+    if (p==="{{FIRMAS}}"){ const lado=(tit,data,w,h,rid,id,nom,car,f)=>P(R(tit,{b:1}),{jc:"center",after:120})+(data?img(data,w,h,rid,id):P("",{before:700}))+P(R("__________________________________"),{jc:"center"})+P(R(nom,{b:1}),{jc:"center"})+(car?P(R(car,{sz:18}),{jc:"center"}):"")+(f?P(R(`Firma registrada en la app: ${fmtFH(f)}`,{sz:14,color:"55688A"}),{jc:"center"}):"");
+      return P("",{before:300})+`<w:tbl><w:tblPr><w:tblW w:w="9900" w:type="dxa"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid><w:gridCol w:w="4950"/><w:gridCol w:w="4950"/></w:tblGrid><w:tr>${celda(4950,lado("POR “CEMEPI”",c.firma_cemepi,c.firma_cemepi_w,c.firma_cemepi_h,"rIdFirmaC",11,FIRMA_REP.nombre,FIRMA_REP.cargo,c.firma_cemepi_en))}${celda(4950,lado("“EL PROFESIONISTA”",c.firma_trabajador,c.firma_trabajador_w,c.firma_trabajador_h,"rIdFirmaP",12,v.NOMBRE,"",c.firma_trabajador_en))}</w:tr></w:tbl>`; }
+    const t=ctrSust(p,v);
+    if (i===0) return P(R(t,{b:1,sz:20}),{jc:"both",after:200});
+    if (ctrCentrado(p)) return P(R(t,{b:1,sz:21}),{jc:"center",before:200,after:160});
+    const e=ctrEtiqueta(p); return P((e?R(e,{b:1}):"")+R(t.slice(e.length)),{jc:"both",after:120});
+  }).join("");
+  return {xml:cuerpo, ext};
+}
 function usoHtml(){
   const per=[[1,"Hoy"],[7,"Últimos 7 días"],[30,"Últimos 30 días"],[90,"Últimos 90 días"]];
   const filas=(S.uso||[]).filter(u=>!S.usoSede || u.sede===S.usoSede);
@@ -1162,6 +1333,30 @@ document.addEventListener("click", async ev => {
   if (a==="cancelRegLey"){ S.regLeyEdit=false; return render(); }
   if (a==="saveRegLey"){ const t=$("#regLey").value.trim();
     try{ await S.api.guardarLeyenda(S.reg.id,t); S.reg.leyenda=t; S.regLeyEdit=false; toast("Leyenda actualizada"); }catch(e){ toast(e?.message||"No se pudo guardar."); } return render(); }
+  if (a==="contratos"){ S.view="contratos"; S.ctrSel=null; S.ctrPl=null; S.ctrs=undefined; render(); return cargarAdmin("contratos"); }
+  if (a==="listaCtr"){ S.ctrSel=null; return render(); }
+  if (a==="verCtr"){ S.ctrSel=b.dataset.id; render(); $("#detail").scrollTop=0; return; }
+  if (a==="nuevoCtr"){ try{ const c=await S.api.crearContrato({nacionalidad:"Mexicana", ...(S.perfil?.nombre?{}:{})}); S.ctrs=[...(S.ctrs||[]), c]; }catch(e){ toast(e?.message||"No se pudo iniciar el contrato."); } return render(); }
+  if (a==="saveCtr"){ const c=S.ctrs.find(x=>x.user_id===S.uid); const d=ctrLeerForm();
+    if (c.firma_trabajador && !arm(b,"ctrsave","Guardar y anular mi firma")) return; armed=null;
+    try{ const n=await S.api.guardarContrato(c.id,{datos:d}); S.ctrs=S.ctrs.map(x=>x.id===n.id?n:x); toast(ctrFaltantes(n).length?"Datos guardados. Aún faltan algunos.":"Datos guardados."); }catch(e){ toast(e?.message||"No se pudieron guardar los datos."); } return render(); }
+  if (a==="saveAlta"){ const c=S.ctrs.find(x=>x.id===S.ctrSel), f=$("#ctrAlta").value||null;
+    if ((c.firma_trabajador||c.firma_cemepi) && !arm(b,"alta","Guardar y anular firmas")) return; armed=null;
+    try{ const n=await S.api.guardarContrato(c.id,{fecha_alta:f}); S.ctrs=S.ctrs.map(x=>x.id===n.id?n:x); toast("Fecha de alta guardada."); }catch(e){ toast(e?.message||"No se pudo guardar la fecha."); } return render(); }
+  if (a==="firmarCtr" || a==="firmarCemepi"){ const c=S.ctrs.find(x=>a==="firmarCtr"?x.user_id===S.uid:x.id===S.ctrSel);
+    if(!arm(b,"firma"+a,"¿Firmar? Confirma")) return; armed=null;
+    const f=S.perfil.firma, w=S.perfil.firmaW||null, h=S.perfil.firmaH||null;
+    const cambios = a==="firmarCtr" ? {firma_trabajador:f, firma_trabajador_w:w, firma_trabajador_h:h} : {firma_cemepi:f, firma_cemepi_w:w, firma_cemepi_h:h};
+    try{ const n=await S.api.guardarContrato(c.id,cambios); S.ctrs=S.ctrs.map(x=>x.id===n.id?n:x); toast("Firma registrada."); }catch(e){ toast(e?.message||"No se pudo firmar."); } return render(); }
+  if (a==="retirarCtr"){ const c=S.ctrs.find(x=>x.user_id===S.uid); if(!arm(b,"retirar","¿Retirar tu firma?")) return; armed=null;
+    try{ const n=await S.api.guardarContrato(c.id,{firma_trabajador:null}); S.ctrs=S.ctrs.map(x=>x.id===n.id?n:x); toast("Firma retirada."); }catch(e){ toast(e?.message||"No se pudo retirar la firma."); } return render(); }
+  if (a==="reabrirCtr"){ const c=S.ctrs.find(x=>x.id===S.ctrSel); if(!arm(b,"reabrir","¿Anular ambas firmas?")) return; armed=null;
+    try{ const n=await S.api.guardarContrato(c.id,{firma_cemepi:null, firma_trabajador:null}); S.ctrs=S.ctrs.map(x=>x.id===n.id?n:x); toast("Contrato reabierto: las firmas se anularon."); }catch(e){ toast(e?.message||"No se pudo reabrir."); } return render(); }
+  if (a==="wordCtr"){ const c=S.ctrs.find(x=>S.ctrSel?x.id===S.ctrSel:x.user_id===S.uid); const {xml, ext}=ctrWordXml(c);
+    if (typeof JSZip==="undefined"){ toast("No se pudo preparar el Word. Recarga la página."); return; }
+    const dl=await window.claude?.use?.("downloads");
+    try{ const blob=await docxBlob("Contrato individual", xml, ext, "Documento"); await dl.save({filename:`Contrato-${slug(ctrNombre(c.datos||{})||"profesionista")}.docx`, data:blob}); toast("Contrato descargado. Contiene datos personales: resguárdalo y no lo envíes por mensajería."); }
+    catch(e){ if(e?.code!=="declined") toast("No se pudo descargar el contrato."); } return; }
   if (a==="uso"){ S.view="uso"; S.usoDias=S.usoDias||7; S.uso=null; render(); return cargarAdmin("uso"); }
   if (a==="autorizarUsr"){ const id=b.dataset.id;
     try{ await S.api.gestionar(id,"activo",$(`#ar-rol-${id}`).value,$(`#ar-sede-${id}`).value); toast("Cuenta autorizada"); }catch(e){ toast(e?.message||"No se pudo autorizar."); }
@@ -1316,6 +1511,7 @@ document.addEventListener("change", ev => {
 });
 document.addEventListener("input", ev => {
   if (ev.target.id==="q"){ S.q=ev.target.value; return renderList(); }
+  if (ev.target.dataset?.ck==="salario"){ const l=$("#ctrLetra"); if (l) l.value=/^\d+(\.\d{1,2})?$/.test(ev.target.value)?numeroALetras(ev.target.value):""; }
   if (ev.target.id==="regBuscar"){ S.regQ=ev.target.value; $("#regCuerpo").innerHTML=regCuerpoHtml(); return; }
   if (ev.target.closest("#frm, #frmNota")) S.dirty=true;
   if (S.gen && ev.target.closest(".gen")) S.gen.guardado=false;
@@ -1339,6 +1535,7 @@ render();
     $("#usrBtn").hidden = !["superusuario","direccion","administrativo"].includes(S.rol);
     $("#sedBtn").hidden = !["superusuario","direccion"].includes(S.rol);
     $("#usoBtn").hidden = S.rol!=="superusuario";
+    $("#ctrBtn").hidden = !["superusuario","direccion","psicologo"].includes(S.rol);
     if (S.rol==="administrativo"){ S.sedeF=S.miSede; }
   }
   /* La Dirección y los administrativos ven las cuentas para vincularlas con el directorio de terapeutas */
@@ -1405,6 +1602,16 @@ img{max-width:100%}
 .reg-sec mark{background:#ffe58a;color:inherit;border-radius:3px}
 /* El reglamento no se imprime (decisión de la Dirección, 2026-11-20) */
 @media print{ body:has(.reg) .shell{display:none!important} body:has(.reg)::after{content:"El Reglamento Interior de Trabajo se consulta solo dentro de la app.";display:block;padding:40px;font:16px sans-serif} }
+.ctr-doc{max-width:860px;font-size:14px}
+.ctr-doc p{margin:0 0 10px;line-height:1.55;text-align:justify}
+.ctr-doc .ctr-c{text-align:center;margin-top:14px}
+.ctr-doc mark{background:#ffe58a;color:inherit;border-radius:3px}
+.ctr-firmas{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:20px}
+.ctr-firma{display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px}
+.ctr-firma-img{height:70px;display:flex;align-items:flex-end}.ctr-firma-img img{max-height:70px;max-width:200px}
+.ctr-linea{width:80%;border-top:1px solid var(--fg);margin:2px 0 4px}
+.ctr-firma small{color:var(--muted);font-size:11px}
+details.note summary{cursor:pointer}
 .usr-edit{display:flex;flex-direction:column;gap:10px}
 .usr-edit fieldset{border:1px solid var(--line);border-radius:10px;padding:8px 12px 10px;margin:0;display:flex;flex-direction:column;gap:6px;min-width:0}
 .usr-edit legend{font-size:12px;font-weight:700;padding:0 4px}

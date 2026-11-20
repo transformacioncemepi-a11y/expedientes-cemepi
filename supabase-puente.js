@@ -257,6 +257,11 @@ const cemepi = {
   async acuses(regId){ const { data, error } = await sb.from("reglamento_acuses").select("user_id,fecha").eq("reglamento_id", regId); if (error) fallo(error); return data || []; },
   async acusar(regId){ const { error } = await sb.from("reglamento_acuses").insert({ reglamento_id: regId }); if (error) fallo(error); },
   async guardarLeyenda(regId, leyenda){ const { error } = await sb.from("reglamento").update({ leyenda }).eq("id", regId); if (error) fallo(error); },
+  async plantillaContrato(){ const { data, error } = await sb.from("contrato_plantilla").select("id,nombre,version,cuerpo").eq("vigente", true).order("creado", { ascending: false }).limit(1);
+    if (error) fallo(error); return data?.[0] || null; },
+  async contratos(){ const { data, error } = await sb.from("contratos").select("*"); if (error) fallo(error); return data || []; },
+  async crearContrato(datos){ const { data, error } = await sb.from("contratos").insert({ datos }).select().single(); if (error) fallo(error); return data; },
+  async guardarContrato(id, cambios){ const { data, error } = await sb.from("contratos").update(cambios).eq("id", id).select().single(); if (error) fallo(error); return data; },
   async resumenUso(desde){ const { data, error } = await sb.rpc("resumen_uso", { p_desde: desde.toISOString() }); if (error) fallo(error); return data || []; },
 };
 window.__cemepi.resolve({ use: async n => ({ db, user, downloads, cemepi })[n] ?? null });
