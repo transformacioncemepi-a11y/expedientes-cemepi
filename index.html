@@ -207,6 +207,7 @@ td.res{white-space:pre-wrap;min-width:220px}
   <button class="btn" id="sedBtn" type="button" data-act="sedes" hidden>Sedes</button>
   <button class="btn" id="usoBtn" type="button" data-act="uso" hidden>Tiempo de uso</button>
   <button class="btn" id="terBtn" type="button" data-act="terapeutas">Terapeutas</button>
+  <button class="btn" id="regBtn" type="button" data-act="reglamento">Reglamento</button>
   <span class="sesion" id="sesionInfo"></span>
   <button class="btn" id="perfilBtn" type="button" data-act="perfil">Mis datos de firma</button>
   <button class="btn" id="salirBtn" type="button" data-act="salir">Cerrar sesión</button>
@@ -697,12 +698,13 @@ function renderList(){
 function render(){
   const d=$("#detail"); S.dirty=false; S.stale=false;
   const p=S.pacientes.get(S.sel);
-  $("#app").classList.toggle("open", !!p || ["perfil","terapeutas","usuarios","sedes","uso"].includes(S.view));
+  $("#app").classList.toggle("open", !!p || ["perfil","terapeutas","usuarios","sedes","uso","reglamento"].includes(S.view));
   if (S.view==="perfil"){ d.innerHTML=perfilHtml(); activarPad(); return; }
   if (S.view==="terapeutas"){ d.innerHTML=terapeutasHtml(); return; }
   if (S.view==="usuarios"){ d.innerHTML=usuariosHtml(); return; }
   if (S.view==="sedes"){ d.innerHTML=sedesHtml(); return; }
   if (S.view==="uso"){ d.innerHTML=usoHtml(); return; }
+  if (S.view==="reglamento"){ d.innerHTML=reglamentoHtml(); return; }
   if (!p){ d.innerHTML=inicioHtml(); return; }
   d.innerHTML=expedienteHtml(p);
 }
@@ -836,6 +838,8 @@ async function cargarAdmin(tipo){
   try{
     if (tipo==="usuarios") S.usuarios = await S.api.usuarios();
     if (tipo==="sedes"){ S.sedesTodas = await S.api.sedes(true); S.usuarios = S.usuarios || await S.api.usuarios(); }
+    if (tipo==="reglamento"){ S.reg = await S.api.reglamento(); S.regAcuses = S.reg ? await S.api.acuses(S.reg.id) : [];
+      if (["superusuario","direccion","administrativo"].includes(S.rol)) S.usuarios = await S.api.usuarios(); }
     if (tipo==="uso"){ const d=new Date(); if (S.usoDias===1) d.setHours(0,0,0,0); else d.setDate(d.getDate()-S.usoDias); S.uso = await S.api.resumenUso(d); }
   }catch(e){ toast(e?.message||"No se pudo cargar la información."); }
   if (S.view===tipo) render();
@@ -904,6 +908,50 @@ function sedesHtml(){
         <td><button class="btn sm" type="button" data-act="editSede" data-id="${s.id}">Editar</button></td></tr>`).join("")}
     </tbody></table></div></div>`;
 }
+/* ---------- Reglamento Interior de Trabajo (texto en la base de datos, solo cuentas activas) ---------- */
+const sinAcentos = t => String(t).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+const fmtFechaHora = f => new Date(f).toLocaleString("es-MX",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"});
+function regPatron(q){ const mapa={a:"[aáàä]",e:"[eéèë]",i:"[iíìï]",o:"[oóòö]",u:"[uúùü]",n:"[nñ]"};
+  const src=[...sinAcentos(q.trim())].map(c=>mapa[c]||c.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("");
+  return src ? new RegExp(src,"gi") : null; }
+function regParrafo(p, re){
+  if (typeof p!=="string"){ const t=p.tabla; return `<div class="tbl-wrap"><table><thead><tr>${t.cols.map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${t.filas.map(f=>`<tr>${f.map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`; }
+  let h=esc(p); if (re) h=h.replace(re, m=>`<mark>${m}</mark>`);
+  h=h.replace(/^(ARTÍCULO \d+(?: BIS(?: \d+)?)?\.(?: [A-ZÁÉÍÓÚÑ ,]{4,}\.)?)/, "<b>$1</b>");
+  return `<p>${h}</p>`; }
+function regCuerpoHtml(){
+  const c=S.reg.contenido||[], q=(S.regQ||"").trim(), re=q.length>=3?regPatron(q):null;
+  if (!re) return c.map((sec,i)=>`<section class="reg-sec" id="reg-${i}"><h3>${esc(sec.titulo)}</h3>${sec.parrafos.map(p=>regParrafo(p)).join("")}</section>`).join("");
+  let n=0; const out=c.map(sec=>{ const ps=sec.parrafos.filter(p=>typeof p==="string" && (re.lastIndex=0, re.test(p))); re.lastIndex=0;
+    n+=ps.length; return ps.length?`<section class="reg-sec"><h3>${esc(sec.titulo)}</h3>${ps.map(p=>regParrafo(p,re)).join("")}</section>`:""; }).join("");
+  return `<p class="status">${n} ${n===1?"párrafo contiene":"párrafos contienen"} “${esc(q)}”.</p>${out}`; }
+function reglamentoHtml(){
+  const cab=`<div class="card-h no-print"><h2 style="font-size:24px">Reglamento Interior de Trabajo</h2><span style="display:flex;gap:8px">${S.reg?`<button class="btn" type="button" data-act="imprimirReg">Imprimir o guardar PDF</button>`:""}<button class="btn" type="button" data-act="home">Cerrar</button></span></div>`;
+  if (S.reg===undefined || (S.reg===null && S.regCargando)) return `<div class="wrap" style="padding-block:24px">${cab}<p class="status">Cargando reglamento…</p></div>`;
+  if (!S.reg) return `<div class="wrap" style="padding-block:24px">${cab}<p class="status">Aún no hay un reglamento publicado.</p></div>`;
+  const r=S.reg, adm=["superusuario","direccion","administrativo"].includes(S.rol), dir=["superusuario","direccion"].includes(S.rol);
+  const mio=(S.regAcuses||[]).find(a=>a.user_id===S.uid);
+  const acuse = mio ? `<div class="reg-ok">✓ Confirmaste la recepción y lectura de esta versión: ${esc(fmtFechaHora(mio.fecha))}</div>`
+    : `<div class="reg-acuse"><b>Constancia de recepción</b><p>Hago constar que recibí el Reglamento Interior de Trabajo de CEMEPI (versión: ${esc(r.version)}), que fui informado(a) de su contenido y que sé dónde consultarlo. Esta constancia no implica renuncia a derechos ni aceptación de condiciones ilegales.</p>
+      <div><button class="btn primary" type="button" data-act="acusarReg">Confirmo que lo recibí y lo leí</button></div>
+      <span class="status">Queda registrada la fecha y hora. Complementa la constancia firmada que CEMEPI recabe conforme al artículo 6.</span></div>`;
+  let control="";
+  if (adm && S.usuarios){ const act=S.usuarios.filter(u=>u.estado==="activo"), fecha=new Map((S.regAcuses||[]).map(a=>[a.user_id,a.fecha]));
+    const si=act.filter(u=>fecha.has(u.id)), no=act.filter(u=>!fecha.has(u.id));
+    const fila=u=>`<tr><td><b>${esc(u.nombre||u.email)}</b><br><span class="status">${esc(ROL_TXT[u.rol]||u.rol)} · ${esc(u.sede||"Todas las sedes")}</span></td><td>${fecha.has(u.id)?esc(fmtFechaHora(fecha.get(u.id))):`<span class="pill estado-pendiente">Pendiente</span>`}</td></tr>`;
+    control=`<details class="reg-control no-print"><summary><b>Constancias de recepción:</b> ${si.length} de ${act.length} cuentas activas${S.rol==="administrativo"?` de ${esc(S.miSede)}`:""}</summary>
+      <div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Confirmó</th></tr></thead><tbody>${[...no,...si].map(fila).join("")}</tbody></table></div></details>`; }
+  const ley = S.regLeyEdit ? `<div class="reg-ley no-print"><textarea id="regLey" rows="3" style="width:100%">${esc(r.leyenda||"")}</textarea>
+      <div style="display:flex;gap:6px;margin-top:6px"><button class="btn sm primary" type="button" data-act="saveRegLey">Guardar leyenda</button><button class="btn sm" type="button" data-act="cancelRegLey">Cancelar</button></div></div>`
+    : `<div class="reg-ley"><b>Vigencia:</b> ${esc(r.leyenda||"Sin leyenda")}${dir?` <button class="btn sm no-print" type="button" data-act="editRegLey">Editar leyenda</button>`:""}</div>`;
+  return `<div class="wrap reg" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">${cab}
+    <div class="reg-cab"><div><b>Centro Mexicano de Plenitud Humana, S.C.</b> · ${esc(r.titulo)} · Versión: ${esc(r.version)}</div>${ley}
+      <span class="status">Aplica al personal subordinado en nómina de CEMEPI (artículo 1). Cualquier reforma se acuerda en la Comisión Mixta y se deposita ante el CFCRL (artículo 102).</span></div>
+    <div class="no-print">${acuse}</div>${control}
+    <div class="no-print reg-tools"><input class="search" id="regBuscar" type="search" value="${esc(S.regQ||"")}" placeholder="Buscar en el reglamento (p. ej. vacaciones, jornada, artículo 26)" aria-label="Buscar en el reglamento">
+      <nav class="reg-indice" aria-label="Índice">${(r.contenido||[]).map((sec,i)=>`<button type="button" class="btn sm" data-act="irReg" data-i="${i}">${esc(sec.titulo.replace(/^(Capítulo \d+)\. .*/,"$1").replace(/^(Anexo [IV]+|Anexo operativo)\..*/,"$1").replace(/^Constancia de elaboración.*/,"Firmas"))}</button>`).join("")}</nav></div>
+    <div id="regCuerpo" class="reg-cuerpo">${regCuerpoHtml()}</div>
+  </div>`; }
 function usoHtml(){
   const per=[[1,"Hoy"],[7,"Últimos 7 días"],[30,"Últimos 30 días"],[90,"Últimos 90 días"]];
   const filas=(S.uso||[]).filter(u=>!S.usoSede || u.sede===S.usoSede);
@@ -1105,6 +1153,18 @@ document.addEventListener("click", async ev => {
   /* Usuarios, sedes y tiempo de uso */
   if (a==="usuarios"){ S.view="usuarios"; S.usrEdit=null; S.usuarios=null; render(); return cargarAdmin("usuarios"); }
   if (a==="sedes"){ S.view="sedes"; S.sedeEdit=null; S.sedesTodas=null; render(); return cargarAdmin("sedes"); }
+  if (a==="reglamento"){ S.view="reglamento"; S.reg=undefined; S.regQ=""; S.regLeyEdit=false; render(); return cargarAdmin("reglamento"); }
+  if (a==="irReg"){ if (S.regQ){ S.regQ=""; $("#regBuscar").value=""; $("#regCuerpo").innerHTML=regCuerpoHtml(); } $(`#reg-${b.dataset.i}`)?.scrollIntoView({behavior:"smooth",block:"start"}); return; }
+  if (a==="imprimirReg"){ const prev=S.regQ; if (prev){ S.regQ=""; $("#regCuerpo").innerHTML=regCuerpoHtml(); }
+    document.body.classList.add("imp-reg"); window.print(); document.body.classList.remove("imp-reg");
+    if (prev){ S.regQ=prev; $("#regCuerpo").innerHTML=regCuerpoHtml(); } return; }
+  if (a==="acusarReg"){ if(!arm(b,"acuse","¿Confirmar recepción y lectura?")) return; armed=null;
+    try{ await S.api.acusar(S.reg.id); toast("Constancia registrada. Gracias."); }catch(e){ toast(e?.message||"No se pudo registrar la constancia."); }
+    return cargarAdmin("reglamento"); }
+  if (a==="editRegLey"){ S.regLeyEdit=true; return render(); }
+  if (a==="cancelRegLey"){ S.regLeyEdit=false; return render(); }
+  if (a==="saveRegLey"){ const t=$("#regLey").value.trim();
+    try{ await S.api.guardarLeyenda(S.reg.id,t); S.reg.leyenda=t; S.regLeyEdit=false; toast("Leyenda actualizada"); }catch(e){ toast(e?.message||"No se pudo guardar."); } return render(); }
   if (a==="uso"){ S.view="uso"; S.usoDias=S.usoDias||7; S.uso=null; render(); return cargarAdmin("uso"); }
   if (a==="autorizarUsr"){ const id=b.dataset.id;
     try{ await S.api.gestionar(id,"activo",$(`#ar-rol-${id}`).value,$(`#ar-sede-${id}`).value); toast("Cuenta autorizada"); }catch(e){ toast(e?.message||"No se pudo autorizar."); }
@@ -1259,6 +1319,7 @@ document.addEventListener("change", ev => {
 });
 document.addEventListener("input", ev => {
   if (ev.target.id==="q"){ S.q=ev.target.value; return renderList(); }
+  if (ev.target.id==="regBuscar"){ S.regQ=ev.target.value; $("#regCuerpo").innerHTML=regCuerpoHtml(); return; }
   if (ev.target.closest("#frm, #frmNota")) S.dirty=true;
   if (S.gen && ev.target.closest(".gen")) S.gen.guardado=false;
 });
@@ -1332,6 +1393,24 @@ img{max-width:100%}
 .lg-check input{margin-top:3px}
 .lg-msg.ok{color:var(--ok)}
 .uso-barra{height:8px;border-radius:4px;background:var(--accent);min-width:2px}
+.reg-cab{display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface)}
+.reg-ley{font-size:14px}
+.reg-acuse{display:flex;flex-direction:column;gap:8px;border:1px solid var(--accent);border-radius:12px;padding:12px 14px;background:var(--accent-soft)}
+.reg-acuse p{margin:0}
+.reg-ok{border-radius:12px;padding:10px 14px;background:var(--accent-soft);color:var(--accent);font-weight:600}
+.reg-control summary{cursor:pointer;padding:6px 0}
+.reg-tools{display:flex;flex-direction:column;gap:8px;position:sticky;top:0;background:var(--bg);padding-block:8px;z-index:1}
+.reg-indice{display:flex;gap:6px;flex-wrap:wrap}
+.reg-cuerpo{display:flex;flex-direction:column;gap:18px;max-width:880px}
+.reg-sec{scroll-margin-top:150px}
+.reg-sec h3{font-size:17px;margin:0 0 8px;color:var(--accent)}
+.reg-sec p{margin:0 0 10px;line-height:1.6;text-align:justify;hyphens:auto}
+.reg-sec mark{background:#ffe58a;color:inherit;border-radius:3px}
+@media print{
+  body.imp-reg .appbar, body.imp-reg .roster, body.imp-reg .no-print, body.imp-reg .toast{display:none!important}
+  html:has(body.imp-reg), body.imp-reg, body.imp-reg .shell, body.imp-reg .app, body.imp-reg .detail{display:block!important;height:auto!important;overflow:visible!important;background:#fff!important;color:#000!important}
+  body.imp-reg .reg-sec{break-inside:auto} body.imp-reg .reg-sec h3{break-after:avoid;color:#000}
+}
 .usr-edit{display:flex;flex-direction:column;gap:10px}
 .usr-edit fieldset{border:1px solid var(--line);border-radius:10px;padding:8px 12px 10px;margin:0;display:flex;flex-direction:column;gap:6px;min-width:0}
 .usr-edit legend{font-size:12px;font-weight:700;padding:0 4px}
@@ -1341,7 +1420,11 @@ img{max-width:100%}
 .estado-pendiente{background:var(--warn-soft);color:var(--warn)}
 .estado-activo{background:var(--ok-soft);color:var(--ok)}
 .estado-rechazado,.estado-suspendido{background:var(--bad-soft);color:var(--bad)}
-@media (max-width:800px){.sesion{display:none}}
+@media (max-width:800px){.sesion{display:none}
+  .appbar{flex-wrap:wrap;gap:8px}
+  .appbar .ttl{flex:1 1 60%}
+  .appbar .btn{padding:6px 10px;font-size:13px}
+  .reg-tools{position:static}}
 </style>
 <div class="login" id="login" hidden>
   <div class="login-card">
