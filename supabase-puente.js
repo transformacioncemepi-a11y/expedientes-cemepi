@@ -257,8 +257,9 @@ const cemepi = {
   async acuses(regId){ const { data, error } = await sb.from("reglamento_acuses").select("user_id,fecha").eq("reglamento_id", regId); if (error) fallo(error); return data || []; },
   async acusar(regId){ const { error } = await sb.from("reglamento_acuses").insert({ reglamento_id: regId }); if (error) fallo(error); },
   async guardarLeyenda(regId, cambios){ const { error } = await sb.from("reglamento").update(cambios).eq("id", regId); if (error) fallo(error); },
-  async plantillaContrato(){ const { data, error } = await sb.from("contrato_plantilla").select("id,nombre,version,cuerpo").eq("vigente", true).order("creado", { ascending: false }).limit(1);
-    if (error) fallo(error); return data?.[0] || null; },
+  /* Plantillas vigentes que la persona puede ver (la de su rol; la Dirección ve ambas), por tipo */
+  async plantillasContrato(){ const { data, error } = await sb.from("contrato_plantilla").select("id,nombre,version,tipo,parte,orden_nombre,cuerpo").eq("vigente", true).order("creado", { ascending: false });
+    if (error) fallo(error); const m = {}; for (const r of data || []) if (!m[r.tipo]) m[r.tipo] = r; return m; },
   async contratos(){ const { data, error } = await sb.from("contratos").select("*"); if (error) fallo(error); return data || []; },
   async crearContrato(datos){ const { data, error } = await sb.from("contratos").insert({ datos }).select().single(); if (error) fallo(error); return data; },
   async guardarContrato(id, cambios){ const { data, error } = await sb.from("contratos").update(cambios).eq("id", id).select().single(); if (error) fallo(error); return data; },

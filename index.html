@@ -843,7 +843,7 @@ async function cargarAdmin(tipo){
     if (tipo==="sedes"){ S.sedesTodas = await S.api.sedes(true); S.usuarios = S.usuarios || await S.api.usuarios(); }
     if (tipo==="reglamento"){ S.reg = await S.api.reglamento(); S.regAcuses = S.reg ? await S.api.acuses(S.reg.id) : [];
       if (["superusuario","direccion","administrativo"].includes(S.rol)) S.usuarios = await S.api.usuarios(); }
-    if (tipo==="contratos"){ const [pl, ls] = await Promise.all([S.api.plantillaContrato(), S.api.contratos()]); S.ctrPl=pl; S.ctrs=ls;
+    if (tipo==="contratos"){ const [pl, ls] = await Promise.all([S.api.plantillasContrato(), S.api.contratos()]); S.ctrPls=pl; S.ctrs=ls;
       if (["superusuario","direccion"].includes(S.rol)) S.usuarios = await S.api.usuarios(); }
     if (tipo==="uso"){ const d=new Date(); if (S.usoDias===1) d.setHours(0,0,0,0); else d.setDate(d.getDate()-S.usoDias); S.uso = await S.api.resumenUso(d); }
   }catch(e){ toast(e?.message||"No se pudo cargar la información."); }
@@ -979,7 +979,11 @@ const CTR_CAMPOS = [
   {k:"nss", l:"Número de seguridad social (IMSS)", req:1, re:/^\d{11}$/, h:"11 dígitos"},
 ];
 const ctrSinDireccion = c => !c.fecha_alta || c.salario==null;
-const ctrNombre = d => [d.paterno, d.materno, d.nombres].filter(Boolean).join(" ").toUpperCase();
+const ctrNombre = (d, orden) => (orden==="nombre" ? [d.nombres, d.paterno, d.materno] : [d.paterno, d.materno, d.nombres]).filter(Boolean).join(" ").toUpperCase();
+/* Plantilla de un contrato (por su tipo) o la que corresponde al rol de quien entra */
+const miTipoCtr = () => S.rol==="administrativo" ? "administrativo" : "psicologo";
+const ctrPl = c => S.ctrPls?.[c?.tipo || miTipoCtr()] || null;
+const TIPO_CTR = {psicologo:"Psicología", administrativo:"Administrativo"};
 const apocope = t => t.replace(/VEINTIUNO$/,"VEINTIÚN").replace(/UNO$/,"UN");
 function numeroALetras(n){
   const U=["","UNO","DOS","TRES","CUATRO","CINCO","SEIS","SIETE","OCHO","NUEVE","DIEZ","ONCE","DOCE","TRECE","CATORCE","QUINCE","DIECISÉIS","DIECISIETE","DIECIOCHO","DIECINUEVE","VEINTE","VEINTIUNO","VEINTIDÓS","VEINTITRÉS","VEINTICUATRO","VEINTICINCO","VEINTISÉIS","VEINTISIETE","VEINTIOCHO","VEINTINUEVE"];
@@ -1017,25 +1021,29 @@ function ctrEstado(c){
 function ctrValores(c){
   const d=c.datos||{}, P_=v=>v&&String(v).trim()?String(v).trim():"[Dato pendiente]";
   const dom=[d.calle,d.poblacion,d.entidad,d.cp].filter(x=>String(x||"").trim()).join(", ").toUpperCase();
-  return { ART_C: d.sexo==="Masculino"?"EL":"LA", NOMBRE: ctrNombre(d)||"[Dato pendiente]", INE:P_(d.ine).toUpperCase(), NACIONALIDAD:P_(d.nacionalidad),
+  return { ART_C: d.sexo==="Masculino"?"EL":"LA", NOMBRE: ctrNombre(d, ctrPl(c)?.orden_nombre)||"[Dato pendiente]", INE:P_(d.ine).toUpperCase(), NACIONALIDAD:P_(d.nacionalidad),
     EDAD:P_(d.edad), SEXO:P_(d.sexo), ESTADO_CIVIL:P_(d.estado_civil), CURP:P_(d.curp).toUpperCase(), RFC:P_(d.rfc).toUpperCase(),
     DOMICILIO:dom||"[Dato pendiente]", NSS:P_(d.nss), SALARIO: c.salario!=null?fmtSalario(c.salario):"[salario pendiente: lo registra la Dirección]",
     SALARIO_LETRA: c.salario!=null?numeroALetras(c.salario):"[Dato pendiente]", RFC_EMPLEADOR: c.rfc_empleador||"[RFC del empleador pendiente]",
     RAZON_SOCIAL_MAY: (c.razon_social||"[razón social pendiente]").toUpperCase(), REGISTRO_PATRONAL: c.registro_patronal||"[registro patronal pendiente]", FECHA_ALTA: c.fecha_alta?fechaAltaLarga(c.fecha_alta):"[fecha de alta ante el IMSS pendiente]" };
 }
 const ctrSust = (t, v) => t.replace(/\{\{([A-Z_]+)\}\}/g, (m,k)=>v[k]??m);
-const ctrCentrado = p => /^(D E C L A R A C I O N E S|C L A U S U L A S|PROTESTAMOS LO NECESARIO EN DERECHO)$/.test(p);
-const ctrEtiqueta = p => (p.match(/^((?:[IVX]+|PRIMERA|SEGUNDA|TERCERA|CUARTA|QUINTA|SEXTA|SÉPTIMA|OCTAVA|NOVENA|DÉCIMA(?: [A-ZÉ]+)?|VIGÉSIMA(?: [A-ZÉ]+)?)\.-)/)||[])[1]||"";
+const ctrCentrado = p => /^(D E C L A R A C I O N E S|C L A U S U L A S|PROTESTAMOS LO NECESARIO EN DERECHO|Contrato Individual por Tiempo Indeterminado - .*)$/.test(p);
+const ctrEncabezado = p => p.startsWith("CONTRATO INDIVIDUAL POR TIEMPO INDETERMINADO, QUE CELEBRAN");
+const ctrEtiqueta = p => (p.match(/^((?:[IVX]+|PRIMERA|SEGUNDA|TERCERA|CUARTA|QUINTA|SEXTA|SÉPTIMA|OCTAVA|NOVENA|DÉCIMA(?: [A-ZÉ]+)?|VIGÉSIMA(?: [A-ZÉ]+)?)\. ?-)/)||[])[1]||"";
 const FIRMA_REP = {nombre:"ROMEL MONROY BARRÓN", cargo:"REPRESENTANTE LEGAL DE CEMEPI"};
 const fmtFH = f => f ? new Date(f).toLocaleString("es-MX",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}) : "";
 function ctrVistaHtml(c){
   const v=ctrValores(c), d=c.datos||{}, bs=(d.beneficiarios||[]).filter(b=>b.nombre?.trim());
-  return (S.ctrPl?.cuerpo||[]).map((p,i)=>{
+  const pl=ctrPl(c), parte=`“${pl?.parte||"EL PROFESIONISTA"}”`;
+  return (pl?.cuerpo||[]).map((p,i)=>{
+    if (p==="{{TESTIGOS}}") return `<div class="ctr-firmas" style="margin-top:28px"><div class="ctr-firma"><div class="ctr-firma-img"></div><div class="ctr-linea"></div><b>TESTIGO</b></div><div class="ctr-firma"><div class="ctr-firma-img"></div><div class="ctr-linea"></div><b>TESTIGO</b></div></div>`;
     if (p==="{{BENEFICIARIOS}}") return `<div class="tbl-wrap"><table><thead><tr><th>Nombre</th><th>Edad</th><th>Parentesco o relación</th><th>%</th></tr></thead><tbody>${bs.length?bs.map(b=>`<tr><td>${esc(b.nombre.toUpperCase())}</td><td>${esc(b.edad||"")}</td><td>${esc(b.parentesco||"")}</td><td>${esc(b.pct||"")}</td></tr>`).join(""):`<tr><td colspan="4">[Beneficiarios pendientes]</td></tr>`}</tbody></table></div>`;
     if (p==="{{FIRMAS}}") { const caja=(tit,img,nom,car,f)=>`<div class="ctr-firma"><b>${tit}</b><div class="ctr-firma-img">${img?`<img src="${img}" alt="Firma">`:""}</div><div class="ctr-linea"></div><b>${esc(nom)}</b>${car?`<span>${esc(car)}</span>`:""}${f?`<small>Firma registrada en la app: ${esc(fmtFH(f))}</small>`:""}</div>`;
-      return `<div class="ctr-firmas">${caja("POR “CEMEPI”",c.firma_cemepi,FIRMA_REP.nombre,FIRMA_REP.cargo,c.firma_cemepi_en)}${caja("“EL PROFESIONISTA”",c.firma_trabajador,v.NOMBRE,"",c.firma_trabajador_en)}</div>`; }
+      return `<div class="ctr-firmas">${caja("POR “CEMEPI”",c.firma_cemepi,FIRMA_REP.nombre,FIRMA_REP.cargo,c.firma_cemepi_en)}${caja(parte,c.firma_trabajador,v.NOMBRE,"",c.firma_trabajador_en)}</div>`; }
     const t=esc(ctrSust(p,v)).replace(/\[[^\]]*pendiente[^\]]*\]/gi, m=>`<mark>${m}</mark>`);
-    if (i===0 || ctrCentrado(p)) return `<p class="ctr-c"><b>${t}</b></p>`;
+    if (ctrCentrado(p)) return `<p class="ctr-c"><b>${t}</b></p>`;
+    if (ctrEncabezado(p)) return `<p><b>${t}</b></p>`;
     const e=ctrEtiqueta(p); return `<p>${e?`<b>${esc(e)}</b>${t.slice(esc(e).length)}`:t}</p>`;
   }).join("");
 }
@@ -1085,7 +1093,7 @@ function contratoHtml(c, propio){
   if (su && c.firma_trabajador && !c.firma_cemepi) acciones.push(tieneFirma?`<button class="btn primary" type="button" data-act="firmarCemepi">Firmar por CEMEPI</button>`:`<span class="status">Guarda tu firma en <b>Mis datos de firma</b> para firmar por CEMEPI.</span>`);
   if (su && firmado) acciones.push(`<button class="btn sm danger" type="button" data-act="reabrirCtr">Reabrir contrato (anula ambas firmas)</button>`);
   const firmas = `<section class="note"><div class="note-h"><h3>Firmas</h3></div>
-    <p style="margin:0">“EL PROFESIONISTA”: ${c.firma_trabajador?`✓ firmado el ${esc(fmtFH(c.firma_trabajador_en))}`:"pendiente"}<br>POR “CEMEPI” (representante legal): ${c.firma_cemepi?`✓ firmado el ${esc(fmtFH(c.firma_cemepi_en))}`:"pendiente"}</p>
+    <p style="margin:0">“${esc(ctrPl(c)?.parte||"EL PROFESIONISTA")}”: ${c.firma_trabajador?`✓ firmado el ${esc(fmtFH(c.firma_trabajador_en))}`:"pendiente"}<br>POR “CEMEPI” (representante legal): ${c.firma_cemepi?`✓ firmado el ${esc(fmtFH(c.firma_cemepi_en))}`:"pendiente"}</p>
     <div class="usr-fila">${acciones.join("")}</div>
     <span class="status">La firma es la imagen de tu firma autógrafa guardada en la app, con fecha y hora; no es la e.firma del SAT. Conviene firmar además el ejemplar impreso.</span></section>`;
   return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">
@@ -1100,25 +1108,25 @@ function tabla0(c){ const d=c.datos||{}, v=ctrValores(c), bs=(d.beneficiarios||[
   const rows=[["Nombre",v.NOMBRE],["Clave de elector",v.INE],["Nacionalidad",v.NACIONALIDAD],["Edad",v.EDAD],["Sexo",v.SEXO],["Estado civil",v.ESTADO_CIVIL],["CURP",v.CURP],["RFC",v.RFC],["Domicilio",v.DOMICILIO],["NSS",v.NSS],["Salario diario (Dirección)",`${v.SALARIO} (${v.SALARIO_LETRA})`],["Beneficiarios",bs.map(b=>`${b.nombre} (${b.parentesco}, ${b.edad} años, ${b.pct}%)`).join("; ")||"[Dato pendiente]"]];
   return `<div class="tbl-wrap"><table><tbody>${rows.map(([k,x])=>`<tr><th style="width:34%">${esc(k)}</th><td>${esc(x)}</td></tr>`).join("")}</tbody></table></div>`; }
 function contratosHtml(){
-  if (!S.ctrPl && S.ctrs===undefined) return `<div class="wrap" style="padding-block:24px"><p class="status">Cargando contratos…</p></div>`;
-  if (!S.ctrPl) return `<div class="wrap" style="padding-block:24px"><p class="status">No hay una plantilla de contrato publicada.</p><button class="btn" type="button" data-act="home">Cerrar</button></div>`;
+  if (S.ctrs===undefined) return `<div class="wrap" style="padding-block:24px"><p class="status">Cargando contratos…</p></div>`;
+  if (!S.ctrPls || !Object.keys(S.ctrPls).length) return `<div class="wrap" style="padding-block:24px"><p class="status">No hay una plantilla de contrato publicada.</p><button class="btn" type="button" data-act="home">Cerrar</button></div>`;
   const dir=["superusuario","direccion"].includes(S.rol);
   if (!dir){ const c=(S.ctrs||[]).find(x=>x.user_id===S.uid);
     if (!c) return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:14px"><div class="card-h"><h2 style="font-size:22px">Mi contrato</h2><button class="btn" type="button" data-act="home">Cerrar</button></div>
-      <p>Aquí capturas los datos de tu contrato individual de trabajo con CEMEPI (${esc(S.ctrPl.nombre)}). La Dirección registra tu fecha de alta ante el IMSS y tu salario; después firmas tú y al final firma el representante legal de CEMEPI.</p>
+      <p>Aquí capturas los datos de tu contrato individual de trabajo con CEMEPI (${esc(ctrPl(null)?.nombre||"")}). La Dirección registra tu fecha de alta ante el IMSS y tu salario; después firmas tú y al final firma el representante legal de CEMEPI.</p>
       <div><button class="btn primary" type="button" data-act="nuevoCtr">Comenzar mi contrato</button></div></div>`;
     return contratoHtml(c, true); }
   if (S.ctrSel){ const c=(S.ctrs||[]).find(x=>x.id===S.ctrSel); if (c) return contratoHtml(c, c.user_id===S.uid); }
-  const porUid=new Map((S.ctrs||[]).map(c=>[c.user_id,c])), us=(S.usuarios||[]).filter(u=>u.rol==="psicologo" && u.estado==="activo");
+  const porUid=new Map((S.ctrs||[]).map(c=>[c.user_id,c])), us=(S.usuarios||[]).filter(u=>["psicologo","administrativo"].includes(u.rol) && u.estado==="activo");
   const extra=(S.ctrs||[]).filter(c=>!us.some(u=>u.id===c.user_id));
   const filas=[...us.map(u=>({u, c:porUid.get(u.id)})), ...extra.map(c=>({u:(S.usuarios||[]).find(x=>x.id===c.user_id)||{nombre:ctrNombre(c.datos||{}),email:""}, c}))]
     .sort((a,b)=>(a.u.sede||"").localeCompare(b.u.sede||"")||(a.u.nombre||"").localeCompare(b.u.nombre||""));
   return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">
-    <div class="card-h"><h2 style="font-size:24px">Contratos de psicólogos(as)</h2><button class="btn" type="button" data-act="home">Cerrar</button></div>
-    <p class="status" style="margin:0">Cada psicólogo(a) captura sus datos y firma desde <b>Contratos</b>. La Dirección registra la fecha de alta ante el IMSS y el salario, y el representante legal firma por CEMEPI. Datos personales confidenciales: no se comparten por mensajería.</p>
-    <div class="tbl-wrap"><table><thead><tr><th>Psicólogo(a)</th><th>Sede</th><th>Alta IMSS</th><th>Estado</th><th></th></tr></thead><tbody>
-      ${filas.map(({u,c})=>{ const e=ctrEstado(c); return `<tr><td><b>${esc(u.nombre||"Sin nombre")}</b><br><span class="status">${esc(u.email||"")}</span></td><td>${esc(u.sede||"")}</td><td>${c?.fecha_alta?esc(fmtDate(c.fecha_alta)):"—"}</td><td><span class="pill ${e.cl}">${esc(e.t)}</span></td>
-        <td>${c?`<button class="btn sm" type="button" data-act="verCtr" data-id="${c.id}">Abrir</button>`:`<span class="status">Aún no lo inicia</span>`}</td></tr>`; }).join("") || `<tr><td colspan="5">No hay psicólogos(as) activos.</td></tr>`}
+    <div class="card-h"><h2 style="font-size:24px">Contratos del personal</h2><button class="btn" type="button" data-act="home">Cerrar</button></div>
+    <p class="status" style="margin:0">Cada psicólogo(a) y cada administrativo(a) captura sus datos y firma desde <b>Contratos</b>; cada quien ve solo su propio contrato. La Dirección registra la fecha de alta ante el IMSS y el salario, y el representante legal firma por CEMEPI. Datos personales confidenciales: no se comparten por mensajería.</p>
+    <div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Contrato</th><th>Sede</th><th>Alta IMSS</th><th>Estado</th><th></th></tr></thead><tbody>
+      ${filas.map(({u,c})=>{ const e=ctrEstado(c); return `<tr><td><b>${esc(u.nombre||"Sin nombre")}</b><br><span class="status">${esc(u.email||"")}</span></td><td>${esc(TIPO_CTR[c?.tipo || (u.rol==="administrativo"?"administrativo":"psicologo")])}</td><td>${esc(u.sede||"")}</td><td>${c?.fecha_alta?esc(fmtDate(c.fecha_alta)):"—"}</td><td><span class="pill ${e.cl}">${esc(e.t)}</span></td>
+        <td>${c?`<button class="btn sm" type="button" data-act="verCtr" data-id="${c.id}">Abrir</button>`:`<span class="status">Aún no lo inicia</span>`}</td></tr>`; }).join("") || `<tr><td colspan="6">No hay personal activo.</td></tr>`}
     </tbody></table></div></div>`;
 }
 /* Word del contrato con ambas firmas (si existen) */
@@ -1128,12 +1136,14 @@ function ctrWordXml(c){
   const celda=(w, inner)=>`<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/></w:tcPr>${inner}</w:tc>`;
   const tblB=rows=>`<w:tbl><w:tblPr><w:tblW w:w="9900" w:type="dxa"/><w:tblBorders>${BD}</w:tblBorders><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid><w:gridCol w:w="4600"/><w:gridCol w:w="1000"/><w:gridCol w:w="3300"/><w:gridCol w:w="1000"/></w:tblGrid>${rows}</w:tbl>`;
   const filaB=(a,b,c2,d2,bold)=>`<w:tr>${[[4600,a],[1000,b],[3300,c2],[1000,d2]].map(([w,t])=>celda(w,P(R(t,{b:bold,sz:18})))).join("")}</w:tr>`;
-  const cuerpo=(S.ctrPl.cuerpo||[]).map((p,i)=>{
+  const pl=ctrPl(c), parte=`“${pl?.parte||"EL PROFESIONISTA"}”`;
+  const cuerpo=(pl?.cuerpo||[]).map((p,i)=>{
+    if (p==="{{TESTIGOS}}") return P("",{before:500})+`<w:tbl><w:tblPr><w:tblW w:w="9900" w:type="dxa"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid><w:gridCol w:w="4950"/><w:gridCol w:w="4950"/></w:tblGrid><w:tr>${[1,2].map(()=>celda(4950,P(R("__________________________________"),{jc:"center"})+P(R("TESTIGO",{b:1}),{jc:"center"}))).join("")}</w:tr></w:tbl>`;
     if (p==="{{BENEFICIARIOS}}") return tblB(filaB("NOMBRE","EDAD","PARENTESCO O RELACIÓN","%",1)+(bs.length?bs:[{},{},{}]).map(b=>filaB((b.nombre||"").toUpperCase(),b.edad||"",b.parentesco||"",b.pct||"")).join(""))+P("",{after:120});
     if (p==="{{FIRMAS}}"){ const lado=(tit,data,w,h,rid,id,nom,car,f)=>P(R(tit,{b:1}),{jc:"center",after:120})+(data?img(data,w,h,rid,id):P("",{before:700}))+P(R("__________________________________"),{jc:"center"})+P(R(nom,{b:1}),{jc:"center"})+(car?P(R(car,{sz:18}),{jc:"center"}):"")+(f?P(R(`Firma registrada en la app: ${fmtFH(f)}`,{sz:14,color:"55688A"}),{jc:"center"}):"");
-      return P("",{before:300})+`<w:tbl><w:tblPr><w:tblW w:w="9900" w:type="dxa"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid><w:gridCol w:w="4950"/><w:gridCol w:w="4950"/></w:tblGrid><w:tr>${celda(4950,lado("POR “CEMEPI”",c.firma_cemepi,c.firma_cemepi_w,c.firma_cemepi_h,"rIdFirmaC",11,FIRMA_REP.nombre,FIRMA_REP.cargo,c.firma_cemepi_en))}${celda(4950,lado("“EL PROFESIONISTA”",c.firma_trabajador,c.firma_trabajador_w,c.firma_trabajador_h,"rIdFirmaP",12,v.NOMBRE,"",c.firma_trabajador_en))}</w:tr></w:tbl>`; }
+      return P("",{before:300})+`<w:tbl><w:tblPr><w:tblW w:w="9900" w:type="dxa"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid><w:gridCol w:w="4950"/><w:gridCol w:w="4950"/></w:tblGrid><w:tr>${celda(4950,lado("POR “CEMEPI”",c.firma_cemepi,c.firma_cemepi_w,c.firma_cemepi_h,"rIdFirmaC",11,FIRMA_REP.nombre,FIRMA_REP.cargo,c.firma_cemepi_en))}${celda(4950,lado(parte,c.firma_trabajador,c.firma_trabajador_w,c.firma_trabajador_h,"rIdFirmaP",12,v.NOMBRE,"",c.firma_trabajador_en))}</w:tr></w:tbl>`; }
     const t=ctrSust(p,v);
-    if (i===0) return P(R(t,{b:1,sz:20}),{jc:"both",after:200});
+    if (ctrEncabezado(p)) return P(R(t,{b:1,sz:20}),{jc:"both",after:200});
     if (ctrCentrado(p)) return P(R(t,{b:1,sz:21}),{jc:"center",before:200,after:160});
     const e=ctrEtiqueta(p); return P((e?R(e,{b:1}):"")+R(t.slice(e.length)),{jc:"both",after:120});
   }).join("");
@@ -1385,7 +1395,7 @@ document.addEventListener("click", async ev => {
     if (!REGPAT_OK.test(reg)){ toast("El registro patronal no es válido (ej. A12-34567-89-0)."); return; }
     const cm={leyenda:t, rfc_empleador:rfc, razon_social:razon, registro_patronal:reg};
     try{ await S.api.guardarLeyenda(S.reg.id,cm); Object.assign(S.reg,cm); S.regLeyEdit=false; toast("Leyenda y datos del empleador actualizados"); }catch(e){ toast(e?.message||"No se pudo guardar."); } return render(); }
-  if (a==="contratos"){ S.view="contratos"; S.ctrSel=null; S.ctrPl=null; S.ctrs=undefined; render(); return cargarAdmin("contratos"); }
+  if (a==="contratos"){ S.view="contratos"; S.ctrSel=null; S.ctrPls=null; S.ctrs=undefined; render(); return cargarAdmin("contratos"); }
   if (a==="listaCtr"){ S.ctrSel=null; return render(); }
   if (a==="verCtr"){ S.ctrSel=b.dataset.id; render(); $("#detail").scrollTop=0; return; }
   if (a==="nuevoCtr"){ try{ const c=await S.api.crearContrato({nacionalidad:"Mexicana", ...(S.perfil?.nombre?{}:{})}); S.ctrs=[...(S.ctrs||[]), c]; }catch(e){ toast(e?.message||"No se pudo iniciar el contrato."); } return render(); }
@@ -1603,7 +1613,7 @@ render();
     $("#usrBtn").hidden = !["superusuario","direccion","administrativo"].includes(S.rol);
     $("#sedBtn").hidden = !["superusuario","direccion"].includes(S.rol);
     $("#usoBtn").hidden = S.rol!=="superusuario";
-    $("#ctrBtn").hidden = !["superusuario","direccion","psicologo"].includes(S.rol);
+    $("#ctrBtn").hidden = !["superusuario","direccion","psicologo","administrativo"].includes(S.rol);
     if (S.rol==="administrativo"){ S.sedeF=S.miSede; }
   }
   /* La Dirección y los administrativos ven las cuentas para vincularlas con el directorio de terapeutas */
