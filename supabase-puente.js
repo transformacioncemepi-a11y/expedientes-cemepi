@@ -104,7 +104,8 @@ async function cargarSedesRegistro(){
   $("#rgSede").innerHTML = `<option value="">Selecciona tu sede</option>` +
     (data || []).map(s => `<option value="${s.nombre.replace(/"/g, "&quot;")}">${s.nombre}</option>`).join("");
 }
-$("#rgTipo").addEventListener("change", () => { $("#rgCedulaFld").hidden = $("#rgTipo").value !== "psicologo"; });
+$("#rgTipo").addEventListener("change", () => { $("#rgCedulaFld").hidden = !$("#rgTipo").value.startsWith("psicologo");
+  $("#rgModNota").hidden = !$("#rgTipo").value.endsWith("comision"); });
 
 /* ---------- Inicio de sesión, solicitud de cuenta y cuenta pendiente ---------- */
 async function leerPerfil(uid){
@@ -152,7 +153,7 @@ async function esperarAcceso(){
       $("#lgIrEntrar").onclick = () => { aviso(""); mostrar("#lgForm"); };
       $("#lgRegistro").onsubmit = async ev => {
         ev.preventDefault(); aviso("");
-        const tipo = $("#rgTipo").value, nombre = $("#rgNombre").value.trim(), cedula = $("#rgCedula").value.trim();
+        const [tipo, modalidad] = $("#rgTipo").value.split("|"), nombre = $("#rgNombre").value.trim(), cedula = $("#rgCedula").value.trim();
         const tel = $("#rgTel").value.trim(), sede = $("#rgSede").value, pass = $("#rgPass").value;
         if (nombre.split(/\s+/).length < 2){ aviso("Escribe tu nombre completo."); return; }
         if (tipo === "psicologo" && cedula.length < 5){ aviso("Escribe tu cédula profesional."); return; }
@@ -162,7 +163,7 @@ async function esperarAcceso(){
         $("#rgBtn").disabled = true;
         const { data, error } = await sb.auth.signUp({ email: $("#rgEmail").value.trim(), password: pass,
           options: { emailRedirectTo: location.origin + location.pathname,
-            data: { nombre, cedula: tipo === "psicologo" ? cedula : "", telefono: tel, sede, rol_solicitado: tipo } } });
+            data: { nombre, cedula: tipo === "psicologo" ? cedula : "", telefono: tel, sede, rol_solicitado: tipo, modalidad: tipo === "psicologo" ? (modalidad || "nomina") : null } } });
         $("#rgBtn").disabled = false;
         if (error){
           aviso(/registered|already/i.test(error.message) ? "Ese correo ya tiene una cuenta. Entra con él o usa «Olvidé mi contraseña»."
@@ -239,12 +240,13 @@ const downloads = {
 /* Funciones de administración: cuentas, sedes y tiempo de uso */
 const fallo = e => { throw { code: "invalid_argument", message: e?.message || String(e) }; };
 const cemepi = {
-  rol, sede: perfil.sede || "", nombre: perfil.nombre || "", uid: usuario.id, email: usuario.email,
+  rol, sede: perfil.sede || "", nombre: perfil.nombre || "", uid: usuario.id, email: usuario.email, modalidad: perfil.modalidad || null,
+  async cambiarModalidad(id, m){ const { error } = await sb.rpc("cambiar_modalidad", { p_id: id, p_modalidad: m }); if (error) fallo(error); },
   async sedes(todas){ let q = sb.from("sedes").select("*").order("nombre"); if (!todas) q = q.eq("activa", true);
     const { data, error } = await q; if (error) fallo(error); return data || []; },
   async guardarSede(s){ const row = { nombre: s.nombre.trim(), clave: s.clave.trim().toUpperCase(), activa: s.activa !== false };
     const { error } = s.id ? await sb.from("sedes").update(row).eq("id", s.id) : await sb.from("sedes").insert(row); if (error) fallo(error); },
-  async usuarios(){ const { data, error } = await sb.from("perfiles").select("id,email,nombre,cedula,telefono,sede,rol,rol_solicitado,estado,created_at,autorizado_en").order("created_at", { ascending: false });
+  async usuarios(){ const { data, error } = await sb.from("perfiles").select("id,email,nombre,cedula,telefono,sede,rol,rol_solicitado,modalidad,estado,created_at,autorizado_en").order("created_at", { ascending: false });
     if (error) fallo(error); return data || []; },
   async gestionar(id, estado, nuevoRol, sede){ const { error } = await sb.rpc("gestionar_usuario", { p_id: id, p_estado: estado, p_rol: nuevoRol, p_sede: sede || "" });
     if (error) fallo(error); avisar("terapeutas"); },

@@ -764,7 +764,7 @@ function perfilHtml(){
       <div class="fld" style="grid-column:1/-1"><label for="pf-nombre">Nombre completo, como aparecerá en la firma</label><input id="pf-nombre" data-k="nombre" type="text" value="${esc(pf.nombre||"")}" placeholder="Psic. Nombre Apellido"></div>
       <div class="fld"><label for="pf-cedula">Cédula profesional</label><input id="pf-cedula" data-k="cedula" type="text" value="${esc(pf.cedula||"")}"></div>
       <div class="fld"><label for="pf-tel">Teléfono</label><input id="pf-tel" data-k="telefono" type="tel" value="${esc(pf.telefono||"")}"></div>
-      <div class="fld"><label>Sede y rol</label><input type="text" value="${esc((S.miSede||"Todas las sedes")+" · "+(ROL_TXT[S.rol]||S.rol||""))}" disabled></div>
+      <div class="fld"><label>Sede y rol</label><input type="text" value="${esc((S.miSede||"Todas las sedes")+" · "+(ROL_TXT[S.rol]||S.rol||"")+(S.rol==="psicologo"&&S.api?.modalidad?" · "+MOD_TXT[S.api.modalidad]:""))}" disabled></div>
     </form>
     <section class="firma-box">
       <div class="card-h"><b>Firma (opcional)</b><span class="status">Se coloca sobre la línea de firma en los documentos Word y PDF.</span></div>
@@ -827,6 +827,8 @@ function terapeutasHtml(){
 }
 /* ================= Administración: usuarios, sedes y tiempo de uso ================= */
 const ROL_TXT = {superusuario:"Superusuario", direccion:"Dirección", administrativo:"Administrativo", psicologo:"Psicólogo(a)"};
+const MOD_TXT = {nomina:"Nómina (contrato y sueldo)", comision:"Comisionista (independiente)"};
+const modPill = u => u.rol!=="psicologo" ? "" : `<br><span class="pill ${u.modalidad==="comision"?"estado-pendiente":"estado-activo"}" title="Modalidad">${esc(u.modalidad?MOD_TXT[u.modalidad]:"Modalidad sin definir")}</span>`;
 const EST_TXT = {pendiente:"Pendiente", activo:"Activo", rechazado:"Rechazado", suspendido:"Suspendido"};
 /* Roles que cada quien puede asignar (la base de datos vuelve a validarlo) */
 const rolesAsignables = () => S.rol==="superusuario" ? ["superusuario","direccion","administrativo","psicologo"] : ["administrativo","psicologo"];
@@ -853,11 +855,11 @@ function usuariosHtml(){
   if (!S.usuarios) return `<div class="wrap" style="padding-block:24px"><p class="status">Cargando cuentas…</p></div>`;
   const filtro=S.usrSede||"";
   const lista=S.usuarios.filter(u=>!filtro || u.sede===filtro);
-  const pend=lista.filter(u=>u.estado==="pendiente"), act=lista.filter(u=>u.estado==="activo"), otros=lista.filter(u=>!["pendiente","activo"].includes(u.estado));
+  const pend=lista.filter(u=>u.estado==="pendiente"), activos=lista.filter(u=>u.estado==="activo"), otros=lista.filter(u=>!["pendiente","activo"].includes(u.estado));
   const opRol=(sel)=>rolesAsignables().map(r=>`<option value="${r}"${r===sel?" selected":""}>${ROL_TXT[r]}</option>`).join("");
   const opSede=(sel)=>`${S.rol==="administrativo"?"":`<option value="">Sin sede</option>`}${sedesAsignables().map(s=>`<option value="${esc(s)}"${s===sel?" selected":""}>${esc(s)}</option>`).join("")}`;
   const datos=u=>`<b>${esc(u.nombre||"Sin nombre")}</b><br><span class="status">${esc(u.email)}${u.telefono?" · "+esc(u.telefono):""}${u.cedula?" · Céd. "+esc(u.cedula):""}</span>`;
-  const filaPend=u=>`<tr><td>${datos(u)}</td><td>${esc(ROL_TXT[u.rol_solicitado]||ROL_TXT[u.rol]||"")}<br><span class="status">${esc(u.sede||"Sin sede")}</span></td>
+  const filaPend=u=>`<tr><td>${datos(u)}</td><td>${esc(ROL_TXT[u.rol_solicitado]||ROL_TXT[u.rol]||"")}${modPill({...u, rol:u.rol_solicitado||u.rol})}<br><span class="status">${esc(u.sede||"Sin sede")}</span></td>
     <td>${puedeGestionar(u)?`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
       <select id="ar-rol-${u.id}" aria-label="Rol">${opRol(u.rol_solicitado||u.rol)}</select>
       <select id="ar-sede-${u.id}" aria-label="Sede">${opSede(u.sede)}</select>
@@ -868,6 +870,10 @@ function usuariosHtml(){
         <select id="eu-rol" aria-label="Rol">${opRol(u.rol)}</select><select id="eu-sede" aria-label="Sede">${opSede(u.sede)}</select>
         <select id="eu-estado" aria-label="Estado">${["activo","suspendido","rechazado","pendiente"].map(e=>`<option value="${e}"${e===u.estado?" selected":""}>${EST_TXT[e]}</option>`).join("")}</select>
         <button class="btn sm primary" type="button" data-act="saveUsr" data-id="${u.id}">Guardar</button></div></fieldset>
+      ${u.rol==="psicologo" && ["superusuario","direccion"].includes(S.rol) ? `<fieldset><legend>Modalidad</legend><div class="usr-fila">
+        <select id="eu-mod" aria-label="Modalidad">${Object.entries(MOD_TXT).map(([k,l])=>`<option value="${k}"${k===(u.modalidad||"nomina")?" selected":""}>${l}</option>`).join("")}</select>
+        <button class="btn sm primary" type="button" data-act="saveModUsr" data-id="${u.id}">Guardar modalidad</button></div>
+        <span class="status">Nómina: psicólogo(a) con contrato individual de trabajo y sueldo. Comisionista: profesional independiente, sin contrato de trabajo.</span></fieldset>` : ""}
       <fieldset><legend>Datos de la persona</legend><div class="usr-fila">
         <input id="eu-nombre" type="text" value="${esc(u.nombre||"")}" placeholder="Nombre completo" aria-label="Nombre completo" style="flex:2 1 220px">
         <input id="eu-cedula" type="text" value="${esc(u.cedula||"")}" placeholder="Cédula profesional" aria-label="Cédula profesional" style="flex:1 1 120px">
@@ -880,8 +886,9 @@ function usuariosHtml(){
         <button class="btn sm primary" type="button" data-act="savePassUsr" data-id="${u.id}">Asignar contraseña</button></div>
         <span class="status">Reemplaza la contraseña que la persona eligió. Compártela en persona o por un canal seguro (nunca junto con el correo en el mismo mensaje) y pídele que la cambie en <b>Mis datos de firma</b>. La bitácora registra quién la cambió, no la contraseña.</span></fieldset>
       <div><button class="btn sm" type="button" data-act="cancelUsr">Cerrar</button></div></div></td></tr>`
-    : `<tr><td>${datos(u)}</td><td><span class="badge-rol">${esc(ROL_TXT[u.rol]||u.rol)}</span><br><span class="status">${esc(u.sede||"Todas las sedes")}</span></td>
+    : `<tr><td>${datos(u)}</td><td><span class="badge-rol">${esc(ROL_TXT[u.rol]||u.rol)}</span>${modPill(u)}<br><span class="status">${esc(u.sede||"Todas las sedes")}</span></td>
       <td><span class="pill estado-${u.estado}">${EST_TXT[u.estado]}</span> ${puedeGestionar(u)?`<button class="btn sm" type="button" data-act="editUsr" data-id="${u.id}">Editar cuenta</button>`:""}${u.id===S.uid?` <span class="status">(tú)</span>`:""}</td></tr>`;
+  const act=activos.filter(u=>!(u.rol==="psicologo" && u.modalidad==="comision")), comis=activos.filter(u=>u.rol==="psicologo" && u.modalidad==="comision");
   const tabla=(t,rows,fn,vacio)=>`<section class="doc-sec"><h3 class="sec-h">${t} (${rows.length})</h3>${rows.length?`<div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Rol y sede</th><th></th></tr></thead><tbody>${rows.map(fn).join("")}</tbody></table></div>`:`<p class="status" style="margin:0">${vacio}</p>`}</section>`;
   return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:18px">
     <div class="card-h"><h2 style="font-size:24px">Usuarios</h2><span style="display:flex;gap:8px;align-items:center">
@@ -889,7 +896,8 @@ function usuariosHtml(){
       <button class="btn" type="button" data-act="home">Cerrar</button></span></div>
     <p class="status" style="margin:0">Cada persona solicita su cuenta desde la pantalla de entrada (<b>Solicita tu cuenta</b>). ${S.rol==="superusuario"?"Como superusuario autorizas a cualquiera y administras las cuentas de Dirección.":S.rol==="direccion"?"La Dirección autoriza administrativos y psicólogos de cualquier sede.":"Autorizas administrativos y psicólogos de tu sede."} Al autorizar a un psicólogo, aparece en el directorio de terapeutas de su sede.</p>
     ${tabla("Solicitudes pendientes", pend, filaPend, "No hay solicitudes pendientes.")}
-    ${tabla("Cuentas activas", act, filaUsr, "No hay cuentas activas.")}
+    ${tabla("Cuentas activas (personal)", act, filaUsr, "No hay cuentas activas.")}
+    ${tabla("Comisionistas (profesionales independientes)", comis, filaUsr, "No hay comisionistas registrados. Se registran desde <b>Solicita tu cuenta</b> eligiendo <b>Psicólogo(a) comisionista</b>.")}
     ${otros.length?tabla("Rechazadas o suspendidas", otros, filaUsr, ""):""}
   </div>`;
 }
@@ -1112,18 +1120,20 @@ function contratosHtml(){
   if (!S.ctrPls || !Object.keys(S.ctrPls).length) return `<div class="wrap" style="padding-block:24px"><p class="status">No hay una plantilla de contrato publicada.</p><button class="btn" type="button" data-act="home">Cerrar</button></div>`;
   const dir=["superusuario","direccion"].includes(S.rol);
   if (!dir){ const c=(S.ctrs||[]).find(x=>x.user_id===S.uid);
+    if (!c && S.rol==="psicologo" && S.api?.modalidad==="comision") return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:14px"><div class="card-h"><h2 style="font-size:22px">Mi contrato</h2><button class="btn" type="button" data-act="home">Cerrar</button></div>
+      <p>Estás registrado(a) como <b>psicólogo(a) comisionista</b> (profesional independiente). El contrato individual de trabajo es para el personal con nómina y no aplica a tu modalidad. La Dirección te indicará el convenio de colaboración que corresponde.</p></div>`;
     if (!c) return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:14px"><div class="card-h"><h2 style="font-size:22px">Mi contrato</h2><button class="btn" type="button" data-act="home">Cerrar</button></div>
       <p>Aquí capturas los datos de tu contrato individual de trabajo con CEMEPI (${esc(ctrPl(null)?.nombre||"")}). La Dirección registra tu fecha de alta ante el IMSS y tu salario; después firmas tú y al final firma el representante legal de CEMEPI.</p>
       <div><button class="btn primary" type="button" data-act="nuevoCtr">Comenzar mi contrato</button></div></div>`;
     return contratoHtml(c, true); }
   if (S.ctrSel){ const c=(S.ctrs||[]).find(x=>x.id===S.ctrSel); if (c) return contratoHtml(c, c.user_id===S.uid); }
-  const porUid=new Map((S.ctrs||[]).map(c=>[c.user_id,c])), us=(S.usuarios||[]).filter(u=>["psicologo","administrativo"].includes(u.rol) && u.estado==="activo");
+  const porUid=new Map((S.ctrs||[]).map(c=>[c.user_id,c])), us=(S.usuarios||[]).filter(u=>["psicologo","administrativo"].includes(u.rol) && u.estado==="activo" && u.modalidad!=="comision");
   const extra=(S.ctrs||[]).filter(c=>!us.some(u=>u.id===c.user_id));
   const filas=[...us.map(u=>({u, c:porUid.get(u.id)})), ...extra.map(c=>({u:(S.usuarios||[]).find(x=>x.id===c.user_id)||{nombre:ctrNombre(c.datos||{}),email:""}, c}))]
     .sort((a,b)=>(a.u.sede||"").localeCompare(b.u.sede||"")||(a.u.nombre||"").localeCompare(b.u.nombre||""));
   return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">
     <div class="card-h"><h2 style="font-size:24px">Contratos del personal</h2><button class="btn" type="button" data-act="home">Cerrar</button></div>
-    <p class="status" style="margin:0">Cada psicólogo(a) y cada administrativo(a) captura sus datos y firma desde <b>Contratos</b>; cada quien ve solo su propio contrato. La Dirección registra la fecha de alta ante el IMSS y el salario, y el representante legal firma por CEMEPI. Datos personales confidenciales: no se comparten por mensajería.</p>
+    <p class="status" style="margin:0">Cada psicólogo(a) y cada administrativo(a) captura sus datos y firma desde <b>Contratos</b>; cada quien ve solo su propio contrato. Los psicólogos comisionistas (profesionales independientes) no aparecen aquí: no tienen contrato individual de trabajo. La Dirección registra la fecha de alta ante el IMSS y el salario, y el representante legal firma por CEMEPI. Datos personales confidenciales: no se comparten por mensajería.</p>
     <div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Contrato</th><th>Sede</th><th>Alta IMSS</th><th>Estado</th><th></th></tr></thead><tbody>
       ${filas.map(({u,c})=>{ const e=ctrEstado(c); return `<tr><td><b>${esc(u.nombre||"Sin nombre")}</b><br><span class="status">${esc(u.email||"")}</span></td><td>${esc(TIPO_CTR[c?.tipo || (u.rol==="administrativo"?"administrativo":"psicologo")])}</td><td>${esc(u.sede||"")}</td><td>${c?.fecha_alta?esc(fmtDate(c.fecha_alta)):"—"}</td><td><span class="pill ${e.cl}">${esc(e.t)}</span></td>
         <td>${c?`<button class="btn sm" type="button" data-act="verCtr" data-id="${c.id}">Abrir</button>`:`<span class="status">Aún no lo inicia</span>`}</td></tr>`; }).join("") || `<tr><td colspan="6">No hay personal activo.</td></tr>`}
@@ -1433,6 +1443,7 @@ document.addEventListener("click", async ev => {
     return cargarAdmin("usuarios"); }
   if (a==="editUsr"){ S.usrEdit=b.dataset.id; return render(); }
   if (a==="cancelUsr"){ S.usrEdit=null; return render(); }
+  if (a==="saveModUsr"){ try{ await S.api.cambiarModalidad(b.dataset.id, $("#eu-mod").value); toast("Modalidad actualizada"); }catch(e){ toast(e?.message||"No se pudo cambiar la modalidad."); } return cargarAdmin("usuarios"); }
   if (a==="saveUsr"){ try{ await S.api.gestionar(b.dataset.id,$("#eu-estado").value,$("#eu-rol").value,$("#eu-sede").value); S.usrEdit=null; toast("Cuenta actualizada"); }
     catch(e){ toast(e?.message||"No se pudo actualizar."); } return cargarAdmin("usuarios"); }
   if (a==="saveDatosUsr"){ const nombre=$("#eu-nombre").value.trim();
@@ -1720,7 +1731,8 @@ details.note summary{cursor:pointer}
       <h2 class="lg-h">Solicitud de cuenta</h2>
       <p class="lg-nota">Tu cuenta quedará <b>pendiente</b> hasta que la autorice un administrativo de tu sede, la Dirección o el superusuario.</p>
       <div class="fld"><label for="rgNombre">Nombre completo *</label><input id="rgNombre" type="text" autocomplete="name" required minlength="5" maxlength="120" placeholder="Psic. Nombre Apellido Apellido"></div>
-      <div class="fld"><label for="rgTipo">Tipo de usuario *</label><select id="rgTipo" required><option value="psicologo">Psicólogo(a)</option><option value="administrativo">Administrativo(a)</option></select></div>
+      <div class="fld"><label for="rgTipo">Tipo de usuario *</label><select id="rgTipo" required><option value="psicologo|nomina">Psicólogo(a) con contrato y sueldo (nómina)</option><option value="psicologo|comision">Psicólogo(a) comisionista (profesional independiente)</option><option value="administrativo">Administrativo(a)</option></select>
+        <small class="hint" id="rgModNota" hidden>Como comisionista colaboras como profesional independiente, sin contrato individual de trabajo ni sueldo. La Dirección confirma tu modalidad al autorizar tu cuenta.</small></div>
       <div class="fld" id="rgCedulaFld"><label for="rgCedula">Cédula profesional *</label><input id="rgCedula" type="text" inputmode="numeric" maxlength="20"></div>
       <div class="fld"><label for="rgSede">Sede *</label><select id="rgSede" required><option value="">Cargando sedes…</option></select></div>
       <div class="fld"><label for="rgTel">Teléfono *</label><input id="rgTel" type="tel" autocomplete="tel" required maxlength="20" placeholder="10 dígitos"></div>
