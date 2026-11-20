@@ -205,6 +205,7 @@ td.res{white-space:pre-wrap;min-width:220px}
   <div class="ttl"><h1>Expedientes psicológicos</h1><small>CEMEPI · www.cemepi.com.mx</small></div>
   <button class="btn" id="terBtn" type="button" data-act="terapeutas">Terapeutas</button>
   <button class="btn" id="ctrBtn" type="button" data-act="contratos" hidden>Contratos</button>
+  <button class="btn" id="docpBtn" type="button" data-act="documentacion" hidden>Documentación</button>
   <button class="btn" id="regBtn" type="button" data-act="reglamento">Reglamento</button>
   <button class="btn" id="usrBtn" type="button" data-act="usuarios" hidden>Usuarios</button>
   <button class="btn" id="permBtn" type="button" data-act="permisos" hidden>Permisos</button>
@@ -701,13 +702,14 @@ function renderList(){
 function render(){
   const d=$("#detail"); S.dirty=false; S.stale=false;
   const p=S.pacientes.get(S.sel);
-  $("#app").classList.toggle("open", !!p || ["perfil","terapeutas","usuarios","sedes","uso","reglamento","contratos","permisos"].includes(S.view));
+  $("#app").classList.toggle("open", !!p || ["perfil","terapeutas","usuarios","sedes","uso","reglamento","contratos","permisos","documentacion"].includes(S.view));
   if (S.view==="perfil"){ d.innerHTML=perfilHtml(); activarPad(); return; }
   if (S.view==="terapeutas"){ d.innerHTML=terapeutasHtml(); return; }
   if (S.view==="usuarios"){ d.innerHTML=usuariosHtml(); return; }
   if (S.view==="sedes"){ d.innerHTML=sedesHtml(); return; }
   if (S.view==="uso"){ d.innerHTML=usoHtml(); return; }
   if (S.view==="permisos"){ d.innerHTML=permisosHtml(); return; }
+  if (S.view==="documentacion"){ d.innerHTML=documentacionHtml(); return; }
   if (S.view==="reglamento"){ d.innerHTML=reglamentoHtml(); return; }
   if (S.view==="contratos"){ d.innerHTML=contratosHtml(); return; }
   if (!p){ d.innerHTML=inicioHtml(); return; }
@@ -850,6 +852,8 @@ async function cargarAdmin(tipo){
       if (["superusuario","direccion","administrativo"].includes(S.rol)) S.usuarios = await S.api.usuarios(); }
     if (tipo==="contratos"){ const [pl, ls] = await Promise.all([S.api.plantillasContrato(), S.api.contratos()]); S.ctrPls=pl; S.ctrs=ls;
       if (["superusuario","direccion"].includes(S.rol) || tengo("contratos")) S.usuarios = await S.api.usuarios(); }
+    if (tipo==="documentacion"){ const ver=S.docpSel||S.uid; S.docp = await S.api.docsPersonal(ver);
+      if (["superusuario","direccion"].includes(S.rol) || tengo("contratos")){ S.usuarios = S.usuarios || await S.api.usuarios(); if (!S.docpSel) S.docpTodos = await S.api.docsPersonal(null); } }
     if (tipo==="permisos"){ const [us, ps] = await Promise.all([S.api.usuarios(), S.api.permisosTodos()]); S.usuarios=us; S.permTodos=ps; }
     if (tipo==="uso"){ const d=new Date(); if (S.usoDias===1) d.setHours(0,0,0,0); else d.setDate(d.getDate()-S.usoDias); S.uso = await S.api.resumenUso(d); }
   }catch(e){ toast(e?.message||"No se pudo cargar la información."); }
@@ -1195,6 +1199,64 @@ function permisosHtml(){
     ${grupos.map(([t,us,ps])=>tabla(t,us,ps)).join("")}
   </div>`;
 }
+/* ---------- Documentación del personal (PDF) ---------- */
+const DOCP_TIPOS = {identificacion:"Identificación oficial (INE)", curp:"CURP", comprobante_domicilio:"Comprobante de domicilio",
+  constancia_fiscal:"Constancia de situación fiscal (RFC)", acta_nacimiento:"Acta de nacimiento", cedula_profesional:"Cédula profesional",
+  titulo_profesional:"Título profesional", comprobante_estudios:"Comprobante de estudios", curso:"Constancia de curso", diplomado:"Diplomado",
+  certificacion:"Certificación", otro:"Otro documento"};
+const DOCP_DESC = ["curso","diplomado","certificacion","otro"];   /* piden nombre del curso o descripción */
+const DOCP_REQ = { psicologo:["identificacion","curp","comprobante_domicilio","constancia_fiscal","cedula_profesional","titulo_profesional"],
+  administrativo:["identificacion","curp","comprobante_domicilio","constancia_fiscal","comprobante_estudios"],
+  direccion:["identificacion","curp","comprobante_domicilio","constancia_fiscal"], superusuario:[] };
+const fmtMB = b => b ? (b/1048576 < 0.1 ? `${Math.max(1,Math.round(b/1024))} KB` : `${(b/1048576).toFixed(1)} MB`) : "";
+const veDocsTodos = () => ["superusuario","direccion"].includes(S.rol) || tengo("contratos");
+function docpPersonaHtml(uid){
+  const propio = uid===S.uid, u = propio ? {nombre:S.perfil?.nombre||S.api?.nombre, rol:S.rol} : ((S.usuarios||[]).find(x=>x.id===uid)||{});
+  const docs = S.docp||[], tipos = new Set(docs.map(d=>d.tipo)), req = DOCP_REQ[u.rol]||[];
+  const puedeVerificar = !propio && veDocsTodos(), puedeBorrar = d => (propio && !d.verificado_en) || ["superusuario","direccion"].includes(S.rol);
+  const subir = propio ? `<section class="note"><div class="note-h"><h3>Subir un documento</h3></div>
+      <form id="frmDocp" class="datos" onsubmit="return false">
+        <div class="fld"><label for="dp-tipo">Tipo de documento *</label><select id="dp-tipo">${Object.entries(DOCP_TIPOS).map(([k,l])=>`<option value="${k}">${esc(l)}</option>`).join("")}</select></div>
+        <div class="fld" style="grid-column:span 2"><label for="dp-desc">Descripción <span id="dp-req" hidden>*</span></label><input id="dp-desc" type="text" maxlength="160" placeholder="Ej. Diplomado en Terapia Gestalt, Instituto X, 2024"></div>
+        <div class="fld" style="grid-column:1/-1"><label for="dp-file">Archivo PDF (máximo 10 MB) *</label><input id="dp-file" type="file" accept="application/pdf,.pdf"></div>
+      </form>
+      <div class="actions"><button class="btn primary" type="button" data-act="subirDocp">Subir PDF</button></div>
+      <span class="status">Solo tú, la Dirección y recursos humanos ven tus documentos. No subas aquí documentos de consultantes. Escanea con buena luz y que se lea completo.</span></section>` : "";
+  const lista = `<section class="note"><div class="note-h"><h3>${propio?"Mis documentos":"Documentos"} (${docs.length})</h3></div>
+    ${req.length?`<p style="margin:0 0 8px">${req.map(k=>`<span class="pill ${tipos.has(k)?"estado-activo":"estado-pendiente"}">${tipos.has(k)?"✓":"Falta"} · ${esc(DOCP_TIPOS[k])}</span>`).join(" ")}</p>`:""}
+    ${docs.length?`<div class="tbl-wrap"><table><thead><tr><th>Documento</th><th>Archivo</th><th>Subido</th><th>Estado</th><th></th></tr></thead><tbody>
+      ${docs.map(d=>`<tr><td><b>${esc(DOCP_TIPOS[d.tipo]||d.tipo)}</b>${d.descripcion?`<br><span class="status">${esc(d.descripcion)}</span>`:""}</td>
+        <td><span class="status">${esc(d.nombre_archivo||"")}${d.tamano?` · ${esc(fmtMB(d.tamano))}`:""}</span></td><td>${esc(fmtFH(d.subido_en))}</td>
+        <td>${d.verificado_en?`<span class="pill estado-activo">Verificado</span>`:`<span class="pill estado-pendiente">Por verificar</span>`}</td>
+        <td style="white-space:nowrap"><button class="btn sm" type="button" data-act="verDocp" data-id="${esc(d.id)}">Ver PDF</button>
+          ${puedeVerificar?`<button class="btn sm${d.verificado_en?"":" primary"}" type="button" data-act="verifDocp" data-id="${esc(d.id)}" data-v="${d.verificado_en?0:1}">${d.verificado_en?"Quitar verificación":"Verificar"}</button>`:""}
+          ${puedeBorrar(d)?`<button class="btn sm danger" type="button" data-act="borrarDocp" data-id="${esc(d.id)}">Borrar</button>`:""}</td></tr>`).join("")}
+    </tbody></table></div>`:`<p class="status" style="margin:0">${propio?"Aún no has subido documentos.":"Esta persona aún no ha subido documentos."}</p>`}
+    ${puedeVerificar?`<span class="status">"Verificar" significa que cotejaste el PDF con el documento original. Un documento verificado ya no lo puede borrar su titular.</span>`:""}</section>`;
+  return subir + lista;
+}
+function documentacionHtml(){
+  if (S.docp===undefined) return `<div class="wrap" style="padding-block:24px"><p class="status">Cargando documentación…</p></div>`;
+  const todos=veDocsTodos(), sel=S.docpSel;
+  const cab=(t)=>`<div class="card-h"><h2 style="font-size:24px">${t}</h2><span style="display:flex;gap:8px;flex-wrap:wrap">${sel?`<button class="btn" type="button" data-act="docpLista">Volver a la lista</button>`:""}${todos&&!sel?"":""}<button class="btn" type="button" data-act="home">Cerrar</button></span></div>`;
+  if (sel){ const u=(S.usuarios||[]).find(x=>x.id===sel)||{};
+    return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">${cab(`Documentación de ${esc(u.nombre||"")}`)}
+      <p class="status" style="margin:0">${esc(u.rol==="psicologo"&&u.modalidad?MOD_TXT[u.modalidad]:(ROL_TXT[u.rol]||""))} · ${esc(u.sede||"Todas las sedes")}</p>${docpPersonaHtml(sel)}</div>`; }
+  let general="";
+  if (todos){ const cuenta=new Map(), verif=new Map(), tiposDe=new Map();
+    for (const d of S.docpTodos||[]){ cuenta.set(d.user_id,(cuenta.get(d.user_id)||0)+1); if (d.verificado_en) verif.set(d.user_id,(verif.get(d.user_id)||0)+1); (tiposDe.get(d.user_id)||tiposDe.set(d.user_id,new Set()).get(d.user_id)).add(d.tipo); }
+    const us=(S.usuarios||[]).filter(u=>u.estado==="activo" && u.id!==S.uid && u.rol!=="superusuario").sort((a,b)=>(a.sede||"").localeCompare(b.sede||"")||(a.nombre||"").localeCompare(b.nombre||""));
+    general = `<section class="doc-sec"><h3 class="sec-h">Documentación del personal (${us.length})</h3><div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Sede</th><th>Documentos</th><th>Obligatorios</th><th></th></tr></thead><tbody>
+      ${us.map(u=>{ const req=DOCP_REQ[u.rol]||[], t=tiposDe.get(u.id)||new Set(), faltan=req.filter(k=>!t.has(k)).length;
+        return `<tr><td><b>${esc(u.nombre||u.email)}</b><br><span class="status">${esc(u.rol==="psicologo"&&u.modalidad?MOD_TXT[u.modalidad]:(ROL_TXT[u.rol]||""))}</span></td><td>${esc(u.sede||"")}</td>
+        <td>${cuenta.get(u.id)||0}${cuenta.get(u.id)?` <span class="status">(${verif.get(u.id)||0} verificados)</span>`:""}</td>
+        <td>${req.length?(faltan?`<span class="pill estado-pendiente">Faltan ${faltan}</span>`:`<span class="pill estado-activo">Completos</span>`):"—"}</td>
+        <td><button class="btn sm" type="button" data-act="docpVer" data-id="${esc(u.id)}">Abrir</button></td></tr>`; }).join("") || `<tr><td colspan="5">No hay personal activo.</td></tr>`}
+    </tbody></table></div></section>`; }
+  return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">${cab(todos?"Documentación":"Mi documentación")}
+    <p class="status" style="margin:0">Sube en PDF tu identificación, CURP, comprobante de domicilio, constancia de situación fiscal, cédula y título profesional, constancias de cursos, diplomados y certificaciones. ${todos?"Como Dirección o recursos humanos ves la documentación de todo el personal y puedes verificarla contra los originales.":"Solo tú, la Dirección y recursos humanos los ven."}</p>
+    ${S.rol==="superusuario"?"":docpPersonaHtml(S.uid)}${general}</div>`;
+}
 function usoHtml(){
   const per=[[1,"Hoy"],[7,"Últimos 7 días"],[30,"Últimos 30 días"],[90,"Últimos 90 días"]];
   const filas=(S.uso||[]).filter(u=>!S.usoSede || u.sede===S.usoSede);
@@ -1470,6 +1532,22 @@ document.addEventListener("click", async ev => {
     const dl=await window.claude?.use?.("downloads");
     try{ const blob=await docxBlob("Contrato individual", xml, ext, "Documento", true); /* Los contratos laborales no llevan la nota aclaratoria (decisión del Director, 2026-11-20) */ await dl.save({filename:`Contrato-${slug(ctrNombre(c.datos||{})||"profesionista")}.docx`, data:blob}); toast("Contrato descargado. Contiene datos personales: resguárdalo y no lo envíes por mensajería."); }
     catch(e){ if(e?.code!=="declined") toast("No se pudo descargar el contrato."); } return; }
+  if (a==="documentacion"){ S.view="documentacion"; S.docpSel=null; S.docp=undefined; S.docpTodos=null; render(); return cargarAdmin("documentacion"); }
+  if (a==="docpVer"){ S.docpSel=b.dataset.id; S.docp=undefined; render(); $("#detail").scrollTop=0; return cargarAdmin("documentacion"); }
+  if (a==="docpLista"){ S.docpSel=null; S.docp=undefined; render(); return cargarAdmin("documentacion"); }
+  if (a==="subirDocp"){ const f=$("#dp-file").files?.[0], tipo=$("#dp-tipo").value, desc=$("#dp-desc").value.trim();
+    if (!f){ toast("Elige el archivo PDF."); return; }
+    if (!(f.type==="application/pdf" || /\.pdf$/i.test(f.name))){ toast("Solo se aceptan archivos PDF."); return; }
+    if (f.size>10*1048576){ toast("El archivo pesa más de 10 MB. Reduce su tamaño o divídelo."); return; }
+    if (DOCP_DESC.includes(tipo) && desc.length<3){ toast("Escribe la descripción (por ejemplo, el nombre del curso o diplomado)."); return; }
+    b.disabled=true; b.textContent="Subiendo…";
+    try{ await S.api.subirDocPersonal(f, tipo, desc); toast("Documento subido."); }catch(e){ toast(e?.message||"No se pudo subir el documento."); }
+    finally{ b.disabled=false; b.textContent="Subir PDF"; } return cargarAdmin("documentacion"); }
+  if (a==="verDocp"){ const d=(S.docp||[]).find(x=>x.id===b.dataset.id); if (!d) return; const w=window.open("", "_blank");
+    try{ const url=await S.api.urlDocPersonal(d.archivo); if (w) w.location.href=url; else location.assign(url); }catch(e){ if (w) w.close(); toast(e?.message||"No se pudo abrir el documento."); } return; }
+  if (a==="borrarDocp"){ const d=(S.docp||[]).find(x=>x.id===b.dataset.id); if (!d) return; if (!arm(b,"bd"+d.id,"¿Borrar?")) return; armed=null;
+    try{ await S.api.borrarDocPersonal(d); toast("Documento borrado."); }catch(e){ toast(e?.message||"No se pudo borrar."); } return cargarAdmin("documentacion"); }
+  if (a==="verifDocp"){ try{ await S.api.verificarDocPersonal(b.dataset.id, b.dataset.v==="1"); toast(b.dataset.v==="1"?"Documento verificado.":"Verificación retirada."); }catch(e){ toast(e?.message||"No se pudo actualizar."); } return cargarAdmin("documentacion"); }
   if (a==="permisos"){ S.view="permisos"; S.usuarios=null; S.permTodos=null; render(); return cargarAdmin("permisos"); }
   if (a==="uso"){ S.view="uso"; S.usoDias=S.usoDias||7; S.uso=null; render(); return cargarAdmin("uso"); }
   if (a==="autorizarUsr"){ const id=b.dataset.id;
@@ -1622,6 +1700,7 @@ document.addEventListener("change", ev => {
   if (ev.target.dataset?.perm){ const el=ev.target; el.disabled=true;
     S.api.otorgarPermiso(el.dataset.id, el.dataset.perm, el.checked).then(()=>{ toast(el.checked?"Permiso otorgado":"Permiso retirado"); return cargarAdmin("permisos"); })
       .catch(e=>{ toast(e?.message||"No se pudo cambiar el permiso."); el.checked=!el.checked; el.disabled=false; }); return; }
+  if (ev.target.id==="dp-tipo"){ const r=$("#dp-req"); if (r) r.hidden=!DOCP_DESC.includes(ev.target.value); }
   if (ev.target.id==="usrSede"){ S.usrSede=ev.target.value; return render(); }
   if (ev.target.id==="usoSede"){ S.usoSede=ev.target.value; return render(); }
   if (ev.target.id==="usoPeriodo"){ S.usoDias=Number(ev.target.value); S.uso=null; render(); return cargarAdmin("uso"); }
@@ -1665,6 +1744,7 @@ render();
     $("#sedBtn").hidden = !["superusuario","direccion"].includes(S.rol);
     $("#usoBtn").hidden = !tengo("tiempo_uso");
     $("#permBtn").hidden = S.rol!=="superusuario";
+    $("#docpBtn").hidden = !S.rol;
     $("#ctrBtn").hidden = !["superusuario","direccion","psicologo","administrativo"].includes(S.rol);
     if (S.rol==="administrativo"){ S.sedeF=S.miSede; }
   }

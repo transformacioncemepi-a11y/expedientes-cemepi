@@ -280,6 +280,21 @@ const cemepi = {
   async retirarReporte(id){ const { error } = await sb.rpc("retirar_reporte", { p_id: id }); if (error) fallo(error); },
   async generarCodigo(expId){ const { data, error } = await sb.rpc("generar_codigo_consultante", { p_expediente: expId }); if (error) fallo(error); return data; },
   async revocarCodigo(expId){ const { error } = await sb.rpc("revocar_codigo_consultante", { p_expediente: expId }); if (error) fallo(error); },
+  /* Documentación del personal (PDF en depósito privado; carpeta = id de la persona) */
+  async docsPersonal(uid){ let q = sb.from("documentos_personal").select("*").order("subido_en", { ascending: false }); if (uid) q = q.eq("user_id", uid);
+    const { data, error } = await q; if (error) fallo(error); return data || []; },
+  async subirDocPersonal(file, tipo, descripcion){
+    const ruta = `${usuario.id}/${crypto.randomUUID()}.pdf`;
+    const up = await sb.storage.from("documentos-personal").upload(ruta, file, { contentType: "application/pdf", upsert: false });
+    if (up.error) fallo(up.error);
+    const { error } = await sb.from("documentos_personal").insert({ tipo, descripcion, archivo: ruta, nombre_archivo: file.name.slice(0, 200), tamano: file.size });
+    if (error){ await sb.storage.from("documentos-personal").remove([ruta]); fallo(error); } },
+  async urlDocPersonal(ruta){ const { data, error } = await sb.storage.from("documentos-personal").createSignedUrl(ruta, 120); if (error) fallo(error); return data.signedUrl; },
+  async borrarDocPersonal(d){
+    const { data, error } = await sb.from("documentos_personal").delete().eq("id", d.id).select("id");
+    if (error) fallo(error); if (!data?.length) fallo({ message: "No se puede borrar: el documento ya fue verificado por la Dirección." });
+    await sb.storage.from("documentos-personal").remove([d.archivo]); },
+  async verificarDocPersonal(id, v){ const { error } = await sb.rpc("verificar_documento", { p_id: id, p_verificado: !!v }); if (error) fallo(error); },
   async resumenUso(desde){ const { data, error } = await sb.rpc("resumen_uso", { p_desde: desde.toISOString() }); if (error) fallo(error); return data || []; },
 };
 window.__cemepi.resolve({ use: async n => ({ db, user, downloads, cemepi })[n] ?? null });
