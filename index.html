@@ -404,8 +404,8 @@ function contenidoFijo(tipo, c){
 }
 
 /* Instrucciones para Claude: criterios institucionales del prompt maestro, en breve */
-function promptDe(tipo, c, indicaciones){
-  const t=FORMATOS[tipo];
+function promptDe(tipo, c, indicaciones, notaId){
+  const t=FORMATOS[tipo], base = notaId ? c.notas.find(n=>n.id===notaId) : null;
   const notas = t.sinNotas ? "" : c.notas.map(n=>`[${fmtDate(n.fecha)}]\n${n.texto}`).join("\n\n").slice(-60000);
   return `Eres el asistente de documentación clínica del Centro Mexicano de Plenitud Humana, S.C. (CEMEPI), un centro de atención psicológica en Ciudad de México y Estado de México con visión integrativa, relacional y humanista.
 
@@ -436,7 +436,11 @@ DATOS DEL EXPEDIENTE
 
 INDICACIONES DEL TERAPEUTA
 ${indicaciones||"(ninguna)"}
-${t.sinNotas?"":`
+${t.sinNotas?"":`${base?`
+NOTA BASE DE ESTE DOCUMENTO (sesión del ${fmtDate(base.fecha)})
+El terapeuta creó este documento a partir de esta nota: es la fuente principal. Usa las demás notas solo como contexto de la evolución, sin contradecirla.
+${base.texto}
+`:""}
 NOTAS DEL TERAPEUTA (en orden cronológico)
 ${notas||"(sin notas)"}`}
 
@@ -1462,6 +1466,13 @@ function expedienteHtml(p){
     <div class="panel" id="panel">${admin ? `<p class="status" style="margin:0">Las notas de sesión y los documentos clínicos solo los ven el psicólogo asignado y la Dirección, por confidencialidad.</p>`
       : S.tab==="notas"?notasHtml(p,ro):(S.gen?generadorHtml(p,ro):documentosHtml(p,ro))}</div></div>`;
 }
+/* Formatos que se ofrecen al guardar una nota (los demás, en "Ver todos los formatos") */
+const DOC_RAPIDOS = ["reporte","evaluacion","carta_proceso","referencia_psiquiatria","constancia_asistencia","carta_tutores","resumen_alta"];
+function opcionesDocHtml(notaId, titulo){
+  return `<div class="doc-de-nota"><b>${esc(titulo)}</b><span class="status">${S.sample?"Elige el documento: Claude lo redacta con esta nota como base y queda vinculado a ella.":"Elige el documento: quedará vinculado a esta nota."}</span>
+    <div class="doc-chips">${DOC_RAPIDOS.filter(k=>FORMATOS[k]).map(k=>`<button class="btn sm" type="button" data-act="docDeNota" data-nota="${esc(notaId)}" data-tipo="${k}">${esc(FORMATOS[k].nombre)}</button>`).join("")}
+      <button class="btn sm" type="button" data-act="masFormatos" data-nota="${esc(notaId)}">Ver todos los formatos…</button></div></div>`;
+}
 function notasHtml(p, ro){
   const ns=[...S.notas].sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||"")||(b.creado||0)-(a.creado||0));
   return `${ro?"":`<form id="frmNota" class="note">
@@ -1471,13 +1482,19 @@ function notasHtml(p, ro){
         <small class="hint" id="nt-h">Solo iniciales. Puedes distinguir lo que la persona refiere, lo que observaste y tus hipótesis; Claude respetará esa diferencia.</small></div>
       <div class="actions"><button class="btn primary" type="button" data-act="saveNota">Guardar nota</button></div>
     </form>`}
-    <div class="notes">${ns.length?ns.map(n=>`<article class="note">
+    <div class="notes">${ns.length?ns.map(n=>{ const docs=S.docs.filter(d=>d.notaId===n.id), abierta=S.notaDocs===n.id;
+      return `<article class="note${S.notaReciente===n.id?" nota-nueva":""}">
       <div class="note-h"><span class="num">Sesión</span><h3>${fmtDate(n.fecha)}</h3><span class="spacer"></span>
+        ${ro?"":`<button class="btn sm primary" type="button" data-act="toggleDocNota" data-id="${esc(n.id)}">${abierta?"Cerrar opciones":"Crear documento"}</button>`}
         <button class="btn sm" type="button" data-act="copyNota" data-id="${esc(n.id)}">Copiar</button>${ro?"":`<button class="btn sm danger" type="button" data-act="delNota" data-id="${esc(n.id)}">Eliminar</button>`}</div>
-      <div class="apunte">${esc(n.texto)}</div></article>`).join(""):`<p class="status" style="margin:0">Aún no hay notas. Pega la primera arriba.</p>`}</div>`;
+      <div class="apunte">${esc(n.texto)}</div>
+      ${docs.length?`<div class="docs-nota"><span class="status">Documentos de esta nota:</span> ${docs.map(d=>`<button class="btn sm" type="button" data-act="openDoc" data-id="${esc(d.id)}">${esc(FORMATOS[d.tipo]?.nombre||d.tipo)} · ${esc(fmtDate(d.fecha))}</button>`).join(" ")}</div>`:""}
+      ${!ro && abierta ? opcionesDocHtml(n.id, S.notaReciente===n.id?"Nota guardada. ¿Quieres crear un documento con ella?":"Crear un documento con esta nota") : ""}
+      </article>`; }).join(""):`<p class="status" style="margin:0">Aún no hay notas. Pega la primera arriba.</p>`}</div>`;
 }
 function documentosHtml(p, ro){
   return `<section class="doc-sec">
+      ${S.notaElegida?`<p class="banner" style="margin:0">El documento que elijas quedará vinculado a la nota del ${esc(fmtDate(S.notas.find(n=>n.id===S.notaElegida)?.fecha||""))}.</p>`:""}
       <div><h3 class="sec-h">Crear un documento</h3><p class="status" style="margin:4px 0 0">${S.sample?"Claude redacta el documento con tus notas. Tú lo revisas, lo corriges si hace falta y lo descargas en Word.":"Para los formatos que redacta Claude, la app prepara las instrucciones con tus notas: las pegas en claude.ai y regresas la respuesta aquí. Después lo revisas y lo descargas en Word o PDF."}</p></div>
       <div class="fmt-grid">${ORDEN.map(k=>{ const t=FORMATOS[k], off=false; return `<article class="fmt">
         <div class="fmt-h"><b>${esc(t.nombre)}</b><span class="pill p-r-${t.riesgo}">${RIESGO_TXT[t.riesgo]}</span></div>
@@ -1487,7 +1504,7 @@ function documentosHtml(p, ro){
     <section class="doc-sec">
       <h3 class="sec-h">Documentos guardados</h3>
       ${S.docs.length?`<div class="tbl-wrap"><table><thead><tr><th>Documento</th><th>Fecha</th><th></th></tr></thead><tbody>
-        ${S.docs.map(d=>`<tr><td><b>${esc(FORMATOS[d.tipo]?.nombre||d.tipo)}</b></td><td class="mono">${fmtDate(d.fecha)}</td>
+        ${S.docs.map(d=>`<tr><td><b>${esc(FORMATOS[d.tipo]?.nombre||d.tipo)}</b>${d.notaId?`<br><span class="status">Basado en la nota del ${esc(fmtDate(S.notas.find(n=>n.id===d.notaId)?.fecha||""))}</span>`:""}</td><td class="mono">${fmtDate(d.fecha)}</td>
           <td style="white-space:nowrap">${d.contenido?`<button class="btn sm" type="button" data-act="openDoc" data-id="${esc(d.id)}">Abrir</button>
           <button class="btn sm" type="button" data-act="wordDoc" data-id="${esc(d.id)}">Word</button>
           <button class="btn sm" type="button" data-act="pdfSaved" data-id="${esc(d.id)}">PDF</button>
@@ -1528,6 +1545,8 @@ function portalHtml(p){
   </section>`;
 }
 function generadorHtml(p, ro){
+  const notaBase = S.gen?.notaId ? S.notas.find(n=>n.id===S.gen.notaId) : null;
+  const avisoNota = notaBase ? `<div class="banner" style="display:block"><b>Basado en la nota del ${esc(fmtDate(notaBase.fecha))}.</b> <span class="status">${esc(notaBase.texto.slice(0,180))}${notaBase.texto.length>180?"…":""}</span></div>` : "";
   const g=S.gen, t=FORMATOS[g.tipo], k=g.contenido;
   const aviso = t.riesgo==="alto" ? `<div class="banner bad">Documento de riesgo alto: requiere revisión humana especializada antes de emitirse.</div>`
     : t.interno ? `<div class="banner">Uso interno: contiene el expediente organizado. No se comparte por Signal ni WhatsApp.</div>`
@@ -1543,7 +1562,7 @@ function generadorHtml(p, ro){
           <textarea id="g-resp" style="width:100%;min-height:140px;margin-top:6px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg)" placeholder='La respuesta empieza con { "secciones": …'></textarea>
           <button class="btn sm primary" type="button" data-act="usarRespuesta" style="margin-top:6px">Usar esta respuesta</button></div></li>
       </ol>`;
-    return `<div class="note-h"><button class="btn sm" type="button" data-act="cancelDoc">← Documentos</button><h3>${esc(t.nombre)}</h3><span class="pill p-r-${t.riesgo}">${RIESGO_TXT[t.riesgo]}</span></div>${aviso}${manual}`;
+    return `<div class="note-h"><button class="btn sm" type="button" data-act="cancelDoc">← Documentos</button><h3>${esc(t.nombre)}</h3><span class="pill p-r-${t.riesgo}">${RIESGO_TXT[t.riesgo]}</span></div>${aviso}${avisoNota}${manual}`;
   }
   const pre = t.ia && !k && !g.loading ? `<div class="fld"><label for="g-ind">${t.sinNotas?"Informe a revisar":"Indicaciones para Claude"}</label>
       <textarea id="g-ind" style="min-height:${t.sinNotas?220:90}px" placeholder="${esc(t.ph)}">${esc(g.indicaciones||"")}</textarea></div>
@@ -1565,7 +1584,7 @@ function generadorHtml(p, ro){
         ${t.ia?`<span class="spacer"></span><button class="btn" type="button" data-act="regenerar">Redactar de nuevo</button>`:""}<span class="status" id="saveSt"></span></div>
     </div>` : "";
   return `<div class="note-h"><button class="btn sm" type="button" data-act="cancelDoc">← Documentos</button><h3>${esc(t.nombre)}</h3><span class="pill p-r-${t.riesgo}">${RIESGO_TXT[t.riesgo]}</span></div>
-    ${aviso}${pre}${cargando}${editor}`;
+    ${aviso}${avisoNota}${pre}${cargando}${editor}`;
 }
 function leerGen(){
   const g=S.gen; if(!g?.contenido) return g;
@@ -1614,7 +1633,7 @@ async function generar(p){
   g.loading=true; g.contenido=null; render();
   S.ctl=new AbortController();
   try{
-    const r = await S.sample.json(promptDe(g.tipo, ctxOf(p), g.indicaciones), {modelTier:"complex", signal:S.ctl.signal, cache:false});
+    const r = await S.sample.json(promptDe(g.tipo, ctxOf(p), g.indicaciones, g.notaId), {modelTier:"complex", signal:S.ctl.signal, cache:false});
     const secs = Array.isArray(r?.secciones) ? r.secciones.filter(s=>s&&typeof s.texto==="string").map(s=>({titulo:String(s.titulo||""),texto:s.texto})) : [];
     if (!secs.length) throw {code:"invalid_json"};
     g.contenido={destinatario:t.dest||"", secciones:secs, advertencias:Array.isArray(r.advertencias)?r.advertencias.map(String):[]};
@@ -1632,7 +1651,7 @@ async function generar(p){
 document.addEventListener("click", async ev => {
   const b=ev.target.closest("button"); if(!b||b.disabled) return;
   if (b.classList.contains("row")) return select(b.dataset.id);
-  if (b.dataset.tab){ if((S.dirty||S.gen?.contenido) && !arm(b,"tab"+b.dataset.tab,"¿Descartar cambios?")) return; armed=null; S.ctl?.abort(); S.tab=b.dataset.tab; S.gen=null; return render(); }
+  if (b.dataset.tab){ if((S.dirty||(S.gen?.contenido && !S.gen.guardado)) && !arm(b,"tab"+b.dataset.tab,"¿Descartar cambios?")) return; armed=null; S.ctl?.abort(); S.tab=b.dataset.tab; S.gen=null; return render(); }
   const a=b.dataset.act; if(!a) return;
   const p=S.pacientes.get(S.sel);
   if (a==="new") return crear();
@@ -1766,7 +1785,7 @@ document.addEventListener("click", async ev => {
   /* Redacción con Claude en modo copiar y pegar */
   if (a==="copiarPrompt"){ const g=S.gen, t=FORMATOS[g.tipo]; g.indicaciones=$("#g-ind")?.value.trim()||"";
     if (t.sinNotas && !g.indicaciones){ toast("Pega primero el informe que quieres revisar."); return; }
-    return copiar(promptDe(g.tipo, ctxOf(p), g.indicaciones)); }
+    return copiar(promptDe(g.tipo, ctxOf(p), g.indicaciones, g.notaId)); }
   if (a==="usarRespuesta"){ const g=S.gen, t=FORMATOS[g.tipo], txt=($("#g-resp")?.value||"").trim();
     g.indicaciones=$("#g-ind")?.value.trim()||g.indicaciones||"";
     const i=txt.indexOf("{"), j=txt.lastIndexOf("}"); let r=null;
@@ -1812,17 +1831,25 @@ document.addEventListener("click", async ev => {
     if (!texto){ toast("Pega o escribe la nota."); $("#nt-texto").focus(); return; }
     if (!fecha){ toast("Indica la fecha de la sesión."); return; }
     if (!revisarSensibles(b,"nota",texto)) return;
-    try{ S.dirty=false; await S.db.collection("notas").add({pacienteId:S.sel, fecha, texto, creado:Date.now(), autor:S.uid||""});
-      await S.db.doc("pacientes/"+S.sel).update({actualizado:Date.now()}); toast("Nota guardada"); }
+    try{ S.dirty=false; const ref=await S.db.collection("notas").add({pacienteId:S.sel, fecha, texto, creado:Date.now(), autor:S.uid||""});
+      await S.db.doc("pacientes/"+S.sel).update({actualizado:Date.now()}); S.notaReciente=ref.id; S.notaDocs=ref.id; $("#nt-texto").value="";
+      toast("Nota guardada. Elige si quieres crear un documento con ella."); render(); }
     catch(e){ S.dirty=true; toast(errMsg(e)); } return;
   }
   if (a==="delNota"){ if(!arm(b,"dn"+b.dataset.id,"¿Eliminar?")) return; armed=null;
     try{ await S.db.doc("notas/"+b.dataset.id).delete(); toast("Nota eliminada"); }catch(e){ toast(errMsg(e)); } return; }
+  if (a==="toggleDocNota"){ S.notaDocs = S.notaDocs===b.dataset.id ? null : b.dataset.id; if (S.notaDocs!==S.notaReciente) S.notaReciente=null; return render(); }
+  if (a==="masFormatos"){ S.notaElegida=b.dataset.nota; S.tab="documentos"; S.gen=null; render(); $("#detail").scrollTop=0; return; }
+  if (a==="docDeNota"){ const tipo=b.dataset.tipo, t=FORMATOS[tipo];
+    S.tab="documentos"; S.notaDocs=null; S.notaReciente=null;
+    S.gen={tipo, indicaciones:"", contenido: t.ia?null:contenidoFijo(tipo, ctxOf(p)), fecha:today(), lugar:ctxOf(p).lugar, notaId:b.dataset.nota}; render(); $("#detail").scrollTop=0;
+    if (t.ia && !t.sinNotas && S.sample) return generar(p);   /* con redacción automática, empieza de inmediato */
+    return; }
   /* Documentos */
   if (a==="newDoc"){ const tipo=b.dataset.tipo, t=FORMATOS[tipo];
-    S.gen={tipo, indicaciones:"", contenido: t.ia?null:contenidoFijo(tipo, ctxOf(p)), fecha:today(), lugar:ctxOf(p).lugar}; render(); $("#detail").scrollTop=0; return; }
+    S.gen={tipo, indicaciones:"", contenido: t.ia?null:contenidoFijo(tipo, ctxOf(p)), fecha:today(), lugar:ctxOf(p).lugar, notaId:S.notaElegida||""}; S.notaElegida=null; render(); $("#detail").scrollTop=0; return; }
   if (a==="openDoc"){ const d=S.docs.find(x=>x.id===b.dataset.id); if(!d?.contenido) return;
-    S.gen={id:d.id, tipo:d.tipo, indicaciones:d.indicaciones||"", contenido:JSON.parse(JSON.stringify(d.contenido)), fecha:d.fecha, lugar:d.lugar}; render(); $("#detail").scrollTop=0; return; }
+    S.tab="documentos"; S.gen={id:d.id, tipo:d.tipo, indicaciones:d.indicaciones||"", contenido:JSON.parse(JSON.stringify(d.contenido)), fecha:d.fecha, lugar:d.lugar, notaId:d.notaId||"", guardado:true}; render(); $("#detail").scrollTop=0; return; }
   if (a==="liberarDoc"){ const menor=esMenor(p);
     if (!arm(b,"lib"+b.dataset.id, menor?"Verifiqué representación legal: compartir":"¿Compartir? Confirmar")) return; armed=null;
     try{ await S.api.liberarReporte(b.dataset.id, menor); toast("Reporte compartido en el portal del consultante."); }catch(e){ toast(e?.message||"No se pudo compartir."); }
@@ -1851,7 +1878,7 @@ document.addEventListener("click", async ev => {
     if (a==="pdfDoc") return descargarPdf(`${slug(FORMATOS[g.tipo].nombre)}-${p.folio}-${g.fecha||today()}.pdf`, g, c);
     if (a==="downloadDoc") return descargar(`${slug(FORMATOS[g.tipo].nombre)}-${p.folio}-${g.fecha||today()}.docx`, p.folio, bloquesXml(bloques(g,c),c));
     const st=$("#saveSt"); st.textContent="Guardando…";
-    const data={tipo:g.tipo, fecha:g.fecha, lugar:g.lugar, indicaciones:g.indicaciones||"", contenido:g.contenido};
+    const data={tipo:g.tipo, fecha:g.fecha, lugar:g.lugar, indicaciones:g.indicaciones||"", contenido:g.contenido, notaId:g.notaId||""};
     try{ if (g.id) await S.db.doc("documentos/"+g.id).update({...data, actualizado:Date.now()});
          else { const ref=await S.db.collection("documentos").add({...data, pacienteId:S.sel, creado:Date.now(), autor:S.uid||""}); g.id=ref.id; }
          g.guardado=true; st.textContent="Guardado"; toast("Documento guardado en el expediente"); }
@@ -2008,6 +2035,10 @@ details.guia{border:1px solid var(--line);border-radius:8px;padding:8px 12px;mar
 details.guia summary{cursor:pointer;font-weight:700}
 details.guia ol{margin:8px 0 0;padding-left:20px}
 table.matriz th.yo,table.matriz td.yo{background:var(--accent-soft)}
+.doc-de-nota{display:flex;flex-direction:column;gap:6px;margin-top:10px;padding:10px 12px;border:1px dashed var(--accent);border-radius:8px;background:var(--accent-soft)}
+.doc-chips{display:flex;flex-wrap:wrap;gap:6px}
+.docs-nota{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}
+article.note.nota-nueva{outline:2px solid var(--accent);outline-offset:2px}
 .usr-edit{display:flex;flex-direction:column;gap:10px}
 .usr-edit fieldset{border:1px solid var(--line);border-radius:10px;padding:8px 12px 10px;margin:0;display:flex;flex-direction:column;gap:6px;min-width:0}
 .usr-edit legend{font-size:12px;font-weight:700;padding:0 4px}

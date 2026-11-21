@@ -53,9 +53,10 @@ const MAP = {
     from: r => ({ pacienteId: r.expediente_id, fecha: r.fecha || "", texto: r.texto || "", creado: ms(r.created_at), autor: r.autor || "" }),
     to: d => { const o = {}; if (d.pacienteId) o.expediente_id = d.pacienteId; if (d.fecha !== undefined) o.fecha = d.fecha; if (d.texto !== undefined) o.texto = d.texto; return o; } },
   documentos: { tabla: "documentos", campo: { pacienteId: "expediente_id" },
-    from: r => ({ pacienteId: r.expediente_id, tipo: r.tipo, fecha: r.fecha || "", lugar: r.lugar || "", indicaciones: r.indicaciones || "", contenido: r.contenido, creado: ms(r.created_at), autor: r.autor || "" }),
+    from: r => ({ pacienteId: r.expediente_id, tipo: r.tipo, fecha: r.fecha || "", lugar: r.lugar || "", indicaciones: r.indicaciones || "", contenido: r.contenido, creado: ms(r.created_at), autor: r.autor || "", notaId: r.nota_id || "" }),
     to: d => { const o = {}; if (d.pacienteId) o.expediente_id = d.pacienteId;
       for (const k of ["tipo", "lugar", "indicaciones", "contenido"]) if (d[k] !== undefined) o[k] = d[k];
+      if (d.notaId !== undefined) o.nota_id = d.notaId || null;
       if (d.fecha !== undefined) o.fecha = fecha(d.fecha); return o; } },
   terapeutas: { tabla: "terapeutas", campo: {},
     from: r => ({ nombre: r.nombre, cedula: r.cedula || "", sede: r.sede || "", uid: r.user_id || "", activo: r.activo, creado: ms(r.created_at) }),
