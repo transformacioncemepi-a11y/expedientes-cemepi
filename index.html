@@ -15,6 +15,14 @@
   window.claude = { use: nombre => listo.then(api => api.use(nombre)) }; })();
 </script>
 <title>Expedientes CEMEPI</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0560bd">
+<link rel="icon" type="image/png" sizes="192x192" href="iconos/icono-192.png">
+<link rel="apple-touch-icon" href="iconos/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="CEMEPI">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -248,6 +256,7 @@ td.res{white-space:pre-wrap;min-width:220px}
     <button class="btn" id="usoBtn" type="button" data-act="uso" hidden>Tiempo de uso</button>
     <button class="btn" id="tabBtn" type="button" data-act="tablero" hidden>Tablero</button></nav>
   <nav class="nav-g" aria-label="Mi cuenta"><span class="nav-l">Mi cuenta</span>
+    <button class="btn" id="instalarBtn" type="button" data-act="instalar" hidden>Instalar app</button>
     <button class="btn" id="ayudaBtn" type="button" data-act="ayuda">Ayuda</button>
     <button class="btn" id="perfilBtn" type="button" data-act="perfil">Mi perfil</button>
     <button class="btn" id="salirBtn" type="button" data-act="salir">Cerrar sesión</button></nav>
@@ -1727,6 +1736,7 @@ const GUIAS = [
   {t:"Respaldar la documentación del personal", si:()=>ES_DIR(), pasos:["Entra a Documentación y pulsa Descargar respaldo (ZIP).","Se descargan todos los PDF en carpetas por sede y persona, con un índice (indice.csv) que se abre en Excel.","Guarda el ZIP en un disco o carpeta segura de CEMEPI; contiene datos personales. Hazlo al menos una vez al mes.","Los respaldos automáticos de Supabase no incluyen los PDF: este ZIP es su único respaldo."]},
   {t:"Recuperar un documento eliminado", si:()=>ES_DIR(), pasos:["Entra a Documentación y baja a Papelera.","Pulsa Restaurar: el documento vuelve a la lista de su titular.","Los documentos se conservan 30 días en la papelera; después puedes eliminarlos definitivamente."]},
   {t:"Otorgar permisos", si:()=>S.rol==="superusuario", pasos:["Entra a Permisos.","Marca o desmarca la casilla del permiso junto a la persona. Se aplica al instante y queda en la bitácora."]},
+  {t:"Instalar la app en mi celular o computadora", si:()=>true, pasos:["Android (Chrome): abre la app, pulsa Instalar app en el menú (o en el menú ⋮ del navegador, Instalar aplicación) y confirma.","iPhone o iPad (Safari): abre la app, pulsa el botón Compartir (cuadro con flecha) y elige Agregar a pantalla de inicio.","Computadora (Chrome o Edge): pulsa Instalar app o el ícono de instalar en la barra de direcciones.","La app instalada abre en su propia ventana con el ícono de CEMEPI. Tus datos siguen en el servidor seguro: no se guardan en el teléfono. Si pierdes el dispositivo, cambia tu contraseña en Mi perfil."]},
   {t:"Cambiar mi contraseña o mi firma", si:()=>true, pasos:["Entra a Mi perfil.","Para la firma: súbela en imagen o dibújala y pulsa Guardar mis datos.","Para la contraseña: escríbela dos veces en Cambiar mi contraseña (mínimo 10 caracteres)."]},
 ];
 const MATRIZ = [
@@ -2363,6 +2373,10 @@ document.addEventListener("click", async ev => {
   if (a==="respaldoDocp") return respaldoDocp(b);
   if (a==="verifDocp"){ try{ await S.api.verificarDocPersonal(b.dataset.id, b.dataset.v==="1"); toast(b.dataset.v==="1"?"Documento verificado.":"Verificación retirada."); }catch(e){ toast(e?.message||"No se pudo actualizar."); } return cargarAdmin("documentacion"); }
   if (a==="permisos"){ S.view="permisos"; S.usuarios=null; S.permTodos=null; render(); return cargarAdmin("permisos"); }
+  if (a==="instalar"){
+    if (instalacion){ instalacion.prompt(); const r=await instalacion.userChoice.catch(()=>null); if (r?.outcome==="accepted") { b.hidden=true; } instalacion=null; return; }
+    if (esIOS()){ toast("En iPhone o iPad: pulsa el botón Compartir de Safari (cuadro con flecha) y elige «Agregar a pantalla de inicio»."); return; }
+    toast("Usa el menú del navegador: «Instalar aplicación» o «Agregar a pantalla de inicio»."); return; }
   if (a==="tablero"){ S.view="tablero"; S.tbPer=S.tbPer||"90"; S.tbSede=S.tbSede||""; S.tb=null; render(); return cargarTablero(); }
   if (a==="uso"){ S.view="uso"; S.usoDias=S.usoDias||7; S.uso=null; render(); return cargarAdmin("uso"); }
   if (a==="autorizarUsr"){ const id=b.dataset.id;
@@ -2614,6 +2628,16 @@ document.addEventListener("click", async ev => {
     catch(e){ st.textContent=""; toast(errMsg(e)); } return;
   }
 });
+/* ---------- App instalable (PWA) ---------- */
+let instalacion = null;
+const enStandalone = () => window.matchMedia?.("(display-mode: standalone)").matches || navigator.standalone === true;
+const esIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); instalacion = e; const b=$("#instalarBtn"); if (b && !enStandalone()) b.hidden=false; });
+window.addEventListener("appinstalled", () => { instalacion=null; const b=$("#instalarBtn"); if (b) b.hidden=true; toast("App instalada. Ábrela desde el ícono de CEMEPI."); });
+if (esIOS() && !enStandalone()) setTimeout(()=>{ const b=$("#instalarBtn"); if (b) b.hidden=false; }, 0);
+if ("serviceWorker" in navigator && (location.protocol==="https:" || location.hostname==="localhost")) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(e=>console.warn("sw", e)));
+}
 /* Tooltip de las gráficas del tablero */
 document.addEventListener("scroll", () => { const t=$("#vizTip"); if (t) t.style.display="none"; }, true);
 document.addEventListener("mouseover", ev => { const g=ev.target.closest?.("[data-tip]"); let tip=$("#vizTip");

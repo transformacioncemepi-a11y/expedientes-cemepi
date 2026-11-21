@@ -1,0 +1,17 @@
+{
+  "name": "Expedientes CEMEPI",
+  "short_name": "CEMEPI",
+  "description": "Expedientes y documentos psicológicos del Centro Mexicano de Plenitud Humana, S.C.",
+  "lang": "es-MX",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#eef3fa",
+  "theme_color": "#0560bd",
+  "icons": [
+    { "src": "iconos/icono-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "iconos/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "iconos/icono-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
