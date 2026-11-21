@@ -50,8 +50,9 @@ const MAP = {
       if (d.actualizado) o.updated_at = new Date().toISOString();
       return o; } },
   notas: { tabla: "notas", campo: { pacienteId: "expediente_id" },
-    from: r => ({ pacienteId: r.expediente_id, fecha: r.fecha || "", texto: r.texto || "", creado: ms(r.created_at), autor: r.autor || "" }),
-    to: d => { const o = {}; if (d.pacienteId) o.expediente_id = d.pacienteId; if (d.fecha !== undefined) o.fecha = d.fecha; if (d.texto !== undefined) o.texto = d.texto; return o; } },
+    from: r => ({ pacienteId: r.expediente_id, fecha: r.fecha || "", texto: r.texto || "", creado: ms(r.created_at), autor: r.autor || "", formato: r.formato || "libre", campos: r.campos || null }),
+    to: d => { const o = {}; if (d.pacienteId) o.expediente_id = d.pacienteId; if (d.fecha !== undefined) o.fecha = d.fecha; if (d.texto !== undefined) o.texto = d.texto;
+      if (d.formato !== undefined) o.formato = d.formato; if (d.campos !== undefined) o.campos = d.campos; return o; } },
   documentos: { tabla: "documentos", campo: { pacienteId: "expediente_id" },
     from: r => ({ pacienteId: r.expediente_id, tipo: r.tipo, fecha: r.fecha || "", lugar: r.lugar || "", indicaciones: r.indicaciones || "", contenido: r.contenido, creado: ms(r.created_at), autor: r.autor || "", notaId: r.nota_id || "" }),
     to: d => { const o = {}; if (d.pacienteId) o.expediente_id = d.pacienteId;

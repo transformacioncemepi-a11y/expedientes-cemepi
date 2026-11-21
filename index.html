@@ -116,6 +116,16 @@ legend{font:700 12px var(--f-display);text-transform:uppercase;letter-spacing:.0
 .fld input,.fld select,.fld textarea{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
 .fld textarea{min-height:76px;resize:vertical;line-height:1.5}
 .apunte{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13.5px}
+.modo-nota{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.modo-nota button{border:0;background:transparent;padding:6px 14px;font:inherit;font-size:13px;cursor:pointer;color:var(--fg)}
+.modo-nota button[aria-pressed="true"]{background:var(--accent,#2c5f5d);color:#fff}
+.nom-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px 14px;align-items:end}
+.nom-campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px 16px}
+.nom-campos textarea{min-height:84px}
+.nota-nom{display:grid;gap:8px;font-size:13.5px}
+.nota-nom .meta{color:var(--muted,#666);font-size:12.5px}
+.nota-nom b{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted,#555)}
+.nota-nom p{margin:2px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
 .doc-sec{display:flex;flex-direction:column;gap:12px}
 .sec-h{font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--accent)}
 .fmt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
@@ -1521,6 +1531,57 @@ function expedienteHtml(p){
     <div class="panel" id="panel">${admin ? `<p class="status" style="margin:0">Las notas de sesión y los documentos clínicos solo los ven el psicólogo asignado y la Dirección, por confidencialidad.</p>`
       : S.tab==="notas"?notasHtml(p,ro):(S.gen?generadorHtml(p,ro):documentosHtml(p,ro))}</div></div>`;
 }
+/* ---------- Nota de evolución estructurada (NOM-004, plantilla opcional) ----------
+   Distingue los cuatro niveles de información de CEMEPI: relato, observación, intervención/respuesta e hipótesis. */
+const NOM_MODALIDAD = ["Presencial","En línea (videollamada)","Telefónica"];
+const NOM_RIESGO = ["Sin indicadores de riesgo identificados","Se identificaron indicadores de riesgo","No se exploró en esta sesión"];
+const NOM_CAMPOS = [
+  {k:"motivo", l:"Tema o motivo de la sesión", ph:"Ej. Seguimiento de la ansiedad en el trabajo."},
+  {k:"refiere", l:"Lo que refiere (relato)", ph:"Lo que la persona o sus acompañantes cuentan. Ej. La consultante refiere que…", grupo:1},
+  {k:"observa", l:"Lo que observé (observación clínica)", ph:"Lo que tú apreciaste directamente: actitud, afecto, lenguaje, conducta…", grupo:1},
+  {k:"intervencion", l:"Intervenciones realizadas", ph:"Qué hiciste en la sesión: exploración, experimento, psicoeducación…", req:1},
+  {k:"respuesta", l:"Respuesta observada o comunicada", ph:"Cómo respondió la persona a lo trabajado."},
+  {k:"evolucion", l:"Evolución e hipótesis de trabajo", ph:"Cambios respecto a sesiones previas e hipótesis PROVISIONALES (no diagnósticos)."},
+  {k:"acuerdos", l:"Acuerdos terapéuticos", ph:"Tareas, compromisos o acuerdos de la sesión."},
+  {k:"plan", l:"Plan de continuidad", ph:"Próxima sesión, frecuencia, valoración complementaria o referencia.", req:1},
+];
+let notaModo = (()=>{ try{ return localStorage.getItem("cemepi.notaModo")||"libre"; }catch{ return "libre"; } })();
+const horaAhora = () => new Date().toTimeString().slice(0,5);
+function nom004Texto(c){
+  const pf=S.perfil||{}, L=[];
+  L.push(`Nota de evolución (NOM-004) · Hora: ${c.hora||"Dato pendiente de recabar"}${c.duracion?` · Duración: ${c.duracion} min`:""} · Modalidad: ${c.modalidad||"Dato pendiente de recabar"}`);
+  if (c.asistentes) L.push(`Asistentes: ${c.asistentes}`);
+  L.push(`Profesional responsable: ${pf.nombre||"Dato pendiente de recabar"}${pf.cedula?` · Cédula profesional ${pf.cedula}`:""}`);
+  for (const f of NOM_CAMPOS){ const v=(c[f.k]||"").trim(); if (v||f.req) L.push(`\n${f.l}:\n${v||"Dato pendiente de recabar"}`);
+    if (f.k==="evolucion") L.push(`\nIndicadores de riesgo:\n${c.riesgo||"No se exploró en esta sesión"}${c.riesgo===NOM_RIESGO[1]&&c.riesgo_det?`. ${c.riesgo_det}`:""}`); }
+  return L.join("\n");
+}
+function nom004FormHtml(){
+  return `<div class="nom-grid">
+      <div class="fld"><label for="nm-hora">Hora *</label><input id="nm-hora" type="time" value="${horaAhora()}"></div>
+      <div class="fld"><label for="nm-dur">Duración (min)</label><input id="nm-dur" type="number" min="5" max="300" step="5" placeholder="50"></div>
+      <div class="fld"><label for="nm-mod">Modalidad *</label><select id="nm-mod"><option value="">Elige…</option>${NOM_MODALIDAD.map(m=>`<option>${esc(m)}</option>`).join("")}</select></div>
+      <div class="fld" style="grid-column:span 2"><label for="nm-asis">Asistentes</label><input id="nm-asis" type="text" maxlength="160" placeholder="Por su relación, sin nombres. Ej. consultante y madre"></div>
+    </div>
+    <div class="nom-campos">${NOM_CAMPOS.map(f=>`<div class="fld"><label for="nm-${f.k}">${esc(f.l)}${f.req?" *":""}</label><textarea id="nm-${f.k}" placeholder="${esc(f.ph)}"></textarea></div>`).join("")}
+      <div class="fld"><label for="nm-riesgo">Indicadores de riesgo *</label><select id="nm-riesgo">${NOM_RIESGO.map((r,i)=>`<option${i===2?" selected":""}>${esc(r)}</option>`).join("")}</select>
+        <textarea id="nm-riesgo-det" hidden placeholder="Describe con hechos qué se refirió y qué se observó, y qué medidas se tomaron o se propondrán."></textarea>
+        <small class="hint" id="nm-riesgo-av" hidden>Si hay riesgo, documenta los elementos y avisa a la Dirección para valorar las medidas de protección. Una nota no sustituye esas medidas.</small></div>
+    </div>
+    <small class="hint">* Campos de la NOM-004 para notas de evolución. Escribe solo iniciales. Separa lo que la persona refiere de lo que tú observaste y de tus hipótesis: Claude respetará esa diferencia al redactar.</small>`;
+}
+function leerNom004(){
+  const v=id=>($("#"+id)?.value||"").trim(), c={hora:v("nm-hora"), duracion:v("nm-dur"), modalidad:v("nm-mod"), asistentes:v("nm-asis"), riesgo:v("nm-riesgo"), riesgo_det:v("nm-riesgo-det")};
+  for (const f of NOM_CAMPOS) c[f.k]=v("nm-"+f.k);
+  return c;
+}
+function nom004Html(n){
+  const c=n.campos||{}, meta=[c.hora&&`Hora ${c.hora}`, c.duracion&&`${c.duracion} min`, c.modalidad, c.asistentes&&`Asistentes: ${c.asistentes}`].filter(Boolean).join(" · ");
+  const riesgo = c.riesgo===NOM_RIESGO[1];
+  return `<div class="nota-nom"><span class="meta">${esc(meta)}</span>
+    ${NOM_CAMPOS.filter(f=>(c[f.k]||"").trim()||f.req).map(f=>`<div><b>${esc(f.l)}</b><p>${esc((c[f.k]||"").trim()||"Dato pendiente de recabar")}</p></div>`).join("")}
+    <div><b>Indicadores de riesgo</b><p>${riesgo?`<span class="pill estado-pendiente">${esc(c.riesgo)}</span> `:""}${esc(riesgo?(c.riesgo_det||""):(c.riesgo||""))}</p></div></div>`;
+}
 /* Formatos que se ofrecen al guardar una nota (los demás, en "Ver todos los formatos") */
 const DOC_RAPIDOS = ["reporte","evaluacion","carta_proceso","referencia_psiquiatria","constancia_asistencia","carta_tutores","resumen_alta"];
 function opcionesDocHtml(notaId, titulo){
@@ -1531,18 +1592,19 @@ function opcionesDocHtml(notaId, titulo){
 function notasHtml(p, ro){
   const ns=[...S.notas].sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||"")||(b.creado||0)-(a.creado||0));
   return `${ro?"":`<form id="frmNota" class="note">
-      <div class="note-h"><h3>Agregar nota</h3><span class="by">Copia de tu libreta, celular o computadora y pégala aquí.</span></div>
+      <div class="note-h"><h3>Agregar nota</h3><span class="spacer"></span>
+        <span class="modo-nota" role="group" aria-label="Tipo de nota"><button type="button" data-act="modoNota" data-m="libre" aria-pressed="${notaModo==="libre"}">Nota libre</button><button type="button" data-act="modoNota" data-m="nom004" aria-pressed="${notaModo==="nom004"}">Estructurada (NOM-004)</button></span></div>
       <div class="fld" style="max-width:200px"><label for="nt-fecha">Fecha de la sesión</label><input id="nt-fecha" data-k="fecha" type="date" value="${today()}"></div>
-      <div class="fld"><label for="nt-texto">Nota</label><textarea id="nt-texto" data-k="texto" style="min-height:160px" placeholder="Pega aquí tu nota de sesión…" aria-describedby="nt-h"></textarea>
-        <small class="hint" id="nt-h">Solo iniciales. Puedes distinguir lo que la persona refiere, lo que observaste y tus hipótesis; Claude respetará esa diferencia.</small></div>
+      ${notaModo==="nom004" ? nom004FormHtml() : `<div class="fld"><label for="nt-texto">Nota</label><textarea id="nt-texto" data-k="texto" style="min-height:160px" placeholder="Copia de tu libreta, celular o computadora y pégala aquí…" aria-describedby="nt-h"></textarea>
+        <small class="hint" id="nt-h">Solo iniciales. Puedes distinguir lo que la persona refiere, lo que observaste y tus hipótesis; Claude respetará esa diferencia. Si prefieres una guía con los campos de la NOM-004, elige "Estructurada".</small></div>`}
       <div class="actions"><button class="btn primary" type="button" data-act="saveNota">Guardar nota</button></div>
     </form>`}
     <div class="notes">${ns.length?ns.map(n=>{ const docs=S.docs.filter(d=>d.notaId===n.id), abierta=S.notaDocs===n.id;
       return `<article class="note${S.notaReciente===n.id?" nota-nueva":""}">
-      <div class="note-h"><span class="num">Sesión</span><h3>${fmtDate(n.fecha)}</h3><span class="spacer"></span>
+      <div class="note-h"><span class="num">Sesión</span><h3>${fmtDate(n.fecha)}</h3>${n.formato==="nom004"?`<span class="pill p-alta">NOM-004</span>`:""}<span class="spacer"></span>
         ${ro?"":`<button class="btn sm primary" type="button" data-act="toggleDocNota" data-id="${esc(n.id)}">${abierta?"Cerrar opciones":"Crear documento"}</button>`}
         <button class="btn sm" type="button" data-act="copyNota" data-id="${esc(n.id)}">Copiar</button>${ro?"":`<button class="btn sm danger" type="button" data-act="delNota" data-id="${esc(n.id)}">Eliminar</button>`}</div>
-      <div class="apunte">${esc(n.texto)}</div>
+      ${n.formato==="nom004"&&n.campos ? nom004Html(n) : `<div class="apunte">${esc(n.texto)}</div>`}
       ${docs.length?`<div class="docs-nota"><span class="status">Documentos de esta nota:</span> ${docs.map(d=>`<button class="btn sm" type="button" data-act="openDoc" data-id="${esc(d.id)}">${esc(FORMATOS[d.tipo]?.nombre||d.tipo)} · ${esc(fmtDate(d.fecha))}</button>`).join(" ")}</div>`:""}
       ${!ro && abierta ? opcionesDocHtml(n.id, S.notaReciente===n.id?"Nota guardada. ¿Quieres crear un documento con ella?":"Crear un documento con esta nota") : ""}
       </article>`; }).join(""):`<p class="status" style="margin:0">Aún no hay notas. Pega la primera arriba.</p>`}</div>`;
@@ -1885,13 +1947,27 @@ document.addEventListener("click", async ev => {
   }
   /* Notas */
   if (a==="copyNota") return copiar(S.notas.find(n=>n.id===b.dataset.id)?.texto||"");
+  if (a==="modoNota"){ const m=b.dataset.m; if (m===notaModo) return; if (S.dirty && !arm(b,"modo"+m,"¿Descartar lo escrito?")) return; armed=null;
+    notaModo=m; try{ localStorage.setItem("cemepi.notaModo", m); }catch{} S.dirty=false; return render(); }
   if (a==="saveNota"){
-    const fecha=$("#nt-fecha").value, texto=$("#nt-texto").value.trim();
-    if (!texto){ toast("Pega o escribe la nota."); $("#nt-texto").focus(); return; }
+    const fecha=$("#nt-fecha").value, nom=notaModo==="nom004";
+    let texto, campos=null;
+    if (nom){ campos=leerNom004();
+      if (!campos.hora){ toast("Indica la hora de la sesión."); $("#nm-hora").focus(); return; }
+      if (!campos.modalidad){ toast("Elige la modalidad de la sesión."); $("#nm-mod").focus(); return; }
+      if (!campos.refiere && !campos.observa){ toast("Escribe lo que la persona refiere o lo que observaste."); $("#nm-refiere").focus(); return; }
+      if (campos.riesgo===NOM_RIESGO[1] && campos.riesgo_det.length<10){ toast("Describe los indicadores de riesgo identificados."); $("#nm-riesgo-det").focus(); return; }
+      const faltan=NOM_CAMPOS.filter(f=>f.req && !campos[f.k]).map(f=>f.l.toLowerCase());
+      if (faltan.length && !arm(b,"nomfalta","Guardar con datos pendientes")){ toast(`Falta: ${faltan.join(" y ")}. Se anotará "Dato pendiente de recabar". Pulsa de nuevo para guardar así.`); return; }
+      armed=null; texto=nom004Texto(campos);
+    } else {
+      texto=$("#nt-texto").value.trim();
+      if (!texto){ toast("Pega o escribe la nota."); $("#nt-texto").focus(); return; }
+    }
     if (!fecha){ toast("Indica la fecha de la sesión."); return; }
     if (!revisarSensibles(b,"nota",texto)) return;
-    try{ S.dirty=false; const ref=await S.db.collection("notas").add({pacienteId:S.sel, fecha, texto, creado:Date.now(), autor:S.uid||""});
-      await S.db.doc("pacientes/"+S.sel).update({actualizado:Date.now()}); S.notaReciente=ref.id; S.notaDocs=ref.id; $("#nt-texto").value="";
+    try{ S.dirty=false; const ref=await S.db.collection("notas").add({pacienteId:S.sel, fecha, texto, creado:Date.now(), autor:S.uid||"", formato:nom?"nom004":"libre", ...(nom?{campos}:{})});
+      await S.db.doc("pacientes/"+S.sel).update({actualizado:Date.now()}); S.notaReciente=ref.id; S.notaDocs=ref.id; if ($("#nt-texto")) $("#nt-texto").value="";
       toast("Nota guardada. Elige si quieres crear un documento con ella."); render(); }
     catch(e){ S.dirty=true; toast(errMsg(e)); } return;
   }
@@ -1969,6 +2045,7 @@ document.addEventListener("input", ev => {
   if (ev.target.id==="q"){ S.q=ev.target.value; return renderList(); }
   if (ev.target.id==="ctrSalario"){ const l=$("#ctrLetra"); if (l) l.value=/^\d+(\.\d{1,2})?$/.test(ev.target.value)?numeroALetras(ev.target.value):""; }
   if (ev.target.id==="regBuscar"){ S.regQ=ev.target.value; $("#regCuerpo").innerHTML=regCuerpoHtml(); return; }
+  if (ev.target.id==="nm-riesgo"){ const si=ev.target.value===NOM_RIESGO[1]; $("#nm-riesgo-det").hidden=!si; $("#nm-riesgo-av").hidden=!si; }
   if (ev.target.closest("#frm, #frmNota")) S.dirty=true;
   if (S.gen && ev.target.closest(".gen")) S.gen.guardado=false;
 });
