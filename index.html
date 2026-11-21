@@ -452,9 +452,9 @@ Usa "titulo": "" para párrafos sin título. En "advertencias" incluye datos fal
 
 /* ================= Word (.docx) ================= */
 const X = s => String(s??"").replace(/[&<>"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
-const R = (t, o={}) => `<w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/>${o.b?"<w:b/>":""}<w:color w:val="${o.color||"0F2340"}"/><w:sz w:val="${o.sz||20}"/><w:szCs w:val="${o.sz||20}"/></w:rPr><w:t xml:space="preserve">${X(t)}</w:t></w:r>`;
+const R = (t, o={}) => `<w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/>${o.b?"<w:b/>":""}<w:color w:val="${o.color||"0F2340"}"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:t xml:space="preserve">${X(t)}</w:t></w:r>`;   /* Arial 11 siempre (decisión del Director) */
 const RL = (t, o) => String(t??"").split("\n").map((l,i)=>(i?"<w:r><w:br/></w:r>":"")+R(l,o)).join("");
-const P = (runs, o={}) => `<w:p><w:pPr>${o.keep?"<w:keepNext/>":""}${o.border?`<w:pBdr><w:bottom w:val="single" w:sz="12" w:space="4" w:color="0560BD"/></w:pBdr>`:""}<w:spacing w:before="${o.before||0}" w:after="${o.after||0}"/>${o.jc?`<w:jc w:val="${o.jc}"/>`:""}</w:pPr>${runs}</w:p>`;
+const P = (runs, o={}) => `<w:p><w:pPr>${o.keep?"<w:keepNext/>":""}${o.border?`<w:pBdr><w:bottom w:val="single" w:sz="12" w:space="4" w:color="0560BD"/></w:pBdr>`:""}<w:spacing w:before="${o.before||0}" w:after="${o.after||0}"/><w:jc w:val="${o.jc||"both"}"/></w:pPr>${runs}</w:p>`;
 const BD = ["top","left","bottom","right","insideH","insideV"].map(s=>`<w:${s} w:val="single" w:sz="4" w:space="0" w:color="B8C7DD"/>`).join("");
 const fila = (label, v="", h=420) => `<w:tr><w:trPr><w:trHeight w:val="${h}"/><w:cantSplit/></w:trPr><w:tc><w:tcPr><w:tcW w:w="3400" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="EAF1FB"/><w:vAlign w:val="center"/></w:tcPr>${P(R(label,{sz:18,color:"334A6B"}))}</w:tc><w:tc><w:tcPr><w:tcW w:w="6500" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>${P(RL(v))}</w:tc></w:tr>`;
 const tabla = rows => `<w:tbl><w:tblPr><w:tblW w:w="9900" w:type="dxa"/><w:tblBorders>${BD}</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="50" w:type="dxa"/><w:left w:w="100" w:type="dxa"/><w:bottom w:w="50" w:type="dxa"/><w:right w:w="100" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid><w:gridCol w:w="3400"/><w:gridCol w:w="6500"/></w:tblGrid>${rows}</w:tbl>`;
@@ -515,7 +515,7 @@ function docxBlob(folio, cuerpoXml, extras=[], etiqueta, sinNota=false){
   const NS = `xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"`;
   const doc = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ${NS}><w:body>${encabezado(folio, etiqueta)}${cuerpoXml}<w:sectPr><w:footerReference w:type="default" r:id="rIdFooter"/><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1000" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="500" w:gutter="0"/></w:sectPr></w:body></w:document>`;
   const footer = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:ftr ${NS}><w:p><w:pPr><w:jc w:val="both"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t xml:space="preserve">${sinNota?"":X(NOTA_ACLARATORIA)}</w:t></w:r></w:p></w:ftr>`;
-  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial" w:cs="Arial"/><w:color w:val="0F2340"/><w:sz w:val="20"/><w:szCs w:val="20"/><w:lang w:val="es-MX"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="276" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults></w:styles>`;
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial" w:cs="Arial"/><w:color w:val="0F2340"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:lang w:val="es-MX"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="276" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults></w:styles>`;
   const types = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/></Types>`;
   const rels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`;
   const docRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rIdFooter" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/><Relationship Id="rIdLogo" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/logo.png"/>${firmaB64?`<Relationship Id="rIdFirma" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/firma.png"/>`:""}${extras.map(e=>`<Relationship Id="${e.rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${e.file}"/>`).join("")}</Relationships>`;
@@ -564,7 +564,7 @@ async function pdfEditable(g, c){
   const b64 = (document.querySelector(".appbar img")?.src||"").split(",")[1];
   const logo = b64 ? await pdf.embedPng(Uint8Array.from(atob(b64), ch=>ch.charCodeAt(0))) : null;
   const form = pdf.getForm();
-  const W=612, H=792, M=54, CW=W-2*M, FS=10, LH=12.6;
+  const W=612, H=792, M=54, CW=W-2*M, FS=11, LH=13.8;
   const azul=rgb(0.02,0.376,0.741), tinta=rgb(0.06,0.14,0.25), gris=rgb(0.33,0.41,0.54), celda=rgb(0.918,0.945,0.984), borde=rgb(0.72,0.78,0.87), fondo=rgb(0.975,0.983,1);
   const nota = envolver(NOTA_ACLARATORIA, font, 7, CW), pieH = nota.length*8.6, BASE = 26 + pieH + 16;
   let page, y, nCampo=0;
@@ -617,13 +617,13 @@ async function pdfEditable(g, c){
       espacio(18);
       page.drawRectangle({x:M, y:y-18, width:170, height:18, color:celda, borderColor:borde, borderWidth:0.5});
       page.drawRectangle({x:M+170, y:y-18, width:CW-170, height:18, borderColor:borde, borderWidth:0.5});
-      y -= 12.5; texto(lab,{x:M+5, size:8.5, color:gris}); texto(val,{x:M+176, size:9.5}); y -= 5.5;
+      y -= 12.5; texto(lab,{x:M+5, size:11, color:gris}); texto(val,{x:M+176, size:11}); y -= 5.5;
     }
     y -= 14;
   }
   /* Secciones */
   (k.secciones||[]).forEach((s,i)=>{
-    if (s.titulo){ espacio(16 + 3*LH + 8); y -= 11; texto(s.titulo,{b:1, size:10.5, color:azul}); y -= 7; }
+    if (s.titulo){ espacio(16 + 3*LH + 8); y -= 11; texto(s.titulo,{b:1, size:11, color:azul}); y -= 7; }
     else espacio(3*LH + 8);
     campoLargo((s.texto&&s.texto.trim())?s.texto:PEND, `seccion_${i+1}`);
     y -= 4;
