@@ -116,6 +116,14 @@ legend{font:700 12px var(--f-display);text-transform:uppercase;letter-spacing:.0
 .fld input,.fld select,.fld textarea{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
 .fld textarea{min-height:76px;resize:vertical;line-height:1.5}
 .apunte{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13.5px}
+.rev{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:10px;background:var(--bg)}
+.rev-h{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.rev-v{font-weight:700;padding:3px 10px;border-radius:999px;font-size:13px}
+.rev-v.listo{background:#e3f4e8;color:#1d6b35}.rev-v.corregir{background:#fff3d6;color:#7a5200}.rev-v.no_emitir{background:#fde4e4;color:#9b1c1c}
+.rev-hz{border-left:4px solid #c9a227;padding:6px 10px;background:var(--panel,#fafafa);border-radius:4px;display:grid;gap:4px;font-size:13.5px}
+.rev-hz.alta{border-color:#c62828}.rev-hz.baja{border-color:#8aa4c8}
+.rev-hz q{font-style:italic;color:var(--muted,#555)}
+.rev ul{margin:0;padding-left:20px}
 .modo-nota{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
 .modo-nota button{border:0;background:transparent;padding:6px 14px;font:inherit;font-size:13px;cursor:pointer;color:var(--fg)}
 .modo-nota button[aria-pressed="true"]{background:var(--accent,#2c5f5d);color:#fff}
@@ -458,6 +466,112 @@ RESPUESTA
 Responde solo con un objeto JSON con esta forma:
 {"secciones":[{"titulo":"Motivo de la referencia","texto":"Primer párrafo.\\n\\nSegundo párrafo."}],"advertencias":["Dato que falta o riesgo que el terapeuta debe revisar antes de emitir."]}
 Usa "titulo": "" para párrafos sin título. En "advertencias" incluye datos faltantes importantes, posibles indicadores de riesgo (suicida, violencia, abuso, vulneración de derechos de menores) con la recomendación de valorar medidas de protección, y cualquier dato sensible que hayas omitido. Si no hay advertencias, usa una lista vacía.`;
+}
+
+/* ================= Revisión de calidad con Claude (antes de emitir) =================
+   Supervisión documental según los criterios de CEMEPI (secciones 9, 21, 23 y 24 del prompt maestro). */
+const REV_CRIT = {fidelidad:"Fidelidad a las notas", identidad:"Identidad y datos", consistencia:"Consistencia", sustento:"Sustento",
+  niveles:"Hechos, relatos, observaciones e hipótesis", confidencialidad:"Confidencialidad", alcance:"Alcance", riesgo:"Riesgo", lenguaje:"Lenguaje", forma:"Forma"};
+const REV_VER = {listo:"Listo para emitir", corregir:"Corregir antes de emitir", no_emitir:"No emitir todavía"};
+function promptRevision(g, c){
+  const t=FORMATOS[g.tipo], k=g.contenido, base = g.notaId ? c.notas.find(n=>n.id===g.notaId) : null;
+  const notas = c.notas.map(n=>`[${fmtDate(n.fecha)}]\n${n.texto}`).join("\n\n").slice(-60000);
+  const cuerpo = [k.destinatario?`DESTINATARIO:\n${k.destinatario}`:"", ...k.secciones.map((s,i)=>`[Sección ${i+1}${s.titulo?`: ${s.titulo}`:""}]\n${s.texto}`)].filter(Boolean).join("\n\n");
+  return `Actúa como supervisor de calidad documental del Centro Mexicano de Plenitud Humana, S.C. (CEMEPI). Revisa el documento "${t.nombre}" ANTES de que se emita, comparándolo con las notas del expediente. No lo reescribas: identifica problemas concretos y propone la corrección.
+
+QUÉ REVISAR
+- fidelidad: todo lo afirmado debe estar en las notas o en los datos del expediente. Señala hechos, sesiones, antecedentes, instrumentos, diagnósticos o intervenciones que no aparecen en las notas, y cualquier información relevante de las notas que se haya omitido para ocultar un riesgo.
+- identidad: iniciales, folio, edad, fechas, sede y profesional coinciden con los datos del expediente.
+- consistencia: sin contradicciones internas ni con las notas.
+- sustento: conclusiones y recomendaciones apoyadas en lo documentado; sin afirmaciones deterministas.
+- niveles: distingue lo que la persona o terceros refieren, lo que el profesional observó y las hipótesis. Una hipótesis o un relato no deben presentarse como hecho ("refiere que…" y no "presenta…"). Sin diagnósticos sin fundamento.
+- confidencialidad: solo iniciales; nada de nombres completos, teléfonos, correos, domicilios ni datos identificables de terceros; solo la información necesaria para la finalidad y el destinatario del documento.
+- alcance: no es un dictamen pericial; sin conclusiones sobre culpabilidad, custodia, capacidad parental o veracidad de declaraciones.
+- riesgo: si las notas muestran indicadores de riesgo (suicida, violencia, abuso, vulneración de derechos de menores), el documento no debe minimizarlos y debe señalarse la necesidad de valorar medidas de protección.
+- lenguaje: español de México profesional, neutral, respetuoso, sin etiquetar a la persona ni atribuir intenciones; "organización" o "centro de atención psicológica", nunca "empresa" ni "clínica".
+- forma: ortografía, claridad, orden, prosa sin viñetas ni numeración romana, sin Markdown. Si queda "${PEND}", menciónalo como dato por completar.
+El encabezado, la tabla de identificación, la firma con cédula y la nota aclaratoria al pie se agregan automáticamente: no los señales como faltantes.
+
+DATOS DEL EXPEDIENTE
+- Iniciales: ${c.ini}
+- Folio: ${c.folio}
+- Edad: ${c.edad!==""?c.edad+" años":PEND}
+- Fecha de primera sesión: ${c.primera?fechaLarga(c.primera):PEND}
+- Profesional responsable: ${c.prof.startsWith("___")?PEND:c.prof}
+- Sede: ${c.sede||PEND}
+- Fecha del documento: ${g.fecha?fechaLarga(g.fecha):PEND}
+- Lugar: ${g.lugar||PEND}
+- Riesgo del formato según CEMEPI: ${RIESGO_TXT[t.riesgo]||t.riesgo}
+
+DOCUMENTO A REVISAR
+${cuerpo}
+${base?`
+NOTA BASE DEL DOCUMENTO (sesión del ${fmtDate(base.fecha)})
+${base.texto}
+`:""}
+NOTAS DEL EXPEDIENTE (en orden cronológico)
+${t.sinNotas?"(Este formato revisa un informe pegado por el terapeuta; no usa notas.)":(notas||"(sin notas)")}
+
+RESPUESTA
+Responde solo con un objeto JSON con esta forma:
+{"veredicto":"corregir","resumen":"Dos o tres frases con la valoración general.","fortalezas":["Fortaleza real y concreta."],"hallazgos":[{"gravedad":"alta","criterio":"niveles","seccion":2,"cita":"texto EXACTO copiado del documento","problema":"Qué está mal y por qué importa.","sugerencia":"Texto que sustituye exactamente a la cita, o cadena vacía si se corrige de otra forma."}]}
+- "veredicto": "listo" si se puede emitir tal cual; "corregir" si hay hallazgos que conviene corregir; "no_emitir" si hay un problema grave (dato inventado, divulgación indebida, riesgo minimizado, conclusión pericial).
+- "gravedad": "alta", "media" o "baja". "criterio": fidelidad, identidad, consistencia, sustento, niveles, confidencialidad, alcance, riesgo, lenguaje o forma.
+- "seccion": número de la sección del documento (0 para el destinatario).
+- "cita": copia literal y breve (una frase o fragmento) del documento, para poder localizarla. "sugerencia": nunca inventes datos; si falta información usa "${PEND}".
+- Ordena los hallazgos del más grave al menos grave. Si no hay hallazgos, usa una lista vacía. Tono formativo y respetuoso.`;
+}
+const firmaContenido = k => { const t=JSON.stringify([k?.destinatario||"", (k?.secciones||[]).map(s=>[s.titulo,s.texto])]); let h=0; for (let i=0;i<t.length;i++) h=(h*31+t.charCodeAt(i))|0; return String(h); };
+function normalizarRevision(r){
+  const ver = ["listo","corregir","no_emitir"].includes(r?.veredicto) ? r.veredicto : null;
+  if (!ver) throw {code:"invalid_json"};
+  const hz = (Array.isArray(r.hallazgos)?r.hallazgos:[]).filter(h=>h&&h.problema).map(h=>({gravedad:["alta","media","baja"].includes(h.gravedad)?h.gravedad:"media",
+    criterio:REV_CRIT[h.criterio]?h.criterio:"forma", seccion:Number.isInteger(+h.seccion)?+h.seccion:null, cita:String(h.cita||""), problema:String(h.problema), sugerencia:String(h.sugerencia||"")}));
+  const orden={alta:0,media:1,baja:2}; hz.sort((a,b)=>orden[a.gravedad]-orden[b.gravedad]);
+  return {veredicto:ver, resumen:String(r.resumen||""), fortalezas:(Array.isArray(r.fortalezas)?r.fortalezas:[]).map(String), hallazgos:hz};
+}
+function revisionHtml(g){
+  const rv=g.revision;
+  if (g.revisando) return `<div class="thinking" id="revPanel"><span class="dot"></span><div style="flex:1"><b>Claude está revisando la calidad del documento…</b><br><span class="status">Compara el texto con tus notas y los criterios de CEMEPI. Puede tardar hasta un minuto.</span></div><button class="btn sm" type="button" data-act="stopRevision">Detener</button></div>`;
+  if (!rv) return S.sample ? "" : `<details class="rev" id="revPanel"${g.revManual?" open":""}><summary><b>Revisión de calidad con Claude (copiar y pegar)</b></summary>
+      <ol class="steps"><li><b class="n">1</b><div><button class="btn sm primary" type="button" data-act="copiarRevision">Copiar instrucciones de revisión</button></div></li>
+      <li><b class="n">2</b><div>Pégalas en un chat nuevo de <a href="https://claude.ai/new" target="_blank" rel="noopener">claude.ai</a> y espera la respuesta.</div></li>
+      <li><b class="n">3</b><div style="flex:1;min-width:0">Pega aquí la respuesta completa:<textarea id="rev-resp" style="width:100%;min-height:110px;margin-top:6px" placeholder='La respuesta empieza con { "veredicto": …'></textarea>
+        <button class="btn sm primary" type="button" data-act="usarRevision" style="margin-top:6px">Usar esta revisión</button></div></li></ol></details>`;
+  const vigente = rv.firma===firmaContenido(g.contenido);
+  return `<section class="rev" id="revPanel"><div class="rev-h"><b>Revisión de calidad</b><span class="rev-v ${rv.veredicto}">${esc(REV_VER[rv.veredicto])}</span>
+      <span class="status">${esc(fmtFH(rv.fecha))}${rv.hallazgos.length?` · ${rv.hallazgos.length} hallazgo${rv.hallazgos.length===1?"":"s"}`:""}</span><span class="spacer"></span>
+      <span class="status" id="revEstado">${vigente?"":"El documento cambió después de esta revisión."}</span>
+      <button class="btn sm" type="button" data-act="revisarCalidad">${vigente?"Revisar de nuevo":"Revisar otra vez"}</button></div>
+    ${rv.resumen?`<p style="margin:0">${esc(rv.resumen)}</p>`:""}
+    ${rv.fortalezas.length?`<div><b>Fortalezas</b><ul>${rv.fortalezas.map(f=>`<li>${esc(f)}</li>`).join("")}</ul></div>`:""}
+    ${rv.hallazgos.map((h,i)=>{ const s=h.seccion, ok=!h.aplicado && h.cita && h.sugerencia && citaEn(g,h)!==null;
+      return `<div class="rev-hz ${h.gravedad}"><div><span class="pill ${h.gravedad==="alta"?"estado-pendiente":"p-alta"}">${h.gravedad==="alta"?"Grave":h.gravedad==="media"?"Importante":"Menor"}</span> <b>${esc(REV_CRIT[h.criterio])}</b>${s!==null?` <span class="status">· ${s===0?"Destinatario":`Sección ${s}`}</span>`:""}</div>
+        ${h.cita?`<q>${esc(h.cita)}</q>`:""}<span>${esc(h.problema)}</span>
+        ${h.sugerencia?`<span><b style="font-weight:600">Sugerencia:</b> ${esc(h.sugerencia)}</span>`:""}
+        ${h.aplicado?`<span class="status">✓ Sugerencia aplicada</span>`:ok?`<span><button class="btn sm" type="button" data-act="aplicarRev" data-i="${i}">Aplicar sugerencia</button></span>`:h.sugerencia?`<span class="status">Corrígelo a mano en el texto.</span>`:""}</div>`; }).join("")}
+    <span class="status">La revisión de Claude ayuda a detectar problemas, pero no sustituye tu revisión profesional${FORMATOS[g.tipo].riesgo==="alto"?" ni la revisión humana especializada que exige este documento de riesgo alto":""}.</span></section>`;
+}
+/* Localiza la cita en los textos actuales del editor: devuelve {campo, idx} o null */
+function citaEn(g, h){
+  const campos = [["g-dest", g.contenido.destinatario||""], ...g.contenido.secciones.map((s,i)=>[`g-x-${i}`, s.texto])];
+  const orden = h.seccion!==null && campos[h.seccion] ? [campos[h.seccion], ...campos] : campos;
+  for (const [id, txt] of orden){ const v = $("#"+id)?.value ?? txt; const idx=v.indexOf(h.cita); if (idx>=0) return {id, idx}; }
+  return null;
+}
+async function revisarCalidad(p){
+  const g=leerGen(); if (!g?.contenido) return;
+  if (!S.sample){ g.revManual=true; render(); $("#revPanel")?.scrollIntoView({block:"center"}); return; }
+  g.revisando=true; render(); $("#revPanel")?.scrollIntoView({block:"center"});
+  S.ctlRev=new AbortController();
+  try{
+    const r = await S.sample.json(promptRevision(g, ctxOf(p)), {modelTier:"complex", signal:S.ctlRev.signal, cache:false});
+    g.revision = {...normalizarRevision(r), fecha:new Date().toISOString(), por:S.uid||"", firma:firmaContenido(g.contenido)}; g.guardado=false;
+    toast(g.revision.veredicto==="listo"?"Revisión lista: Claude no encontró problemas importantes.":`Revisión lista: ${g.revision.hallazgos.length} hallazgo${g.revision.hallazgos.length===1?"":"s"}.`);
+  }catch(e){ if (e?.code!=="cancelled") toast({rate_limited:"Alcanzaste el límite de solicitudes. Espera un momento.",invalid_json:"La revisión llegó incompleta. Intenta de nuevo.",
+      session_expired:"Tu sesión expiró. Cierra sesión y vuelve a entrar.",clave_invalida:"La clave de la API de Claude no es válida o no tiene saldo. Avisa a la Dirección.",
+      red:"No hubo conexión con el servicio. Revisa tu internet."}[e?.code]||"No se pudo revisar el documento. Intenta de nuevo."); }
+  finally{ g.revisando=false; S.ctlRev=null; if (S.gen===g){ render(); $("#revPanel")?.scrollIntoView({block:"center"}); } }
 }
 
 /* ================= Word (.docx) ================= */
@@ -1621,7 +1735,7 @@ function documentosHtml(p, ro){
     <section class="doc-sec">
       <h3 class="sec-h">Documentos guardados</h3>
       ${S.docs.length?`<div class="tbl-wrap"><table><thead><tr><th>Documento</th><th>Fecha</th><th></th></tr></thead><tbody>
-        ${S.docs.map(d=>`<tr><td><b>${esc(FORMATOS[d.tipo]?.nombre||d.tipo)}</b>${d.notaId?`<br><span class="status">Basado en la nota del ${esc(fmtDate(S.notas.find(n=>n.id===d.notaId)?.fecha||""))}</span>`:""}</td><td class="mono">${fmtDate(d.fecha)}</td>
+        ${S.docs.map(d=>`<tr><td><b>${esc(FORMATOS[d.tipo]?.nombre||d.tipo)}</b>${d.notaId?`<br><span class="status">Basado en la nota del ${esc(fmtDate(S.notas.find(n=>n.id===d.notaId)?.fecha||""))}</span>`:""}${d.revision?.veredicto?`<br><span class="rev-v ${d.revision.veredicto}" style="font-size:11.5px;padding:1px 8px">${esc(REV_VER[d.revision.veredicto])}${d.revision.firma!==firmaContenido(d.contenido)?" (antes de los últimos cambios)":""}</span>`:`<br><span class="status">Sin revisión de calidad</span>`}</td><td class="mono">${fmtDate(d.fecha)}</td>
           <td style="white-space:nowrap">${d.contenido?`<button class="btn sm" type="button" data-act="openDoc" data-id="${esc(d.id)}">Abrir</button>
           <button class="btn sm" type="button" data-act="wordDoc" data-id="${esc(d.id)}">Word</button>
           <button class="btn sm" type="button" data-act="pdfSaved" data-id="${esc(d.id)}">PDF</button>
@@ -1692,8 +1806,10 @@ function generadorHtml(p, ro){
         <div class="fld" style="grid-column:span 2"><label for="g-lugar">Lugar</label><input id="g-lugar" type="text" value="${esc(g.lugar||ctxOf(p).lugar)}"></div></div>
       ${t.dest!==undefined||k.destinatario?`<div class="fld"><label for="g-dest">Destinatario</label><textarea id="g-dest" style="min-height:66px">${esc(k.destinatario||"")}</textarea></div>`:""}
       ${k.secciones.map((s,i)=>`<div class="gsec"><input id="g-t-${i}" aria-label="Título de la sección ${i+1}" value="${esc(s.titulo)}" placeholder="(Párrafo sin título)"><textarea id="g-x-${i}" aria-label="Texto de la sección ${i+1}">${esc(s.texto)}</textarea></div>`).join("")}
+      ${revisionHtml(g)}
       <p class="status" style="margin:0">Puedes corregir cualquier texto aquí, o después dentro del PDF editable. Al descargar se agregan el encabezado de CEMEPI, ${t.ident?"la tabla de identificación, ":""}tu firma con cédula y la nota aclaratoria al pie.</p>
       <div class="actions">
+        ${g.revision||g.revisando?"":`<button class="btn primary" type="button" data-act="revisarCalidad">Revisar calidad con Claude</button>`}
         <button class="btn primary" type="button" data-act="downloadDoc">Descargar Word</button>
         <button class="btn primary" type="button" data-act="pdfDoc">Descargar PDF editable</button>
         ${ro?"":`<button class="btn" type="button" data-act="saveDoc">Guardar en el expediente</button>`}
@@ -1904,6 +2020,16 @@ document.addEventListener("click", async ev => {
   if (a==="delTer"){ if(!arm(b,"dt"+b.dataset.id,"¿Eliminar?")) return; armed=null;
     try{ await S.db.doc("terapeutas/"+b.dataset.id).delete(); toast("Terapeuta eliminado"); }catch(e){ toast(errMsg(e)); } return; }
   /* Redacción con Claude en modo copiar y pegar */
+  if (a==="revisarCalidad") return revisarCalidad(p);
+  if (a==="stopRevision"){ S.ctlRev?.abort(); return; }
+  if (a==="copiarRevision"){ const g=leerGen(); return copiar(promptRevision(g, ctxOf(p))); }
+  if (a==="usarRevision"){ const g=leerGen(), txt=($("#rev-resp")?.value||"").trim(), i=txt.indexOf("{"), j=txt.lastIndexOf("}");
+    try{ g.revision={...normalizarRevision(JSON.parse(txt.slice(i,j+1))), fecha:new Date().toISOString(), por:S.uid||"", firma:firmaContenido(g.contenido)}; g.guardado=false; render(); $("#revPanel")?.scrollIntoView({block:"center"}); }
+    catch{ toast("No reconozco la respuesta. Copia la respuesta completa de Claude, desde la primera { hasta la última }."); } return; }
+  if (a==="aplicarRev"){ const g=S.gen, h=g?.revision?.hallazgos[+b.dataset.i]; if (!h) return; const pos=citaEn(g,h);
+    if (!pos){ toast("Ya no encuentro ese texto; corrígelo a mano."); return; }
+    const el=$("#"+pos.id); el.value=el.value.slice(0,pos.idx)+h.sugerencia+el.value.slice(pos.idx+h.cita.length);
+    h.aplicado=true; leerGen(); g.guardado=false; render(); toast("Sugerencia aplicada. Revisa que el párrafo se lea bien."); return; }
   if (a==="copiarPrompt"){ const g=S.gen, t=FORMATOS[g.tipo]; g.indicaciones=$("#g-ind")?.value.trim()||"";
     if (t.sinNotas && !g.indicaciones){ toast("Pega primero el informe que quieres revisar."); return; }
     return copiar(promptDe(g.tipo, ctxOf(p), g.indicaciones, g.notaId)); }
@@ -1984,7 +2110,7 @@ document.addEventListener("click", async ev => {
   if (a==="newDoc"){ const tipo=b.dataset.tipo, t=FORMATOS[tipo];
     S.gen={tipo, indicaciones:"", contenido: t.ia?null:contenidoFijo(tipo, ctxOf(p)), fecha:today(), lugar:ctxOf(p).lugar, notaId:S.notaElegida||""}; S.notaElegida=null; render(); $("#detail").scrollTop=0; return; }
   if (a==="openDoc"){ const d=S.docs.find(x=>x.id===b.dataset.id); if(!d?.contenido) return;
-    S.tab="documentos"; S.gen={id:d.id, tipo:d.tipo, indicaciones:d.indicaciones||"", contenido:JSON.parse(JSON.stringify(d.contenido)), fecha:d.fecha, lugar:d.lugar, notaId:d.notaId||"", guardado:true}; render(); $("#detail").scrollTop=0; return; }
+    S.tab="documentos"; S.gen={id:d.id, tipo:d.tipo, indicaciones:d.indicaciones||"", contenido:JSON.parse(JSON.stringify(d.contenido)), fecha:d.fecha, lugar:d.lugar, notaId:d.notaId||"", revision:d.revision?JSON.parse(JSON.stringify(d.revision)):null, guardado:true}; render(); $("#detail").scrollTop=0; return; }
   if (a==="liberarDoc"){ const menor=esMenor(p);
     if (!arm(b,"lib"+b.dataset.id, menor?"Verifiqué representación legal: compartir":"¿Compartir? Confirmar")) return; armed=null;
     try{ await S.api.liberarReporte(b.dataset.id, menor); toast("Reporte compartido en el portal del consultante."); }catch(e){ toast(e?.message||"No se pudo compartir."); }
@@ -2013,7 +2139,7 @@ document.addEventListener("click", async ev => {
     if (a==="pdfDoc") return descargarPdf(`${slug(FORMATOS[g.tipo].nombre)}-${p.folio}-${g.fecha||today()}.pdf`, g, c);
     if (a==="downloadDoc") return descargar(`${slug(FORMATOS[g.tipo].nombre)}-${p.folio}-${g.fecha||today()}.docx`, p.folio, bloquesXml(bloques(g,c),c));
     const st=$("#saveSt"); st.textContent="Guardando…";
-    const data={tipo:g.tipo, fecha:g.fecha, lugar:g.lugar, indicaciones:g.indicaciones||"", contenido:g.contenido, notaId:g.notaId||""};
+    const data={tipo:g.tipo, fecha:g.fecha, lugar:g.lugar, indicaciones:g.indicaciones||"", contenido:g.contenido, notaId:g.notaId||"", revision:g.revision||null};
     try{ if (g.id) await S.db.doc("documentos/"+g.id).update({...data, actualizado:Date.now()});
          else { const ref=await S.db.collection("documentos").add({...data, pacienteId:S.sel, creado:Date.now(), autor:S.uid||""}); g.id=ref.id; }
          g.guardado=true; st.textContent="Guardado"; toast("Documento guardado en el expediente"); }
@@ -2047,7 +2173,8 @@ document.addEventListener("input", ev => {
   if (ev.target.id==="regBuscar"){ S.regQ=ev.target.value; $("#regCuerpo").innerHTML=regCuerpoHtml(); return; }
   if (ev.target.id==="nm-riesgo"){ const si=ev.target.value===NOM_RIESGO[1]; $("#nm-riesgo-det").hidden=!si; $("#nm-riesgo-av").hidden=!si; }
   if (ev.target.closest("#frm, #frmNota")) S.dirty=true;
-  if (S.gen && ev.target.closest(".gen")) S.gen.guardado=false;
+  if (S.gen && ev.target.closest(".gen")){ S.gen.guardado=false;
+    if (S.gen.revision){ const e=$("#revEstado"); if (e) e.textContent="El documento cambió después de esta revisión."; } }
 });
 
 /* ================= Arranque ================= */

@@ -54,10 +54,11 @@ const MAP = {
     to: d => { const o = {}; if (d.pacienteId) o.expediente_id = d.pacienteId; if (d.fecha !== undefined) o.fecha = d.fecha; if (d.texto !== undefined) o.texto = d.texto;
       if (d.formato !== undefined) o.formato = d.formato; if (d.campos !== undefined) o.campos = d.campos; return o; } },
   documentos: { tabla: "documentos", campo: { pacienteId: "expediente_id" },
-    from: r => ({ pacienteId: r.expediente_id, tipo: r.tipo, fecha: r.fecha || "", lugar: r.lugar || "", indicaciones: r.indicaciones || "", contenido: r.contenido, creado: ms(r.created_at), autor: r.autor || "", notaId: r.nota_id || "" }),
+    from: r => ({ pacienteId: r.expediente_id, tipo: r.tipo, fecha: r.fecha || "", lugar: r.lugar || "", indicaciones: r.indicaciones || "", contenido: r.contenido, creado: ms(r.created_at), autor: r.autor || "", notaId: r.nota_id || "", revision: r.revision || null }),
     to: d => { const o = {}; if (d.pacienteId) o.expediente_id = d.pacienteId;
       for (const k of ["tipo", "lugar", "indicaciones", "contenido"]) if (d[k] !== undefined) o[k] = d[k];
       if (d.notaId !== undefined) o.nota_id = d.notaId || null;
+      if (d.revision !== undefined) o.revision = d.revision || null;
       if (d.fecha !== undefined) o.fecha = fecha(d.fecha); return o; } },
   terapeutas: { tabla: "terapeutas", campo: {},
     from: r => ({ nombre: r.nombre, cedula: r.cedula || "", sede: r.sede || "", uid: r.user_id || "", activo: r.activo, creado: ms(r.created_at) }),
