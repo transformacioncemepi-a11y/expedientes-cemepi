@@ -963,7 +963,8 @@ async function cargarAdmin(tipo){
     if (tipo==="contratos"){ const [pl, ls] = await Promise.all([S.api.plantillasContrato(), S.api.contratos()]); S.ctrPls=pl; S.ctrs=ls;
       if (["superusuario","direccion"].includes(S.rol) || tengo("contratos")) S.usuarios = await S.api.usuarios(); }
     if (tipo==="documentacion"){ const ver=S.docpSel||S.uid; S.docp = await S.api.docsPersonal(ver);
-      if (["superusuario","direccion"].includes(S.rol) || tengo("contratos")){ S.usuarios = S.usuarios || await S.api.usuarios(); if (!S.docpSel) S.docpTodos = await S.api.docsPersonal(null); } }
+      if (["superusuario","direccion"].includes(S.rol) || tengo("contratos")){ S.usuarios = S.usuarios || await S.api.usuarios(); if (!S.docpSel) S.docpTodos = await S.api.docsPersonal(null); }
+      if (ES_DIR() && !S.docpSel) S.docpPapelera = await S.api.papeleraDocs(); }
     if (tipo==="permisos"){ const [us, ps] = await Promise.all([S.api.usuarios(), S.api.permisosTodos()]); S.usuarios=us; S.permTodos=ps; }
     if (tipo==="uso"){ const d=new Date(); if (S.usoDias===1) d.setHours(0,0,0,0); else d.setDate(d.getDate()-S.usoDias); S.uso = await S.api.resumenUso(d); }
   }catch(e){ toast(e?.message||"No se pudo cargar la información."); }
@@ -1322,6 +1323,9 @@ const DOCP_REQ = { psicologo:["identificacion","curp","comprobante_domicilio","c
   admin_sede:["identificacion","curp","comprobante_domicilio","constancia_fiscal","comprobante_estudios"],
   direccion:["identificacion","curp","comprobante_domicilio","constancia_fiscal"], superusuario:[] };
 const fmtMB = b => b ? (b/1048576 < 0.1 ? `${Math.max(1,Math.round(b/1024))} KB` : `${(b/1048576).toFixed(1)} MB`) : "";
+const ES_DIR = () => ["superusuario","direccion"].includes(S.rol);
+const DIAS_PAPELERA = 30;
+const diasEnPapelera = d => Math.floor((Date.now()-new Date(d.borrado_en).getTime())/86400000);
 const veDocsTodos = () => ["superusuario","direccion","admin_sede"].includes(S.rol) || tengo("contratos");
 function docpPersonaHtml(uid){
   const propio = uid===S.uid, u = propio ? {nombre:S.perfil?.nombre||S.api?.nombre, rol:S.rol} : ((S.usuarios||[]).find(x=>x.id===uid)||{});
@@ -1343,15 +1347,16 @@ function docpPersonaHtml(uid){
         <td>${d.verificado_en?`<span class="pill estado-activo">Verificado</span>`:`<span class="pill estado-pendiente">Por verificar</span>`}</td>
         <td style="white-space:nowrap"><button class="btn sm" type="button" data-act="verDocp" data-id="${esc(d.id)}">Ver PDF</button>
           ${puedeVerificar?`<button class="btn sm${d.verificado_en?"":" primary"}" type="button" data-act="verifDocp" data-id="${esc(d.id)}" data-v="${d.verificado_en?0:1}">${d.verificado_en?"Quitar verificación":"Verificar"}</button>`:""}
-          ${puedeBorrar(d)?`<button class="btn sm danger" type="button" data-act="borrarDocp" data-id="${esc(d.id)}">Borrar</button>`:""}</td></tr>`).join("")}
+          ${puedeBorrar(d)?`<button class="btn sm danger" type="button" data-act="borrarDocp" data-id="${esc(d.id)}">Eliminar</button>`:""}</td></tr>`).join("")}
     </tbody></table></div>`:`<p class="status" style="margin:0">${propio?"Aún no has subido documentos.":"Esta persona aún no ha subido documentos."}</p>`}
-    ${puedeVerificar?`<span class="status">"Verificar" significa que cotejaste el PDF con el documento original. Un documento verificado ya no lo puede borrar su titular.</span>`:""}</section>`;
+    ${puedeVerificar?`<span class="status">"Verificar" significa que cotejaste el PDF con el documento original. Un documento verificado ya no lo puede borrar su titular.</span>`:""}
+    ${docs.some(puedeBorrar)?`<span class="status">Lo que elimines pasa a la papelera: la Dirección puede restaurarlo durante ${DIAS_PAPELERA} días.</span>`:""}</section>`;
   return subir + lista;
 }
 function documentacionHtml(){
   if (S.docp===undefined) return `<div class="wrap" style="padding-block:24px"><p class="status">Cargando documentación…</p></div>`;
   const todos=veDocsTodos(), sel=S.docpSel;
-  const cab=(t)=>`<div class="card-h"><h2 style="font-size:24px">${t}</h2><span style="display:flex;gap:8px;flex-wrap:wrap">${sel?`<button class="btn" type="button" data-act="docpLista">Volver a la lista</button>`:""}${todos&&!sel?"":""}<button class="btn" type="button" data-act="home">Cerrar</button></span></div>`;
+  const cab=(t)=>`<div class="card-h"><h2 style="font-size:24px">${t}</h2><span style="display:flex;gap:8px;flex-wrap:wrap">${sel?`<button class="btn" type="button" data-act="docpLista">Volver a la lista</button>`:""}${ES_DIR()&&!sel?`<button class="btn primary" type="button" data-act="respaldoDocp" id="btnRespaldo">Descargar respaldo (ZIP)</button>`:""}<button class="btn" type="button" data-act="home">Cerrar</button></span></div>`;
   if (sel){ const u=(S.usuarios||[]).find(x=>x.id===sel)||{};
     return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">${cab(`Documentación de ${esc(u.nombre||"")}`)}
       <p class="status" style="margin:0">${esc(u.rol==="psicologo"&&u.modalidad?MOD_TXT[u.modalidad]:(ROL_TXT[u.rol]||""))} · ${esc(u.sede||"Todas las sedes")}</p>${docpPersonaHtml(sel)}</div>`; }
@@ -1368,7 +1373,55 @@ function documentacionHtml(){
     </tbody></table></div></section>`; }
   return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">${cab(todos?"Documentación":"Mi documentación")}
     <p class="status" style="margin:0">Sube en PDF tu identificación, CURP, comprobante de domicilio, constancia de situación fiscal, cédula y título profesional, constancias de cursos, diplomados y certificaciones. ${ES_SEDE()&&!tengo("contratos")?"Como administración de sede ves la documentación de los psicólogos de tu sede y puedes verificarla contra los originales.":todos?"Como Dirección o recursos humanos ves la documentación de todo el personal y puedes verificarla contra los originales.":"Solo tú, la Dirección y recursos humanos los ven."}</p>
-    ${S.rol==="superusuario"?"":docpPersonaHtml(S.uid)}${general}</div>`;
+    ${ES_DIR()?`<p class="banner" style="margin:0;display:block"><b>Respaldo:</b> los respaldos automáticos de Supabase guardan la base de datos, pero <b>no los PDF</b>. Pulsa <b>Descargar respaldo (ZIP)</b> al menos una vez al mes y guárdalo en un disco o carpeta segura de CEMEPI (contiene datos personales del personal). Cada descarga queda en la bitácora.</p>`:""}
+    ${S.rol==="superusuario"?"":docpPersonaHtml(S.uid)}${general}${ES_DIR()?papeleraHtml():""}</div>`;
+}
+function papeleraHtml(){
+  const ps=S.docpPapelera||[], nom=id=>{ const u=(S.usuarios||[]).find(x=>x.id===id); return u?(u.nombre||u.email):"(cuenta eliminada)"; };
+  return `<section class="doc-sec"><h3 class="sec-h">Papelera (${ps.length})</h3>
+    <p class="status" style="margin:0 0 8px">Los documentos eliminados se conservan ${DIAS_PAPELERA} días. Solo la Dirección los ve y puede restaurarlos; después de ${DIAS_PAPELERA} días puede eliminarlos definitivamente.</p>
+    ${ps.length?`<div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Documento</th><th>Eliminado</th><th>Plazo</th><th></th></tr></thead><tbody>
+    ${ps.map(d=>{ const dias=diasEnPapelera(d), resta=DIAS_PAPELERA-dias;
+      return `<tr><td><b>${esc(nom(d.user_id))}</b></td><td>${esc(DOCP_TIPOS[d.tipo]||d.tipo)}${d.descripcion?`<br><span class="status">${esc(d.descripcion)}</span>`:""}</td>
+      <td>${esc(fmtFH(d.borrado_en))}<br><span class="status">por ${esc(d.borrado_por===d.user_id?"su titular":nom(d.borrado_por))}</span></td>
+      <td>${resta>0?`Restaurable ${resta} día${resta===1?"":"s"} más`:`<span class="pill estado-pendiente">Plazo cumplido</span>`}</td>
+      <td style="white-space:nowrap"><button class="btn sm" type="button" data-act="verDocp" data-id="${esc(d.id)}">Ver PDF</button>
+        <button class="btn sm primary" type="button" data-act="restaurarDocp" data-id="${esc(d.id)}">Restaurar</button>
+        ${resta<=0?`<button class="btn sm danger" type="button" data-act="eliminarDocp" data-id="${esc(d.id)}">Eliminar definitivamente</button>`:""}</td></tr>`; }).join("")}
+    </tbody></table></div>`:`<p class="status" style="margin:0">La papelera está vacía.</p>`}</section>`;
+}
+/* Respaldo de la documentación del personal: todos los PDF en un ZIP, en carpetas por persona */
+async function respaldoDocp(b){
+  if (typeof JSZip==="undefined"){ toast("No se pudo preparar el ZIP. Recarga la página."); return; }
+  const dl = await window.claude?.use?.("downloads"); if (!dl){ toast("La descarga no está disponible en esta vista."); return; }
+  b.disabled=true; const txt=b.textContent;
+  try{
+    const [activos, papelera, us] = await Promise.all([S.api.docsPersonal(null), S.api.papeleraDocs(), S.usuarios ? Promise.resolve(S.usuarios) : S.api.usuarios()]);
+    const todos=[...activos.map(d=>({d, pap:false})), ...papelera.map(d=>({d, pap:true}))];
+    if (!todos.length){ toast("Todavía no hay documentos que respaldar."); return; }
+    const zip=new JSZip(), usados=new Set(), limpio=x=>slug(String(x||"")).slice(0,60)||"sin-nombre";
+    const persona=id=>{ const u=us.find(x=>x.id===id); return u?`${limpio(u.sede||"Sin-sede")}_${limpio(u.nombre||u.email)}`:`cuenta-${id.slice(0,8)}`; };
+    const filas=[["Persona","Sede","Tipo","Descripción","Archivo original","Subido","Verificado","En papelera","Ruta en el ZIP"]];
+    let i=0, bytes=0, fallidos=0;
+    for (const {d, pap} of todos){
+      b.textContent=`Descargando ${++i} de ${todos.length}…`;
+      let ruta=`${pap?"_papelera/":""}${persona(d.user_id)}/${limpio(DOCP_TIPOS[d.tipo]||d.tipo)}${d.descripcion?"_"+limpio(d.descripcion):""}_${(d.subido_en||"").slice(0,10)}`;
+      let r=ruta, k=2; while (usados.has(r)) r=`${ruta}_${k++}`; usados.add(r); r+=".pdf";
+      try{ const blob=await S.api.archivoDocPersonal(d.archivo); bytes+=blob.size; zip.file(r, blob); }
+      catch(e){ fallidos++; r="(no se pudo descargar)"; }
+      const u=us.find(x=>x.id===d.user_id)||{};
+      filas.push([u.nombre||u.email||"", u.sede||"", DOCP_TIPOS[d.tipo]||d.tipo, d.descripcion||"", d.nombre_archivo||"", d.subido_en||"", d.verificado_en||"", pap?d.borrado_en:"", r]);
+    }
+    const csv="\ufeff"+filas.map(f=>f.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\r\n");
+    zip.file("indice.csv", csv);
+    zip.file("LEEME.txt", `Respaldo de la documentación del personal de CEMEPI\r\nGenerado: ${new Date().toLocaleString("es-MX")}\r\nArchivos: ${todos.length-fallidos} de ${todos.length}\r\n\r\nContiene datos personales del personal. Guárdalo en un lugar seguro de CEMEPI y no lo envíes por mensajería.\r\nLa carpeta _papelera tiene los documentos eliminados que aún estaban en la papelera.\r\nindice.csv se abre con Excel.\r\n`);
+    b.textContent="Preparando ZIP…";
+    const blob=await zip.generateAsync({type:"blob"});
+    await dl.save({filename:`Respaldo-documentacion-personal-${today()}.zip`, data:blob});
+    try{ await S.api.registrarRespaldoDocs(todos.length-fallidos, bytes); }catch{}
+    toast(fallidos?`Respaldo descargado, pero ${fallidos} archivo${fallidos===1?"":"s"} no se pudo descargar (ver indice.csv).`:`Respaldo descargado: ${todos.length} PDF (${fmtMB(bytes)}).`);
+  }catch(e){ if (e?.code!=="declined") toast(e?.message||"No se pudo preparar el respaldo."); }
+  finally{ b.disabled=false; b.textContent=txt; }
 }
 /* ---------- Ayuda: qué puede hacer cada rol y guías paso a paso ---------- */
 const GUIAS = [
@@ -1382,6 +1435,8 @@ const GUIAS = [
   {t:"Asignar o cambiar la contraseña de alguien", si:()=>gestionaCuentas(), pasos:["En Usuarios pulsa Editar cuenta junto a la persona.","En Contraseña escribe una o pulsa Generar segura, y pulsa Asignar contraseña.","Entrégala por un canal distinto al correo y pídele que la cambie en Mi perfil."]},
   {t:"Completar y firmar contratos del personal", si:()=>veTodosContratos(), pasos:["Entra a Contratos y abre el contrato de la persona.","Registra fecha de alta ante el IMSS, salario y datos del empleador y guarda.","Cuando la persona firme, el superusuario pulsa Firmar por CEMEPI. Cualquier cambio posterior anula las firmas."]},
   {t:"Verificar documentación del personal", si:()=>veDocsTodos(), pasos:["Entra a Documentación y abre a la persona.","Pulsa Ver PDF y cotéjalo con el original.","Pulsa Verificar. Un documento verificado ya no lo puede borrar su titular."]},
+  {t:"Respaldar la documentación del personal", si:()=>ES_DIR(), pasos:["Entra a Documentación y pulsa Descargar respaldo (ZIP).","Se descargan todos los PDF en carpetas por sede y persona, con un índice (indice.csv) que se abre en Excel.","Guarda el ZIP en un disco o carpeta segura de CEMEPI; contiene datos personales. Hazlo al menos una vez al mes.","Los respaldos automáticos de Supabase no incluyen los PDF: este ZIP es su único respaldo."]},
+  {t:"Recuperar un documento eliminado", si:()=>ES_DIR(), pasos:["Entra a Documentación y baja a Papelera.","Pulsa Restaurar: el documento vuelve a la lista de su titular.","Los documentos se conservan 30 días en la papelera; después puedes eliminarlos definitivamente."]},
   {t:"Otorgar permisos", si:()=>S.rol==="superusuario", pasos:["Entra a Permisos.","Marca o desmarca la casilla del permiso junto a la persona. Se aplica al instante y queda en la bitácora."]},
   {t:"Cambiar mi contraseña o mi firma", si:()=>true, pasos:["Entra a Mi perfil.","Para la firma: súbela en imagen o dibújala y pulsa Guardar mis datos.","Para la contraseña: escríbela dos veces en Cambiar mi contraseña (mínimo 10 caracteres)."]},
 ];
@@ -1724,10 +1779,14 @@ document.addEventListener("click", async ev => {
     b.disabled=true; b.textContent="Subiendo…";
     try{ await S.api.subirDocPersonal(f, tipo, desc); toast("Documento subido."); }catch(e){ toast(e?.message||"No se pudo subir el documento."); }
     finally{ b.disabled=false; b.textContent="Subir PDF"; } return cargarAdmin("documentacion"); }
-  if (a==="verDocp"){ const d=(S.docp||[]).find(x=>x.id===b.dataset.id); if (!d) return; const w=window.open("", "_blank");
+  if (a==="verDocp"){ const d=[...(S.docp||[]), ...(S.docpPapelera||[])].find(x=>x.id===b.dataset.id); if (!d) return; const w=window.open("", "_blank");
     try{ const url=await S.api.urlDocPersonal(d.archivo); if (w) w.location.href=url; else location.assign(url); }catch(e){ if (w) w.close(); toast(e?.message||"No se pudo abrir el documento."); } return; }
-  if (a==="borrarDocp"){ const d=(S.docp||[]).find(x=>x.id===b.dataset.id); if (!d) return; if (!arm(b,"bd"+d.id,"¿Borrar?")) return; armed=null;
-    try{ await S.api.borrarDocPersonal(d); toast("Documento borrado."); }catch(e){ toast(e?.message||"No se pudo borrar."); } return cargarAdmin("documentacion"); }
+  if (a==="borrarDocp"){ const d=(S.docp||[]).find(x=>x.id===b.dataset.id); if (!d) return; if (!arm(b,"bd"+d.id,"¿Enviar a la papelera?")) return; armed=null;
+    try{ await S.api.borrarDocPersonal(d); toast(`Documento enviado a la papelera. La Dirección puede restaurarlo durante ${DIAS_PAPELERA} días.`); }catch(e){ toast(e?.message||"No se pudo eliminar."); } return cargarAdmin("documentacion"); }
+  if (a==="restaurarDocp"){ try{ await S.api.restaurarDocPersonal(b.dataset.id); toast("Documento restaurado."); }catch(e){ toast(e?.message||"No se pudo restaurar."); } return cargarAdmin("documentacion"); }
+  if (a==="eliminarDocp"){ const d=(S.docpPapelera||[]).find(x=>x.id===b.dataset.id); if (!d) return; if (!arm(b,"ed"+d.id,"¿Eliminar para siempre? No se puede deshacer")) return; armed=null;
+    try{ await S.api.eliminarDefinitivoDoc(d); toast("Documento eliminado definitivamente."); }catch(e){ toast(e?.message||"No se pudo eliminar."); } return cargarAdmin("documentacion"); }
+  if (a==="respaldoDocp") return respaldoDocp(b);
   if (a==="verifDocp"){ try{ await S.api.verificarDocPersonal(b.dataset.id, b.dataset.v==="1"); toast(b.dataset.v==="1"?"Documento verificado.":"Verificación retirada."); }catch(e){ toast(e?.message||"No se pudo actualizar."); } return cargarAdmin("documentacion"); }
   if (a==="permisos"){ S.view="permisos"; S.usuarios=null; S.permTodos=null; render(); return cargarAdmin("permisos"); }
   if (a==="uso"){ S.view="uso"; S.usoDias=S.usoDias||7; S.uso=null; render(); return cargarAdmin("uso"); }
