@@ -299,4 +299,28 @@ const cemepi = {
   async verificarDocPersonal(id, v){ const { error } = await sb.rpc("verificar_documento", { p_id: id, p_verificado: !!v }); if (error) fallo(error); },
   async resumenUso(desde){ const { data, error } = await sb.rpc("resumen_uso", { p_desde: desde.toISOString() }); if (error) fallo(error); return data || []; },
 };
-window.__cemepi.resolve({ use: async n => ({ db, user, downloads, cemepi })[n] ?? null });
+/* Redacción con Claude desde la función de Supabase "redactar" (la clave de la API vive en Supabase, no aquí).
+   Si la función no está configurada, la app sigue en modo copiar/pegar con claude.ai. */
+async function llamarRedactar(cuerpo, signal){
+  const { data: { session } } = await sb.auth.getSession();
+  const r = await fetch(`${cfg.supabaseUrl}/functions/v1/redactar`, { method: "POST", signal,
+    headers: { "Content-Type": "application/json", apikey: cfg.supabaseAnonKey, Authorization: `Bearer ${session?.access_token || ""}` },
+    body: JSON.stringify(cuerpo) });
+  let j = null; try { j = await r.json(); } catch { /* sin cuerpo */ }
+  return { ok: r.ok, j };
+}
+let sample = null;
+if (rol !== "administrativo"){
+  try{
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 6000);
+    const p = await llamarRedactar({ ping: true }, ctl.signal); clearTimeout(t);
+    if (p.ok && p.j?.configurada) sample = {
+      async json(prompt, opts = {}){
+        try{ const r = await llamarRedactar({ prompt }, opts.signal);
+          if (!r.ok || !r.j || r.j.error) throw { code: r.j?.error || "api" };
+          return r.j; }
+        catch(e){ if (e?.name === "AbortError") throw { code: "cancelled" }; throw e?.code ? e : { code: "red" }; }
+      } };
+  }catch{ /* sin redacción automática: modo copiar/pegar */ }
+}
+window.__cemepi.resolve({ use: async n => ({ db, user, downloads, cemepi, sample })[n] ?? null });

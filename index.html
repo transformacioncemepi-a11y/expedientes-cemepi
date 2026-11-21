@@ -1622,7 +1622,9 @@ async function generar(p){
   }catch(e){
     const m={not_granted:"Claude no tiene permiso en esta página. Puedes activarlo en los permisos del artefacto.",sampling_disabled:"Claude no está disponible para esta cuenta.",
       rate_limited:"Hiciste muchas solicitudes seguidas o alcanzaste tu límite de uso. Espera un momento e intenta de nuevo.",refused:"Claude no pudo redactar este documento con esas notas. Revisa el contenido e intenta de nuevo.",
-      invalid_json:"La respuesta llegó incompleta. Intenta de nuevo.",prompt_too_large:"Las notas son demasiado largas para un solo documento. Usa menos notas o resume las más antiguas.",session_expired:"Tu sesión expiró. Vuelve a iniciar sesión en claude.ai."};
+      invalid_json:"La respuesta llegó incompleta. Intenta de nuevo.",prompt_too_large:"Las notas son demasiado largas para un solo documento. Usa menos notas o resume las más antiguas.",session_expired:"Tu sesión expiró. Cierra sesión y vuelve a entrar.",
+      no_configurada:"La redacción automática no está configurada todavía. Usa el modo copiar y pegar.",clave_invalida:"La clave de la API de Claude no es válida o no tiene saldo. Avisa a la Dirección.",
+      red:"No hubo conexión con el servicio de redacción. Revisa tu internet e intenta de nuevo.",api:"El servicio de redacción tuvo un problema. Intenta de nuevo en un momento.",solicitud:"El servicio no aceptó la solicitud. Intenta de nuevo o avisa a la Dirección."};
     if (e?.code!=="cancelled") toast(m[e?.code]||"No se pudo redactar el documento. Intenta de nuevo.");
   }finally{ g.loading=false; S.ctl=null; if (S.gen===g) render(); }
 }
