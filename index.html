@@ -702,6 +702,100 @@ function envolver(text, font, size, maxW){
   }
   return out;
 }
+/* ================= Expediente completo en PDF (uso interno, con registro en bitácora) ================= */
+const EXP_FIN = {continuidad:"Continuidad o cambio de terapeuta", autoridad:"Solicitud de autoridad (verificada)", consultante:"Solicitud del consultante o su representante",
+  resguardo:"Resguardo o archivo", supervision:"Supervisión clínica", otra:"Otra finalidad autorizada por la Dirección"};
+async function pdfExpediente(p, finalidad, generado){
+  const {PDFDocument, StandardFonts, rgb} = PDFLib;
+  const c=ctxOf(p), f=p.ficha||{};
+  const notas=[...S.notas].sort((a,b)=>(a.fecha||"").localeCompare(b.fecha||"")||(a.creado||0)-(b.creado||0));
+  const fijos=S.docs.filter(d=>d.contenido && d.estado && d.estado!=="borrador").sort((a,b)=>String(a.emitidoEn).localeCompare(String(b.emitidoEn)));
+  const borr=S.docs.filter(d=>!d.estado || d.estado==="borrador");
+  const pdf=await PDFDocument.create();
+  pdf.setTitle(`Expediente ${p.folio}`); pdf.setAuthor("CEMEPI · Centro Mexicano de Plenitud Humana, S.C."); pdf.setLanguage("es-MX");
+  const font=await pdf.embedFont(StandardFonts.Helvetica), bold=await pdf.embedFont(StandardFonts.HelveticaBold);
+  const b64=(document.querySelector(".appbar img")?.src||"").split(",")[1], logo=b64?await pdf.embedPng(Uint8Array.from(atob(b64), ch=>ch.charCodeAt(0))):null;
+  const W=612, H=792, M=54, CW=W-2*M, FS=11, LH=13.8, azul=rgb(0.02,0.376,0.741), tinta=rgb(0.06,0.14,0.25), gris=rgb(0.33,0.41,0.54), rojo=rgb(0.776,0.157,0.157), linea=rgb(0.72,0.78,0.87);
+  const nota=envolver(NOTA_ACLARATORIA, font, 7, CW), pieH=nota.length*8.6, BASE=26+pieH+18;
+  let page, y;
+  const nueva=()=>{ page=pdf.addPage([W,H]); y=H-M;
+    const cab=limpiarPdf(`CEMEPI · Expediente clínico completo · Folio ${p.folio} · USO INTERNO · CONFIDENCIAL`);
+    page.drawText(cab,{x:M, y:H-34, size:7.5, font, color:gris}); y=H-M-6; };
+  const espacio=h=>{ if (y-h<BASE) nueva(); };
+  const T=(t,o={})=>{ const fo=o.b?bold:font, sz=o.size||FS; page.drawText(limpiarPdf(t),{x:o.x??M, y, size:sz, font:fo, color:o.color||tinta}); };
+  /* Párrafo justificado (última línea de cada párrafo alineada a la izquierda) */
+  const parrafo=(texto, o={})=>{ const fo=o.b?bold:font, sz=o.size||FS, lh=o.lh||LH, x0=o.x??M, ancho=o.w??CW;
+    for (const par of limpiarPdf(String(texto??"")).split("\n")){
+      if (!par.trim()){ y-=lh*0.5; continue; }
+      const pal=par.split(/ +/).filter(Boolean), lineas=[]; let act=[];
+      for (const w of pal){ const prueba=[...act,w].join(" "); if (fo.widthOfTextAtSize(prueba,sz)<=ancho || !act.length) act.push(w); else { lineas.push(act); act=[w]; } }
+      if (act.length) lineas.push(act);
+      lineas.forEach((ws,i)=>{ espacio(lh); y-=lh; const ultima=i===lineas.length-1;
+        if (ultima || ws.length<2){ page.drawText(ws.join(" "),{x:x0, y, size:sz, font:fo, color:o.color||tinta}); return; }
+        const anchos=ws.map(w=>fo.widthOfTextAtSize(w,sz)), libre=ancho-anchos.reduce((a,b)=>a+b,0), gap=libre/(ws.length-1);
+        let x=x0; ws.forEach((w,k)=>{ page.drawText(w,{x, y, size:sz, font:fo, color:o.color||tinta}); x+=anchos[k]+gap; }); });
+      y-=3; } };
+  const titulo=(t)=>{ espacio(40); y-=22; T(t.toUpperCase(),{b:1, size:12, color:azul}); y-=6; page.drawLine({start:{x:M,y}, end:{x:W-M,y}, thickness:1, color:azul}); y-=4; };
+  const sub=(t, color)=>{ espacio(LH*3); y-=LH+4; T(t,{b:1, color:color||tinta}); };
+  const fila=(k,v)=>{ const ln=envolver(String(v??""), font, FS, CW-180); espacio(LH*Math.max(1,ln.length)+4); y-=LH;
+    T(k,{size:10, color:gris}); ln.forEach((l,i)=>{ if (i) y-=LH; page.drawText(l,{x:M+180, y, size:FS, font, color:tinta}); }); y-=4; };
+
+  /* Portada */
+  nueva();
+  if (logo) page.drawImage(logo,{x:M, y:y-42, width:48, height:42});
+  y-=15; T("Centro Mexicano de Plenitud Humana, S.C.",{x:M+58, b:1, size:13, color:azul});
+  y-=14; T("CEMEPI · Atención psicológica · www.cemepi.com.mx",{x:M+58, size:8.5, color:gris});
+  y-=24; page.drawLine({start:{x:M,y}, end:{x:W-M,y}, thickness:1.5, color:azul});
+  y-=34; { const t="EXPEDIENTE CLÍNICO COMPLETO"; page.drawText(t,{x:(W-bold.widthOfTextAtSize(t,15))/2, y, size:15, font:bold, color:azul}); }
+  y-=16; { const t="Documento de uso interno · Confidencial"; page.drawText(t,{x:(W-font.widthOfTextAtSize(t,10))/2, y, size:10, font, color:rojo}); }
+  y-=10;
+  titulo("Identificación");
+  fila("Folio del expediente", p.folio||PEND);
+  if ((p.foliosAnteriores||[]).length) fila("Folios anteriores", p.foliosAnteriores.join(", "));
+  fila("Iniciales del consultante", c.ini);
+  fila("Fecha de nacimiento", f.fechaNac?`${fmtDate(f.fechaNac)} (${c.edad} años)`:PEND);
+  fila("Sede", c.sede||PEND);
+  fila("Profesional responsable", c.prof.startsWith("___")?PEND:`${c.prof} · Cédula profesional ${c.ced.startsWith("_")?PEND:c.ced}`);
+  fila("Primera sesión", f.primeraSesion?fmtDate(f.primeraSesion):PEND);
+  fila("Contenido", `${notas.length} nota${notas.length===1?"":"s"} de evolución · ${fijos.length} documento${fijos.length===1?"":"s"} emitido${fijos.length===1?"":"s"} o anulado${fijos.length===1?"":"s"} · ${borr.length} borrador${borr.length===1?"":"es"}`);
+  titulo("Registro de esta exportación");
+  fila("Generado", fechaHora(Date.parse(generado)||Date.now()));
+  fila("Por", S.perfil?.nombre||S.api?.nombre||"");
+  fila("Finalidad", EXP_FIN[finalidad]||finalidad);
+  y-=6; parrafo("Este documento reproduce el contenido del expediente clínico registrado en el sistema de CEMEPI a la fecha de su generación. El expediente original permanece bajo resguardo de la organización. Contiene datos personales sensibles de salud: su uso se limita a la finalidad indicada, con acceso solo para personal autorizado; no se envía por mensajería ni por correo sin autorización de la Dirección. La exportación quedó registrada en la bitácora del sistema.", {size:10, lh:13, color:gris});
+
+  /* Notas de evolución */
+  nueva(); titulo(`Notas de evolución (${notas.length})`);
+  if (!notas.length) parrafo("Sin notas registradas.");
+  notas.forEach((n,i)=>{
+    sub(`Sesión del ${fmtDate(n.fecha)}${n.formato==="nom004"?" · Nota estructurada NOM-004":""}`, azul);
+    if (n.formato==="nom004" && n.campos){ const cc=n.campos;
+      parrafo([cc.hora&&`Hora: ${cc.hora}`, cc.duracion&&`Duración: ${cc.duracion} min`, cc.modalidad&&`Modalidad: ${cc.modalidad}`, cc.asistentes&&`Asistentes: ${cc.asistentes}`].filter(Boolean).join(" · "), {size:10, color:gris});
+      for (const fd of NOM_CAMPOS){ const v=(cc[fd.k]||"").trim(); if (!v && !fd.req) continue; espacio(LH*2); y-=LH; T(fd.l,{b:1, size:10, color:gris}); parrafo(v||PEND); }
+      espacio(LH*2); y-=LH; T("Indicadores de riesgo",{b:1, size:10, color:gris}); parrafo(`${cc.riesgo||"No se exploró en esta sesión"}${cc.riesgo===NOM_RIESGO[1]&&cc.riesgo_det?`. ${cc.riesgo_det}`:""}`);
+    } else parrafo(n.texto||"");
+    if (i<notas.length-1){ y-=6; espacio(6); page.drawLine({start:{x:M,y}, end:{x:W-M,y}, thickness:0.4, color:linea}); }
+  });
+
+  /* Documentos emitidos y anulados */
+  nueva(); titulo(`Documentos emitidos (${fijos.length})`);
+  if (!fijos.length) parrafo("No hay documentos emitidos en este expediente.");
+  fijos.forEach(d=>{ const em=d.emision||{}, k=d.contenido||{};
+    sub(`${FORMATOS[d.tipo]?.nombre||d.tipo} · ${d.folioEmision||""} · Versión ${d.version||1}`, d.estado==="anulado"?rojo:azul);
+    parrafo([d.estado==="anulado"&&`ANULADO el ${fechaHora(Date.parse(d.anuladoEn))} · Motivo: ${d.motivoAnulacion||""}`, `Fecha del documento: ${d.fecha?fmtDate(d.fecha):PEND}`, `Emitido el ${d.emitidoEn?fechaHora(Date.parse(d.emitidoEn)):PEND}`, `Firma: ${em.profesional||c.prof} · Cédula ${em.cedula||c.ced}`, d.reemplazadoPor&&"Reemplazado por una versión posterior"].filter(Boolean).join(" · "), {size:10, color:gris});
+    if (k.destinatario){ espacio(LH*2); y-=LH; T("Destinatario",{b:1, size:10, color:gris}); parrafo(k.destinatario); }
+    for (const sc of k.secciones||[]){ if (sc.titulo){ espacio(LH*3); y-=LH+2; T(sc.titulo,{b:1, color:azul}); } parrafo((sc.texto||"").trim()||PEND); }
+    y-=8; espacio(6); page.drawLine({start:{x:M,y}, end:{x:W-M,y}, thickness:0.4, color:linea});
+  });
+  titulo(`Borradores no emitidos (${borr.length})`);
+  parrafo(borr.length ? borr.map(d=>`${FORMATOS[d.tipo]?.nombre||d.tipo} (${d.fecha?fmtDate(d.fecha):"sin fecha"}${d.version>1?`, versión ${d.version}`:""})`).join("; ")+". Los borradores no tienen validez y no se reproducen." : "Ninguno.");
+
+  /* Pie: nota aclaratoria y paginación */
+  const total=pdf.getPageCount();
+  pdf.getPages().forEach((pg,i)=>{ nota.forEach((l,j)=>pg.drawText(l,{x:M, y:26+(nota.length-1-j)*8.6, size:7, font, color:gris}));
+    const t=limpiarPdf(`Folio ${p.folio} · Página ${i+1} de ${total}`); pg.drawText(t,{x:W-M-font.widthOfTextAtSize(t,7), y:26+pieH+4, size:7, font, color:gris}); });
+  return pdf.save();
+}
 async function pdfEditable(g, c){
   const {PDFDocument, StandardFonts, rgb, TextAlignment} = PDFLib;
   const t=FORMATOS[g.tipo], k=g.contenido||{};
@@ -1808,8 +1902,15 @@ function expedienteHtml(p){
           ${ro?"":`<div class="fld"><button class="btn primary" type="button" data-act="save">Guardar datos</button></div>`}
         </form>
         <div class="actions" style="border-top:0;padding-top:0"><span class="status">Si escribes un nombre completo se convierte en iniciales al guardar. El folio lleva la clave de la sede (${esc(codSede(f.sede))}); si cambias la sede, el folio se actualiza y el anterior queda registrado.</span><span class="spacer"></span>
+          ${admin||!S.api?"":`<button class="btn sm" type="button" data-act="exportExp">Expediente completo (PDF)</button>`}
           <button class="btn sm" type="button" data-act="hoja">Hoja administrativa (Word)</button>${!S.esDireccion?"":`<button class="btn sm danger" type="button" data-act="del">Eliminar expediente</button>`}</div>
       </section>
+      ${S.expExport===p.id?`<div class="banner" style="display:block;margin-top:8px"><b>Expediente completo en PDF (uso interno)</b>
+        <p class="status" style="margin:4px 0 8px">Incluye identificación, todas las notas, los documentos emitidos o anulados con su texto y la lista de borradores. Contiene datos de salud: no lo envíes por mensajería. La exportación queda registrada en la bitácora con su finalidad.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><label for="exFin">Finalidad *</label>
+          <select id="exFin"><option value="">Elige…</option>${Object.entries(EXP_FIN).map(([k,l])=>`<option value="${k}">${esc(l)}</option>`).join("")}</select>
+          <button class="btn sm primary" type="button" data-act="exportExpGo">Generar PDF</button><button class="btn sm" type="button" data-act="exportExpNo">Cancelar</button></div>
+        <p class="status" style="margin:6px 0 0">Ante una solicitud de autoridad, verifica antes su autenticidad y alcance y entrega solo lo procedente (consulta a la Dirección).</p></div>`:""}
       <div class="tabs" role="tablist">${tabs.map(([k,l])=>`<button class="tab" role="tab" type="button" data-tab="${k}" aria-selected="${S.tab===k}">${l}</button>`).join("")}</div>
     </div>
     <div class="panel" id="panel">${admin ? `<p class="status" style="margin:0">Las notas de sesión y los documentos clínicos solo los ven el psicólogo asignado y la Dirección, por confidencialidad.</p>`
@@ -2263,6 +2364,18 @@ document.addEventListener("click", async ev => {
     S.sedeF=t.sede||"todas"; S.terF=t.id; S.q=""; $("#q").value="";
     try{ localStorage.setItem("cemepi.sede",S.sedeF); localStorage.setItem("cemepi.ter",S.terF); }catch{}
     S.view=S.sel?"exp":"inicio"; renderList(); render(); toast(`Expedientes de ${t.nombre}`); return; }
+  if (a==="exportExp"){ S.expExport = S.expExport===p.id ? null : p.id; return render(); }
+  if (a==="exportExpNo"){ S.expExport=null; return render(); }
+  if (a==="exportExpGo"){ const fin=$("#exFin").value; if (!fin){ toast("Elige la finalidad de la exportación."); $("#exFin").focus(); return; }
+    if (typeof PDFLib==="undefined"){ toast("No se pudo preparar el PDF. Recarga la página."); return; }
+    const dl=await window.claude?.use?.("downloads"); if (!dl){ toast("La descarga no está disponible en esta vista."); return; }
+    b.disabled=true; b.textContent="Generando…";
+    try{ const nDocs=S.docs.filter(d=>d.estado && d.estado!=="borrador").length;
+      const en = await S.api.registrarExportacion(p.id, fin, S.notas.length, nDocs);   /* primero la bitácora; si falla, no se genera */
+      const bytes = await pdfExpediente(p, fin, en);
+      await dl.save({filename:`Expediente-completo-${p.folio}-${today()}.pdf`, data:bytes});
+      S.expExport=null; render(); toast("Expediente exportado y registrado en la bitácora. Guárdalo en un lugar seguro."); }
+    catch(e){ b.disabled=false; b.textContent="Generar PDF"; if (e?.code!=="declined"){ console.warn(e); toast(e?.message||"No se pudo generar el PDF."); } } return; }
   if (a==="hoja"){ const c=ctxOf(p); return descargar(`Hoja-administrativa-${p?.folio||"en-blanco"}.docx`, p?.folio||"", hojaAdminXml(c)); }
   if (a==="back"){ S.ctl?.abort(); S.sel=null; S.view="inicio"; S.gen=null; S.pend=null; watch(); renderList(); render(); $("#detail").scrollTop=0; return; }
   if (a==="reload"){ S.gen=null; return render(); }
