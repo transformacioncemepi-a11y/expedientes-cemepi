@@ -92,6 +92,21 @@ button,input,select,textarea{font:inherit;color:inherit}
 .crumbs button:hover{color:var(--accent);text-decoration:underline}
 .crumbs .sep{opacity:.55}
 @media (max-width:560px){.phead h1{font-size:22px}}
+/* Fila de filtros y tablas ordenables (etapa 3) */
+.filtros{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.filtros select,.f-buscar input{height:38px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);padding:0 10px}
+.f-buscar{position:relative;flex:1 1 220px;max-width:360px}
+.f-buscar input{width:100%;padding-left:34px}
+.f-buscar svg{position:absolute;left:10px;top:10px;width:18px;height:18px;stroke:var(--muted);fill:none;stroke-width:2;pointer-events:none}
+.f-chip{height:32px;border-radius:999px;border:1px dashed var(--line-strong);background:none;padding:0 12px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer}
+.f-chip[aria-pressed="true"]{border-style:solid;border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.filtros .f-cnt{margin-left:auto}
+th.ord button{border:0;background:none;padding:0;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
+th.ord button::after{content:"↕";opacity:.35;font-size:11px}
+th.ord[aria-sort="ascending"] button::after{content:"▲";opacity:.8}
+th.ord[aria-sort="descending"] button::after{content:"▼";opacity:.8}
+tr.f-oculta{display:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 @media (max-width:900px){
   .shell{grid-template-columns:minmax(0,1fr)}
   .topbar,.app{grid-column:1}
@@ -1030,6 +1045,72 @@ function migas(padre){
   if (padre) it.push(`<button type="button" data-act="${padre[1]}">${esc(padre[0])}</button>`);
   return `<nav class="crumbs" aria-label="Ruta">${it.join('<span class="sep" aria-hidden="true">/</span>')}</nav>`;
 }
+/* ---------- Tablas: filtros en una fila y orden por columna (sistema visual, etapa 3) ---------- */
+const VISTAS_TABLA=["usuarios","contratos","documentacion","sedes","tablero","uso"];
+const norm=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+S.ft=S.ft||{}; S.orden=S.orden||{};
+/* Barra de filtros: buscador + selectores opcionales + conteo. Las filas filtrables llevan data-f y data-sede/data-estado/data-rol/data-faltan */
+function barraFiltros(k, cfg={}){
+  const f=S.ft[k]||{}, opt=(lista,sel,todos,attr)=>`<select ${attr} aria-label="${todos}"><option value="">${todos}</option>${lista.map(([v,l])=>`<option value="${esc(v)}"${v===sel?" selected":""}>${esc(l)}</option>`).join("")}</select>`;
+  return `<div class="filtros" data-fk="${k}" role="search">
+    <label class="f-buscar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="sr">Buscar</span><input type="search" data-fq placeholder="${esc(cfg.ph||"Buscar por nombre o correo")}" value="${esc(f.q||"")}"></label>
+    ${cfg.antes||""}
+    ${cfg.sedes?opt(cfg.sedes.map(x=>[x,x]),f.sede||"","Todas las sedes","data-fsede"):""}
+    ${cfg.roles?opt(cfg.roles,f.rol||"","Todos los tipos","data-frol"):""}
+    ${cfg.estados?opt(cfg.estados.map(x=>[x,x]),f.estado||"","Todos los estados","data-festado"):""}
+    ${cfg.faltan?`<button class="f-chip" type="button" data-ffaltan aria-pressed="${!!f.faltan}">Con documentos faltantes</button>`:""}
+    <span class="status f-cnt" data-fcnt></span></div>`;
+}
+function aplicarFiltros(){
+  document.querySelectorAll("#detail .filtros[data-fk]").forEach(bar=>{
+    const f=S.ft[bar.dataset.fk]||{}, q=norm(f.q), scope=bar.closest(".wrap")||document;
+    const filas=[...scope.querySelectorAll("tbody tr[data-f]")]; let vis=0;
+    for (const tr of filas){
+      const ok=(!q || norm(tr.textContent).includes(q)) && (!f.sede || tr.dataset.sede===f.sede) && (!f.estado || tr.dataset.estado===f.estado)
+        && (!f.rol || tr.dataset.rol===f.rol) && (!f.faltan || tr.dataset.faltan==="1");
+      tr.classList.toggle("f-oculta", !ok); if (ok) vis++;
+    }
+    const c=bar.querySelector("[data-fcnt]"); if (c) c.textContent = filas.length ? (vis===filas.length?`${filas.length} en total`:`${vis} de ${filas.length}`) : "";
+  });
+}
+const valorOrden=t=>{ t=t.trim(); let m=/^(\d{2})\/(\d{2})\/(\d{4})/.exec(t); if (m) return [0, m[3]+m[2]+m[1]];
+  m=/^-?[\d.,]+(\s|%|$)/.exec(t); if (m) return [1, parseFloat(t.replace(/,/g,""))]; return [2, norm(t)]; };
+function ordenarTabla(tb, col, dir){
+  const filas=[...tb.tBodies[0].rows].filter(r=>r.cells.length>col && !r.querySelector("td[colspan]"));
+  if (filas.length<2) return;
+  filas.sort((a,b)=>{ const [ta,va]=valorOrden(a.cells[col].textContent), [tb2,vb]=valorOrden(b.cells[col].textContent);
+    if (ta!==tb2) return (ta-tb2)*dir; return (typeof va==="number" ? va-vb : String(va).localeCompare(String(vb),"es",{numeric:true}))*dir; });
+  filas.forEach(r=>tb.tBodies[0].appendChild(r));
+}
+function mejorarTablas(){
+  if (!VISTAS_TABLA.includes(S.view)) return;
+  document.querySelectorAll("#detail .tbl-wrap table").forEach((tb,i)=>{
+    if (!tb.tHead || !tb.tBodies[0] || tb.dataset.ord) return; tb.dataset.ord="1";
+    const k=S.view+"-"+i;
+    [...tb.tHead.rows[0].cells].forEach((th,c)=>{ if (!th.textContent.trim()) return;
+      th.classList.add("ord"); th.setAttribute("aria-sort","none"); th.innerHTML=`<button type="button" data-ordcol="${c}" data-ordk="${k}">${th.innerHTML}</button>`; });
+    const o=S.orden[k]; if (o){ ordenarTabla(tb,o.col,o.dir); tb.tHead.rows[0].cells[o.col]?.setAttribute("aria-sort",o.dir>0?"ascending":"descending"); }
+  });
+  aplicarFiltros();
+}
+new MutationObserver(()=>mejorarTablas()).observe(document.getElementById("detail"), {childList:true});
+document.addEventListener("click", e=>{
+  const b=e.target.closest("[data-ordcol]");
+  if (b){ const k=b.dataset.ordk, col=+b.dataset.ordcol, o=S.orden[k], dir=o&&o.col===col?-o.dir:1; S.orden[k]={col,dir};
+    const tb=b.closest("table"); [...tb.tHead.rows[0].cells].forEach(th=>th.classList.contains("ord")&&th.setAttribute("aria-sort","none"));
+    b.closest("th").setAttribute("aria-sort",dir>0?"ascending":"descending"); ordenarTabla(tb,col,dir); return; }
+  const fx=e.target.closest("[data-ffaltan]");
+  if (fx){ const k=fx.closest("[data-fk]").dataset.fk, f=S.ft[k]=S.ft[k]||{}; f.faltan=!f.faltan; fx.setAttribute("aria-pressed",f.faltan); aplicarFiltros(); }
+});
+document.addEventListener("input", e=>{
+  const bar=e.target.closest?.(".filtros[data-fk]"); if (!bar || e.target.id==="usrSede") return;
+  const f=S.ft[bar.dataset.fk]=S.ft[bar.dataset.fk]||{};
+  if (e.target.matches("[data-fq]")) f.q=e.target.value;
+  if (e.target.matches("[data-fsede]")) f.sede=e.target.value;
+  if (e.target.matches("[data-festado]")) f.estado=e.target.value;
+  if (e.target.matches("[data-frol]")) f.rol=e.target.value;
+  aplicarFiltros();
+});
 function marcarNav(){
   const v = S.sel && S.view==="exp" ? "exp" : (S.view||"inicio");
   document.querySelectorAll(".nav-i").forEach(b=>b.removeAttribute("aria-current"));
@@ -1336,13 +1417,13 @@ function usuariosHtml(){
   const opRol=(sel)=>rolesAsignables().map(r=>`<option value="${r}"${r===sel?" selected":""}>${ROL_TXT[r]}</option>`).join("");
   const opSede=(sel)=>`${ES_SEDE()?"":`<option value="">Sin sede</option>`}${sedesAsignables().map(s=>`<option value="${esc(s)}"${s===sel?" selected":""}>${esc(s)}</option>`).join("")}`;
   const datos=u=>`<b>${esc(u.nombre||"Sin nombre")}</b><br><span class="status">${esc(u.email)}${u.telefono?" · "+esc(u.telefono):""}${u.cedula?" · Céd. "+esc(u.cedula):""}</span>`;
-  const filaPend=u=>`<tr><td>${datos(u)}</td><td>${(u.rol_solicitado||u.rol)==="psicologo"?modPill({...u, rol:"psicologo"}).replace(/^<br>/,""):esc(ROL_TXT[u.rol_solicitado]||ROL_TXT[u.rol]||"")}<br><span class="status">${esc(u.sede||"Sin sede")}</span></td>
+  const filaPend=u=>`<tr data-f data-rol="${esc(u.rol_solicitado||u.rol)}"><td>${datos(u)}</td><td>${(u.rol_solicitado||u.rol)==="psicologo"?modPill({...u, rol:"psicologo"}).replace(/^<br>/,""):esc(ROL_TXT[u.rol_solicitado]||ROL_TXT[u.rol]||"")}<br><span class="status">${esc(u.sede||"Sin sede")}</span></td>
     <td>${puedeGestionar(u)?`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
       <select id="ar-rol-${u.id}" aria-label="Rol">${opRol(u.rol_solicitado||u.rol)}</select>
       <select id="ar-sede-${u.id}" aria-label="Sede">${opSede(u.sede)}</select>
       <button class="btn sm primary" type="button" data-act="autorizarUsr" data-id="${u.id}">Autorizar</button>
       <button class="btn sm danger" type="button" data-act="rechazarUsr" data-id="${u.id}">Rechazar</button></div>`:`<span class="status">${(u.rol_solicitado||u.rol)==="direccion"?"Lo autoriza el superusuario":`Lo autoriza ${u.sede?"su sede o ":""}la Dirección`}</span>`}</td></tr>`;
-  const filaUsr=u=>S.usrEdit===u.id ? `<tr><td>${datos(u)}</td><td colspan="2"><div class="usr-edit">
+  const filaUsr=u=>S.usrEdit===u.id ? `<tr data-f data-rol="${esc(u.rol)}"><td>${datos(u)}</td><td colspan="2"><div class="usr-edit">
       <fieldset><legend>Rol, sede y estado</legend><div class="usr-fila">
         <select id="eu-rol" aria-label="Rol">${opRol(u.rol)}</select><select id="eu-sede" aria-label="Sede">${opSede(u.sede)}</select>
         <select id="eu-estado" aria-label="Estado">${["activo","suspendido","rechazado","pendiente"].map(e=>`<option value="${e}"${e===u.estado?" selected":""}>${EST_TXT[e]}</option>`).join("")}</select>
@@ -1363,15 +1444,15 @@ function usuariosHtml(){
         <button class="btn sm primary" type="button" data-act="savePassUsr" data-id="${u.id}">Asignar contraseña</button></div>
         <span class="status">Reemplaza la contraseña que la persona eligió. Compártela en persona o por un canal seguro (nunca junto con el correo en el mismo mensaje) y pídele que la cambie en <b>Mi perfil</b>. La bitácora registra quién la cambió, no la contraseña.</span></fieldset>
       <div><button class="btn sm" type="button" data-act="cancelUsr">Cerrar</button></div></div></td></tr>`
-    : `<tr><td>${datos(u)}</td><td>${u.rol==="psicologo"?modPill(u).replace(/^<br>/,""):`<span class="badge-rol">${esc(ROL_TXT[u.rol]||u.rol)}</span>`}<br><span class="status">${esc(u.sede||"Todas las sedes")}</span></td>
+    : `<tr data-f data-rol="${esc(u.rol)}"><td>${datos(u)}</td><td>${u.rol==="psicologo"?modPill(u).replace(/^<br>/,""):`<span class="badge-rol">${esc(ROL_TXT[u.rol]||u.rol)}</span>`}<br><span class="status">${esc(u.sede||"Todas las sedes")}</span></td>
       <td><span class="pill estado-${u.estado}">${EST_TXT[u.estado]}</span> ${puedeGestionar(u)?`<button class="btn sm" type="button" data-act="editUsr" data-id="${u.id}">Editar cuenta</button>`:""}${u.id===S.uid?` <span class="status">(tú)</span>`:""}</td></tr>`;
   const act=activos.filter(u=>!(u.rol==="psicologo" && u.modalidad==="comision")), comis=activos.filter(u=>u.rol==="psicologo" && u.modalidad==="comision");
   const tabla=(t,rows,fn,vacio)=>`<section class="doc-sec"><h3 class="sec-h">${t} (${rows.length})</h3>${rows.length?`<div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Rol y sede</th><th></th></tr></thead><tbody>${rows.map(fn).join("")}</tbody></table></div>`:`<p class="status" style="margin:0">${vacio}</p>`}</section>`;
   return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:18px">
-    <div class="phead">${migas()}<h1>Usuarios</h1><span style="display:flex;gap:8px;align-items:center">
-      ${ES_SEDE()?`<span class="status">Sede ${esc(S.miSede)}</span>`:`<select id="usrSede" aria-label="Filtrar por sede"><option value="">Todas las sedes</option>${SEDES.map(s=>`<option${s===filtro?" selected":""}>${esc(s)}</option>`).join("")}</select>`}
-      </span></div>
+    <div class="phead">${migas()}<h1>Usuarios</h1>${ES_SEDE()?`<span><span class="status">Sede ${esc(S.miSede)}</span></span>`:""}</div>
     <p class="status" style="margin:0">Cada persona solicita su cuenta desde la pantalla de entrada (<b>Solicita tu cuenta</b>). ${S.rol==="superusuario"?"Como superusuario autorizas a cualquiera y administras las cuentas de Dirección.":S.rol==="direccion"?"La Dirección autoriza administrativos y psicólogos de cualquier sede.":"Autorizas administrativos y psicólogos de tu sede."} Al autorizar a un psicólogo, aparece en el directorio de terapeutas de su sede.</p>
+    ${barraFiltros("usuarios",{ph:"Buscar por nombre, correo o cédula", antes: ES_SEDE()?"":`<select id="usrSede" aria-label="Filtrar por sede"><option value="">Todas las sedes</option>${SEDES.map(s=>`<option${s===filtro?" selected":""}>${esc(s)}</option>`).join("")}</select>`,
+      roles:[...new Set(lista.map(u=>u.rol_solicitado&&u.estado==="pendiente"?u.rol_solicitado:u.rol))].filter(Boolean).map(r=>[r,ROL_TXT[r]||r])})}
     ${tabla("Solicitudes pendientes", pend, filaPend, "No hay solicitudes pendientes.")}
     ${tabla("Cuentas activas (personal)", act, filaUsr, "No hay cuentas activas.")}
     ${tabla("Psicólogos independientes (comisión)", comis, filaUsr, "No hay psicólogos independientes registrados. Se registran desde <b>Solicita tu cuenta</b> eligiendo <b>Psicólogo independiente</b>.")}
@@ -1611,8 +1692,9 @@ function contratosHtml(){
   return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">
     <div class="phead">${migas()}<h1>Contratos del personal</h1><span style="display:flex;gap:8px">${!["superusuario","direccion"].includes(S.rol) && !(S.ctrs||[]).some(x=>x.user_id===S.uid) && !(S.rol==="psicologo" && S.api?.modalidad==="comision")?`<button class="btn primary" type="button" data-act="nuevoCtr">Comenzar mi contrato</button>`:""}</span></div>
     <p class="status" style="margin:0">Cada psicólogo(a) y cada administrativo(a) captura sus datos y firma desde <b>Contratos</b>; cada quien ve solo su propio contrato. Los psicólogos independientes (por comisión) no aparecen aquí: no tienen contrato individual de trabajo. La Dirección registra la fecha de alta ante el IMSS y el salario, y el representante legal firma por CEMEPI. Datos personales confidenciales: no se comparten por mensajería.</p>
+    ${barraFiltros("contratos",{sedes:[...new Set(filas.map(x=>x.u.sede).filter(Boolean))].sort(), estados:[...new Set(filas.map(x=>ctrEstado(x.c).t))]})}
     <div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Contrato</th><th>Sede</th><th>Alta IMSS</th><th>Estado</th><th></th></tr></thead><tbody>
-      ${filas.map(({u,c})=>{ const e=ctrEstado(c); return `<tr><td><b>${esc(u.nombre||"Sin nombre")}</b><br><span class="status">${esc(u.email||"")}</span></td><td>${esc(TIPO_CTR[c?.tipo || (["administrativo","admin_sede"].includes(u.rol)?"administrativo":"psicologo")])}</td><td>${esc(u.sede||"")}</td><td>${c?.fecha_alta?esc(fmtDate(c.fecha_alta)):"—"}</td><td><span class="pill ${e.cl}">${esc(e.t)}</span></td>
+      ${filas.map(({u,c})=>{ const e=ctrEstado(c); return `<tr data-f data-sede="${esc(u.sede||"")}" data-estado="${esc(e.t)}"><td><b>${esc(u.nombre||"Sin nombre")}</b><br><span class="status">${esc(u.email||"")}</span></td><td>${esc(TIPO_CTR[c?.tipo || (["administrativo","admin_sede"].includes(u.rol)?"administrativo":"psicologo")])}</td><td>${esc(u.sede||"")}</td><td>${c?.fecha_alta?esc(fmtDate(c.fecha_alta)):"—"}</td><td><span class="pill ${e.cl}">${esc(e.t)}</span></td>
         <td>${c?`<button class="btn sm" type="button" data-act="verCtr" data-id="${c.id}">Abrir</button>`:`<span class="status">Aún no lo inicia</span>`}</td></tr>`; }).join("") || `<tr><td colspan="6">No hay personal activo.</td></tr>`}
     </tbody></table></div></div>`;
 }
@@ -1722,9 +1804,9 @@ function documentacionHtml(){
   if (todos){ const cuenta=new Map(), verif=new Map(), tiposDe=new Map();
     for (const d of S.docpTodos||[]){ cuenta.set(d.user_id,(cuenta.get(d.user_id)||0)+1); if (d.verificado_en) verif.set(d.user_id,(verif.get(d.user_id)||0)+1); (tiposDe.get(d.user_id)||tiposDe.set(d.user_id,new Set()).get(d.user_id)).add(d.tipo); }
     const us=(S.usuarios||[]).filter(u=>u.estado==="activo" && u.id!==S.uid && u.rol!=="superusuario" && (!ES_SEDE() || tengo("contratos") || (u.rol==="psicologo" && u.sede===S.miSede))).sort((a,b)=>(a.sede||"").localeCompare(b.sede||"")||(a.nombre||"").localeCompare(b.nombre||""));
-    general = `<section class="doc-sec"><h3 class="sec-h">${ES_SEDE()&&!tengo("contratos")?`Documentación de los psicólogos de ${esc(S.miSede)}`:"Documentación del personal"} (${us.length})</h3><div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Sede</th><th>Documentos</th><th>Obligatorios</th><th></th></tr></thead><tbody>
+    general = `${barraFiltros("documentacion",{sedes:[...new Set(us.map(u=>u.sede).filter(Boolean))].sort(), faltan:true})}<section class="doc-sec"><h3 class="sec-h">${ES_SEDE()&&!tengo("contratos")?`Documentación de los psicólogos de ${esc(S.miSede)}`:"Documentación del personal"} (${us.length})</h3><div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Sede</th><th>Documentos</th><th>Obligatorios</th><th></th></tr></thead><tbody>
       ${us.map(u=>{ const req=DOCP_REQ[u.rol]||[], t=tiposDe.get(u.id)||new Set(), faltan=req.filter(k=>!t.has(k)).length;
-        return `<tr><td><b>${esc(u.nombre||u.email)}</b><br><span class="status">${esc(u.rol==="psicologo"&&u.modalidad?MOD_TXT[u.modalidad]:(ROL_TXT[u.rol]||""))}</span></td><td>${esc(u.sede||"")}</td>
+        return `<tr data-f data-sede="${esc(u.sede||"")}" data-faltan="${faltan?1:0}"><td><b>${esc(u.nombre||u.email)}</b><br><span class="status">${esc(u.rol==="psicologo"&&u.modalidad?MOD_TXT[u.modalidad]:(ROL_TXT[u.rol]||""))}</span></td><td>${esc(u.sede||"")}</td>
         <td>${cuenta.get(u.id)||0}${cuenta.get(u.id)?` <span class="status">(${verif.get(u.id)||0} verificados)</span>`:""}</td>
         <td>${req.length?(faltan?`<span class="pill estado-pendiente">Faltan ${faltan}</span>`:`<span class="pill estado-activo">Completos</span>`):"—"}</td>
         <td><button class="btn sm" type="button" data-act="docpVer" data-id="${esc(u.id)}">Abrir</button></td></tr>`; }).join("") || `<tr><td colspan="5">No hay personal activo.</td></tr>`}
