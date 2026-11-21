@@ -106,6 +106,8 @@ async function cargarSedesRegistro(){
 }
 $("#rgTipo").addEventListener("change", () => { $("#rgCedulaFld").hidden = !$("#rgTipo").value.startsWith("psicologo");
   $("#rgDirNota").hidden = $("#rgTipo").value !== "direccion";
+  $("#rgSedeNota").hidden = $("#rgTipo").value !== "admin_sede";
+  $("#rgEmpNota").hidden = $("#rgTipo").value !== "administrativo";
   $("#rgModNota").hidden = !$("#rgTipo").value.endsWith("comision"); });
 
 /* ---------- Inicio de sesión, solicitud de cuenta y cuenta pendiente ---------- */
@@ -194,7 +196,7 @@ const { usuario, perfil } = await esperarAcceso();
 const { data: permRows } = await sb.from("permisos").select("permiso").eq("user_id", usuario.id);
 login.hidden = true;
 const rol = perfil.rol;
-const ROL_TXT = { superusuario: "Superusuario", direccion: "Directivo(a)", administrativo: "Administrativo", psicologo: "Psicólogo(a)" };
+const ROL_TXT = { superusuario: "Superusuario", direccion: "Directivo(a)", admin_sede: "Administración de sede", administrativo: "Administrativo", psicologo: "Psicólogo(a)" };
 document.body.dataset.rol = rol;
 $("#sesionInfo").textContent = `${usuario.email} · ${ROL_TXT[rol] || rol}${perfil.sede ? " · " + perfil.sede : ""}`;
 document.addEventListener("click", ev => { if (ev.target.closest('[data-act="salir"]')) sb.auth.signOut().then(() => location.reload()); });

@@ -717,20 +717,30 @@ function render(){
 }
 function inicioHtml(){
   const sinPerfil = !S.perfil.nombre;
+  if (ES_EMPLEADO()) return `<div class="wrap"><div class="welcome">
+    <small style="color:var(--accent);font-weight:700;letter-spacing:.06em;text-transform:uppercase">CEMEPI · Mi espacio como trabajador(a)</small>
+    <h2>Hola${S.perfil?.nombre?", "+esc(S.perfil.nombre.split(" ")[0]):""}</h2>
+    <p style="margin:0">Desde aquí consultas lo tuyo como trabajador(a) de CEMEPI.</p>
+    <div class="fmt-grid">
+      <article class="fmt"><div class="fmt-h"><b>Mi contrato</b></div><p>Captura tus datos, revisa y firma tu contrato individual de trabajo.</p><button class="btn sm primary" type="button" data-act="contratos">Abrir</button></article>
+      <article class="fmt"><div class="fmt-h"><b>Reglamento Interior de Trabajo</b></div><p>Consúltalo y confirma que lo recibiste.</p><button class="btn sm primary" type="button" data-act="reglamento">Abrir</button></article>
+      <article class="fmt"><div class="fmt-h"><b>Mi documentación</b></div><p>Sube en PDF tu identificación, CURP, comprobantes y constancias.</p><button class="btn sm primary" type="button" data-act="documentacion">Abrir</button></article>
+      <article class="fmt"><div class="fmt-h"><b>Mis datos y contraseña</b></div><p>Actualiza tu teléfono, tu firma y tu contraseña.</p><button class="btn sm primary" type="button" data-act="perfil">Abrir</button></article>
+    </div></div></div>`;
   return `<div class="wrap"><div class="welcome">
     <small style="color:var(--accent);font-weight:700;letter-spacing:.06em;text-transform:uppercase">CEMEPI · Piloto</small>
     <h2>Expedientes y documentos psicológicos</h2>
-    ${S.rol==="administrativo" && !tengo("supervision_clinica") ? `<ol class="steps">
+    ${ES_SEDE() ? `<ol class="steps">
       <li><b class="n">1</b><div><b>Abre el expediente</b> de un nuevo consultante de tu sede con sus iniciales, su fecha de nacimiento y la fecha de la primera sesión.</div></li>
-      <li><b class="n">2</b><div><b>Asigna al terapeuta</b> que lo atenderá. Solo él (y la Dirección) verá y escribirá las notas clínicas.</div></li>
+      <li><b class="n">2</b><div><b>Asigna al terapeuta</b> que lo atenderá. Él registra las notas y los documentos clínicos.</div></li>
       <li><b class="n">3</b><div><b>Descarga la hoja administrativa</b> en Word para capturar ahí los datos de contacto. Se resguarda aparte del expediente y no se envía por mensajería.</div></li>
     </ol>
-    <p class="status" style="margin:0">Por confidencialidad, las notas de sesión y los documentos clínicos solo los ven el terapeuta asignado y la Dirección. En <b>Usuarios</b> autorizas las cuentas de tu sede.</p>` : `<ol class="steps">
+    <p class="status" style="margin:0">Como administración de sede también consultas las notas y documentos clínicos de tu sede y la documentación de sus psicólogos. Trátalos con estricta confidencialidad. En <b>Usuarios</b> autorizas las cuentas de tu sede.</p>` : `<ol class="steps">
       <li><b class="n">1</b><div><b>Abre el expediente</b> con las iniciales, la fecha de nacimiento y la fecha de la primera sesión.</div></li>
       <li><b class="n">2</b><div><b>Pega tus notas</b> de cada sesión, solo con iniciales.</div></li>
       <li><b class="n">3</b><div><b>Elige un documento</b>: Claude lo redacta con tus notas, lo revisas y lo descargas en Word con la nota aclaratoria al pie.</div></li>
     </ol>`}
-    ${sinPerfil && S.rol!=="administrativo"?`<p class="banner">Antes de empezar, captura <b>Mis datos de firma</b> (nombre, cédula y sede). Aparecen en la firma de cada documento. <button class="btn sm" type="button" data-act="perfil">Capturar ahora</button></p>`:""}
+    ${sinPerfil && !ES_SEDE()?`<p class="banner">Antes de empezar, captura <b>Mis datos de firma</b> (nombre, cédula y sede). Aparecen en la firma de cada documento. <button class="btn sm" type="button" data-act="perfil">Capturar ahora</button></p>`:""}
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="button" data-act="new">+ Nuevo expediente</button><button class="btn" type="button" data-act="hoja">Hoja administrativa en blanco (Word)</button></div>
     ${!S.canWrite?`<p class="banner">Tienes acceso de solo lectura.</p>`:""}
   </div></div>`;
@@ -799,7 +809,7 @@ function perfilHtml(){
 }
 /* ---------- Terapeutas por sede ---------- */
 function terapeutasHtml(){
-  const ro=!(S.esDireccion || S.rol==="administrativo"), todos=[...S.pacientes.values()], mio=miTerapeuta();
+  const ro=!(S.esDireccion || ES_SEDE()), todos=[...S.pacientes.values()], mio=miTerapeuta();
   /* Cuentas de acceso que la Dirección puede vincular (las ya vinculadas a otro terapeuta no se ofrecen) */
   const usadas=new Set(terOrden().filter(t=>t.uid && t.id!==S.terEdit?.id).map(t=>t.uid));
   const cuentasLibres=[...(S.cuentas||new Map()).entries()].filter(([id])=>!usadas.has(id));
@@ -810,7 +820,7 @@ function terapeutasHtml(){
       <div class="datos">
         <div class="fld" style="grid-column:1/-1"><label for="tr-nombre">Nombre completo *</label><input id="tr-nombre" data-k="nombre" type="text" value="${esc(ed.nombre||"")}" placeholder="Psic. Nombre Apellido Apellido"></div>
         <div class="fld"><label for="tr-cedula">Cédula profesional</label><input id="tr-cedula" data-k="cedula" type="text" value="${esc(ed.cedula||"")}"></div>
-        <div class="fld"><label for="tr-sede">Sede</label><select id="tr-sede" data-k="sede">${S.rol==="administrativo"?"":`<option value="">Sin sede</option>`}${sedesAsignables().map(s=>`<option value="${s}"${s===ed.sede?" selected":""}>${s} (${SEDE_COD[s]})</option>`).join("")}</select></div>
+        <div class="fld"><label for="tr-sede">Sede</label><select id="tr-sede" data-k="sede">${ES_SEDE()?"":`<option value="">Sin sede</option>`}${sedesAsignables().map(s=>`<option value="${s}"${s===ed.sede?" selected":""}>${s} (${SEDE_COD[s]})</option>`).join("")}</select></div>
         <div class="fld" style="grid-column:1/-1"><label for="tr-uid">Cuenta de acceso a la app</label><select id="tr-uid" data-k="uid"><option value="">Sin cuenta (no usa la app)</option>${cuentasLibres.map(([id,c])=>`<option value="${esc(id)}"${id===ed.uid?" selected":""}>${esc(c.email||id)}</option>`).join("")}</select>
           <small class="hint">Al vincular su cuenta, el terapeuta verá solo los expedientes que tenga asignados. Las cuentas se crean en Supabase → Authentication → Users.</small></div>
       </div>
@@ -835,16 +845,19 @@ function terapeutasHtml(){
   </div>`;
 }
 /* ================= Administración: usuarios, sedes y tiempo de uso ================= */
-const ROL_TXT = {superusuario:"Superusuario", direccion:"Directivo(a)", administrativo:"Administrativo", psicologo:"Psicólogo(a)"};
+const ROL_TXT = {superusuario:"Superusuario", direccion:"Directivo(a)", admin_sede:"Administración de sede", administrativo:"Administrativo", psicologo:"Psicólogo(a)"};
+const ES_SEDE = () => S.rol==="admin_sede";        /* administración de sede: gestiona su sede */
+const ES_EMPLEADO = () => S.rol==="administrativo"; /* administrativo: solo lo suyo como trabajador */
 const tengo = k => S.rol==="superusuario" || !!S.perm?.has(k);   /* permisos adicionales otorgados por el superusuario */
 const MOD_TXT = {nomina:"Psicólogo base", comision:"Psicólogo independiente"};
 const modPill = u => u.rol!=="psicologo" ? "" : `<br><span class="pill ${u.modalidad==="comision"?"estado-pendiente":"estado-activo"}" title="Modalidad">${esc(u.modalidad?MOD_TXT[u.modalidad]:"Modalidad sin definir")}</span>`;
 const EST_TXT = {pendiente:"Pendiente", activo:"Activo", rechazado:"Rechazado", suspendido:"Suspendido"};
 /* Roles que cada quien puede asignar (la base de datos vuelve a validarlo) */
-const rolesAsignables = () => S.rol==="superusuario" ? ["superusuario","direccion","administrativo","psicologo"] : ["administrativo","psicologo"];
-const sedesAsignables = () => S.rol==="administrativo" ? [S.miSede] : SEDES;
-const puedeGestionar = u => u.id!==S.uid && (S.rol==="superusuario" || (S.rol==="direccion" && ["administrativo","psicologo"].includes(u.rol))
-  || (S.rol==="administrativo" && ["administrativo","psicologo"].includes(u.rol) && u.sede===S.miSede));
+const rolesAsignables = () => S.rol==="superusuario" ? ["superusuario","direccion","admin_sede","administrativo","psicologo"]
+  : S.rol==="direccion" ? ["admin_sede","administrativo","psicologo"] : ["administrativo","psicologo"];
+const sedesAsignables = () => ES_SEDE() ? [S.miSede] : SEDES;
+const puedeGestionar = u => u.id!==S.uid && (S.rol==="superusuario" || (S.rol==="direccion" && ["admin_sede","administrativo","psicologo"].includes(u.rol))
+  || (ES_SEDE() && ["administrativo","psicologo"].includes(u.rol) && u.sede===S.miSede));
 /* Contraseña aleatoria legible (sin caracteres que se confunden: 0/O, 1/l/I) */
 function generarContrasena(){ const c="ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789", r=crypto.getRandomValues(new Uint32Array(12));
   const t=[...r].map(n=>c[n%c.length]).join(""); return `${t.slice(0,4)}-${t.slice(4,8)}-${t.slice(8)}`; }
@@ -854,7 +867,7 @@ async function cargarAdmin(tipo){
     if (tipo==="usuarios") S.usuarios = await S.api.usuarios();
     if (tipo==="sedes"){ S.sedesTodas = await S.api.sedes(true); S.usuarios = S.usuarios || await S.api.usuarios(); }
     if (tipo==="reglamento"){ S.reg = await S.api.reglamento(); S.regAcuses = S.reg ? await S.api.acuses(S.reg.id) : [];
-      if (["superusuario","direccion","administrativo"].includes(S.rol)) S.usuarios = await S.api.usuarios(); }
+      if (["superusuario","direccion","admin_sede"].includes(S.rol)) S.usuarios = await S.api.usuarios(); }
     if (tipo==="contratos"){ const [pl, ls] = await Promise.all([S.api.plantillasContrato(), S.api.contratos()]); S.ctrPls=pl; S.ctrs=ls;
       if (["superusuario","direccion"].includes(S.rol) || tengo("contratos")) S.usuarios = await S.api.usuarios(); }
     if (tipo==="documentacion"){ const ver=S.docpSel||S.uid; S.docp = await S.api.docsPersonal(ver);
@@ -870,7 +883,7 @@ function usuariosHtml(){
   const lista=S.usuarios.filter(u=>!filtro || u.sede===filtro);
   const pend=lista.filter(u=>u.estado==="pendiente"), activos=lista.filter(u=>u.estado==="activo"), otros=lista.filter(u=>!["pendiente","activo"].includes(u.estado));
   const opRol=(sel)=>rolesAsignables().map(r=>`<option value="${r}"${r===sel?" selected":""}>${ROL_TXT[r]}</option>`).join("");
-  const opSede=(sel)=>`${S.rol==="administrativo"?"":`<option value="">Sin sede</option>`}${sedesAsignables().map(s=>`<option value="${esc(s)}"${s===sel?" selected":""}>${esc(s)}</option>`).join("")}`;
+  const opSede=(sel)=>`${ES_SEDE()?"":`<option value="">Sin sede</option>`}${sedesAsignables().map(s=>`<option value="${esc(s)}"${s===sel?" selected":""}>${esc(s)}</option>`).join("")}`;
   const datos=u=>`<b>${esc(u.nombre||"Sin nombre")}</b><br><span class="status">${esc(u.email)}${u.telefono?" · "+esc(u.telefono):""}${u.cedula?" · Céd. "+esc(u.cedula):""}</span>`;
   const filaPend=u=>`<tr><td>${datos(u)}</td><td>${(u.rol_solicitado||u.rol)==="psicologo"?modPill({...u, rol:"psicologo"}).replace(/^<br>/,""):esc(ROL_TXT[u.rol_solicitado]||ROL_TXT[u.rol]||"")}<br><span class="status">${esc(u.sede||"Sin sede")}</span></td>
     <td>${puedeGestionar(u)?`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
@@ -905,7 +918,7 @@ function usuariosHtml(){
   const tabla=(t,rows,fn,vacio)=>`<section class="doc-sec"><h3 class="sec-h">${t} (${rows.length})</h3>${rows.length?`<div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Rol y sede</th><th></th></tr></thead><tbody>${rows.map(fn).join("")}</tbody></table></div>`:`<p class="status" style="margin:0">${vacio}</p>`}</section>`;
   return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:18px">
     <div class="card-h"><h2 style="font-size:24px">Usuarios</h2><span style="display:flex;gap:8px;align-items:center">
-      ${S.rol==="administrativo"?`<span class="status">Sede ${esc(S.miSede)}</span>`:`<select id="usrSede" aria-label="Filtrar por sede"><option value="">Todas las sedes</option>${SEDES.map(s=>`<option${s===filtro?" selected":""}>${esc(s)}</option>`).join("")}</select>`}
+      ${ES_SEDE()?`<span class="status">Sede ${esc(S.miSede)}</span>`:`<select id="usrSede" aria-label="Filtrar por sede"><option value="">Todas las sedes</option>${SEDES.map(s=>`<option${s===filtro?" selected":""}>${esc(s)}</option>`).join("")}</select>`}
       <button class="btn" type="button" data-act="home">Cerrar</button></span></div>
     <p class="status" style="margin:0">Cada persona solicita su cuenta desde la pantalla de entrada (<b>Solicita tu cuenta</b>). ${S.rol==="superusuario"?"Como superusuario autorizas a cualquiera y administras las cuentas de Dirección.":S.rol==="direccion"?"La Dirección autoriza administrativos y psicólogos de cualquier sede.":"Autorizas administrativos y psicólogos de tu sede."} Al autorizar a un psicólogo, aparece en el directorio de terapeutas de su sede.</p>
     ${tabla("Solicitudes pendientes", pend, filaPend, "No hay solicitudes pendientes.")}
@@ -929,7 +942,7 @@ function sedesHtml(){
     <p class="status" style="margin:0">Cada sede se compone de sus administrativos y psicólogos. La clave de 3 letras aparece en el folio de sus expedientes.</p>
     ${form}
     <div class="tbl-wrap"><table><thead><tr><th>Sede</th><th>Clave</th><th>Administrativos</th><th>Psicólogos</th><th>Estado</th><th></th></tr></thead><tbody>
-      ${S.sedesTodas.map(s=>`<tr><td><b>${esc(s.nombre)}</b></td><td class="mono">${esc(s.clave)}</td><td>${cuenta(s.nombre,"administrativo")}</td><td>${cuenta(s.nombre,"psicologo")}</td>
+      ${S.sedesTodas.map(s=>`<tr><td><b>${esc(s.nombre)}</b></td><td class="mono">${esc(s.clave)}</td><td>${cuenta(s.nombre,"admin_sede")+cuenta(s.nombre,"administrativo")}</td><td>${cuenta(s.nombre,"psicologo")}</td>
         <td><span class="pill ${s.activa?"estado-activo":"estado-suspendido"}">${s.activa?"Activa":"Inactiva"}</span></td>
         <td><button class="btn sm" type="button" data-act="editSede" data-id="${s.id}">Editar</button></td></tr>`).join("")}
     </tbody></table></div></div>`;
@@ -958,7 +971,7 @@ function reglamentoHtml(){
   const cab=`<div class="card-h no-print"><h2 style="font-size:24px">Reglamento Interior de Trabajo</h2><span style="display:flex;gap:8px"><button class="btn" type="button" data-act="home">Cerrar</button></span></div>`;
   if (S.reg===undefined || (S.reg===null && S.regCargando)) return `<div class="wrap" style="padding-block:24px">${cab}<p class="status">Cargando reglamento…</p></div>`;
   if (!S.reg) return `<div class="wrap" style="padding-block:24px">${cab}<p class="status">Aún no hay un reglamento publicado.</p></div>`;
-  const r=S.reg, adm=["superusuario","direccion","administrativo"].includes(S.rol), dir=["superusuario","direccion"].includes(S.rol);
+  const r=S.reg, adm=["superusuario","direccion","admin_sede"].includes(S.rol), dir=["superusuario","direccion"].includes(S.rol);
   const mio=(S.regAcuses||[]).find(a=>a.user_id===S.uid);
   const acuse = mio ? `<div class="reg-ok">✓ Confirmaste la recepción y lectura de esta versión: ${esc(fmtFechaHora(mio.fecha))}</div>`
     : `<div class="reg-acuse"><b>Constancia de recepción</b><p>Hago constar que recibí el Reglamento Interior de Trabajo de CEMEPI (versión: ${esc(r.version)}), que fui informado(a) de su contenido y que sé dónde consultarlo. Esta constancia no implica renuncia a derechos ni aceptación de condiciones ilegales.</p>
@@ -968,7 +981,7 @@ function reglamentoHtml(){
   if (adm && S.usuarios){ const act=S.usuarios.filter(u=>u.estado==="activo"), fecha=new Map((S.regAcuses||[]).map(a=>[a.user_id,a.fecha]));
     const si=act.filter(u=>fecha.has(u.id)), no=act.filter(u=>!fecha.has(u.id));
     const fila=u=>`<tr><td><b>${esc(u.nombre||u.email)}</b><br><span class="status">${esc(ROL_TXT[u.rol]||u.rol)} · ${esc(u.sede||"Todas las sedes")}</span></td><td>${fecha.has(u.id)?esc(fmtFechaHora(fecha.get(u.id))):`<span class="pill estado-pendiente">Pendiente</span>`}</td></tr>`;
-    control=`<details class="reg-control no-print"><summary><b>Constancias de recepción:</b> ${si.length} de ${act.length} cuentas activas${S.rol==="administrativo"?` de ${esc(S.miSede)}`:""}</summary>
+    control=`<details class="reg-control no-print"><summary><b>Constancias de recepción:</b> ${si.length} de ${act.length} cuentas activas${ES_SEDE()?` de ${esc(S.miSede)}`:""}</summary>
       <div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Confirmó</th></tr></thead><tbody>${[...no,...si].map(fila).join("")}</tbody></table></div></details>`; }
   const ley = S.regLeyEdit ? `<div class="reg-ley no-print"><label for="regLey"><b>Leyenda de vigencia</b></label><textarea id="regLey" rows="3" style="width:100%">${esc(r.leyenda||"")}</textarea>
       <label for="regRazon" style="display:block;margin-top:6px"><b>Razón social del empleador</b></label><input id="regRazon" type="text" maxlength="160" value="${esc(r.razon_social||"")}" style="width:100%">
@@ -1002,7 +1015,7 @@ const CTR_CAMPOS = [
 const ctrSinDireccion = c => !c.fecha_alta || c.salario==null;
 const ctrNombre = (d, orden) => (orden==="nombre" ? [d.nombres, d.paterno, d.materno] : [d.paterno, d.materno, d.nombres]).filter(Boolean).join(" ").toUpperCase();
 /* Plantilla de un contrato (por su tipo) o la que corresponde al rol de quien entra */
-const miTipoCtr = () => S.rol==="administrativo" ? "administrativo" : "psicologo";
+const miTipoCtr = () => ["administrativo","admin_sede"].includes(S.rol) ? "administrativo" : "psicologo";
 const ctrPl = c => S.ctrPls?.[c?.tipo || miTipoCtr()] || null;
 const TIPO_CTR = {psicologo:"Psicología", administrativo:"Administrativo"};
 const apocope = t => t.replace(/VEINTIUNO$/,"VEINTIÚN").replace(/UNO$/,"UN");
@@ -1140,7 +1153,7 @@ function contratosHtml(){
       <div><button class="btn primary" type="button" data-act="nuevoCtr">Comenzar mi contrato</button></div></div>`;
     return contratoHtml(c, true); }
   if (S.ctrSel){ const c=(S.ctrs||[]).find(x=>x.id===S.ctrSel); if (c) return contratoHtml(c, c.user_id===S.uid); }
-  const porUid=new Map((S.ctrs||[]).map(c=>[c.user_id,c])), us=(S.usuarios||[]).filter(u=>["psicologo","administrativo"].includes(u.rol) && u.estado==="activo" && u.modalidad!=="comision");
+  const porUid=new Map((S.ctrs||[]).map(c=>[c.user_id,c])), us=(S.usuarios||[]).filter(u=>["psicologo","administrativo","admin_sede"].includes(u.rol) && u.estado==="activo" && u.modalidad!=="comision");
   const extra=(S.ctrs||[]).filter(c=>!us.some(u=>u.id===c.user_id));
   const filas=[...us.map(u=>({u, c:porUid.get(u.id)})), ...extra.map(c=>({u:(S.usuarios||[]).find(x=>x.id===c.user_id)||{nombre:ctrNombre(c.datos||{}),email:""}, c}))]
     .sort((a,b)=>(a.u.sede||"").localeCompare(b.u.sede||"")||(a.u.nombre||"").localeCompare(b.u.nombre||""));
@@ -1148,7 +1161,7 @@ function contratosHtml(){
     <div class="card-h"><h2 style="font-size:24px">Contratos del personal</h2><span style="display:flex;gap:8px">${!["superusuario","direccion"].includes(S.rol) && !(S.ctrs||[]).some(x=>x.user_id===S.uid) && !(S.rol==="psicologo" && S.api?.modalidad==="comision")?`<button class="btn primary" type="button" data-act="nuevoCtr">Comenzar mi contrato</button>`:""}<button class="btn" type="button" data-act="home">Cerrar</button></span></div>
     <p class="status" style="margin:0">Cada psicólogo(a) y cada administrativo(a) captura sus datos y firma desde <b>Contratos</b>; cada quien ve solo su propio contrato. Los psicólogos independientes (por comisión) no aparecen aquí: no tienen contrato individual de trabajo. La Dirección registra la fecha de alta ante el IMSS y el salario, y el representante legal firma por CEMEPI. Datos personales confidenciales: no se comparten por mensajería.</p>
     <div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Contrato</th><th>Sede</th><th>Alta IMSS</th><th>Estado</th><th></th></tr></thead><tbody>
-      ${filas.map(({u,c})=>{ const e=ctrEstado(c); return `<tr><td><b>${esc(u.nombre||"Sin nombre")}</b><br><span class="status">${esc(u.email||"")}</span></td><td>${esc(TIPO_CTR[c?.tipo || (u.rol==="administrativo"?"administrativo":"psicologo")])}</td><td>${esc(u.sede||"")}</td><td>${c?.fecha_alta?esc(fmtDate(c.fecha_alta)):"—"}</td><td><span class="pill ${e.cl}">${esc(e.t)}</span></td>
+      ${filas.map(({u,c})=>{ const e=ctrEstado(c); return `<tr><td><b>${esc(u.nombre||"Sin nombre")}</b><br><span class="status">${esc(u.email||"")}</span></td><td>${esc(TIPO_CTR[c?.tipo || (["administrativo","admin_sede"].includes(u.rol)?"administrativo":"psicologo")])}</td><td>${esc(u.sede||"")}</td><td>${c?.fecha_alta?esc(fmtDate(c.fecha_alta)):"—"}</td><td><span class="pill ${e.cl}">${esc(e.t)}</span></td>
         <td>${c?`<button class="btn sm" type="button" data-act="verCtr" data-id="${c.id}">Abrir</button>`:`<span class="status">Aún no lo inicia</span>`}</td></tr>`; }).join("") || `<tr><td colspan="6">No hay personal activo.</td></tr>`}
     </tbody></table></div></div>`;
 }
@@ -1184,13 +1197,15 @@ function permisosHtml(){
   const act=S.usuarios.filter(u=>u.estado==="activo" && u.rol!=="superusuario");
   const grupos=[
     ["Directivos", act.filter(u=>u.rol==="direccion"), ["tiempo_uso"]],
-    ["Administrativos", act.filter(u=>u.rol==="administrativo"), ["supervision_clinica","contratos","tiempo_uso"]],
+    ["Administración de sede", act.filter(u=>u.rol==="admin_sede"), ["contratos","tiempo_uso"]],
+    ["Administrativos (empleados)", act.filter(u=>u.rol==="administrativo"), ["contratos","tiempo_uso"]],
     ["Psicólogos base", act.filter(u=>u.rol==="psicologo" && u.modalidad!=="comision"), ["supervision_clinica","contratos","tiempo_uso"]],
     ["Psicólogos independientes", act.filter(u=>u.rol==="psicologo" && u.modalidad==="comision"), ["supervision_clinica","contratos","tiempo_uso"]],
   ];
   const matriz=[["Superusuario","Todo, incluidas las cuentas de Directivos, los permisos y la firma de contratos por CEMEPI"],
-    ["Directivo(a)","Todos los expedientes, notas y documentos; sedes; usuarios (excepto Directivos); contratos (sin firmar por CEMEPI)"],
-    ["Administrativo(a)","Expedientes de su sede sin contenido clínico; autoriza cuentas de su sede; su propio contrato"],
+    ["Directivo(a)","Todos los expedientes, notas y documentos; sedes; usuarios (excepto Directivos), incluida la Administración de sede; contratos (sin firmar por CEMEPI)"],
+    ["Administración de sede","Expedientes, notas y documentos clínicos de su sede; autoriza psicólogos y administrativos de su sede; documentación de los psicólogos de su sede; su propio contrato"],
+    ["Administrativo (empleado)","Solo lo suyo como trabajador: su contrato, el reglamento, su documentación y sus datos"],
     ["Psicólogo base","Solo sus expedientes; su propio contrato"],
     ["Psicólogo independiente","Solo sus expedientes; sin contrato de trabajo"]];
   const tabla=(t,us,ps)=>`<section class="doc-sec"><h3 class="sec-h">${t} (${us.length})</h3>${us.length?`<div class="tbl-wrap"><table><thead><tr><th>Persona</th>${ps.map(k=>`<th title="${esc(PERMISOS[k].d)}">${esc(PERMISOS[k].t)}</th>`).join("")}</tr></thead><tbody>
@@ -1212,9 +1227,10 @@ const DOCP_TIPOS = {identificacion:"Identificación oficial (INE)", curp:"CURP",
 const DOCP_DESC = ["curso","diplomado","certificacion","otro"];   /* piden nombre del curso o descripción */
 const DOCP_REQ = { psicologo:["identificacion","curp","comprobante_domicilio","constancia_fiscal","cedula_profesional","titulo_profesional"],
   administrativo:["identificacion","curp","comprobante_domicilio","constancia_fiscal","comprobante_estudios"],
+  admin_sede:["identificacion","curp","comprobante_domicilio","constancia_fiscal","comprobante_estudios"],
   direccion:["identificacion","curp","comprobante_domicilio","constancia_fiscal"], superusuario:[] };
 const fmtMB = b => b ? (b/1048576 < 0.1 ? `${Math.max(1,Math.round(b/1024))} KB` : `${(b/1048576).toFixed(1)} MB`) : "";
-const veDocsTodos = () => ["superusuario","direccion"].includes(S.rol) || tengo("contratos");
+const veDocsTodos = () => ["superusuario","direccion","admin_sede"].includes(S.rol) || tengo("contratos");
 function docpPersonaHtml(uid){
   const propio = uid===S.uid, u = propio ? {nombre:S.perfil?.nombre||S.api?.nombre, rol:S.rol} : ((S.usuarios||[]).find(x=>x.id===uid)||{});
   const docs = S.docp||[], tipos = new Set(docs.map(d=>d.tipo)), req = DOCP_REQ[u.rol]||[];
@@ -1250,8 +1266,8 @@ function documentacionHtml(){
   let general="";
   if (todos){ const cuenta=new Map(), verif=new Map(), tiposDe=new Map();
     for (const d of S.docpTodos||[]){ cuenta.set(d.user_id,(cuenta.get(d.user_id)||0)+1); if (d.verificado_en) verif.set(d.user_id,(verif.get(d.user_id)||0)+1); (tiposDe.get(d.user_id)||tiposDe.set(d.user_id,new Set()).get(d.user_id)).add(d.tipo); }
-    const us=(S.usuarios||[]).filter(u=>u.estado==="activo" && u.id!==S.uid && u.rol!=="superusuario").sort((a,b)=>(a.sede||"").localeCompare(b.sede||"")||(a.nombre||"").localeCompare(b.nombre||""));
-    general = `<section class="doc-sec"><h3 class="sec-h">Documentación del personal (${us.length})</h3><div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Sede</th><th>Documentos</th><th>Obligatorios</th><th></th></tr></thead><tbody>
+    const us=(S.usuarios||[]).filter(u=>u.estado==="activo" && u.id!==S.uid && u.rol!=="superusuario" && (!ES_SEDE() || tengo("contratos") || (u.rol==="psicologo" && u.sede===S.miSede))).sort((a,b)=>(a.sede||"").localeCompare(b.sede||"")||(a.nombre||"").localeCompare(b.nombre||""));
+    general = `<section class="doc-sec"><h3 class="sec-h">${ES_SEDE()&&!tengo("contratos")?`Documentación de los psicólogos de ${esc(S.miSede)}`:"Documentación del personal"} (${us.length})</h3><div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Sede</th><th>Documentos</th><th>Obligatorios</th><th></th></tr></thead><tbody>
       ${us.map(u=>{ const req=DOCP_REQ[u.rol]||[], t=tiposDe.get(u.id)||new Set(), faltan=req.filter(k=>!t.has(k)).length;
         return `<tr><td><b>${esc(u.nombre||u.email)}</b><br><span class="status">${esc(u.rol==="psicologo"&&u.modalidad?MOD_TXT[u.modalidad]:(ROL_TXT[u.rol]||""))}</span></td><td>${esc(u.sede||"")}</td>
         <td>${cuenta.get(u.id)||0}${cuenta.get(u.id)?` <span class="status">(${verif.get(u.id)||0} verificados)</span>`:""}</td>
@@ -1259,7 +1275,7 @@ function documentacionHtml(){
         <td><button class="btn sm" type="button" data-act="docpVer" data-id="${esc(u.id)}">Abrir</button></td></tr>`; }).join("") || `<tr><td colspan="5">No hay personal activo.</td></tr>`}
     </tbody></table></div></section>`; }
   return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">${cab(todos?"Documentación":"Mi documentación")}
-    <p class="status" style="margin:0">Sube en PDF tu identificación, CURP, comprobante de domicilio, constancia de situación fiscal, cédula y título profesional, constancias de cursos, diplomados y certificaciones. ${todos?"Como Dirección o recursos humanos ves la documentación de todo el personal y puedes verificarla contra los originales.":"Solo tú, la Dirección y recursos humanos los ven."}</p>
+    <p class="status" style="margin:0">Sube en PDF tu identificación, CURP, comprobante de domicilio, constancia de situación fiscal, cédula y título profesional, constancias de cursos, diplomados y certificaciones. ${ES_SEDE()&&!tengo("contratos")?"Como administración de sede ves la documentación de los psicólogos de tu sede y puedes verificarla contra los originales.":todos?"Como Dirección o recursos humanos ves la documentación de todo el personal y puedes verificarla contra los originales.":"Solo tú, la Dirección y recursos humanos los ven."}</p>
     ${S.rol==="superusuario"?"":docpPersonaHtml(S.uid)}${general}</div>`;
 }
 function usoHtml(){
@@ -1284,7 +1300,7 @@ function expedienteHtml(p){
   const f=p.ficha||{}, ro=!S.canWrite, e=age(f.fechaNac);
   const admin = S.rol==="administrativo" && !tengo("supervision_clinica");   /* administrativo: ve los datos del expediente, no el contenido clínico */
   const tabs=admin ? [] : [["notas",`Notas (${S.notas.length})`],["documentos",`Documentos (${S.docs.length})`]];
-  const sedesOpc = S.rol==="administrativo" ? [S.miSede] : SEDES;
+  const sedesOpc = ES_SEDE() ? [S.miSede] : SEDES;
   return `<div class="wrap"><div class="head">
       <div><button class="btn sm back" type="button" data-act="back">← Expedientes</button></div>
       <div class="head-top"><div style="min-width:0"><span class="mono" style="color:var(--accent);font-size:12px">${esc(p.folio||"")}</span><h2>${esc(f.nombre||"Sin iniciales")}</h2></div></div>
@@ -1296,7 +1312,7 @@ function expedienteHtml(p){
           <div class="fld"><label for="fi-nombre">Iniciales *</label><input id="fi-nombre" data-k="nombre" type="text" maxlength="16" value="${esc(f.nombre||"")}" placeholder="Ej. J.L.M.R."${ro?" disabled":""}></div>
           <div class="fld"><label for="fi-nac">Fecha de nacimiento</label><input id="fi-nac" data-k="fechaNac" type="date" value="${esc(f.fechaNac||"")}"${ro?" disabled":""}></div>
           <div class="fld"><label for="fi-primera">Primera sesión</label><input id="fi-primera" data-k="primeraSesion" type="date" value="${esc(f.primeraSesion||"")}"${ro?" disabled":""}></div>
-          <div class="fld"><label for="fi-sede">Sede</label><select id="fi-sede" data-k="sede"${ro?" disabled":""}>${admin?"":`<option value="">Sin sede</option>`}${sedesOpc.map(s=>`<option value="${s}"${s===f.sede?" selected":""}>${s} (${SEDE_COD[s]})</option>`).join("")}</select></div>
+          <div class="fld"><label for="fi-sede">Sede</label><select id="fi-sede" data-k="sede"${ro?" disabled":""}>${ES_SEDE()?"":`<option value="">Sin sede</option>`}${sedesOpc.map(s=>`<option value="${s}"${s===f.sede?" selected":""}>${s} (${SEDE_COD[s]})</option>`).join("")}</select></div>
           <div class="fld" style="grid-column:span 2"><label for="fi-ter">Terapeuta</label><select id="fi-ter" data-k="terapeutaId"${ro?" disabled":""}><option value="">Sin asignar</option>
             ${[...terOrden().filter(t=>(t.sede||"")===(f.sede||"")), ...terOrden().filter(t=>(t.sede||"")!==(f.sede||""))].map(t=>`<option value="${esc(t.id)}"${t.id===f.terapeutaId?" selected":""}>${esc(terEtiqueta(t))}${t.sede&&t.sede!==f.sede?` (${esc(t.sede)})`:""}</option>`).join("")}</select></div>
           ${ro?"":`<div class="fld"><button class="btn primary" type="button" data-act="save">Guardar datos</button></div>`}
@@ -1446,7 +1462,7 @@ async function crear(){
   /* Terapeuta por omisión: el elegido en el filtro, o el enlazado con esta cuenta */
   const terapeutaId = S.terapeutas.has(S.terF) ? S.terF : (miTerapeuta()?.id || "");
   const ter = S.terapeutas.get(terapeutaId);
-  const sede = S.rol==="administrativo" ? S.miSede : (S.sedeF!=="todas" && S.sedeF!=="" ? S.sedeF : (ter?.sede || S.miSede || S.perfil.sede || ""));
+  const sede = ES_SEDE() ? S.miSede : (S.sedeF!=="todas" && S.sedeF!=="" ? S.sedeF : (ter?.sede || S.miSede || S.perfil.sede || ""));
   const n=new Date(), folio=`CEMEPI-PSI-${codSede(sede)}-${n.getFullYear()}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
   const ref=S.db.collection("pacientes").doc();
   const doc={folio, ficha:{nombre:"",fechaNac:"",primeraSesion:today(),sede,terapeutaId}, creado:Date.now(), actualizado:Date.now(), creadoPor:S.uid||""};
@@ -1745,16 +1761,18 @@ render();
     S.rol=S.api.rol; S.miSede=S.api.sede; S.perm=new Set(S.api.permisos||[]);
     try{ const ss=await S.api.sedes(false);
       if (ss.length){ SEDES.splice(0, SEDES.length, ...ss.map(s=>s.nombre)); for (const k of Object.keys(SEDE_COD)) delete SEDE_COD[k]; ss.forEach(s=>{ SEDE_COD[s.nombre]=s.clave; }); } }catch(e){ console.warn("sedes", e); }
-    $("#usrBtn").hidden = !["superusuario","direccion","administrativo"].includes(S.rol);
+    $("#usrBtn").hidden = !["superusuario","direccion","admin_sede"].includes(S.rol);
     $("#sedBtn").hidden = !["superusuario","direccion"].includes(S.rol);
     $("#usoBtn").hidden = !tengo("tiempo_uso");
     $("#permBtn").hidden = S.rol!=="superusuario";
     $("#docpBtn").hidden = !S.rol;
-    $("#ctrBtn").hidden = !["superusuario","direccion","psicologo","administrativo"].includes(S.rol);
-    if (S.rol==="administrativo"){ S.sedeF=S.miSede; }
+    $("#ctrBtn").hidden = !["superusuario","direccion","psicologo","administrativo","admin_sede"].includes(S.rol);
+    if (ES_SEDE()){ S.sedeF=S.miSede; }
+    /* Administrativo = empleado: sin expedientes ni directorio; solo lo suyo como trabajador */
+    if (ES_EMPLEADO()){ document.body.classList.add("solo-empleado"); $("#newBtn").hidden=true; $("#terBtn").hidden=true; }
   }
   /* La Dirección y los administrativos ven las cuentas para vincularlas con el directorio de terapeutas */
-  if (S.esDireccion || S.rol==="administrativo") db.collection("cuentas").onSnapshot(snap=>{ S.cuentas=new Map(snap.docs.map(d=>[d.id,d.data()])); if (S.view==="terapeutas" && !S.terEdit) render(); }, e=>console.warn("cuentas", e));
+  if (S.esDireccion || ES_SEDE()) db.collection("cuentas").onSnapshot(snap=>{ S.cuentas=new Map(snap.docs.map(d=>[d.id,d.data()])); if (S.view==="terapeutas" && !S.terEdit) render(); }, e=>console.warn("cuentas", e));
   if (!S.canWrite) $("#newBtn").disabled=true;
   if (S.uid){ try{ const d=await db.doc(`data/users/${S.uid}/perfil`).get(); if(d.exists) S.perfil=d.data()||{}; }catch{} }
   if (!S.sel) render();
@@ -1829,6 +1847,8 @@ img{max-width:100%}
 details.note summary{cursor:pointer}
 .perm-chk{display:inline-flex;gap:6px;align-items:center;cursor:pointer;white-space:nowrap}
 .perm-chk input{width:18px;height:18px}
+body.solo-empleado .roster{display:none!important}
+body.solo-empleado .app{grid-template-columns:1fr!important}
 .usr-edit{display:flex;flex-direction:column;gap:10px}
 .usr-edit fieldset{border:1px solid var(--line);border-radius:10px;padding:8px 12px 10px;margin:0;display:flex;flex-direction:column;gap:6px;min-width:0}
 .usr-edit legend{font-size:12px;font-weight:700;padding:0 4px}
@@ -1859,7 +1879,9 @@ details.note summary{cursor:pointer}
       <h2 class="lg-h">Solicitud de cuenta</h2>
       <p class="lg-nota">Tu cuenta quedará <b>pendiente</b> hasta que la autorice un administrativo de tu sede, la Dirección o el superusuario.</p>
       <div class="fld"><label for="rgNombre">Nombre completo *</label><input id="rgNombre" type="text" autocomplete="name" required minlength="5" maxlength="120" placeholder="Psic. Nombre Apellido Apellido"></div>
-      <div class="fld"><label for="rgTipo">Tipo de usuario *</label><select id="rgTipo" required><option value="psicologo|nomina">Psicólogo base</option><option value="psicologo|comision">Psicólogo independiente</option><option value="administrativo">Administrativo</option><option value="direccion">Directivo</option></select>
+      <div class="fld"><label for="rgTipo">Tipo de usuario *</label><select id="rgTipo" required><option value="psicologo|nomina">Psicólogo base</option><option value="psicologo|comision">Psicólogo independiente</option><option value="admin_sede">Administración de sede</option><option value="administrativo">Administrativo</option><option value="direccion">Directivo</option></select>
+        <small class="hint" id="rgSedeNota" hidden>Administración de sede: crea y gestiona los expedientes de tu sede, autoriza a su personal y consulta su documentación clínica y laboral. La autoriza la Dirección o el superusuario.</small>
+        <small class="hint" id="rgEmpNota" hidden>Administrativo: cuenta de empleado(a) para consultar tu contrato, el reglamento, tu documentación y tus datos.</small>
         <small class="hint" id="rgDirNota" hidden>Los directivos ven y editan toda la plataforma. Esta solicitud solo la autoriza el superusuario. La sede es opcional.</small>
         <small class="hint" id="rgModNota" hidden>Como psicólogo independiente colaboras por comisión, sin contrato individual de trabajo ni sueldo. La Dirección confirma tu modalidad al autorizar tu cuenta.</small></div>
       <div class="fld" id="rgCedulaFld"><label for="rgCedula">Cédula profesional *</label><input id="rgCedula" type="text" inputmode="numeric" maxlength="20"></div>
