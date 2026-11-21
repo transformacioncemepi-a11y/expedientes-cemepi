@@ -17,6 +17,12 @@
 <title>Expedientes CEMEPI</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0560bd">
+<script>/* Preferencias de este dispositivo (tema, densidad, texto, modo privado): se aplican antes de pintar */
+try{ const d=document.documentElement, g=k=>localStorage.getItem("cemepi."+k);
+  const t=g("tema"); if (t==="light"||t==="dark") d.dataset.theme=t;
+  if (g("densidad")==="compacta") d.dataset.densidad="compacta";
+  if (g("texto")==="grande") d.dataset.texto="grande";
+  if (g("privado")==="1") d.dataset.privado="1"; }catch(e){}</script>
 <link rel="icon" type="image/png" sizes="192x192" href="iconos/icono-192.png">
 <link rel="apple-touch-icon" href="iconos/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -106,6 +112,27 @@ th.ord button::after{content:"↕";opacity:.35;font-size:11px}
 th.ord[aria-sort="ascending"] button::after{content:"▲";opacity:.8}
 th.ord[aria-sort="descending"] button::after{content:"▼";opacity:.8}
 tr.f-oculta{display:none}
+/* Preferencias por persona (etapa 4) */
+:root[data-densidad="compacta"] body{font-size:13px}
+:root[data-densidad="compacta"] :is(th,td){padding:5px 8px}
+:root[data-densidad="compacta"] .btn{padding:6px 11px}
+:root[data-densidad="compacta"] .btn.sm{padding:3px 8px}
+:root[data-densidad="compacta"] .panel{padding:14px;gap:14px}
+:root[data-densidad="compacta"] .note{padding:10px 12px;gap:6px}
+:root[data-densidad="compacta"] .row{padding-block:7px}
+:root[data-densidad="compacta"] .nav-i{min-height:32px;padding-block:5px}
+:root[data-texto="grande"] .shell{zoom:1.12;height:calc(100% / 1.12)}
+/* Modo privado: difumina en pantalla los datos de consultantes y datos personales del personal; se ven al pasar el cursor o con el foco */
+:root[data-privado="1"] :is(.apunte,.nota-nom,#list .row .n,#list .row .f,.head h2,.head .meta,.gsec textarea,.gsec input,.ci-texto,.note dd,td.res,.rev-hz q,.mat-x,
+  .sens,#frmCtr :is(input,select),.ctr-doc,.ctr-firma-img,.firma-prev){filter:blur(6px);transition:filter .15s}
+:root[data-privado="1"] :is(.apunte,.nota-nom,.head h2,.head .meta,.gsec textarea,.gsec input,.ci-texto,.note dd,td.res,.rev-hz q,.mat-x,
+  .sens,#frmCtr :is(input,select),.ctr-doc,.ctr-firma-img,.firma-prev):is(:hover,:focus),
+:root[data-privado="1"] #list .row:is(:hover,:focus-visible) :is(.n,.f){filter:none}
+.ibtn[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.pref-op{display:flex;gap:8px;flex-wrap:wrap}
+.pref-op label{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border:1px solid var(--line-strong);border-radius:999px;cursor:pointer;font-weight:700;font-size:13px;background:var(--surface)}
+.pref-op label:has(input:checked){border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.pref-op input{accent-color:var(--accent)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 @media (max-width:900px){
   .shell{grid-template-columns:minmax(0,1fr)}
@@ -315,6 +342,7 @@ td.res{white-space:pre-wrap;min-width:220px}
   <button class="ibtn burger" id="burger" type="button" aria-label="Abrir menú" aria-controls="side"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
   <b class="top-t" id="topTitulo">Inicio</b>
   <span class="spacer"></span>
+  <button class="ibtn" id="btnPrivado" type="button" aria-pressed="false" title="Modo privado: ocultar datos sensibles en pantalla" aria-label="Modo privado"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
   <span class="rol-chip" id="rolChip" hidden></span>
   <span class="sesion" id="sesionInfo" hidden></span>
   <button class="avatar" id="avatarBtn" type="button" data-act="perfil" title="Mi perfil" aria-label="Mi perfil"></button>
@@ -1279,7 +1307,7 @@ function activarPad(id="padFirma"){
 }
 function perfilHtml(){
   const pf={...(S.perfil||{}), ...(S.perfilDraft||{})};
-  return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px"><div class="phead">${migas()}<h1>Mi perfil</h1></div><div class="card">
+  return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px"><div class="phead">${migas()}<h1>Mi perfil</h1></div>${preferenciasHtml()}<div class="card">
     <p class="status" style="margin:0">Se usan en la firma de tus documentos. Tu rol y tu sede los asigna quien autorizó tu cuenta.</p>
     <form id="frmPerfil" class="datos">
       <div class="fld" style="grid-column:1/-1"><label for="pf-nombre">Nombre completo, como aparecerá en la firma</label><input id="pf-nombre" data-k="nombre" type="text" value="${esc(pf.nombre||"")}" placeholder="Psic. Nombre Apellido"></div>
@@ -1416,7 +1444,7 @@ function usuariosHtml(){
   const pend=lista.filter(u=>u.estado==="pendiente"), activos=lista.filter(u=>u.estado==="activo"), otros=lista.filter(u=>!["pendiente","activo"].includes(u.estado));
   const opRol=(sel)=>rolesAsignables().map(r=>`<option value="${r}"${r===sel?" selected":""}>${ROL_TXT[r]}</option>`).join("");
   const opSede=(sel)=>`${ES_SEDE()?"":`<option value="">Sin sede</option>`}${sedesAsignables().map(s=>`<option value="${esc(s)}"${s===sel?" selected":""}>${esc(s)}</option>`).join("")}`;
-  const datos=u=>`<b>${esc(u.nombre||"Sin nombre")}</b><br><span class="status">${esc(u.email)}${u.telefono?" · "+esc(u.telefono):""}${u.cedula?" · Céd. "+esc(u.cedula):""}</span>`;
+  const datos=u=>`<b>${esc(u.nombre||"Sin nombre")}</b><br><span class="status sens">${esc(u.email)}${u.telefono?" · "+esc(u.telefono):""}${u.cedula?" · Céd. "+esc(u.cedula):""}</span>`;
   const filaPend=u=>`<tr data-f data-rol="${esc(u.rol_solicitado||u.rol)}"><td>${datos(u)}</td><td>${(u.rol_solicitado||u.rol)==="psicologo"?modPill({...u, rol:"psicologo"}).replace(/^<br>/,""):esc(ROL_TXT[u.rol_solicitado]||ROL_TXT[u.rol]||"")}<br><span class="status">${esc(u.sede||"Sin sede")}</span></td>
     <td>${puedeGestionar(u)?`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
       <select id="ar-rol-${u.id}" aria-label="Rol">${opRol(u.rol_solicitado||u.rol)}</select>
@@ -1694,7 +1722,7 @@ function contratosHtml(){
     <p class="status" style="margin:0">Cada psicólogo(a) y cada administrativo(a) captura sus datos y firma desde <b>Contratos</b>; cada quien ve solo su propio contrato. Los psicólogos independientes (por comisión) no aparecen aquí: no tienen contrato individual de trabajo. La Dirección registra la fecha de alta ante el IMSS y el salario, y el representante legal firma por CEMEPI. Datos personales confidenciales: no se comparten por mensajería.</p>
     ${barraFiltros("contratos",{sedes:[...new Set(filas.map(x=>x.u.sede).filter(Boolean))].sort(), estados:[...new Set(filas.map(x=>ctrEstado(x.c).t))]})}
     <div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Contrato</th><th>Sede</th><th>Alta IMSS</th><th>Estado</th><th></th></tr></thead><tbody>
-      ${filas.map(({u,c})=>{ const e=ctrEstado(c); return `<tr data-f data-sede="${esc(u.sede||"")}" data-estado="${esc(e.t)}"><td><b>${esc(u.nombre||"Sin nombre")}</b><br><span class="status">${esc(u.email||"")}</span></td><td>${esc(TIPO_CTR[c?.tipo || (["administrativo","admin_sede"].includes(u.rol)?"administrativo":"psicologo")])}</td><td>${esc(u.sede||"")}</td><td>${c?.fecha_alta?esc(fmtDate(c.fecha_alta)):"—"}</td><td><span class="pill ${e.cl}">${esc(e.t)}</span></td>
+      ${filas.map(({u,c})=>{ const e=ctrEstado(c); return `<tr data-f data-sede="${esc(u.sede||"")}" data-estado="${esc(e.t)}"><td><b>${esc(u.nombre||"Sin nombre")}</b><br><span class="status sens">${esc(u.email||"")}</span></td><td>${esc(TIPO_CTR[c?.tipo || (["administrativo","admin_sede"].includes(u.rol)?"administrativo":"psicologo")])}</td><td>${esc(u.sede||"")}</td><td>${c?.fecha_alta?esc(fmtDate(c.fecha_alta)):"—"}</td><td><span class="pill ${e.cl}">${esc(e.t)}</span></td>
         <td>${c?`<button class="btn sm" type="button" data-act="verCtr" data-id="${c.id}">Abrir</button>`:`<span class="status">Aún no lo inicia</span>`}</td></tr>`; }).join("") || `<tr><td colspan="6">No hay personal activo.</td></tr>`}
     </tbody></table></div></div>`;
 }
@@ -1879,6 +1907,7 @@ const GUIAS = [
   {t:"Respaldar la documentación del personal", si:()=>ES_DIR(), pasos:["Entra a Documentación y pulsa Descargar respaldo (ZIP).","Se descargan todos los PDF en carpetas por sede y persona, con un índice (indice.csv) que se abre en Excel.","Guarda el ZIP en un disco o carpeta segura de CEMEPI; contiene datos personales. Hazlo al menos una vez al mes.","Los respaldos automáticos de Supabase no incluyen los PDF: este ZIP es su único respaldo."]},
   {t:"Recuperar un documento eliminado", si:()=>ES_DIR(), pasos:["Entra a Documentación y baja a Papelera.","Pulsa Restaurar: el documento vuelve a la lista de su titular.","Los documentos se conservan 30 días en la papelera; después puedes eliminarlos definitivamente."]},
   {t:"Otorgar permisos", si:()=>S.rol==="superusuario", pasos:["Entra a Permisos.","Marca o desmarca la casilla del permiso junto a la persona. Se aplica al instante y queda en la bitácora."]},
+  {t:"Cambiar la apariencia u ocultar datos sensibles", si:()=>true, pasos:["Entra a Mi perfil → Apariencia y privacidad.","Elige el tema (claro, oscuro o como el dispositivo), la densidad (cómoda o compacta) y el tamaño del texto. Se aplica al instante y se guarda en ese dispositivo.","Para compartir pantalla o trabajar en un lugar con gente, activa el Modo privado (o el ícono del ojo en la barra superior): los datos sensibles se ven borrosos y se leen al pasar el cursor."]},
   {t:"Instalar la app en mi celular o computadora", si:()=>true, pasos:["Android (Chrome): abre la app, pulsa Instalar app en el menú (o en el menú ⋮ del navegador, Instalar aplicación) y confirma.","iPhone o iPad (Safari): abre la app, pulsa el botón Compartir (cuadro con flecha) y elige Agregar a pantalla de inicio.","Computadora (Chrome o Edge): pulsa Instalar app o el ícono de instalar en la barra de direcciones.","La app instalada abre en su propia ventana con el ícono de CEMEPI. Tus datos siguen en el servidor seguro: no se guardan en el teléfono. Si pierdes el dispositivo, cambia tu contraseña en Mi perfil."]},
   {t:"Cambiar mi contraseña o mi firma", si:()=>true, pasos:["Entra a Mi perfil.","Para la firma: súbela en imagen o dibújala y pulsa Guardar mis datos.","Para la contraseña: escríbela dos veces en Cambiar mi contraseña (mínimo 10 caracteres)."]},
 ];
@@ -2772,6 +2801,35 @@ document.addEventListener("click", async ev => {
     catch(e){ st.textContent=""; toast(errMsg(e)); } return;
   }
 });
+/* ---------- Preferencias de este dispositivo y modo privado (sistema visual, etapa 4) ---------- */
+const PREF={ get:k=>{ try{ return localStorage.getItem("cemepi."+k); }catch{ return null; } }, set:(k,v)=>{ try{ v==null?localStorage.removeItem("cemepi."+k):localStorage.setItem("cemepi."+k,v); }catch{} } };
+function aplicarPref(k, v){
+  const d=document.documentElement;
+  if (k==="tema"){ if (v==="light"||v==="dark") d.dataset.theme=v; else delete d.dataset.theme; PREF.set("tema", v==="sistema"?null:v); }
+  if (k==="densidad"){ if (v==="compacta") d.dataset.densidad="compacta"; else delete d.dataset.densidad; PREF.set("densidad", v==="compacta"?v:null); }
+  if (k==="texto"){ if (v==="grande") d.dataset.texto="grande"; else delete d.dataset.texto; PREF.set("texto", v==="grande"?v:null); }
+  if (k==="privado"){ if (v) d.dataset.privado="1"; else delete d.dataset.privado; PREF.set("privado", v?"1":null); $("#btnPrivado").setAttribute("aria-pressed", !!v); }
+}
+$("#btnPrivado").setAttribute("aria-pressed", document.documentElement.dataset.privado==="1");
+$("#btnPrivado").addEventListener("click", ()=>{ const on=document.documentElement.dataset.privado!=="1"; aplicarPref("privado", on);
+  const c=$("#pf-privado"); if (c) c.checked=on;
+  toast(on?"Modo privado activado: los datos sensibles se ven borrosos. Pasa el cursor para leer uno.":"Modo privado desactivado."); });
+document.addEventListener("change", e=>{ const n=e.target.name;
+  if (n==="pf-tema") aplicarPref("tema", e.target.value);
+  if (n==="pf-densidad") aplicarPref("densidad", e.target.value);
+  if (n==="pf-texto") aplicarPref("texto", e.target.value);
+  if (e.target.id==="pf-privado") aplicarPref("privado", e.target.checked); });
+function preferenciasHtml(){
+  const d=document.documentElement, tema=d.dataset.theme||"sistema", den=d.dataset.densidad||"comoda", tx=d.dataset.texto||"normal";
+  const op=(n,v,l,act)=>`<label><input type="radio" name="${n}" value="${v}"${act?" checked":""}> ${l}</label>`;
+  return `<section class="note" id="apariencia"><div class="note-h"><h3>Apariencia y privacidad</h3><span class="by">Se guarda solo en este dispositivo.</span></div>
+    <div class="fld"><span class="status" style="font-weight:700">Tema</span><div class="pref-op" role="radiogroup" aria-label="Tema">${op("pf-tema","sistema","Como el dispositivo",tema==="sistema")}${op("pf-tema","light","Claro",tema==="light")}${op("pf-tema","dark","Oscuro",tema==="dark")}</div></div>
+    <div class="fld"><span class="status" style="font-weight:700">Densidad</span><div class="pref-op" role="radiogroup" aria-label="Densidad">${op("pf-densidad","comoda","Cómoda",den!=="compacta")}${op("pf-densidad","compacta","Compacta: más filas en pantalla",den==="compacta")}</div></div>
+    <div class="fld"><span class="status" style="font-weight:700">Tamaño del texto</span><div class="pref-op" role="radiogroup" aria-label="Tamaño del texto">${op("pf-texto","normal","Normal",tx!=="grande")}${op("pf-texto","grande","Grande",tx==="grande")}</div></div>
+    <div class="fld"><span class="status" style="font-weight:700">Modo privado</span><div class="pref-op"><label><input type="checkbox" id="pf-privado"${d.dataset.privado==="1"?" checked":""}> Ocultar datos sensibles en pantalla</label></div>
+      <span class="status">Difumina iniciales, notas, textos de documentos y datos personales del personal mientras compartes pantalla o trabajas en un lugar con gente. Pasa el cursor sobre un dato para leerlo. También se activa con el ícono del ojo en la barra superior.</span></div>
+  </section>`;
+}
 /* ---------- Menú lateral en celular ---------- */
 $("#burger").addEventListener("click", ()=>document.body.classList.toggle("menu-abierto"));
 $("#scrimSide").addEventListener("click", ()=>document.body.classList.remove("menu-abierto"));
