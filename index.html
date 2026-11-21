@@ -912,6 +912,8 @@ async function cargarPendientes(){
       if (faltan.length) pend.push({t:`Te falta${faltan.length===1?"":"n"} ${faltan.length} documento${faltan.length===1?"":"s"} obligatorio${faltan.length===1?"":"s"}`, d:faltan.map(k=>DOCP_TIPOS[k]).join(", ")+".", act:"documentacion", b:"Subir"}); }),
     intenta(async()=>{ if (!veDocsTodos()) return; const ds=await S.api.docsPersonal(null); const n=ds.filter(d=>d.user_id!==S.uid && !d.verificado_en).length;
       if (n) pend.push({t:`${n} documento${n===1?"":"s"} del personal por verificar`, d:"Cotéjalos con el original y márcalos como verificados.", act:"documentacion", b:"Revisar"}); }),
+    intenta(async()=>{ S.avisos = await S.api.avisos();
+      if ((S.avisos.domicilio||[]).some(x=>x.user_id!==S.uid) && !S.usuarios) S.usuarios = await S.api.usuarios(); }),
   ]);
   if (esClinico() && S.rol!=="admin_sede" && !(S.perfil?.nombre && S.perfil?.cedula)) pend.unshift({t:"Completa tu nombre y cédula en Mi perfil", d:"Aparecen en la firma de cada documento clínico.", act:"perfil", b:"Completar"});
   S.pend=pend; S.pendCargando=false;
@@ -931,6 +933,43 @@ const ACCESOS = () => [
   {t:"Mi perfil", d:"Tus datos, tu firma y tu contraseña.", act:"perfil", si:true},
   {t:"Ayuda", d:"Qué puede hacer tu rol y guías paso a paso.", act:"ayuda", si:true},
 ].filter(x=>x.si);
+/* ---------- Avisos de vencimiento (aprobados por el Director, 2026-11-21) ---------- */
+const diasHasta = f => Math.round((new Date(String(f).slice(0,10)+"T00:00") - new Date(today()+"T00:00"))/86400000);
+function avisosHtml(){
+  const a=S.avisos; if (!a) return "";
+  const exp = (x, extra, tab) => `<button class="btn sm" type="button" data-act="abrirExp" data-id="${esc(x.id)}"${tab?` data-tab-ir="${tab}"`:""}>${esc(x.ini||"")} · ${esc(x.folio||"")}${extra?` · ${esc(extra)}`:""}</button>`;
+  const grupos = [];
+  const add = (t, d, items, boton) => { if (items && items.length) grupos.push({t, d, items, boton}); };
+  const cod=a.codigos||[];
+  add(`${cod.length} código${cod.length===1?"":"s"} del portal ${cod.some(c=>c.vencido)?"vencido o por vencer":"por vencer"}`, "El consultante ya no podrá entrar. Si sigue en proceso, genera un código nuevo y entrégaselo en persona (Documentos → Portal del consultante).",
+    cod.map(c=>exp(c, c.vencido?"vencido":(d=>d<=0?"vence hoy":`vence en ${d} día${d===1?"":"s"}`)(diasHasta(c.vence)), "documentos")));
+  const bor=a.borradores||[];
+  add(`${bor.length} borrador${bor.length===1?"":"es"} sin emitir desde hace más de 7 días`, "Emítelos si ya se entregaron o elimínalos si ya no se usarán.",
+    bor.map(x=>exp(x, `${FORMATOS[x.tipo]?.nombre||x.tipo}, ${fmtDate(String(x.creado).slice(0,10))}`, "documentos")));
+  const sn=a.sin_notas||[];
+  add(`${sn.length} expediente${sn.length===1?"":"s"} sin notas en los últimos 60 días`, "Valora el seguimiento o, si el proceso concluyó, elabora y emite el resumen clínico de alta.",
+    sn.map(x=>exp(x, x.ultima?`última nota ${fmtDate(x.ultima)}`:"sin notas", "notas")));
+  const my=a.mayoria||[];
+  add(`${my.length} consultante${my.length===1?"":"s"} cumple${my.length===1?"":"n"} 18 años pronto`, "Al cumplir la mayoría de edad, actualiza el consentimiento informado con la propia persona; la representación del tutor deja de aplicar.",
+    my.map(x=>exp(x, `cumple 18 el ${fmtDate(x.cumple)}`, "documentos")));
+  if (a.respaldo && a.respaldo.hay_docs){ const u=a.respaldo.ultimo, dias=u?-diasHasta(u):null;
+    if (!u || dias>30) grupos.push({t: u?`El último respaldo de la documentación del personal fue hace ${dias} días`:"Aún no se ha descargado ningún respaldo de la documentación del personal",
+      d:"Los respaldos automáticos de Supabase no incluyen los PDF. Descarga el ZIP y guárdalo en un lugar seguro.", items:[], boton:{act:"documentacion", b:"Respaldar"}}); }
+  if (a.papelera) grupos.push({t:`${a.papelera} documento${a.papelera===1?"":"s"} en la papelera con el plazo de 30 días cumplido`, d:"Ya puedes eliminarlos definitivamente o restaurarlos si se borraron por error.", items:[], boton:{act:"documentacion", b:"Ver papelera"}});
+  const dom=a.domicilio||[];
+  if (dom.length){ const mio=dom.find(x=>x.user_id===S.uid), otros=dom.filter(x=>x.user_id!==S.uid);
+    if (mio) grupos.push({t:"Tu comprobante de domicilio tiene más de 3 meses", d:`Lo subiste el ${fmtDate(String(mio.subido).slice(0,10))}. Sube uno reciente en Mi documentación.`, items:[], boton:{act:"documentacion", b:"Subir"}});
+    if (otros.length) add(`${otros.length} persona${otros.length===1?"":"s"} con comprobante de domicilio de más de 3 meses`, "Pídeles uno reciente.",
+      otros.map(x=>{ const u=(S.usuarios||[]).find(y=>y.id===x.user_id); return `<button class="btn sm" type="button" data-act="abrirDocp" data-id="${esc(x.user_id)}">${esc(u?.nombre||u?.email||"Persona")} · ${esc(fmtDate(String(x.subido).slice(0,10)))}</button>`; })); }
+  const inc=a.incompletos||[];
+  add(`${inc.length} expediente${inc.length===1?"":"s"} incompleto${inc.length===1?"":"s"}`, "Asigna el terapeuta y registra la fecha de nacimiento en Datos del expediente.",
+    inc.map(x=>exp(x, [x.sin_terapeuta&&"sin terapeuta", x.sin_nacimiento&&"sin fecha de nacimiento"].filter(Boolean).join(" y "))));
+  if (!grupos.length) return "";
+  return `<section class="note"><div class="note-h"><h3>Avisos</h3><span class="status">Vencimientos y seguimientos</span></div><ul class="pend avisos">
+    ${grupos.map(g=>`<li><div style="flex:1;min-width:0"><b>${esc(g.t)}</b><br><span class="status">${esc(g.d)}</span>
+      ${g.items.length?`<div class="aviso-items">${g.items.slice(0,8).join("")}${g.items.length>8?`<span class="status">y ${g.items.length-8} más</span>`:""}</div>`:""}</div>
+      ${g.boton?`<button class="btn sm primary" type="button" data-act="${g.boton.act}">${esc(g.boton.b)}</button>`:""}</li>`).join("")}</ul></section>`;
+}
 function inicioHtml(){
   if (!S.api) return `<div class="wrap"><div class="welcome"><h2>Expedientes y documentos psicológicos</h2><p class="status">Cargando tu espacio…</p></div></div>`;
   if (!S.pend && !S.pendCargando) setTimeout(cargarPendientes, 0);
@@ -954,6 +993,7 @@ function inicioHtml(){
       ${perms.length?`<p class="status" style="margin:6px 0 0">Permisos adicionales: ${esc(perms.join(" · "))}.</p>`:""}</div>
       <button class="btn" type="button" data-act="ayuda">¿Qué puedo hacer?</button></section>
     <section class="note"><div class="note-h"><h3>Pendientes</h3>${S.pend?`<button class="btn sm" type="button" data-act="refrescarPend">Actualizar</button>`:""}</div>${pend}</section>
+    ${S.pend?avisosHtml():""}
     ${pasos}
     <section><h3 class="sec-h">Accesos rápidos</h3><div class="fmt-grid">${ACCESOS().map(x=>`<article class="fmt"><div class="fmt-h"><b>${esc(x.t)}</b></div><p>${esc(x.d)}</p><button class="btn sm primary" type="button" data-act="${x.act}">Abrir</button></article>`).join("")}</div></section>
     ${!S.canWrite?`<p class="banner">Tienes acceso de solo lectura.</p>`:""}
@@ -1989,7 +2029,10 @@ document.addEventListener("click", async ev => {
     try{ const blob=await docxBlob("Contrato individual", xml, ext, "Documento", true); /* Los contratos laborales no llevan la nota aclaratoria (decisión del Director, 2026-11-20) */ await dl.save({filename:`Contrato-${slug(ctrNombre(c.datos||{})||"profesionista")}.docx`, data:blob}); toast("Contrato descargado. Contiene datos personales: resguárdalo y no lo envíes por mensajería."); }
     catch(e){ if(e?.code!=="declined") toast("No se pudo descargar el contrato."); } return; }
   if (a==="ayuda"){ S.view="ayuda"; render(); $("#detail").scrollTop=0; return; }
-  if (a==="refrescarPend"){ S.pend=null; render(); return cargarPendientes(); }
+  if (a==="refrescarPend"){ S.pend=null; S.avisos=null; render(); return cargarPendientes(); }
+  if (a==="abrirExp"){ if (!S.pacientes.has(b.dataset.id)){ toast("No encuentro ese expediente en tu lista."); return; }
+    select(b.dataset.id); if (b.dataset.tabIr){ S.tab=b.dataset.tabIr; render(); } return; }
+  if (a==="abrirDocp"){ S.view="documentacion"; S.docpSel=b.dataset.id; S.docp=undefined; S.docpTodos=null; render(); return cargarAdmin("documentacion"); }
   if (a==="documentacion"){ S.view="documentacion"; S.docpSel=null; S.docp=undefined; S.docpTodos=null; render(); return cargarAdmin("documentacion"); }
   if (a==="docpVer"){ S.docpSel=b.dataset.id; S.docp=undefined; render(); $("#detail").scrollTop=0; return cargarAdmin("documentacion"); }
   if (a==="docpLista"){ S.docpSel=null; S.docp=undefined; render(); return cargarAdmin("documentacion"); }
@@ -2365,6 +2408,8 @@ body.solo-empleado .app{grid-template-columns:1fr!important}
 .hola h2{margin:2px 0 0;font-size:24px}
 ul.pend{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 ul.pend li{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:8px;padding:8px 12px;background:var(--surface)}
+ul.pend.avisos li{border-left-color:var(--accent,#0560BD)}
+.aviso-items{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;align-items:center}
 .ayuda-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin:8px 0}
 .ayuda-cols ul{margin:4px 0 0;padding-left:18px}
 details.guia{border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:0 0 8px;background:var(--surface)}
