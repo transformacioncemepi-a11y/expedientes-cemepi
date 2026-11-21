@@ -129,6 +129,28 @@ tr.f-oculta{display:none}
   .sens,#frmCtr :is(input,select),.ctr-doc,.ctr-firma-img,.firma-prev):is(:hover,:focus),
 :root[data-privado="1"] #list .row:is(:hover,:focus-visible) :is(.n,.f){filter:none}
 .ibtn[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+/* Buscador global (etapa 5) */
+.top-t{flex:0 1 auto;max-width:34%}
+.gsearch{position:relative;flex:1 1 280px;max-width:460px;min-width:0}
+.gsearch > svg{position:absolute;left:12px;top:10px;width:18px;height:18px;stroke:var(--muted);fill:none;stroke-width:2;pointer-events:none}
+.gsearch input{width:100%;height:38px;border:1px solid var(--line);background:var(--sunk);border-radius:999px;padding:0 64px 0 38px}
+.gsearch input:focus{background:var(--surface);border-color:var(--accent);outline:3px solid color-mix(in srgb,var(--accent) 25%,transparent);outline-offset:0}
+.gsearch kbd{position:absolute;right:10px;top:9px;font:600 11px var(--f-mono);color:var(--muted);border:1px solid var(--line);border-radius:5px;padding:1px 6px;background:var(--surface);pointer-events:none}
+.gres{position:absolute;top:44px;left:0;right:0;min-width:300px;max-height:min(70vh,520px);overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--sh-2);z-index:60;padding:6px}
+.gres h4{margin:8px 10px 4px;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.gres [role="option"]{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border-radius:8px;cursor:pointer}
+.gres [role="option"] b{font-size:14px}.gres [role="option"] span{font-size:12px;color:var(--muted)}
+.gres [role="option"][aria-selected="true"],.gres [role="option"]:hover{background:var(--accent-soft)}
+.gres .vacio{padding:12px 10px;color:var(--muted);font-size:13px}
+.ibtn.gsearch-m{display:none}
+@media (max-width:760px){
+  .top-t{max-width:none;flex:1 1 auto}
+  .gsearch{display:none}
+  .ibtn.gsearch-m{display:inline-grid}
+  body.buscando .gsearch{display:block;position:absolute;left:8px;right:8px;top:9px;max-width:none;z-index:61}
+  body.buscando .gres{position:fixed;top:56px;left:8px;right:8px;min-width:0}
+  body.buscando .gsearch kbd{display:none}
+}
 .pref-op{display:flex;gap:8px;flex-wrap:wrap}
 .pref-op label{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border:1px solid var(--line-strong);border-radius:999px;cursor:pointer;font-weight:700;font-size:13px;background:var(--surface)}
 .pref-op label:has(input:checked){border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
@@ -341,6 +363,14 @@ td.res{white-space:pre-wrap;min-width:220px}
 <header class="topbar">
   <button class="ibtn burger" id="burger" type="button" aria-label="Abrir menú" aria-controls="side"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
   <b class="top-t" id="topTitulo">Inicio</b>
+  <div class="gsearch" id="gsearch">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <label class="sr" for="gq">Buscar en la plataforma</label>
+    <input id="gq" type="search" autocomplete="off" placeholder="Buscar expedientes, personas, secciones…" role="combobox" aria-expanded="false" aria-controls="gres" aria-autocomplete="list">
+    <kbd>Ctrl K</kbd>
+    <div class="gres" id="gres" role="listbox" aria-label="Resultados" hidden></div>
+  </div>
+  <button class="ibtn gsearch-m" id="gsearchM" type="button" aria-label="Buscar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
   <span class="spacer"></span>
   <button class="ibtn" id="btnPrivado" type="button" aria-pressed="false" title="Modo privado: ocultar datos sensibles en pantalla" aria-label="Modo privado"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
   <span class="rol-chip" id="rolChip" hidden></span>
@@ -1907,6 +1937,7 @@ const GUIAS = [
   {t:"Respaldar la documentación del personal", si:()=>ES_DIR(), pasos:["Entra a Documentación y pulsa Descargar respaldo (ZIP).","Se descargan todos los PDF en carpetas por sede y persona, con un índice (indice.csv) que se abre en Excel.","Guarda el ZIP en un disco o carpeta segura de CEMEPI; contiene datos personales. Hazlo al menos una vez al mes.","Los respaldos automáticos de Supabase no incluyen los PDF: este ZIP es su único respaldo."]},
   {t:"Recuperar un documento eliminado", si:()=>ES_DIR(), pasos:["Entra a Documentación y baja a Papelera.","Pulsa Restaurar: el documento vuelve a la lista de su titular.","Los documentos se conservan 30 días en la papelera; después puedes eliminarlos definitivamente."]},
   {t:"Otorgar permisos", si:()=>S.rol==="superusuario", pasos:["Entra a Permisos.","Marca o desmarca la casilla del permiso junto a la persona. Se aplica al instante y queda en la bitácora."]},
+  {t:"Buscar en la plataforma", si:()=>true, pasos:["Usa el buscador de la barra superior (o Ctrl K / ⌘ K). En el celular, toca la lupa.","Escribe iniciales, folio o fecha de nacimiento de un expediente, el nombre de una persona o terapeuta, o el nombre de una sección (por ejemplo, Contratos).","Muévete con las flechas y pulsa Enter, o toca el resultado. Solo aparece lo que tu rol puede ver."]},
   {t:"Cambiar la apariencia u ocultar datos sensibles", si:()=>true, pasos:["Entra a Mi perfil → Apariencia y privacidad.","Elige el tema (claro, oscuro o como el dispositivo), la densidad (cómoda o compacta) y el tamaño del texto. Se aplica al instante y se guarda en ese dispositivo.","Para compartir pantalla o trabajar en un lugar con gente, activa el Modo privado (o el ícono del ojo en la barra superior): los datos sensibles se ven borrosos y se leen al pasar el cursor."]},
   {t:"Instalar la app en mi celular o computadora", si:()=>true, pasos:["Android (Chrome): abre la app, pulsa Instalar app en el menú (o en el menú ⋮ del navegador, Instalar aplicación) y confirma.","iPhone o iPad (Safari): abre la app, pulsa el botón Compartir (cuadro con flecha) y elige Agregar a pantalla de inicio.","Computadora (Chrome o Edge): pulsa Instalar app o el ícono de instalar en la barra de direcciones.","La app instalada abre en su propia ventana con el ícono de CEMEPI. Tus datos siguen en el servidor seguro: no se guardan en el teléfono. Si pierdes el dispositivo, cambia tu contraseña en Mi perfil."]},
   {t:"Cambiar mi contraseña o mi firma", si:()=>true, pasos:["Entra a Mi perfil.","Para la firma: súbela en imagen o dibújala y pulsa Guardar mis datos.","Para la contraseña: escríbela dos veces en Cambiar mi contraseña (mínimo 10 caracteres)."]},
@@ -2830,6 +2861,51 @@ function preferenciasHtml(){
       <span class="status">Difumina iniciales, notas, textos de documentos y datos personales del personal mientras compartes pantalla o trabajas en un lugar con gente. Pasa el cursor sobre un dato para leerlo. También se activa con el ícono del ojo en la barra superior.</span></div>
   </section>`;
 }
+/* ---------- Buscador global (sistema visual, etapa 5) ----------
+   Solo busca en lo que la persona ya puede ver: sus expedientes, secciones de su menú, terapeutas, personas a su cargo y guías de Ayuda. */
+let gItems=[], gSel=-1;
+async function gPrecargar(){ if (gestionaCuentas() && !S.usuarios){ try{ S.usuarios=await S.api.usuarios(); }catch{} } }
+function gBuscar(q){
+  const n=norm(q).trim(); if (n.length<2) return [];
+  const out=[], add=(g,t,d,run,sens)=>out.push({g,t,d,run,sens});
+  document.querySelectorAll("#side .nav-i").forEach(b=>{ if (!b.hidden && norm(b.textContent).includes(n)) add("Secciones", b.textContent.trim(), b.closest(".nav-g")?.getAttribute("aria-label")||"", ()=>b.click()); });
+  if (!ES_EMPLEADO()) [...S.pacientes.values()].filter(p=>coincide(p,q.trim())).slice(0,8).forEach(p=>{ const f=p.ficha||{};
+    add("Expedientes", `${f.nombre||"Sin iniciales"} · ${p.folio}`, [f.sede, f.terapeutaId?terEtiqueta(S.terapeutas.get(f.terapeutaId)):"Sin terapeuta"].filter(Boolean).join(" · "), ()=>select(p.id), true); });
+  if (!ES_EMPLEADO()) [...S.terapeutas.values()].filter(t=>norm(t.nombre+" "+(t.cedula||"")).includes(n)).slice(0,5)
+    .forEach(t=>add("Terapeutas", t.nombre, [t.sede, t.cedula?"Céd. "+t.cedula:""].filter(Boolean).join(" · "), ()=>$("#terBtn").click()));
+  if (gestionaCuentas()) (S.usuarios||[]).filter(u=>norm([u.nombre,u.email,u.cedula].join(" ")).includes(n)).slice(0,5)
+    .forEach(u=>add("Personas", u.nombre||u.email, [u.rol==="psicologo"&&u.modalidad?MOD_TXT[u.modalidad]:ROL_TXT[u.rol], u.sede, EST_TXT[u.estado]].filter(Boolean).join(" · "),
+      ()=>{ S.ft.usuarios={...(S.ft.usuarios||{}), q:u.nombre||u.email}; $("#usrBtn").click(); }));
+  GUIAS.filter(g=>g.si() && norm(g.t).includes(n)).slice(0,4).forEach(g=>add("Ayuda", g.t, "Guía paso a paso", ()=>{ $("#ayudaBtn").click();
+    setTimeout(()=>{ const d=[...document.querySelectorAll("details.guia")].find(x=>x.querySelector("summary")?.textContent===g.t); if (d){ d.open=true; d.scrollIntoView({block:"center"}); } }, 60); }));
+  return out;
+}
+function gPintar(){
+  const box=$("#gres"), q=$("#gq").value;
+  if (norm(q).trim().length<2){ box.hidden=true; $("#gq").setAttribute("aria-expanded","false"); return; }
+  gItems=gBuscar(q); gSel=gItems.length?0:-1;
+  let html="", grupo="";
+  gItems.forEach((it,i)=>{ if (it.g!==grupo){ grupo=it.g; html+=`<h4>${esc(grupo)}</h4>`; }
+    html+=`<div role="option" id="gopt-${i}" data-gi="${i}" aria-selected="${i===gSel}"><b class="${it.sens?"sens":""}">${esc(it.t)}</b>${it.d?`<span>${esc(it.d)}</span>`:""}</div>`; });
+  box.innerHTML = html || `<div class="vacio">Sin resultados para “${esc(q.trim())}”. Busca por iniciales, folio, fecha de nacimiento (dd/mm/aaaa), nombre o sección.</div>`;
+  box.hidden=false; $("#gq").setAttribute("aria-expanded","true"); $("#gq").setAttribute("aria-activedescendant", gSel>=0?"gopt-"+gSel:"");
+}
+function gMover(d){ if (!gItems.length) return; gSel=(gSel+d+gItems.length)%gItems.length;
+  document.querySelectorAll("#gres [role=option]").forEach(o=>o.setAttribute("aria-selected", +o.dataset.gi===gSel));
+  $("#gopt-"+gSel)?.scrollIntoView({block:"nearest"}); $("#gq").setAttribute("aria-activedescendant","gopt-"+gSel); }
+function gCerrar(){ $("#gres").hidden=true; $("#gq").setAttribute("aria-expanded","false"); document.body.classList.remove("buscando"); }
+function gElegir(i){ const it=gItems[i]; if (!it) return; $("#gq").value=""; gCerrar(); $("#gq").blur(); it.run(); }
+$("#gq").addEventListener("focus", gPrecargar);
+$("#gq").addEventListener("input", gPintar);
+$("#gq").addEventListener("keydown", e=>{
+  if (e.key==="ArrowDown"){ e.preventDefault(); gMover(1); } else if (e.key==="ArrowUp"){ e.preventDefault(); gMover(-1); }
+  else if (e.key==="Enter"){ e.preventDefault(); if (gSel>=0) gElegir(gSel); }
+  else if (e.key==="Escape"){ $("#gq").value=""; gCerrar(); $("#gq").blur(); } });
+$("#gres").addEventListener("mousedown", e=>{ const o=e.target.closest("[data-gi]"); if (o){ e.preventDefault(); gElegir(+o.dataset.gi); } });
+$("#gq").addEventListener("blur", ()=>setTimeout(()=>{ if (document.activeElement!==$("#gq")) gCerrar(); }, 120));
+$("#gsearchM").addEventListener("click", ()=>{ document.body.classList.add("buscando"); $("#gq").focus(); });
+document.addEventListener("keydown", e=>{ if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="k"){ e.preventDefault(); if (innerWidth<=760) document.body.classList.add("buscando"); $("#gq").focus(); $("#gq").select(); } });
+if (/Mac|iPhone|iPad/.test(navigator.platform)) document.querySelector("#gsearch kbd").textContent="⌘ K";
 /* ---------- Menú lateral en celular ---------- */
 $("#burger").addEventListener("click", ()=>document.body.classList.toggle("menu-abierto"));
 $("#scrimSide").addEventListener("click", ()=>document.body.classList.remove("menu-abierto"));
