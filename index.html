@@ -144,6 +144,7 @@ legend{font:700 12px var(--f-display);text-transform:uppercase;letter-spacing:.0
 .p-r-moderado{background:var(--warn-soft);color:var(--warn)}
 .p-r-alto{background:var(--bad-soft);color:var(--bad)}
 .banner.bad{background:var(--bad-soft)}
+.banner.ok-b{background:#e3f4e8}
 .builder{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}
 .builder-form{display:flex;flex-direction:column;gap:12px;min-width:0}
 .mat{position:sticky;top:12px;max-height:75vh;overflow:auto;border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--bg)}
@@ -392,6 +393,25 @@ function ctxOf(p){
     firma:propio?(pf.firma||""):"", firmaW:pf.firmaW||600, firmaH:pf.firmaH||200,
     lugar: sede==="Atizapán" ? "Atizapán de Zaragoza, Estado de México" : "Ciudad de México" };
 }
+/* Para un documento emitido se usan los datos de identificación y el firmante congelados al emitir */
+const edadEn = (fn, f) => { if (!fn) return ""; const b=new Date(fn+"T00:00"), n=f?new Date(f+"T00:00"):new Date(); let a=n.getFullYear()-b.getFullYear(); if(n<new Date(n.getFullYear(),b.getMonth(),b.getDate())) a--; return isNaN(a)?"":a; };
+function ctxDoc(p, d){
+  const c = ctxOf(p), em = d?.emision;
+  if (em && d.estado!=="borrador"){
+    Object.assign(c, {prof: em.profesional||c.prof, ced: em.cedula||c.ced, ini: em.iniciales||c.ini, folio: em.folio_expediente||c.folio, sede: em.sede||c.sede,
+      edad: em.fecha_nac ? edadEn(em.fecha_nac, d.fecha) : c.edad});
+    const propio = em.terapeuta_user && em.terapeuta_user===S.uid;
+    c.firma = propio ? (S.perfil?.firma||"") : "";
+  }
+  c.marca = !d || !d.estado || d.estado==="borrador" ? {t:"borrador"}
+    : d.estado==="anulado" ? {t:"anulado", folio:d.folioEmision, version:d.version, motivo:d.motivoAnulacion, en:d.anuladoEn}
+    : {t:"emitido", folio:d.folioEmision, version:d.version, en:d.emitidoEn};
+  return c;
+}
+const MARCA_BORRADOR = "BORRADOR · Sin folio de emisión · No válido para entregar";
+const marcaTexto = m => m.t==="borrador" ? MARCA_BORRADOR
+  : m.t==="anulado" ? `DOCUMENTO ANULADO · Folio ${m.folio} · Versión ${m.version}${m.motivo?` · Motivo: ${m.motivo}`:""}`
+  : `Folio del documento: ${m.folio} · Versión ${m.version}`;
 const identRows = c => [["Iniciales del consultante",c.ini],["Folio",c.folio||PEND],["Edad",c.edad!==""?`${c.edad} años`:PEND],["Sede",c.sede||PEND],
   ["Primera sesión",c.primera?fechaLarga(c.primera):PEND],["Profesional responsable",c.prof]];
 const quien = c => `la persona consultante identificada con las iniciales ${c.ini} y el folio ${c.folio}`;
@@ -542,14 +562,14 @@ function revisionHtml(g){
   return `<section class="rev" id="revPanel"><div class="rev-h"><b>Revisión de calidad</b><span class="rev-v ${rv.veredicto}">${esc(REV_VER[rv.veredicto])}</span>
       <span class="status">${esc(fmtFH(rv.fecha))}${rv.hallazgos.length?` · ${rv.hallazgos.length} hallazgo${rv.hallazgos.length===1?"":"s"}`:""}</span><span class="spacer"></span>
       <span class="status" id="revEstado">${vigente?"":"El documento cambió después de esta revisión."}</span>
-      <button class="btn sm" type="button" data-act="revisarCalidad">${vigente?"Revisar de nuevo":"Revisar otra vez"}</button></div>
+      ${g.estado&&g.estado!=="borrador"?"":`<button class="btn sm" type="button" data-act="revisarCalidad">${vigente?"Revisar de nuevo":"Revisar otra vez"}</button>`}</div>
     ${rv.resumen?`<p style="margin:0">${esc(rv.resumen)}</p>`:""}
     ${rv.fortalezas.length?`<div><b>Fortalezas</b><ul>${rv.fortalezas.map(f=>`<li>${esc(f)}</li>`).join("")}</ul></div>`:""}
     ${rv.hallazgos.map((h,i)=>{ const s=h.seccion, ok=!h.aplicado && h.cita && h.sugerencia && citaEn(g,h)!==null;
       return `<div class="rev-hz ${h.gravedad}"><div><span class="pill ${h.gravedad==="alta"?"estado-pendiente":"p-alta"}">${h.gravedad==="alta"?"Grave":h.gravedad==="media"?"Importante":"Menor"}</span> <b>${esc(REV_CRIT[h.criterio])}</b>${s!==null?` <span class="status">· ${s===0?"Destinatario":`Sección ${s}`}</span>`:""}</div>
         ${h.cita?`<q>${esc(h.cita)}</q>`:""}<span>${esc(h.problema)}</span>
         ${h.sugerencia?`<span><b style="font-weight:600">Sugerencia:</b> ${esc(h.sugerencia)}</span>`:""}
-        ${h.aplicado?`<span class="status">✓ Sugerencia aplicada</span>`:ok?`<span><button class="btn sm" type="button" data-act="aplicarRev" data-i="${i}">Aplicar sugerencia</button></span>`:h.sugerencia?`<span class="status">Corrígelo a mano en el texto.</span>`:""}</div>`; }).join("")}
+        ${h.aplicado?`<span class="status">✓ Sugerencia aplicada</span>`:g.estado&&g.estado!=="borrador"?"":ok?`<span><button class="btn sm" type="button" data-act="aplicarRev" data-i="${i}">Aplicar sugerencia</button></span>`:h.sugerencia?`<span class="status">Corrígelo a mano en el texto.</span>`:""}</div>`; }).join("")}
     <span class="status">La revisión de Claude ayuda a detectar problemas, pero no sustituye tu revisión profesional${FORMATOS[g.tipo].riesgo==="alto"?" ni la revisión humana especializada que exige este documento de riesgo alto":""}.</span></section>`;
 }
 /* Localiza la cita en los textos actuales del editor: devuelve {campo, idx} o null */
@@ -598,12 +618,14 @@ const firmaXml = c => P("",{before:c.firma?300:900}) + firmaImgXml(c) + P(R("___
   + P(R(`Psicólogo(a) · Cédula profesional: ${c.ced}`,{sz:18}),{jc:"center"}) + P(R(`Centro Mexicano de Plenitud Humana, S.C.${c.sede?` · Sede ${c.sede}`:""}`,{sz:18,color:"55688A"}),{jc:"center"});
 function bloques(g, c){
   const t=FORMATOS[g.tipo], k=g.contenido||{};
-  return [{title:t.titulo},{right:`${g.lugar||c.lugar}, a ${fechaLarga(g.fecha||today())}`}, ...(k.destinatario?[{dest:k.destinatario}]:[]),
+  return [...(c.marca?[{marca:c.marca}]:[]), {title:t.titulo},{right:`${g.lugar||c.lugar}, a ${fechaLarga(g.fecha||today())}`}, ...(k.destinatario?[{dest:k.destinatario}]:[]),
     ...(t.ident?[{table:identRows(c)}]:[]),
     ...(k.secciones||[]).flatMap(s=>[...(s.titulo?[{h:s.titulo}]:[]),{p:(s.texto&&s.texto.trim())?s.texto:PEND}]), {firma:true}];
 }
 function bloquesXml(bl, c){
   return bl.map(b=>{
+    if (b.marca) return b.marca.t==="emitido" ? P(R(marcaTexto(b.marca),{b:1,color:"0560BD"}),{jc:"right",after:60})
+      : P(R(marcaTexto(b.marca),{b:1,color:"C62828"}),{jc:"center",after:60});
     if (b.title) return P(R(b.title.toUpperCase(),{b:1,sz:24,color:"0560BD"}),{jc:"center",before:120,after:200});
     if (b.right) return P(R(b.right),{jc:"right",after:240});
     if (b.dest) return P(RL(b.dest,{b:1}),{after:240});
@@ -615,7 +637,7 @@ function bloquesXml(bl, c){
   }).join("");
 }
 function textoPlano(bl, c){
-  return bl.map(b=> b.title?b.title.toUpperCase() : b.right?b.right : b.dest?b.dest : b.h?`\n${b.h}` : b.p!=null?b.p
+  return bl.map(b=> b.marca?marcaTexto(b.marca) : b.title?b.title.toUpperCase() : b.right?b.right : b.dest?b.dest : b.h?`\n${b.h}` : b.p!=null?b.p
     : b.table?b.table.map(([k,x])=>`${k}: ${x}`).join("\n") : b.firma?`\n\n______________________________\n${c.prof}\nPsicólogo(a) · Cédula profesional: ${c.ced}\nCentro Mexicano de Plenitud Humana, S.C.${c.sede?` · Sede ${c.sede}`:""}` : "").join("\n\n")
     + `\n\n${NOTA_ACLARATORIA}`;
 }
@@ -707,6 +729,7 @@ async function pdfEditable(g, c){
     f.setText(limpiarPdf(valor));
     f.addToPage(page,{x:o.x??M, y:y-alto, width:o.w??CW, height:alto, font, textColor:tinta, borderColor:borde, borderWidth:0.6, backgroundColor:fondo});
     f.setFontSize(o.size||FS); if (o.right) f.setAlignment(TextAlignment.Right);
+    if (c.marca && c.marca.t!=="borrador") f.enableReadOnly();   /* emitido o anulado: no se edita */
     y -= alto;
   };
   /* Texto largo: se reparte en varios campos si no cabe en una página */
@@ -731,6 +754,10 @@ async function pdfEditable(g, c){
   page.drawText("Folio",{x:W-M-font.widthOfTextAtSize("Folio",8), y:y+16, size:8, font, color:gris});
   page.drawText(limpiarPdf(fol),{x:W-M-bold.widthOfTextAtSize(limpiarPdf(fol),11), y:y+2, size:11, font:bold, color:tinta});
   y -= 18; page.drawLine({start:{x:M,y}, end:{x:W-M,y}, thickness:1.5, color:azul});
+  if (c.marca){ const mt=limpiarPdf(marcaTexto(c.marca)), sz=c.marca.t==="emitido"?9:10, rojo=rgb(0.776,0.157,0.157);
+    for (const ln of envolver(mt, bold, sz, CW)){ y -= 14;
+      if (c.marca.t==="emitido") page.drawText(ln,{x:W-M-bold.widthOfTextAtSize(ln,sz), y, size:sz, font:bold, color:azul});
+      else page.drawText(ln,{x:(W-bold.widthOfTextAtSize(ln,sz))/2, y, size:sz, font:bold, color:rojo}); } }
   y -= 28; centro(t.titulo.toUpperCase(), 13, bold, azul);
   y -= 16;
   campo(`${g.lugar||c.lugar}, a ${fechaLarga(g.fecha||today())}`, 18, {x:W-M-320, w:320, multi:false, right:true, name:"lugar_y_fecha"});
@@ -1550,8 +1577,9 @@ async function respaldoDocp(b){
 /* ---------- Ayuda: qué puede hacer cada rol y guías paso a paso ---------- */
 const GUIAS = [
   {t:"Abrir un expediente", si:()=>esClinico(), pasos:["Pulsa + Nuevo expediente.","Escribe solo las iniciales (J.L.M.R.), la fecha de nacimiento y la fecha de la primera sesión. Si escribes el nombre completo se convierte en iniciales.","Elige la sede y el terapeuta asignado y pulsa Guardar datos.","Si necesitas los datos de contacto, descarga la Hoja administrativa en Word: se llena a mano y se resguarda aparte."]},
-  {t:"Registrar notas y redactar un documento", si:()=>esClinico() && S.rol!=="admin_sede" || ["superusuario","direccion"].includes(S.rol), pasos:["Abre el expediente y entra a la pestaña Notas; pega o escribe la nota de cada sesión (solo iniciales).","En la pestaña Documentos elige el formato (reporte, carta de proceso, referencia, etc.).","Claude redacta con tus notas. Revisa las advertencias, corrige lo necesario y pulsa Guardar.","Descarga en Word o PDF. Los documentos llevan la nota aclaratoria al pie."]},
-  {t:"Compartir un reporte con el consultante", si:()=>esClinico(), pasos:["En Documentos, junto a un reporte o evaluación guardados, pulsa Compartir con el consultante.","En Portal del consultante pulsa Generar código de acceso y anótalo: no se vuelve a mostrar.","Entrega el código en persona. El consultante entra en la página de consulta con folio, fecha de nacimiento y código.","Puedes retirar el reporte o revocar el código cuando quieras. Con menores de edad, verifica antes la representación legal."]},
+  {t:"Registrar notas y redactar un documento", si:()=>esClinico() && S.rol!=="admin_sede" || ["superusuario","direccion"].includes(S.rol), pasos:["Abre el expediente y entra a la pestaña Notas; pega o escribe la nota de cada sesión (solo iniciales).","En la pestaña Documentos elige el formato (reporte, carta de proceso, referencia, etc.).","Claude redacta con tus notas. Revisa las advertencias, corrige lo necesario y pulsa Guardar.","Pulsa Revisar calidad con Claude y corrige lo necesario.","Pulsa Emitir documento: recibe folio propio (CEMEPI-DOC-AAAA-NNNNN) y queda bloqueado. Descárgalo en Word o PDF para entregarlo; los borradores salen con la leyenda BORRADOR."]},
+  {t:"Corregir o anular un documento emitido", si:()=>esClinico(), pasos:["Abre el documento emitido. Ya no se puede editar ni borrar.","Para corregirlo pulsa Crear nueva versión: se crea un borrador con el mismo texto. Corrígelo y emítelo; la versión anterior queda marcada como reemplazada.","Si el documento ya no es válido, pulsa Anular y escribe el motivo. Se conserva en el expediente y, si estaba en el portal del consultante, se retira."]},
+  {t:"Compartir un reporte con el consultante", si:()=>esClinico(), pasos:["Emite primero el reporte o la evaluación (botón Emitir documento): solo se comparten documentos emitidos.","En Documentos, junto al reporte o evaluación emitidos, pulsa Compartir con el consultante.","En Portal del consultante pulsa Generar código de acceso y anótalo: no se vuelve a mostrar.","Entrega el código en persona. El consultante entra en la página de consulta con folio, fecha de nacimiento y código.","Puedes retirar el reporte o revocar el código cuando quieras. Con menores de edad, verifica antes la representación legal."]},
   {t:"Firmar mi contrato", si:()=>tieneContrato(), pasos:["Entra a Mi contrato y pulsa Comenzar mi contrato.","Captura tus datos y beneficiarios y pulsa Guardar mis datos.","La Dirección registra tu fecha de alta ante el IMSS y tu salario.","Guarda tu firma en Mi perfil y pulsa Firmar mi contrato. Al final firma el representante legal de CEMEPI.","Puedes descargar tu contrato en Word."]},
   {t:"Subir mi documentación", si:()=>S.rol!=="superusuario", pasos:["Entra a Documentación.","Elige el tipo de documento (INE, CURP, comprobante de domicilio, cédula, título, curso, diplomado…). En cursos y diplomados escribe la descripción.","Selecciona el PDF (máximo 10 MB) y pulsa Subir PDF.","Las etiquetas Falta / ✓ te indican qué documentos obligatorios te faltan."]},
   {t:"Confirmar que recibí el reglamento", si:()=>true, pasos:["Entra a Reglamento y léelo (tiene índice y buscador).","Pulsa Confirmo que lo recibí y lo leí. Queda registrada la fecha y hora."]},
@@ -1723,6 +1751,12 @@ function notasHtml(p, ro){
       ${!ro && abierta ? opcionesDocHtml(n.id, S.notaReciente===n.id?"Nota guardada. ¿Quieres crear un documento con ella?":"Crear un documento con esta nota") : ""}
       </article>`; }).join(""):`<p class="status" style="margin:0">Aún no hay notas. Pega la primera arriba.</p>`}</div>`;
 }
+function estadoDocHtml(d){
+  const e=d.estado||"borrador", sig = d.reemplazadoPor ? S.docs.find(x=>x.id===d.reemplazadoPor) : null;
+  return e==="emitido" ? `<br><span class="pill estado-activo">Emitido · ${esc(d.folioEmision)}${d.version>1?` · v${d.version}`:""}</span>${sig?` <span class="status">reemplazado por v${sig.version}</span>`:""}`
+    : e==="anulado" ? `<br><span class="pill estado-pendiente">Anulado · ${esc(d.folioEmision)}</span>${sig?` <span class="status">reemplazado por v${sig.version}</span>`:""}`
+    : `<br><span class="pill">Borrador${d.version>1?` · v${d.version}`:""}</span>`;
+}
 function documentosHtml(p, ro){
   return `<section class="doc-sec">
       ${S.notaElegida?`<p class="banner" style="margin:0">El documento que elijas quedará vinculado a la nota del ${esc(fmtDate(S.notas.find(n=>n.id===S.notaElegida)?.fecha||""))}.</p>`:""}
@@ -1735,12 +1769,12 @@ function documentosHtml(p, ro){
     <section class="doc-sec">
       <h3 class="sec-h">Documentos guardados</h3>
       ${S.docs.length?`<div class="tbl-wrap"><table><thead><tr><th>Documento</th><th>Fecha</th><th></th></tr></thead><tbody>
-        ${S.docs.map(d=>`<tr><td><b>${esc(FORMATOS[d.tipo]?.nombre||d.tipo)}</b>${d.notaId?`<br><span class="status">Basado en la nota del ${esc(fmtDate(S.notas.find(n=>n.id===d.notaId)?.fecha||""))}</span>`:""}${d.revision?.veredicto?`<br><span class="rev-v ${d.revision.veredicto}" style="font-size:11.5px;padding:1px 8px">${esc(REV_VER[d.revision.veredicto])}${d.revision.firma!==firmaContenido(d.contenido)?" (antes de los últimos cambios)":""}</span>`:`<br><span class="status">Sin revisión de calidad</span>`}</td><td class="mono">${fmtDate(d.fecha)}</td>
+        ${S.docs.map(d=>`<tr><td><b>${esc(FORMATOS[d.tipo]?.nombre||d.tipo)}</b>${d.notaId?`<br><span class="status">Basado en la nota del ${esc(fmtDate(S.notas.find(n=>n.id===d.notaId)?.fecha||""))}</span>`:""}${estadoDocHtml(d)}${d.estado&&d.estado!=="borrador"?"":d.revision?.veredicto?`<br><span class="rev-v ${d.revision.veredicto}" style="font-size:11.5px;padding:1px 8px">${esc(REV_VER[d.revision.veredicto])}${d.revision.firma!==firmaContenido(d.contenido)?" (antes de los últimos cambios)":""}</span>`:`<br><span class="status">Sin revisión de calidad</span>`}</td><td class="mono">${fmtDate(d.fecha)}</td>
           <td style="white-space:nowrap">${d.contenido?`<button class="btn sm" type="button" data-act="openDoc" data-id="${esc(d.id)}">Abrir</button>
           <button class="btn sm" type="button" data-act="wordDoc" data-id="${esc(d.id)}">Word</button>
           <button class="btn sm" type="button" data-act="pdfSaved" data-id="${esc(d.id)}">PDF</button>
-          ${!ro && LIBERABLES.includes(d.tipo) && S.api?`<button class="btn sm primary" type="button" data-act="liberarDoc" data-id="${esc(d.id)}">${(S.portalData?.reportes||[]).some(l=>l.documento_id===d.id&&!l.revocado)?"Actualizar en el portal":"Compartir con el consultante"}</button>`:""}`:`<span class="status">Formato anterior</span>`}
-          ${ro?"":`<button class="btn sm danger" type="button" data-act="delDoc" data-id="${esc(d.id)}">Eliminar</button>`}</td></tr>`).join("")}
+          ${!ro && LIBERABLES.includes(d.tipo) && S.api && d.estado==="emitido" && !d.reemplazadoPor?`<button class="btn sm primary" type="button" data-act="liberarDoc" data-id="${esc(d.id)}">${(S.portalData?.reportes||[]).some(l=>l.documento_id===d.id&&!l.revocado)?"Actualizar en el portal":"Compartir con el consultante"}</button>`:""}`:`<span class="status">Formato anterior</span>`}
+          ${ro||(d.estado&&d.estado!=="borrador")?"":`<button class="btn sm danger" type="button" data-act="delDoc" data-id="${esc(d.id)}">Eliminar</button>`}</td></tr>`).join("")}
       </tbody></table></div>`:`<p class="status" style="margin:0">Todavía no hay documentos guardados en este expediente.</p>`}
     </section>${ro||!S.api?"":portalHtml(p)}`;
 }
@@ -1755,7 +1789,7 @@ async function cargarPortal(expId){
 function portalHtml(p){
   if (S.portalFor!==p.id){ S.portalFor=p.id; S.portalData=null; S.codigoNuevo=null; if (S.api) cargarPortal(p.id); }
   const d=S.portalData;
-  const cab=`<h3 class="sec-h">Portal del consultante</h3><p class="status" style="margin:4px 0 8px">El consultante entra en <b>${esc(urlPortal())}</b> con el folio, su fecha de nacimiento y un código que le entregas en persona. Solo ve los reportes y evaluaciones psicológicas que compartas; no necesita cuenta ni correo.</p>`;
+  const cab=`<h3 class="sec-h">Portal del consultante</h3><p class="status" style="margin:4px 0 8px">El consultante entra en <b>${esc(urlPortal())}</b> con el folio, su fecha de nacimiento y un código que le entregas en persona. Solo ve los reportes y evaluaciones psicológicas <b>emitidos</b> que compartas; no necesita cuenta ni correo.</p>`;
   if (!d) return `<section class="doc-sec">${cab}<p class="status" style="margin:0">Cargando…</p></section>`;
   if (d.error) return `<section class="doc-sec">${cab}<p class="status" style="margin:0">${esc(d.error)}</p></section>`;
   const a=d.acceso, vig=a && !a.revocado && new Date(a.vence)>new Date();
@@ -1778,7 +1812,11 @@ function portalHtml(p){
 function generadorHtml(p, ro){
   const notaBase = S.gen?.notaId ? S.notas.find(n=>n.id===S.gen.notaId) : null;
   const avisoNota = notaBase ? `<div class="banner" style="display:block"><b>Basado en la nota del ${esc(fmtDate(notaBase.fecha))}.</b> <span class="status">${esc(notaBase.texto.slice(0,180))}${notaBase.texto.length>180?"…":""}</span></div>` : "";
-  const g=S.gen, t=FORMATOS[g.tipo], k=g.contenido;
+  const g=S.gen, t=FORMATOS[g.tipo], k=g.contenido, fijo = g.estado && g.estado!=="borrador", RO = fijo?" readonly":"";
+  const previa = g.versionDe ? S.docs.find(d=>d.id===g.versionDe) : null, nueva = g.reemplazadoPor ? S.docs.find(d=>d.id===g.reemplazadoPor) : null;
+  const estadoBanner = !k ? "" : g.estado==="emitido" ? `<div class="banner ok-b" style="display:block"><b>Emitido · ${esc(g.folioEmision)} · Versión ${g.version}</b> <span class="status">· ${esc(fmtFH(g.emitidoEn))} · Está bloqueado: para corregirlo crea una nueva versión.</span>${nueva?`<br><span class="status">Reemplazado por la versión ${nueva.version}${nueva.folioEmision?` (${esc(nueva.folioEmision)})`:""}.</span>`:""}</div>`
+    : g.estado==="anulado" ? `<div class="banner bad" style="display:block"><b>Anulado · ${esc(g.folioEmision)} · Versión ${g.version}</b> <span class="status">· ${esc(fmtFH(g.anuladoEn))} · Motivo: ${esc(g.motivoAnulacion||"")}</span></div>`
+    : `<div class="banner" style="display:block"><b>Borrador${g.version>1?` · Versión ${g.version}`:""}.</b> <span class="status">Al descargarlo lleva la leyenda "BORRADOR". Cuando esté listo pulsa <b>Emitir documento</b>: recibe folio propio y queda bloqueado.${previa?` Esta versión corrige ${esc(previa.folioEmision||"la versión anterior")}; al emitirla, la anterior quedará reemplazada.`:""}</span></div>`;
   const aviso = t.riesgo==="alto" ? `<div class="banner bad">Documento de riesgo alto: requiere revisión humana especializada antes de emitirse.</div>`
     : t.interno ? `<div class="banner">Uso interno: contiene el expediente organizado. No se comparte por Signal ni WhatsApp.</div>`
     : t.riesgo==="moderado" ? `<div class="banner">Contiene información clínica. Verifica que el destinatario esté autorizado y que solo incluya lo necesario.</div>` : "";
@@ -1801,26 +1839,32 @@ function generadorHtml(p, ro){
       <div class="actions"><button class="btn primary" type="button" data-act="generar">Redactar con Claude</button></div>` : "";
   const cargando = g.loading ? `<div class="thinking"><span class="dot"></span><div style="flex:1"><b>Claude está redactando el documento…</b><br><span class="status">Puede tardar entre 30 segundos y 2 minutos.</span></div><button class="btn sm" type="button" data-act="stop">Detener</button></div>` : "";
   const editor = k ? `<div class="gen">
-      ${(k.advertencias||[]).length?`<div class="banner" style="display:block"><b>Revisa antes de emitir</b><ul class="adv">${k.advertencias.map(a=>`<li>${esc(a)}</li>`).join("")}</ul></div>`:""}
-      <div class="datos"><div class="fld"><label for="g-fecha">Fecha del documento</label><input id="g-fecha" type="date" value="${esc(g.fecha||today())}"></div>
-        <div class="fld" style="grid-column:span 2"><label for="g-lugar">Lugar</label><input id="g-lugar" type="text" value="${esc(g.lugar||ctxOf(p).lugar)}"></div></div>
-      ${t.dest!==undefined||k.destinatario?`<div class="fld"><label for="g-dest">Destinatario</label><textarea id="g-dest" style="min-height:66px">${esc(k.destinatario||"")}</textarea></div>`:""}
-      ${k.secciones.map((s,i)=>`<div class="gsec"><input id="g-t-${i}" aria-label="Título de la sección ${i+1}" value="${esc(s.titulo)}" placeholder="(Párrafo sin título)"><textarea id="g-x-${i}" aria-label="Texto de la sección ${i+1}">${esc(s.texto)}</textarea></div>`).join("")}
+      ${estadoBanner}
+      ${!fijo&&(k.advertencias||[]).length?`<div class="banner" style="display:block"><b>Revisa antes de emitir</b><ul class="adv">${k.advertencias.map(a=>`<li>${esc(a)}</li>`).join("")}</ul></div>`:""}
+      <div class="datos"><div class="fld"><label for="g-fecha">Fecha del documento</label><input id="g-fecha" type="date" value="${esc(g.fecha||today())}"${RO}></div>
+        <div class="fld" style="grid-column:span 2"><label for="g-lugar">Lugar</label><input id="g-lugar" type="text" value="${esc(g.lugar||ctxOf(p).lugar)}"${RO}></div></div>
+      ${t.dest!==undefined||k.destinatario?`<div class="fld"><label for="g-dest">Destinatario</label><textarea id="g-dest" style="min-height:66px"${RO}>${esc(k.destinatario||"")}</textarea></div>`:""}
+      ${k.secciones.map((s,i)=>`<div class="gsec"><input id="g-t-${i}" aria-label="Título de la sección ${i+1}" value="${esc(s.titulo)}" placeholder="(Párrafo sin título)"${RO}><textarea id="g-x-${i}" aria-label="Texto de la sección ${i+1}"${RO}>${esc(s.texto)}</textarea></div>`).join("")}
       ${revisionHtml(g)}
-      <p class="status" style="margin:0">Puedes corregir cualquier texto aquí, o después dentro del PDF editable. Al descargar se agregan el encabezado de CEMEPI, ${t.ident?"la tabla de identificación, ":""}tu firma con cédula y la nota aclaratoria al pie.</p>
+      ${fijo?"":`<p class="status" style="margin:0">Puedes corregir cualquier texto aquí, o después dentro del PDF editable.`} Al descargar se agregan el encabezado de CEMEPI, ${t.ident?"la tabla de identificación, ":""}tu firma con cédula y la nota aclaratoria al pie.${fijo?"":"</p>"}
+      ${g.anulando?`<div class="fld"><label for="g-motivo">Motivo de la anulación *</label><textarea id="g-motivo" style="min-height:66px" placeholder="Ej. Se emitió con la fecha de sesión equivocada. El documento se conserva en el expediente con este motivo."></textarea>
+        <div class="actions"><button class="btn danger" type="button" data-act="confirmarAnular">Anular documento</button><button class="btn" type="button" data-act="cancelarAnular">Cancelar</button></div></div>`:""}
       <div class="actions">
-        ${g.revision||g.revisando?"":`<button class="btn primary" type="button" data-act="revisarCalidad">Revisar calidad con Claude</button>`}
-        <button class="btn primary" type="button" data-act="downloadDoc">Descargar Word</button>
-        <button class="btn primary" type="button" data-act="pdfDoc">Descargar PDF editable</button>
-        ${ro?"":`<button class="btn" type="button" data-act="saveDoc">Guardar en el expediente</button>`}
+        ${fijo||g.revision||g.revisando?"":`<button class="btn primary" type="button" data-act="revisarCalidad">Revisar calidad con Claude</button>`}
+        <button class="btn${fijo?" primary":""}" type="button" data-act="downloadDoc">Descargar Word</button>
+        <button class="btn${fijo?" primary":""}" type="button" data-act="pdfDoc">Descargar PDF${fijo?"":" editable"}</button>
+        ${ro||fijo?"":`<button class="btn" type="button" data-act="saveDoc">Guardar en el expediente</button>`}
+        ${ro||fijo?"":`<button class="btn primary" type="button" data-act="emitirDoc">Emitir documento</button>`}
         <button class="btn" type="button" data-act="copyDoc">Copiar texto</button>
-        ${t.ia?`<span class="spacer"></span><button class="btn" type="button" data-act="regenerar">Redactar de nuevo</button>`:""}<span class="status" id="saveSt"></span></div>
+        ${!ro&&fijo&&!g.reemplazadoPor?`<button class="btn" type="button" data-act="nuevaVersion">Crear nueva versión</button>`:""}
+        ${!ro&&g.estado==="emitido"&&!g.anulando?`<button class="btn danger" type="button" data-act="anularDoc">Anular</button>`:""}
+        ${t.ia&&!fijo?`<span class="spacer"></span><button class="btn" type="button" data-act="regenerar">Redactar de nuevo</button>`:""}<span class="status" id="saveSt"></span></div>
     </div>` : "";
   return `<div class="note-h"><button class="btn sm" type="button" data-act="cancelDoc">← Documentos</button><h3>${esc(t.nombre)}</h3><span class="pill p-r-${t.riesgo}">${RIESGO_TXT[t.riesgo]}</span></div>
     ${aviso}${avisoNota}${pre}${cargando}${editor}`;
 }
 function leerGen(){
-  const g=S.gen; if(!g?.contenido) return g;
+  const g=S.gen; if(!g?.contenido || (g.estado && g.estado!=="borrador")) return g;
   g.fecha=$("#g-fecha")?.value||g.fecha; g.lugar=$("#g-lugar")?.value.trim()||g.lugar;
   if ($("#g-dest")) g.contenido.destinatario=$("#g-dest").value.trim();
   g.contenido.secciones=g.contenido.secciones.map((s,i)=>({titulo:($(`#g-t-${i}`)?.value??s.titulo).trim(), texto:($(`#g-x-${i}`)?.value??s.texto).trim()}));
@@ -2020,6 +2064,34 @@ document.addEventListener("click", async ev => {
   if (a==="delTer"){ if(!arm(b,"dt"+b.dataset.id,"¿Eliminar?")) return; armed=null;
     try{ await S.db.doc("terapeutas/"+b.dataset.id).delete(); toast("Terapeuta eliminado"); }catch(e){ toast(errMsg(e)); } return; }
   /* Redacción con Claude en modo copiar y pegar */
+  if (a==="emitirDoc"){ const g=leerGen(); if (!g?.contenido) return;
+    const rv=g.revision, vigente=rv && rv.firma===firmaContenido(g.contenido);
+    const etiqueta = !rv ? "¿Emitir sin revisión de calidad?" : !vigente ? "¿Emitir? La revisión es de una versión anterior" : rv.veredicto==="no_emitir" ? "¿Emitir aunque la revisión dice No emitir?" : "¿Emitir? Ya no se podrá editar";
+    if (!arm(b,"emit"+(g.id||"n"), etiqueta)) return; armed=null;
+    const todo=[g.contenido.destinatario,...g.contenido.secciones.map(s=>s.titulo+"\n"+s.texto)].join("\n");
+    if (SENSIBLES.some(([re])=>re.test(todo))){ toast("El texto parece incluir un teléfono, correo o CURP. Revísalo antes de emitir."); return; }
+    b.disabled=true;
+    try{
+      const data={tipo:g.tipo, fecha:g.fecha, lugar:g.lugar, indicaciones:g.indicaciones||"", contenido:g.contenido, notaId:g.notaId||"", revision:g.revision||null};
+      if (g.id) await S.db.doc("documentos/"+g.id).update({...data, actualizado:Date.now()});
+      else { const ref=await S.db.collection("documentos").add({...data, pacienteId:S.sel, creado:Date.now(), autor:S.uid||""}); g.id=ref.id; }
+      const folio = await S.api.emitirDocumento(g.id);
+      const snap = await S.db.doc("documentos/"+g.id).get(), d = snap.data();
+      Object.assign(g, {estado:d.estado, folioEmision:d.folioEmision||folio, version:d.version, emitidoEn:d.emitidoEn, emision:d.emision, fecha:d.fecha||g.fecha, guardado:true});
+      toast(`Documento emitido con folio ${folio}. Ya puedes descargarlo para entregarlo.`); render();
+    }catch(e){ b.disabled=false; toast(e?.message||errMsg(e)); } return; }
+  if (a==="anularDoc"){ S.gen.anulando=true; render(); setTimeout(()=>$("#g-motivo")?.focus(),30); return; }
+  if (a==="cancelarAnular"){ S.gen.anulando=false; return render(); }
+  if (a==="confirmarAnular"){ const g=S.gen, m=($("#g-motivo")?.value||"").trim();
+    if (m.length<10){ toast("Escribe el motivo de la anulación (al menos 10 caracteres)."); $("#g-motivo").focus(); return; }
+    if (!arm(b,"anu"+g.id,"¿Anular? No se puede deshacer")) return; armed=null;
+    try{ await S.api.anularDocumento(g.id, m); Object.assign(g,{estado:"anulado", anuladoEn:new Date().toISOString(), motivoAnulacion:m, anulando:false});
+      toast("Documento anulado. Se conserva en el expediente con su motivo."); render(); }catch(e){ toast(e?.message||"No se pudo anular."); } return; }
+  if (a==="nuevaVersion"){ const g=S.gen;
+    try{ const id=await S.api.nuevaVersion(g.id); const d=(await S.db.doc("documentos/"+id).get()).data();
+      S.gen={id, tipo:d.tipo, indicaciones:d.indicaciones||"", contenido:JSON.parse(JSON.stringify(d.contenido)), fecha:d.fecha, lugar:d.lugar, notaId:d.notaId||"", revision:null, guardado:true,
+        estado:"borrador", version:d.version, versionDe:d.versionDe}; render(); $("#detail").scrollTop=0;
+      toast(`Versión ${d.version} creada como borrador. Corrígela y emítela.`); }catch(e){ toast(e?.message||"No se pudo crear la nueva versión."); } return; }
   if (a==="revisarCalidad") return revisarCalidad(p);
   if (a==="stopRevision"){ S.ctlRev?.abort(); return; }
   if (a==="copiarRevision"){ const g=leerGen(); return copiar(promptRevision(g, ctxOf(p))); }
@@ -2110,7 +2182,8 @@ document.addEventListener("click", async ev => {
   if (a==="newDoc"){ const tipo=b.dataset.tipo, t=FORMATOS[tipo];
     S.gen={tipo, indicaciones:"", contenido: t.ia?null:contenidoFijo(tipo, ctxOf(p)), fecha:today(), lugar:ctxOf(p).lugar, notaId:S.notaElegida||""}; S.notaElegida=null; render(); $("#detail").scrollTop=0; return; }
   if (a==="openDoc"){ const d=S.docs.find(x=>x.id===b.dataset.id); if(!d?.contenido) return;
-    S.tab="documentos"; S.gen={id:d.id, tipo:d.tipo, indicaciones:d.indicaciones||"", contenido:JSON.parse(JSON.stringify(d.contenido)), fecha:d.fecha, lugar:d.lugar, notaId:d.notaId||"", revision:d.revision?JSON.parse(JSON.stringify(d.revision)):null, guardado:true}; render(); $("#detail").scrollTop=0; return; }
+    S.tab="documentos"; S.gen={id:d.id, tipo:d.tipo, indicaciones:d.indicaciones||"", contenido:JSON.parse(JSON.stringify(d.contenido)), fecha:d.fecha, lugar:d.lugar, notaId:d.notaId||"", revision:d.revision?JSON.parse(JSON.stringify(d.revision)):null, guardado:true,
+      estado:d.estado||"borrador", folioEmision:d.folioEmision, version:d.version||1, versionDe:d.versionDe, reemplazadoPor:d.reemplazadoPor, emitidoEn:d.emitidoEn, emision:d.emision, anuladoEn:d.anuladoEn, motivoAnulacion:d.motivoAnulacion}; render(); $("#detail").scrollTop=0; return; }
   if (a==="liberarDoc"){ const menor=esMenor(p);
     if (!arm(b,"lib"+b.dataset.id, menor?"Verifiqué representación legal: compartir":"¿Compartir? Confirmar")) return; armed=null;
     try{ await S.api.liberarReporte(b.dataset.id, menor); toast("Reporte compartido en el portal del consultante."); }catch(e){ toast(e?.message||"No se pudo compartir."); }
@@ -2122,22 +2195,22 @@ document.addEventListener("click", async ev => {
     try{ S.codigoNuevo = await S.api.generarCodigo(p.id); toast("Código generado. Anótalo: no se vuelve a mostrar."); }catch(e){ toast(e?.message||"No se pudo generar el código."); } return cargarPortal(p.id); }
   if (a==="revCodigo"){ if (!arm(b,"rc","¿Revocar el código?")) return; armed=null;
     try{ await S.api.revocarCodigo(p.id); S.codigoNuevo=null; toast("Código revocado: el consultante ya no puede entrar."); }catch(e){ toast(e?.message||"No se pudo revocar."); } return cargarPortal(p.id); }
-  if (a==="wordDoc"){ const d=S.docs.find(x=>x.id===b.dataset.id); if(!d?.contenido) return; const c=ctxOf(p);
-    return descargar(`${slug(FORMATOS[d.tipo].nombre)}-${p.folio}-${d.fecha||today()}.docx`, p.folio, bloquesXml(bloques(d,c),c)); }
+  if (a==="wordDoc"){ const d=S.docs.find(x=>x.id===b.dataset.id); if(!d?.contenido) return; const c=ctxDoc(p, d);
+    return descargar(`${slug(FORMATOS[d.tipo].nombre)}-${d.folioEmision||p.folio+"-BORRADOR"}-${d.fecha||today()}.docx`, p.folio, bloquesXml(bloques(d,c),c)); }
   if (a==="pdfSaved"){ const d=S.docs.find(x=>x.id===b.dataset.id); if(!d?.contenido) return;
-    return descargarPdf(`${slug(FORMATOS[d.tipo].nombre)}-${p.folio}-${d.fecha||today()}.pdf`, d, ctxOf(p)); }
+    return descargarPdf(`${slug(FORMATOS[d.tipo].nombre)}-${d.folioEmision||p.folio+"-BORRADOR"}-${d.fecha||today()}.pdf`, d, ctxDoc(p, d)); }
   if (a==="delDoc"){ if(!arm(b,"dd"+b.dataset.id,"¿Eliminar?")) return; armed=null;
     try{ await S.db.doc("documentos/"+b.dataset.id).delete(); toast("Documento eliminado"); }catch(e){ toast(errMsg(e)); } return; }
   if (a==="cancelDoc"){ if(S.gen?.contenido && !S.gen.guardado && !arm(b,"cd","¿Descartar documento?")) return; armed=null; S.ctl?.abort(); S.gen=null; return render(); }
   if (a==="generar") return generar(p);
   if (a==="stop"){ S.ctl?.abort(); return; }
   if (a==="regenerar"){ if(!arm(b,"rg","¿Reemplazar el texto actual?")) return; armed=null; S.gen.contenido=null; render(); return; }
-  if (a==="copyDoc"){ const g=leerGen(), c=ctxOf(p); return copiar(textoPlano(bloques(g,c),c)); }
+  if (a==="copyDoc"){ const g=leerGen(), c=ctxDoc(p, g); return copiar(textoPlano(bloques(g,c),c)); }
   if (a==="downloadDoc"||a==="saveDoc"||a==="pdfDoc"){
-    const g=leerGen(), c=ctxOf(p), todo=[g.contenido.destinatario,...g.contenido.secciones.map(s=>s.titulo+"\n"+s.texto)].join("\n");
+    const g=leerGen(), c=ctxDoc(p, g), todo=[g.contenido.destinatario,...g.contenido.secciones.map(s=>s.titulo+"\n"+s.texto)].join("\n");
     if (!revisarSensibles(b, a, todo)) return;
-    if (a==="pdfDoc") return descargarPdf(`${slug(FORMATOS[g.tipo].nombre)}-${p.folio}-${g.fecha||today()}.pdf`, g, c);
-    if (a==="downloadDoc") return descargar(`${slug(FORMATOS[g.tipo].nombre)}-${p.folio}-${g.fecha||today()}.docx`, p.folio, bloquesXml(bloques(g,c),c));
+    if (a==="pdfDoc") return descargarPdf(`${slug(FORMATOS[g.tipo].nombre)}-${g.folioEmision||p.folio+"-BORRADOR"}-${g.fecha||today()}.pdf`, g, c);
+    if (a==="downloadDoc") return descargar(`${slug(FORMATOS[g.tipo].nombre)}-${g.folioEmision||p.folio+"-BORRADOR"}-${g.fecha||today()}.docx`, p.folio, bloquesXml(bloques(g,c),c));
     const st=$("#saveSt"); st.textContent="Guardando…";
     const data={tipo:g.tipo, fecha:g.fecha, lugar:g.lugar, indicaciones:g.indicaciones||"", contenido:g.contenido, notaId:g.notaId||"", revision:g.revision||null};
     try{ if (g.id) await S.db.doc("documentos/"+g.id).update({...data, actualizado:Date.now()});
@@ -2173,7 +2246,7 @@ document.addEventListener("input", ev => {
   if (ev.target.id==="regBuscar"){ S.regQ=ev.target.value; $("#regCuerpo").innerHTML=regCuerpoHtml(); return; }
   if (ev.target.id==="nm-riesgo"){ const si=ev.target.value===NOM_RIESGO[1]; $("#nm-riesgo-det").hidden=!si; $("#nm-riesgo-av").hidden=!si; }
   if (ev.target.closest("#frm, #frmNota")) S.dirty=true;
-  if (S.gen && ev.target.closest(".gen")){ S.gen.guardado=false;
+  if (S.gen && ev.target.closest(".gen") && ev.target.id!=="g-motivo"){ S.gen.guardado=false;
     if (S.gen.revision){ const e=$("#revEstado"); if (e) e.textContent="El documento cambió después de esta revisión."; } }
 });
 

@@ -54,7 +54,9 @@ const MAP = {
     to: d => { const o = {}; if (d.pacienteId) o.expediente_id = d.pacienteId; if (d.fecha !== undefined) o.fecha = d.fecha; if (d.texto !== undefined) o.texto = d.texto;
       if (d.formato !== undefined) o.formato = d.formato; if (d.campos !== undefined) o.campos = d.campos; return o; } },
   documentos: { tabla: "documentos", campo: { pacienteId: "expediente_id" },
-    from: r => ({ pacienteId: r.expediente_id, tipo: r.tipo, fecha: r.fecha || "", lugar: r.lugar || "", indicaciones: r.indicaciones || "", contenido: r.contenido, creado: ms(r.created_at), autor: r.autor || "", notaId: r.nota_id || "", revision: r.revision || null }),
+    from: r => ({ pacienteId: r.expediente_id, tipo: r.tipo, fecha: r.fecha || "", lugar: r.lugar || "", indicaciones: r.indicaciones || "", contenido: r.contenido, creado: ms(r.created_at), autor: r.autor || "", notaId: r.nota_id || "", revision: r.revision || null,
+      estado: r.estado || "borrador", folioEmision: r.folio_emision || "", version: r.version || 1, versionDe: r.version_de || "", reemplazadoPor: r.reemplazado_por || "",
+      emitidoEn: r.emitido_en || "", emision: r.emision || null, anuladoEn: r.anulado_en || "", motivoAnulacion: r.motivo_anulacion || "" }),
     to: d => { const o = {}; if (d.pacienteId) o.expediente_id = d.pacienteId;
       for (const k of ["tipo", "lugar", "indicaciones", "contenido"]) if (d[k] !== undefined) o[k] = d[k];
       if (d.notaId !== undefined) o.nota_id = d.notaId || null;
@@ -307,6 +309,10 @@ const cemepi = {
   async archivoDocPersonal(ruta){ const { data, error } = await sb.storage.from("documentos-personal").download(ruta); if (error) fallo(error); return data; },
   async registrarRespaldoDocs(n, bytes){ const { error } = await sb.rpc("registrar_respaldo_documentos", { p_archivos: n, p_bytes: bytes }); if (error) fallo(error); },
   async verificarDocPersonal(id, v){ const { error } = await sb.rpc("verificar_documento", { p_id: id, p_verificado: !!v }); if (error) fallo(error); },
+  /* Emisión de documentos: folio propio, bloqueo, anulación y versiones */
+  async emitirDocumento(id){ const { data, error } = await sb.rpc("emitir_documento", { p_id: id }); if (error) fallo(error); avisar("documentos"); return data; },
+  async anularDocumento(id, motivo){ const { error } = await sb.rpc("anular_documento", { p_id: id, p_motivo: motivo }); if (error) fallo(error); avisar("documentos"); },
+  async nuevaVersion(id){ const { data, error } = await sb.rpc("nueva_version_documento", { p_id: id }); if (error) fallo(error); avisar("documentos"); return data; },
   async resumenUso(desde){ const { data, error } = await sb.rpc("resumen_uso", { p_desde: desde.toISOString() }); if (error) fallo(error); return data || []; },
 };
 /* Redacción con Claude desde la función de Supabase "redactar" (la clave de la API vive en Supabase, no aquí).
