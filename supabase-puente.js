@@ -309,6 +309,7 @@ const cemepi = {
   async archivoDocPersonal(ruta){ const { data, error } = await sb.storage.from("documentos-personal").download(ruta); if (error) fallo(error); return data; },
   async registrarRespaldoDocs(n, bytes){ const { error } = await sb.rpc("registrar_respaldo_documentos", { p_archivos: n, p_bytes: bytes }); if (error) fallo(error); },
   async verificarDocPersonal(id, v){ const { error } = await sb.rpc("verificar_documento", { p_id: id, p_verificado: !!v }); if (error) fallo(error); },
+  async tablero(desde, hasta, sede){ const { data, error } = await sb.rpc("tablero_indicadores", { p_desde: desde, p_hasta: hasta, p_sede: sede || null }); if (error) fallo(error); return data || {}; },
   async avisos(){ const { data, error } = await sb.rpc("avisos_inicio"); if (error) fallo(error); return data || {}; },
   /* Emisión de documentos: folio propio, bloqueo, anulación y versiones */
   async emitirDocumento(id){ const { data, error } = await sb.rpc("emitir_documento", { p_id: id }); if (error) fallo(error); avisar("documentos"); return data; },

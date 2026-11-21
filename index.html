@@ -245,7 +245,8 @@ td.res{white-space:pre-wrap;min-width:220px}
     <button class="btn" id="usrBtn" type="button" data-act="usuarios" hidden>Usuarios</button>
     <button class="btn" id="permBtn" type="button" data-act="permisos" hidden>Permisos</button>
     <button class="btn" id="sedBtn" type="button" data-act="sedes" hidden>Sedes</button>
-    <button class="btn" id="usoBtn" type="button" data-act="uso" hidden>Tiempo de uso</button></nav>
+    <button class="btn" id="usoBtn" type="button" data-act="uso" hidden>Tiempo de uso</button>
+    <button class="btn" id="tabBtn" type="button" data-act="tablero" hidden>Tablero</button></nav>
   <nav class="nav-g" aria-label="Mi cuenta"><span class="nav-l">Mi cuenta</span>
     <button class="btn" id="ayudaBtn" type="button" data-act="ayuda">Ayuda</button>
     <button class="btn" id="perfilBtn" type="button" data-act="perfil">Mi perfil</button>
@@ -874,12 +875,13 @@ function renderList(){
 function render(){
   const d=$("#detail"); S.dirty=false; S.stale=false;
   const p=S.pacientes.get(S.sel);
-  $("#app").classList.toggle("open", !!p || ["perfil","terapeutas","usuarios","sedes","uso","reglamento","contratos","permisos","documentacion","ayuda"].includes(S.view));
+  $("#app").classList.toggle("open", !!p || ["perfil","terapeutas","usuarios","sedes","uso","reglamento","contratos","permisos","documentacion","ayuda","tablero"].includes(S.view));
   if (S.view==="perfil"){ d.innerHTML=perfilHtml(); activarPad(); return; }
   if (S.view==="terapeutas"){ d.innerHTML=terapeutasHtml(); return; }
   if (S.view==="usuarios"){ d.innerHTML=usuariosHtml(); return; }
   if (S.view==="sedes"){ d.innerHTML=sedesHtml(); return; }
   if (S.view==="uso"){ d.innerHTML=usoHtml(); return; }
+  if (S.view==="tablero"){ d.innerHTML=tableroHtml(); return; }
   if (S.view==="permisos"){ d.innerHTML=permisosHtml(); return; }
   if (S.view==="documentacion"){ d.innerHTML=documentacionHtml(); return; }
   if (S.view==="ayuda"){ d.innerHTML=ayudaHtml(); return; }
@@ -929,6 +931,7 @@ const ACCESOS = () => [
   {t:"Usuarios", d:S.rol==="admin_sede"?"Autoriza y edita las cuentas de tu sede.":"Autoriza cuentas, edita datos y asigna contraseñas.", act:"usuarios", si:gestionaCuentas()},
   {t:"Permisos", d:"Otorga permisos adicionales a personas específicas.", act:"permisos", si:S.rol==="superusuario"},
   {t:"Sedes", d:"Alta y edición de sedes y su clave de folio.", act:"sedes", si:["superusuario","direccion"].includes(S.rol)},
+  {t:"Tablero", d:"Indicadores de atención, documentos, riesgo, personal y portal, por sede y periodo.", act:"tablero", si:["superusuario","direccion"].includes(S.rol)},
   {t:"Tiempo de uso", d:"Minutos de uso de la app por persona.", act:"uso", si:tengo("tiempo_uso")},
   {t:"Mi perfil", d:"Tus datos, tu firma y tu contraseña.", act:"perfil", si:true},
   {t:"Ayuda", d:"Qué puede hacer tu rol y guías paso a paso.", act:"ayuda", si:true},
@@ -1644,6 +1647,7 @@ const MATRIZ = [
   ["Permisos", ["✓","—","—","—","—","—"]],
   ["Sedes", ["✓","✓","—","—","—","—"]],
   ["Tiempo de uso", ["✓","Con permiso","Con permiso","Con permiso","Con permiso","Con permiso"]],
+  ["Tablero de indicadores", ["✓","✓","—","—","—","—"]],
 ];
 function ayudaHtml(){
   const k=rolClave(), info=ROLES_INFO[k]||{}, perms=misPermisos(), cols=["superusuario","direccion","admin_sede","administrativo","psicologo_base","psicologo_ind"];
@@ -1664,6 +1668,104 @@ function ayudaHtml(){
       <li>Lo que se comparta por WhatsApp o Signal lleva solo folio e iniciales.</li>
       <li>La hoja administrativa ya llena no se envía por mensajería.</li>
       <li>No compartas tu contraseña. Cada acción importante queda en la bitácora.</li></ul></section>
+  </div>`;
+}
+/* ================= Tablero de indicadores (Dirección) ================= */
+const TB_PER = [["30","Últimos 30 días"],["90","Últimos 3 meses"],["180","Últimos 6 meses"],["365","Últimos 12 meses"],["anio","Este año"]];
+const MES_TXT = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+function tbRango(){ const h=new Date(), d=new Date(); if (S.tbPer==="anio"){ d.setMonth(0,1); } else d.setDate(d.getDate()-Number(S.tbPer||90));
+  const iso=x=>`${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}-${String(x.getDate()).padStart(2,"0")}`; return [iso(d), iso(h), d]; }
+function tbMeses(desde, hasta){ const out=[]; let y=+desde.slice(0,4), m=+desde.slice(5,7); const fy=+hasta.slice(0,4), fm=+hasta.slice(5,7);
+  while (y<fy || (y===fy && m<=fm)){ out.push(`${y}-${String(m).padStart(2,"0")}`); m++; if (m>12){ m=1; y++; } } return out; }
+async function cargarTablero(){
+  const [desde, hasta, d0] = tbRango();
+  try{ const [tb, uso] = await Promise.all([S.api.tablero(desde, hasta, S.tbSede),
+      tengo("tiempo_uso") ? S.api.resumenUso(d0).catch(()=>null) : Promise.resolve(null)]);
+    S.tb={...tb, uso, desde, hasta}; }
+  catch(e){ S.tb={error:e?.message||"No se pudo cargar el tablero."}; }
+  if (S.view==="tablero") render();
+}
+/* Columnas por mes: una serie, un color; tooltip al pasar el cursor; tabla debajo */
+function barrasMes(serie, meses, etiqueta){
+  const val=new Map((serie||[]).map(x=>[x.mes, Number(x.n)||0])), datos=meses.map(m=>[m, val.get(m)||0]);
+  const max=Math.max(1,...datos.map(d=>d[1])), Wd=320, Hd=150, L=26, B=20, T=10, cw=(Wd-L)/datos.length, bw=Math.max(4,Math.min(28,cw-2));
+  const y=v=>T+(Hd-T-B)*(1-v/max), paso=Math.ceil(datos.length/8);
+  const barras=datos.map(([m,v],i)=>{ const x=L+i*cw+(cw-bw)/2, yy=y(v), h=Hd-B-yy, [Y,M]=m.split("-");
+    const tip=`${MES_TXT[+M-1]} ${Y}: ${v} ${etiqueta}`;
+    return `<g data-tip="${esc(tip)}"><rect x="${L+i*cw}" y="${T}" width="${cw}" height="${Hd-T-B}" fill="transparent"/>${v?`<path class="bar" d="M${x},${Hd-B} V${yy+Math.min(4,h)} Q${x},${yy} ${x+Math.min(4,bw/2)},${yy} H${x+bw-Math.min(4,bw/2)} Q${x+bw},${yy} ${x+bw},${yy+Math.min(4,h)} V${Hd-B} Z"/>`:""}</g>
+      ${i%paso===0?`<text x="${L+i*cw+cw/2}" y="${Hd-6}" text-anchor="middle">${MES_TXT[+M-1]}${M==="01"||i===0?" "+Y.slice(2):""}</text>`:""}`; }).join("");
+  return `<svg viewBox="0 0 ${Wd} ${Hd}" role="img" aria-label="${esc(etiqueta)} por mes">
+    <line class="grid" x1="${L}" x2="${Wd}" y1="${y(max)}" y2="${y(max)}"/><line class="grid" x1="${L}" x2="${Wd}" y1="${Hd-B}" y2="${Hd-B}"/>
+    <text x="${L-4}" y="${y(max)+3}" text-anchor="end">${max}</text><text x="${L-4}" y="${Hd-B+3}" text-anchor="end">0</text>${barras}</svg>
+    <details><summary>Ver tabla</summary><div class="tbl-wrap"><table><thead><tr><th>Mes</th><th>${esc(etiqueta)}</th></tr></thead><tbody>
+    ${datos.map(([m,v])=>{ const [Y,M]=m.split("-"); return `<tr><td>${MES_TXT[+M-1]} ${Y}</td><td class="mono">${v}</td></tr>`; }).join("")}</tbody></table></div></details>`;
+}
+const pct = (a,b) => b ? `${Math.round(100*a/b)}%` : "—";
+const tablaHtml = (cab, filas) => `<div class="tbl-wrap"><table><thead><tr>${cab.map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${filas.length?filas.map(f=>`<tr>${f.map((c,i)=>`<td${i && (typeof c==="number" || /^[\d—]/.test(String(c)))?' class="mono"':""}>${esc(String(c))}</td>`).join("")}</tr>`).join(""):`<tr><td colspan="${cab.length}">Sin datos en este periodo.</td></tr>`}</tbody></table></div>`;
+function tableroHtml(){
+  const t=S.tb, filtros=`<div class="card-h"><h2 style="font-size:24px">Tablero de indicadores</h2><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <select id="tbPer" aria-label="Periodo">${TB_PER.map(([v,l])=>`<option value="${v}"${v===S.tbPer?" selected":""}>${l}</option>`).join("")}</select>
+      <select id="tbSede" aria-label="Sede"><option value="">Todas las sedes</option>${SEDES.map(x=>`<option${x===S.tbSede?" selected":""}>${esc(x)}</option>`).join("")}</select>
+      <button class="btn" type="button" data-act="home">Cerrar</button></span></div>`;
+  if (!t) return `<div class="wrap tablero" style="padding-block:24px">${filtros}<p class="status">Calculando indicadores…</p></div>`;
+  if (t.error) return `<div class="wrap tablero" style="padding-block:24px">${filtros}<p class="banner bad">${esc(t.error)}</p></div>`;
+  const meses=tbMeses(t.desde, t.hasta), E=t.expedientes||{}, N=t.notas||{}, D=t.documentos||{}, Rg=t.riesgo||{}, Po=t.portal||{};
+  /* Cumplimiento del personal */
+  const cum=(t.cumplimiento||[]).map(p=>{ const req=DOCP_REQ[p.rol]||[], tipos=new Set(p.tipos||[]);
+    const necesitaCtr=["administrativo","admin_sede"].includes(p.rol) || (p.rol==="psicologo" && p.modalidad!=="comision");
+    return {...p, docsOk:req.every(k=>tipos.has(k)), necesitaCtr, ctrOk:p.contrato==="firmado"}; });
+  const nCtr=cum.filter(p=>p.necesitaCtr).length;
+  const porSedeCum=[...new Set(cum.map(p=>p.sede||"Sin sede"))].sort().map(sd=>{ const g=cum.filter(p=>(p.sede||"Sin sede")===sd), gc=g.filter(p=>p.necesitaCtr);
+    return [sd, g.length, pct(g.filter(p=>p.docsOk).length,g.length), gc.length?`${gc.filter(p=>p.ctrOk).length} de ${gc.length}`:"—", pct(g.filter(p=>p.reglamento).length,g.length)]; });
+  /* Personal por rol */
+  const rolTxt=x=>x.rol==="psicologo"?(x.modalidad?MOD_TXT[x.modalidad]:"Psicólogo (sin modalidad)"):(ROL_TXT[x.rol]||x.rol);
+  const roles=new Map(); for (const x of t.personal||[]){ const k=rolTxt(x), r=roles.get(k)||{activo:0,pendiente:0,otros:0};
+    if (x.estado==="activo") r.activo+=x.n; else if (x.estado==="pendiente") r.pendiente+=x.n; else r.otros+=x.n; roles.set(k,r); }
+  const activos=[...roles.values()].reduce((a,r)=>a+r.activo,0), pend=[...roles.values()].reduce((a,r)=>a+r.pendiente,0);
+  const ver=D.veredictos||{}, nomPct=pct(N.nom004||0, N.total||0);
+  const kpi=(l,v,sub)=>`<div class="kpi"><small>${esc(l)}</small><b>${esc(String(v))}</b>${sub?`<span>${esc(sub)}</span>`:""}</div>`;
+  const uso=t.uso ? (t.uso||[]).filter(u=>!S.tbSede || u.sede===S.tbSede) : null, usoTot=uso?uso.reduce((a,u)=>a+(Number(u.segundos)||0),0):0;
+  return `<div class="wrap tablero" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">${filtros}
+    <p class="status" style="margin:0">Del ${esc(fmtDate(t.desde))} al ${esc(fmtDate(t.hasta))}${S.tbSede?` · Sede ${esc(S.tbSede)}`:" · Todas las sedes"}. Solo conteos: el tablero no muestra contenido clínico ni datos de consultantes. "Con actividad" = con nota en los últimos 90 días y sin resumen de alta emitido.</p>
+    <div class="kpis">
+      ${kpi("Expedientes", E.total??0, `${E.activos??0} con actividad · ${E.alta??0} de alta`)}
+      ${kpi("Expedientes nuevos", E.nuevos??0, "en el periodo")}
+      ${kpi("Sesiones registradas", N.total??0, `${nomPct} con formato NOM-004`)}
+      ${kpi("Documentos emitidos", D.emitidos??0, `${pct(D.revisados||0, D.emitidos||0)} revisados con Claude`)}
+      ${kpi("Borradores pendientes", D.borradores??0, `${D.borradores_viejos??0} con más de 7 días`)}
+      ${kpi("Notas con riesgo identificado", Rg.total??0, "en notas NOM-004")}
+      ${kpi("Personal activo", activos, pend?`${pend} solicitud${pend===1?"":"es"} pendiente${pend===1?"":"s"}`:"sin solicitudes pendientes")}
+      ${kpi("Documentación completa", pct(cum.filter(p=>p.docsOk).length, cum.length), `${cum.filter(p=>p.docsOk).length} de ${cum.length} personas`)}
+      ${kpi("Códigos del portal activos", Po.codigos_activos??0, `${Po.compartidos??0} reportes compartidos en el periodo`)}
+      ${uso?kpi("Uso de la app", fmtDur(usoTot), `${uso.length} persona${uso.length===1?"":"s"}`):""}
+    </div>
+    <h3 class="sec-h">Atención</h3>
+    <div class="tb-grid">
+      <section class="tb-card"><h4>Expedientes nuevos por mes</h4>${barrasMes(E.nuevos_mes, meses, "expedientes nuevos")}</section>
+      <section class="tb-card"><h4>Sesiones registradas por mes</h4>${barrasMes(N.por_mes, meses, "notas")}</section>
+      <section class="tb-card"><h4>Documentos emitidos por mes</h4>${barrasMes(D.emitidos_mes, meses, "documentos emitidos")}</section>
+      <section class="tb-card"><h4>Notas con indicadores de riesgo por mes</h4>${barrasMes(Rg.por_mes, meses, "notas con riesgo")}
+        <span class="status">Solo cuenta las notas NOM-004 marcadas "Se identificaron indicadores de riesgo". ${N.total&&!N.nom004?"Aún no hay notas NOM-004 en este periodo.":""}</span></section>
+    </div>
+    <div class="tb-grid">
+      <section class="tb-card"><h4>Por sede</h4>${tablaHtml(["Sede","Expedientes","Con actividad","De alta","Nuevos","Sesiones","Con riesgo"],
+        (E.por_sede||[]).map(x=>[x.sede, x.total, x.activos, x.alta, x.nuevos, (N.por_sede||[]).find(y=>y.sede===x.sede)?.n||0, (Rg.por_sede||[]).find(y=>y.sede===x.sede)?.n||0]))}</section>
+      <section class="tb-card"><h4>Carga por terapeuta</h4>${tablaHtml(["Terapeuta","Sede","Asignados","Con actividad","Sesiones en el periodo"],
+        (E.por_terapeuta||[]).map(x=>[x.terapeuta, x.sede||"", x.asignados, x.activos, x.notas]))}
+        ${E.sin_terapeuta?`<span class="status">${E.sin_terapeuta} expediente${E.sin_terapeuta===1?"":"s"} sin terapeuta asignado.</span>`:""}</section>
+      <section class="tb-card"><h4>Documentos emitidos por tipo</h4>${tablaHtml(["Documento","Emitidos"], (D.por_tipo||[]).map(x=>[FORMATOS[x.tipo]?.nombre||x.tipo, x.n]))}
+        <span class="status">Anulados en el periodo: ${D.anulados??0}. Revisión de calidad: ${ver.listo||0} listos · ${ver.corregir||0} con correcciones · ${ver.no_emitir||0} "no emitir" · ${Math.max(0,(D.emitidos||0)-(D.revisados||0))} sin revisión.</span></section>
+    </div>
+    <h3 class="sec-h">Personal y portal</h3>
+    <div class="tb-grid">
+      <section class="tb-card"><h4>Cuentas por tipo de usuario</h4>${tablaHtml(["Tipo","Activas","Pendientes","Rechazadas o suspendidas"], [...roles.entries()].sort().map(([k,r])=>[k, r.activo, r.pendiente, r.otros]))}</section>
+      <section class="tb-card"><h4>Cumplimiento del personal (cuentas activas)</h4>${tablaHtml(["Sede","Personas","Documentación completa","Contratos firmados","Reglamento confirmado"], porSedeCum)}
+        <span class="status">Contratos: ${cum.filter(p=>p.necesitaCtr&&p.ctrOk).length} de ${nCtr} firmados por ambas partes (los psicólogos independientes y los Directivos no llevan contrato individual).</span></section>
+      <section class="tb-card"><h4>Portal del consultante</h4>${tablaHtml(["Indicador","Valor"], [["Códigos de acceso activos", Po.codigos_activos??0], ["Reportes compartidos en el periodo", Po.compartidos??0], ["Reportes vigentes en el portal", Po.vigentes??0], ["Consultantes que entraron en el periodo", Po.con_acceso??0], ["Entradas acumuladas (total histórico)", Po.accesos_total??0]])}
+        <span class="status">Por privacidad el portal no guarda un historial de entradas por fecha: se cuenta la última entrada de cada consultante.</span></section>
+      ${uso?`<section class="tb-card"><h4>Uso de la app en el periodo</h4>${tablaHtml(["Persona","Sede","Tiempo activo"], [...uso].sort((a,b)=>(b.segundos||0)-(a.segundos||0)).slice(0,15).map(u=>[u.nombre||u.email||"", u.sede||"", fmtDur(u.segundos)]))}
+        <span class="status">El detalle completo está en Tiempo de uso.</span></section>`:""}
+    </div>
   </div>`;
 }
 function usoHtml(){
@@ -2054,6 +2156,7 @@ document.addEventListener("click", async ev => {
   if (a==="respaldoDocp") return respaldoDocp(b);
   if (a==="verifDocp"){ try{ await S.api.verificarDocPersonal(b.dataset.id, b.dataset.v==="1"); toast(b.dataset.v==="1"?"Documento verificado.":"Verificación retirada."); }catch(e){ toast(e?.message||"No se pudo actualizar."); } return cargarAdmin("documentacion"); }
   if (a==="permisos"){ S.view="permisos"; S.usuarios=null; S.permTodos=null; render(); return cargarAdmin("permisos"); }
+  if (a==="tablero"){ S.view="tablero"; S.tbPer=S.tbPer||"90"; S.tbSede=S.tbSede||""; S.tb=null; render(); return cargarTablero(); }
   if (a==="uso"){ S.view="uso"; S.usoDias=S.usoDias||7; S.uso=null; render(); return cargarAdmin("uso"); }
   if (a==="autorizarUsr"){ const id=b.dataset.id;
     try{ await S.api.gestionar(id,"activo",$(`#ar-rol-${id}`).value,$(`#ar-sede-${id}`).value); toast("Cuenta autorizada"); }catch(e){ toast(e?.message||"No se pudo autorizar."); }
@@ -2262,6 +2365,12 @@ document.addEventListener("click", async ev => {
     catch(e){ st.textContent=""; toast(errMsg(e)); } return;
   }
 });
+/* Tooltip de las gráficas del tablero */
+document.addEventListener("scroll", () => { const t=$("#vizTip"); if (t) t.style.display="none"; }, true);
+document.addEventListener("mouseover", ev => { const g=ev.target.closest?.("[data-tip]"); let tip=$("#vizTip");
+  if (!g){ if (tip) tip.style.display="none"; return; }
+  if (!tip){ tip=document.createElement("div"); tip.id="vizTip"; document.body.appendChild(tip); }
+  tip.textContent=g.dataset.tip; tip.style.display="block"; const r=g.getBoundingClientRect(); tip.style.left=Math.max(8,r.left+r.width/2-tip.offsetWidth/2)+"px"; tip.style.top=Math.max(8,r.top-28)+"px"; });
 document.addEventListener("change", ev => {
   if (ev.target.dataset?.perm){ const el=ev.target; el.disabled=true;
     S.api.otorgarPermiso(el.dataset.id, el.dataset.perm, el.checked).then(()=>{ toast(el.checked?"Permiso otorgado":"Permiso retirado"); return cargarAdmin("permisos"); })
@@ -2287,6 +2396,7 @@ document.addEventListener("input", ev => {
   if (ev.target.id==="q"){ S.q=ev.target.value; return renderList(); }
   if (ev.target.id==="ctrSalario"){ const l=$("#ctrLetra"); if (l) l.value=/^\d+(\.\d{1,2})?$/.test(ev.target.value)?numeroALetras(ev.target.value):""; }
   if (ev.target.id==="regBuscar"){ S.regQ=ev.target.value; $("#regCuerpo").innerHTML=regCuerpoHtml(); return; }
+  if (ev.target.id==="tbPer" || ev.target.id==="tbSede"){ S.tbPer=$("#tbPer").value; S.tbSede=$("#tbSede").value; S.tb=null; render(); return cargarTablero(); }
   if (ev.target.id==="nm-riesgo"){ const si=ev.target.value===NOM_RIESGO[1]; $("#nm-riesgo-det").hidden=!si; $("#nm-riesgo-av").hidden=!si; }
   if (ev.target.closest("#frm, #frmNota")) S.dirty=true;
   if (S.gen && ev.target.closest(".gen") && ev.target.id!=="g-motivo"){ S.gen.guardado=false;
@@ -2311,6 +2421,7 @@ render();
     $("#usrBtn").hidden = !["superusuario","direccion","admin_sede"].includes(S.rol);
     $("#sedBtn").hidden = !["superusuario","direccion"].includes(S.rol);
     $("#usoBtn").hidden = !tengo("tiempo_uso");
+    $("#tabBtn").hidden = !["superusuario","direccion"].includes(S.rol);
     $("#permBtn").hidden = S.rol!=="superusuario";
     $("#docpBtn").hidden = !S.rol;
     $("#ctrBtn").hidden = !["superusuario","direccion","psicologo","administrativo","admin_sede"].includes(S.rol);
@@ -2409,6 +2520,21 @@ body.solo-empleado .app{grid-template-columns:1fr!important}
 ul.pend{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 ul.pend li{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:8px;padding:8px 12px;background:var(--surface)}
 ul.pend.avisos li{border-left-color:var(--accent,#0560BD)}
+.tablero{--viz-1:#2a78d6}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tablero{--viz-1:#3987e5}}
+:root[data-theme="dark"] .tablero{--viz-1:#3987e5}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.kpi{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;background:var(--surface)}
+.kpi small{display:block;color:var(--muted);font-size:12px}.kpi b{display:block;font-size:26px;line-height:1.2;font-variant-numeric:tabular-nums}
+.kpi span{font-size:12px;color:var(--muted)}
+.tb-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+.tb-card{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;background:var(--surface);display:flex;flex-direction:column;gap:8px;min-width:0}
+.tb-card h4{margin:0;font-size:14px}.tb-card svg{width:100%;height:auto;display:block}
+.tb-card svg text{fill:var(--muted);font-size:10px;font-family:var(--f-body)}
+.tb-card .bar{fill:var(--viz-1)}.tb-card .bar:hover{opacity:.8}.tb-card .grid{stroke:var(--line);stroke-width:1}
+.tb-card details summary{cursor:pointer;font-size:12.5px;color:var(--muted)}
+.tb-card table{font-size:12.5px}
+#vizTip{position:fixed;pointer-events:none;background:var(--fg);color:var(--bg);font-size:12px;padding:4px 8px;border-radius:6px;z-index:50;display:none;white-space:nowrap}
 .aviso-items{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;align-items:center}
 .ayuda-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin:8px 0}
 .ayuda-cols ul{margin:4px 0 0;padding-left:18px}
