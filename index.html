@@ -1238,7 +1238,7 @@ const ACCESOS = () => [
   {t:"Tablero", d:"Indicadores de atención, documentos, riesgo, personal y portal, por sede y periodo.", act:"tablero", si:["superusuario","direccion"].includes(S.rol)},
   {t:"Tiempo de uso", d:"Minutos de uso de la app por persona.", act:"uso", si:tengo("tiempo_uso")},
   {t:"Mi perfil", d:"Tus datos, tu firma y tu contraseña.", act:"perfil", si:true},
-  {t:"Ayuda", d:"Qué puede hacer tu rol y guías paso a paso.", act:"ayuda", si:true},
+  {t:"Ayuda y manual de mi rol", d:"Instructivo paso a paso de tu rol, descargable en Word.", act:"ayuda", si:true},
 ].filter(x=>x.si);
 /* ---------- Avisos de vencimiento (aprobados por el Director, 2026-11-21) ---------- */
 const diasHasta = f => Math.round((new Date(String(f).slice(0,10)+"T00:00") - new Date(today()+"T00:00"))/86400000);
@@ -1956,6 +1956,182 @@ const MATRIZ = [
   ["Tiempo de uso", ["✓","Con permiso","Con permiso","Con permiso","Con permiso","Con permiso"]],
   ["Tablero de indicadores", ["✓","✓","—","—","—","—"]],
 ];
+/* ---------- Manuales por rol (Ayuda → Manual de mi rol y descarga en Word). Una sola fuente para la app y el Word. ---------- */
+const MANUALES = {
+ psicologo: { n:"Psicólogo(a)", para:"Psicólogo base (nómina) y psicólogo independiente (comisión)",
+  intro:"Este instructivo explica cómo trabajar tus expedientes en la plataforma de CEMEPI, desde la primera sesión hasta la entrega de documentos. Solo ves los expedientes que tienes asignados.",
+  caps:[
+   {t:"Tu cuenta y tu perfil", p:[
+    "Si aún no tienes cuenta, en la pantalla de entrada pulsa «Solicita tu cuenta», elige «Psicólogo base» (con contrato y sueldo) o «Psicólogo independiente» (por comisión) y llena tus datos. Tu cuenta queda pendiente hasta que la autorice tu administración de sede o la Dirección.",
+    "Al entrar por primera vez, ve a «Mi perfil»: escribe tu nombre completo tal como irá en la firma y tu cédula profesional. Sube o dibuja tu firma: se coloca sobre la línea de firma de tus documentos.",
+    "Si te asignaron una contraseña, cámbiala en «Mi perfil → Cambiar mi contraseña» (mínimo 10 caracteres).",
+    "En «Mi perfil → Apariencia y privacidad» puedes elegir tema claro u oscuro, letra más grande y el modo privado."]},
+   {t:"Tu día en Inicio", p:[
+    "«Pendientes» te dice lo que falta: completar tu perfil, firmar tu contrato, confirmar el reglamento o subir documentos.",
+    "«Avisos» te alerta de códigos del portal por vencer, borradores sin emitir de más de 7 días, expedientes sin notas en 60 días y consultantes que cumplen 18 años. Cada aviso tiene un botón que te lleva directo.",
+    "Usa el buscador de la barra superior (Ctrl K) para encontrar un expediente por iniciales, folio o fecha de nacimiento."]},
+   {t:"Abrir un expediente", p:[
+    "Pulsa «Nuevo expediente» en el menú.",
+    "Escribe solo las iniciales del consultante con puntos (por ejemplo J.L.M.R.), su fecha de nacimiento y la fecha de la primera sesión. Si escribes el nombre completo, la app lo convierte en iniciales.",
+    "Elige la sede y el terapeuta asignado y pulsa «Guardar datos». El folio lleva la clave de la sede.",
+    "Nunca registres nombre completo, teléfono, correo, domicilio ni CURP del consultante. Para los datos de contacto descarga la «Hoja administrativa» en Word: se llena a mano, se resguarda aparte y no se envía por mensajería."]},
+   {t:"Consentimiento informado", p:[
+    "En el expediente, pestaña «Documentos», sección «Consentimiento informado», escribe las condiciones de participación (frecuencia, duración, cancelaciones y honorarios).",
+    "En sesión: pulsa «Firmar en esta sesión» y entrega tu tablet o celular a la persona. Lee el texto, marca las casillas, elige quién firma y firma con el dedo.",
+    "Desde casa: pulsa «Enviar al portal para firma». La persona entra al portal con su código y firma desde su celular.",
+    "Si la persona es menor de edad, firma su madre, padre o representante legal y debe declarar que tiene facultades para hacerlo.",
+    "Descarga el PDF del consentimiento firmado. Si la persona lo retira, pulsa «Revocar» y escribe el motivo."]},
+   {t:"Notas de sesión", p:[
+    "En la pestaña «Notas» elige «Nota libre» (pegas tu texto) o «Estructurada (NOM-004)» (hora, modalidad, lo que refiere, lo que observaste, intervención, respuesta, evolución, riesgo, acuerdos y plan).",
+    "Escribe solo iniciales. Separa lo que la persona refiere de lo que tú observaste y de tus hipótesis.",
+    "Si marcas «Se identificaron indicadores de riesgo», describe los hechos y avisa a la Dirección. La nota no sustituye las medidas de protección.",
+    "Las notas no se editan. Si hubo un error, agrega una nota nueva que lo aclare."]},
+   {t:"Documentos: redactar, revisar y emitir", p:[
+    "Al guardar una nota aparecen las opciones para crear un documento con ella (reporte, evaluación, carta de proceso, referencia, constancia, carta a tutores, resumen de alta). También puedes ir a la pestaña «Documentos».",
+    "Claude redacta el documento con tus notas y los criterios de CEMEPI. Léelo completo y corrige lo necesario: la responsabilidad es tuya.",
+    "Pulsa «Revisar calidad con Claude». Atiende los hallazgos; «Aplicar sugerencia» cambia el texto por ti.",
+    "Pulsa «Guardar en el expediente». Mientras sea borrador, el Word y el PDF salen con la leyenda «BORRADOR · No válido para entregar».",
+    "Cuando esté listo, pulsa «Emitir documento» y pulsa otra vez para confirmar. Recibe folio propio (CEMEPI-DOC-AAAA-NNNNN) y queda bloqueado. Ahora descárgalo en Word o PDF: ese es el que se entrega.",
+    "Para corregir un documento emitido: ábrelo y pulsa «Crear nueva versión», corrige el borrador y emítelo. Si ya no es válido, pulsa «Anular» y escribe el motivo."]},
+   {t:"Portal del consultante", p:[
+    "En «Documentos → Portal del consultante» pulsa «Generar código de acceso». El código se muestra una sola vez: anótalo y entrégalo en persona. Vence a los 180 días.",
+    "Junto a un reporte o evaluación emitidos pulsa «Compartir con el consultante». Solo se comparten documentos emitidos.",
+    "La persona entra a la página de consulta con su folio, fecha de nacimiento y código. Con menores de edad, verifica antes la representación legal.",
+    "Puedes retirar un reporte o revocar el código cuando quieras."]},
+   {t:"Expediente completo en PDF", p:[
+    "En los datos del expediente pulsa «Expediente completo (PDF)», elige la finalidad y pulsa «Generar PDF».",
+    "Es un documento interno y confidencial: guárdalo en un lugar seguro y no lo envíes por mensajería. La exportación queda en la bitácora.",
+    "Si una autoridad solicita información, avisa a la Dirección antes de entregar nada."]},
+   {t:"Mi trabajo: contrato, documentación y reglamento", p:[
+    "Psicólogo base: en «Mi contrato» pulsa «Comenzar mi contrato», captura tus datos y beneficiarios y guarda. La Dirección registra tu fecha de alta y salario; después firmas tú y al final firma CEMEPI. Psicólogo independiente: no tienes contrato individual de trabajo.",
+    "En «Mi documentación» sube en PDF tus documentos obligatorios (identificación, CURP, comprobante de domicilio, constancia fiscal, cédula y título). Las etiquetas «Falta» y «✓» te guían. El comprobante de domicilio debe tener menos de 3 meses.",
+    "En «Reglamento» léelo y pulsa «Confirmo que lo recibí y lo leí»."]},
+   {t:"Reglas de privacidad", p:[
+    "Del consultante solo se registran iniciales y fecha de nacimiento.",
+    "Por Signal o WhatsApp solo se comparte folio e iniciales, nunca nombre, teléfono, correo ni domicilio.",
+    "Activa el modo privado (ícono del ojo) si compartes pantalla o trabajas con gente alrededor.",
+    "No compartas tu contraseña. Cada acción importante queda registrada en la bitácora."]}
+  ]},
+ admin_sede: { n:"Administración de sede", para:"Administración de una sede",
+  intro:"Este instructivo explica cómo coordinar tu sede en la plataforma: cuentas del personal, expedientes, terapeutas y documentación de los psicólogos de tu sede.",
+  caps:[
+   {t:"Tu cuenta y tu perfil", p:[
+    "Solicita tu cuenta eligiendo «Administración de sede»; la autoriza la Dirección.",
+    "En «Mi perfil» escribe tu nombre, sube tu firma y cambia tu contraseña si te asignaron una."]},
+   {t:"Autorizar y administrar cuentas de tu sede", p:[
+    "En «Usuarios», sección «Solicitudes pendientes», revisa que el nombre y la cédula correspondan a personal real de tu sede.",
+    "Elige el rol y pulsa «Autorizar» (o «Rechazar»).",
+    "Con «Editar cuenta» corriges nombre, cédula y teléfono, cambias rol o estado y asignas una contraseña («Generar segura»). Entrégala por un canal distinto al correo.",
+    "Usa el buscador y los filtros de la tabla para encontrar a una persona."]},
+   {t:"Expedientes de tu sede", p:[
+    "Pulsa «Nuevo expediente»: escribe solo iniciales, fecha de nacimiento y fecha de primera sesión, y asigna al terapeuta.",
+    "Descarga la «Hoja administrativa» en Word para los datos de contacto; se resguarda aparte y no se envía por mensajería.",
+    "En Inicio, «Avisos» te muestra los expedientes de tu sede sin terapeuta o sin fecha de nacimiento."]},
+   {t:"Terapeutas de tu sede", p:[
+    "En «Terapeutas» mantén al día el directorio de tu sede: nombre completo y cédula, que se usan en la firma de los documentos."]},
+   {t:"Notas y documentos clínicos", p:[
+    "Puedes ver y editar las notas y documentos de los expedientes de tu sede. Hazlo solo cuando sea necesario para la atención o la coordinación, por confidencialidad.",
+    "Los documentos se emiten con «Emitir documento» y quedan bloqueados; las correcciones se hacen como nueva versión."]},
+   {t:"Documentación de los psicólogos", p:[
+    "En «Documentación» abre a cada psicólogo de tu sede, pulsa «Ver PDF» y cotéjalo con el original.",
+    "Pulsa «Verificar». Un documento verificado ya no lo puede borrar su titular.",
+    "El filtro «Con documentos faltantes» te dice a quién pedirle documentos."]},
+   {t:"Tu propio contrato, documentación y reglamento", p:[
+    "En «Mi contrato» captura tus datos; la Dirección registra alta y salario y después firmas.",
+    "Sube tus documentos en «Documentación» y confirma el «Reglamento»."]},
+   {t:"Reglas de privacidad", p:[
+    "Del consultante solo iniciales y fecha de nacimiento; por mensajería solo folio e iniciales.",
+    "Activa el modo privado si compartes pantalla. No compartas tu contraseña."]}
+  ]},
+ administrativo: { n:"Administrativo(a)", para:"Personal administrativo",
+  intro:"Este instructivo explica lo que haces en la plataforma como trabajador(a) administrativo(a): tu contrato, tu documentación y el reglamento. Por confidencialidad, no tienes acceso a expedientes ni notas clínicas.",
+  caps:[
+   {t:"Tu cuenta y tu perfil", p:[
+    "En la pantalla de entrada pulsa «Solicita tu cuenta», elige «Administrativo» y llena tus datos. Tu cuenta queda pendiente hasta que la autorice tu administración de sede o la Dirección.",
+    "Al entrar, ve a «Mi perfil»: revisa tu nombre, sube o dibuja tu firma y, si te asignaron contraseña, cámbiala por una que solo tú conozcas (mínimo 10 caracteres)."]},
+   {t:"Mi contrato", p:[
+    "Entra a «Mi contrato» y pulsa «Comenzar mi contrato».",
+    "Captura tus datos personales y tus beneficiarios y pulsa «Guardar mis datos».",
+    "La Dirección registra tu fecha de alta ante el IMSS y tu salario.",
+    "Cuando aparezca el aviso «Tu contrato está listo para firmar», pulsa «Firmar mi contrato». Al final firma el representante legal de CEMEPI.",
+    "Puedes descargar tu contrato en Word. Si cambian tus datos, las firmas se anulan y se vuelve a firmar."]},
+   {t:"Mi documentación", p:[
+    "Entra a «Mi documentación», elige el tipo de documento y sube el PDF (máximo 10 MB). En cursos y diplomados escribe la descripción.",
+    "Las etiquetas «Falta» y «✓» te indican qué documentos obligatorios te faltan: identificación, CURP, comprobante de domicilio, constancia de situación fiscal y comprobante de estudios.",
+    "El comprobante de domicilio debe tener menos de 3 meses; la app te avisará cuando haya que renovarlo.",
+    "Si eliminas un documento, pasa a la papelera y la Dirección puede restaurarlo durante 30 días. Un documento ya verificado no lo puedes borrar."]},
+   {t:"Reglamento Interior de Trabajo", p:[
+    "Entra a «Reglamento», léelo (tiene índice y buscador) y pulsa «Confirmo que lo recibí y lo leí». Queda registrada la fecha y hora."]},
+   {t:"Usar la app en el celular", p:[
+    "Puedes instalar la app: en Android pulsa «Instalar app»; en iPhone, «Compartir → Agregar a pantalla de inicio».",
+    "Si tienes dudas, entra a «Ayuda»."]},
+   {t:"Reglas", p:[
+    "No compartas tu contraseña.",
+    "Tus documentos solo los ven tú, la Dirección y quien administra el personal."]}
+  ]},
+ direccion: { n:"Directivo(a)", para:"Directivos y Dirección General",
+  intro:"Este instructivo resume lo que la Dirección hace en la plataforma: autorizar al personal, supervisar la atención, completar contratos, cuidar la documentación y revisar indicadores. Tienes acceso a toda la plataforma; cada acción importante queda en la bitácora.",
+  caps:[
+   {t:"Tu cuenta", p:[
+    "Solicita tu cuenta eligiendo «Directivo»; solo la autoriza el superusuario.",
+    "En «Mi perfil» completa tu nombre, tu firma y tu contraseña."]},
+   {t:"Inicio: pendientes y avisos", p:[
+    "Revisa cada día «Pendientes»: solicitudes de cuenta, contratos por completar y documentos por verificar.",
+    "En «Avisos» atiende el respaldo de la documentación (más de 30 días), la papelera con plazo cumplido, los comprobantes de domicilio vencidos y los expedientes sin terapeuta o sin fecha de nacimiento."]},
+   {t:"Usuarios y sedes", p:[
+    "En «Usuarios» autoriza a administrativos, administraciones de sede y psicólogos de cualquier sede, después de verificar nombre y cédula.",
+    "Con «Editar cuenta» cambias rol, sede, estado, modalidad del psicólogo (base o independiente) y asignas contraseñas.",
+    "En «Sedes» das de alta o editas sedes y su clave de 3 letras para el folio."]},
+   {t:"Supervisión de la atención", p:[
+    "Puedes abrir cualquier expediente, sus notas y documentos. Usa el buscador (Ctrl K) para encontrarlo.",
+    "Los documentos de riesgo alto requieren revisión humana especializada antes de emitirse.",
+    "Las notas NOM-004 con indicadores de riesgo deben activar la valoración y las medidas de protección que correspondan.",
+    "Solo la Dirección puede eliminar un expediente completo."]},
+   {t:"Contratos del personal", p:[
+    "En «Contratos» abre el contrato de cada persona y registra la fecha de alta ante el IMSS, el salario diario y, si cambian, los datos del empleador (RFC, razón social y registro patronal).",
+    "Cuando la persona firme, el superusuario firma por CEMEPI. Cualquier cambio posterior anula las firmas.",
+    "Usa los filtros por sede y estado para ver qué contratos faltan."]},
+   {t:"Documentación del personal", p:[
+    "En «Documentación» abre a cada persona, coteja los PDF con el original y pulsa «Verificar».",
+    "Al menos una vez al mes pulsa «Descargar respaldo (ZIP)» y guárdalo en un lugar seguro de CEMEPI: los respaldos automáticos no incluyen los PDF.",
+    "En la «Papelera» puedes restaurar lo que se borró por error; después de 30 días puedes eliminarlo definitivamente."]},
+   {t:"Solicitudes de autoridad y exportación", p:[
+    "Ante una solicitud de juzgado, fiscalía u otra autoridad: verifica autenticidad y competencia, identifica exactamente qué se pide y entrega solo lo procedente.",
+    "Usa «Expediente completo (PDF)» eligiendo la finalidad «Solicitud de autoridad»; la exportación queda en la bitácora. Nunca se modifican notas para adaptarlas a una controversia."]},
+   {t:"Indicadores y reglamento", p:[
+    "En «Tablero» revisa por sede y periodo: expedientes, sesiones, documentos emitidos y su revisión, notas con riesgo, cumplimiento del personal y portal.",
+    "En «Reglamento» puedes editar la leyenda de vigencia y los datos del empleador. Cambiar el texto requiere una nueva versión aprobada por la Comisión Mixta."]},
+   {t:"Privacidad", p:[
+    "Activa el modo privado al compartir pantalla.",
+    "Por mensajería solo folio e iniciales. La hoja administrativa llena no se envía por mensajería."]}
+  ]}
+};
+const manualDeRol = k => k==="psicologo_base"||k==="psicologo_ind"||k==="psicologo" ? "psicologo" : k==="superusuario" ? "direccion" : k;
+
+function manualHtml(k){
+  const ver = ["superusuario","direccion"].includes(S.rol), mk = (ver && S.ayudaManual) || manualDeRol(k), M = MANUALES[mk];
+  if (!M) return "";
+  return `<section class="note" id="manualRol"><div class="note-h"><h3>Manual de mi rol${ver?"":`: ${esc(M.n)}`}</h3><span class="spacer"></span>
+      ${ver?`<label class="sr" for="manSel">Manual</label><select id="manSel">${Object.entries(MANUALES).map(([key,m])=>`<option value="${key}"${key===mk?" selected":""}>${esc(m.n)}</option>`).join("")}</select>`:""}
+      <button class="btn sm primary" type="button" data-act="manualWord" data-k="${mk}">Descargar en Word</button></div>
+    <p style="margin:0">${esc(M.intro)}</p>
+    ${M.caps.map((c,i)=>`<details class="guia"${i===0?" open":""}><summary>${i+1}. ${esc(c.t)}</summary><ol>${c.p.map(x=>`<li>${esc(x)}</li>`).join("")}</ol></details>`).join("")}
+    ${ver?`<span class="status">Como Dirección puedes ver y descargar el manual de cada rol para capacitar al personal.</span>`:""}</section>`;
+}
+/* Word del manual: mismo formato institucional (Arial 11, justificado, nota aclaratoria al pie) */
+async function manualWord(mk){
+  const M=MANUALES[mk]; if (!M) return;
+  if (typeof JSZip === "undefined"){ toast("No se pudo preparar el archivo de Word. Recarga la página."); return; }
+  const dl = await window.claude?.use?.("downloads"); if (!dl){ toast("La descarga no está disponible en esta vista."); return; }
+  const xml = P(R(`INSTRUCTIVO DE USO DE LA PLATAFORMA · ${M.n.toUpperCase()}`,{b:1,sz:24,color:"0560BD"}),{jc:"center",before:120,after:80})
+    + P(R(`Para: ${M.para}`,{color:"55688A"}),{jc:"center",after:240})
+    + P(R(M.intro),{after:160})
+    + M.caps.map((c,i)=>P(R(`${i+1}. ${c.t}`,{b:1,sz:22,color:"0560BD"}),{before:220,after:80,keep:1})
+        + c.p.map((x,j)=>P(R(`${i+1}.${j+1}  ${x}`),{after:100})).join("")).join("")
+    + P(R(`Plataforma: ${location.origin}${location.pathname}  ·  Dudas: Ayuda dentro de la app o la Dirección de CEMEPI.`,{color:"55688A"}),{before:280});
+  try{ const blob = await docxBlob("Nov. 2026", xml, [], "Versión"); await dl.save({filename:`Instructivo-${slug(M.n)}-CEMEPI.docx`, data:blob}); toast("Instructivo descargado."); }
+  catch(e){ if (e?.code!=="declined") toast("No se pudo descargar el instructivo."); }
+}
 function ayudaHtml(){
   const k=rolClave(), info=ROLES_INFO[k]||{}, perms=misPermisos(), cols=["superusuario","direccion","admin_sede","administrativo","psicologo_base","psicologo_ind"];
   return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">
@@ -1964,6 +2140,7 @@ function ayudaHtml(){
       <div class="ayuda-cols"><div><b>Puedes</b><ul>${(info.puede||[]).map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>
       <div><b>No puedes</b><ul>${(info.no||[]).map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div></div>
       ${perms.length?`<p style="margin:0"><b>Permisos adicionales que te otorgó el superusuario:</b> ${esc(perms.join(" · "))}.</p>`:""}</section>
+    ${manualHtml(k)}
     <section class="note"><div class="note-h"><h3>Guías paso a paso</h3></div>
       ${GUIAS.filter(g=>g.si()).map(g=>`<details class="guia"><summary>${esc(g.t)}</summary><ol>${g.pasos.map(p=>`<li>${esc(p)}</li>`).join("")}</ol></details>`).join("")}</section>
     <section class="note"><div class="note-h"><h3>Qué puede hacer cada rol</h3></div>
@@ -2577,6 +2754,7 @@ document.addEventListener("click", async ev => {
   if (a==="respaldoDocp") return respaldoDocp(b);
   if (a==="verifDocp"){ try{ await S.api.verificarDocPersonal(b.dataset.id, b.dataset.v==="1"); toast(b.dataset.v==="1"?"Documento verificado.":"Verificación retirada."); }catch(e){ toast(e?.message||"No se pudo actualizar."); } return cargarAdmin("documentacion"); }
   if (a==="permisos"){ S.view="permisos"; S.usuarios=null; S.permTodos=null; render(); return cargarAdmin("permisos"); }
+  if (a==="manualWord") return manualWord(b.dataset.k);
   if (a==="instalar"){
     if (instalacion){ instalacion.prompt(); const r=await instalacion.userChoice.catch(()=>null); if (r?.outcome==="accepted") { b.hidden=true; } instalacion=null; return; }
     if (esIOS()){ toast("En iPhone o iPad: pulsa el botón Compartir de Safari (cuadro con flecha) y elige «Agregar a pantalla de inicio»."); return; }
@@ -2951,6 +3129,7 @@ document.addEventListener("input", ev => {
   if (ev.target.id==="q"){ S.q=ev.target.value; return renderList(); }
   if (ev.target.id==="ctrSalario"){ const l=$("#ctrLetra"); if (l) l.value=/^\d+(\.\d{1,2})?$/.test(ev.target.value)?numeroALetras(ev.target.value):""; }
   if (ev.target.id==="regBuscar"){ S.regQ=ev.target.value; $("#regCuerpo").innerHTML=regCuerpoHtml(); return; }
+  if (ev.target.id==="manSel"){ S.ayudaManual=ev.target.value; render(); $("#manualRol")?.scrollIntoView({block:"start"}); return; }
   if (ev.target.id==="ci-firmante"){ $("#ci-par-fld").hidden = ev.target.value!=="representante"; }
   if (ev.target.id==="tbPer" || ev.target.id==="tbSede"){ S.tbPer=$("#tbPer").value; S.tbSede=$("#tbSede").value; S.tb=null; render(); return cargarTablero(); }
   if (ev.target.id==="nm-riesgo"){ const si=ev.target.value===NOM_RIESGO[1]; $("#nm-riesgo-det").hidden=!si; $("#nm-riesgo-av").hidden=!si; }
