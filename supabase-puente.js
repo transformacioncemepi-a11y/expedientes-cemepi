@@ -309,6 +309,12 @@ const cemepi = {
   async archivoDocPersonal(ruta){ const { data, error } = await sb.storage.from("documentos-personal").download(ruta); if (error) fallo(error); return data; },
   async registrarRespaldoDocs(n, bytes){ const { error } = await sb.rpc("registrar_respaldo_documentos", { p_archivos: n, p_bytes: bytes }); if (error) fallo(error); },
   async verificarDocPersonal(id, v){ const { error } = await sb.rpc("verificar_documento", { p_id: id, p_verificado: !!v }); if (error) fallo(error); },
+  /* Consentimiento informado firmado (en sesión o desde el portal) */
+  async consentimientos(expId){ const { data, error } = await sb.from("consentimientos").select("*").eq("expediente_id", expId).order("creado_en", { ascending: false }); if (error) fallo(error); return data || []; },
+  async firmarConsentimiento(expId, texto, firmante, parentesco, aceptaciones, firma){ const { data, error } = await sb.rpc("firmar_consentimiento_sesion", { p_expediente: expId, p_texto: texto, p_firmante: firmante, p_parentesco: parentesco || null, p_aceptaciones: aceptaciones, p_firma: firma.src, p_w: firma.w, p_h: firma.h }); if (error) fallo(error); return data; },
+  async enviarConsentimientoPortal(expId, texto){ const { data, error } = await sb.rpc("enviar_consentimiento_portal", { p_expediente: expId, p_texto: texto }); if (error) fallo(error); return data; },
+  async cancelarConsentimientoPortal(id){ const { error } = await sb.rpc("cancelar_consentimiento_portal", { p_id: id }); if (error) fallo(error); },
+  async revocarConsentimiento(id, motivo){ const { error } = await sb.rpc("revocar_consentimiento", { p_id: id, p_motivo: motivo }); if (error) fallo(error); },
   async registrarExportacion(expId, finalidad, notas, documentos){ const { data, error } = await sb.rpc("registrar_exportacion_expediente", { p_expediente: expId, p_finalidad: finalidad, p_notas: notas, p_documentos: documentos }); if (error) fallo(error); return data; },
   async tablero(desde, hasta, sede){ const { data, error } = await sb.rpc("tablero_indicadores", { p_desde: desde, p_hasta: hasta, p_sede: sede || null }); if (error) fallo(error); return data || {}; },
   async avisos(){ const { data, error } = await sb.rpc("avisos_inicio"); if (error) fallo(error); return data || {}; },

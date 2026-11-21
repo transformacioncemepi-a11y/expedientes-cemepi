@@ -982,7 +982,7 @@ function render(){
   if (S.view==="reglamento"){ d.innerHTML=reglamentoHtml(); return; }
   if (S.view==="contratos"){ d.innerHTML=contratosHtml(); return; }
   if (!p){ d.innerHTML=inicioHtml(); return; }
-  d.innerHTML=expedienteHtml(p);
+  d.innerHTML=expedienteHtml(p); if (S.firmaCI) activarPad("padCI");
 }
 /* ---------- Inicio por rol: qué tengo pendiente y qué puedo hacer ---------- */
 async function cargarPendientes(){
@@ -1116,8 +1116,8 @@ function procesarFirma(fuente, w0, h0){
   return {src:o.toDataURL("image/png"), w:o.width, h:o.height};
 }
 function leerPerfilForm(){ const v={}; document.querySelectorAll("#frmPerfil [data-k]").forEach(el=>v[el.dataset.k]=el.value.trim()); S.perfilDraft=v; return v; }
-function activarPad(){
-  const cv=$("#padFirma"); if(!cv) return;
+function activarPad(id="padFirma"){
+  const cv=$("#"+id); if(!cv) return;
   const ctx=cv.getContext("2d"); ctx.lineWidth=3.2; ctx.lineCap="round"; ctx.lineJoin="round"; ctx.strokeStyle="#0f2340";
   let on=false; S.trazo=false;
   const pos=e=>{ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height]; };
@@ -2001,7 +2001,8 @@ function estadoDocHtml(d){
     : `<br><span class="pill">Borrador${d.version>1?` · v${d.version}`:""}</span>`;
 }
 function documentosHtml(p, ro){
-  return `<section class="doc-sec">
+  if (S.firmaCI) return firmaCIHtml(p);
+  return `${S.api?consentHtml(p, ro):""}<section class="doc-sec">
       ${S.notaElegida?`<p class="banner" style="margin:0">El documento que elijas quedará vinculado a la nota del ${esc(fmtDate(S.notas.find(n=>n.id===S.notaElegida)?.fecha||""))}.</p>`:""}
       <div><h3 class="sec-h">Crear un documento</h3><p class="status" style="margin:4px 0 0">${S.sample?"Claude redacta el documento con tus notas. Tú lo revisas, lo corriges si hace falta y lo descargas en Word.":"Para los formatos que redacta Claude, la app prepara las instrucciones con tus notas: las pegas en claude.ai y regresas la respuesta aquí. Después lo revisas y lo descargas en Word o PDF."}</p></div>
       <div class="fmt-grid">${ORDEN.map(k=>{ const t=FORMATOS[k], off=false; return `<article class="fmt">
@@ -2025,6 +2026,111 @@ function documentosHtml(p, ro){
 const LIBERABLES = ["reporte","evaluacion"];
 const urlPortal = () => location.origin + location.pathname.replace(/[^/]*$/,"") + "consulta.html";
 const esMenor = p => { const f=p?.ficha?.fechaNac; if (!f) return false; const [y,m,d]=f.split("-").map(Number); const h=new Date(); return (h.getFullYear()-y-((h.getMonth()+1<m||(h.getMonth()+1===m&&h.getDate()<d))?1:0))<18; };
+/* ================= Consentimiento informado firmado digitalmente (decisión del Director, 2026-11-21) =================
+   Se guarda la imagen de la firma, fecha y hora, el texto exacto aceptado y quién firmó (consultante o representante y su
+   parentesco), sin nombres. El PDF deja una línea para escribir el nombre a mano. */
+const CI_PARENTESCOS = ["madre","padre","tutor legal","otro representante legal"];
+const CI_VIA = {sesion:"en sesión, en el dispositivo del profesional", portal:"desde el portal del consultante"};
+function textoConsentimiento(p, condiciones){
+  const c=ctxOf(p), base=contenidoFijo("consentimiento", c), secs=base.secciones.map(x=>({...x}));
+  const cond=secs.find(x=>x.titulo==="Condiciones de participación"); if (cond) cond.texto=(condiciones||"").trim()||PEND;
+  const dec=secs.find(x=>x.titulo==="Declaración"); if (dec) dec.texto="He leído y comprendido la información anterior, se resolvieron mis dudas y otorgo mi consentimiento para iniciar la atención psicológica.";
+  return {titulo:FORMATOS.consentimiento.titulo, secciones:secs};
+}
+async function cargarConsent(expId){
+  try{ S.ciData = await S.api.consentimientos(expId); }catch(e){ S.ciData = {error:e?.message||"No se pudieron cargar los consentimientos."}; }
+  if (S.sel===expId && S.tab==="documentos" && !S.gen && !S.firmaCI) render();
+}
+function consentHtml(p, ro){
+  if (S.ciFor!==p.id){ S.ciFor=p.id; S.ciData=null; if (S.api) cargarConsent(p.id); }
+  const d=S.ciData, menor=esMenor(p);
+  const cab=`<h3 class="sec-h">Consentimiento informado</h3><p class="status" style="margin:4px 0 8px">La persona${menor?" (o, por ser menor de edad, su representante legal)":""} lo firma en tu dispositivo durante la sesión o desde el portal del consultante. Se guarda la firma, la fecha y el texto aceptado, sin nombres.</p>`;
+  if (!d) return `<section class="doc-sec">${cab}<p class="status" style="margin:0">Cargando…</p></section>`;
+  if (d.error) return `<section class="doc-sec">${cab}<p class="status" style="margin:0">${esc(d.error)}</p></section>`;
+  const quien=x=>x.firmante==="representante"?`${x.parentesco||"representante"} (representante legal)`:"la persona consultante";
+  const filas=d.filter(x=>x.estado!=="cancelado").map(x=>`<tr><td>${x.estado==="firmado"?`<span class="pill estado-activo">Firmado</span>`:x.estado==="pendiente"?`<span class="pill estado-pendiente">Pendiente en el portal</span>`:`<span class="pill estado-suspendido">Revocado</span>`}</td>
+    <td>${x.estado==="pendiente"?`Enviado el ${esc(fmtFH(x.creado_en))}`:`Firmó ${esc(quien(x))} el ${esc(fmtFH(x.firmado_en))}, ${esc(CI_VIA[x.via])}`}${x.estado==="revocado"?`<br><span class="status">Revocado el ${esc(fmtFH(x.revocado_en))}: ${esc(x.motivo_revocacion||"")}</span>`:""}</td>
+    <td style="white-space:nowrap">${x.estado!=="pendiente"?`<button class="btn sm" type="button" data-act="ciPdf" data-id="${esc(x.id)}">PDF</button>`:""}
+      ${ro?"":x.estado==="pendiente"?`<button class="btn sm" type="button" data-act="ciCancelar" data-id="${esc(x.id)}">Cancelar envío</button>`:x.estado==="firmado"?`<button class="btn sm danger" type="button" data-act="ciRevocar" data-id="${esc(x.id)}">Revocar</button>`:""}</td></tr>`).join("");
+  const vigente=d.some(x=>x.estado==="firmado");
+  return `<section class="doc-sec">${cab}
+    ${filas?`<div class="tbl-wrap"><table><thead><tr><th>Estado</th><th>Detalle</th><th></th></tr></thead><tbody>${filas}</tbody></table></div>`:`<p style="margin:0 0 8px">${menor?"Aún no hay consentimiento firmado por el representante legal.":"Aún no hay consentimiento firmado."}</p>`}
+    ${S.ciRevocar?`<div class="fld" style="margin-top:8px"><label for="ci-motivo">Motivo de la revocación *</label><textarea id="ci-motivo" style="min-height:60px" placeholder="Ej. La consultante retiró su consentimiento en la sesión del 21/11/2026."></textarea>
+      <div class="actions"><button class="btn danger" type="button" data-act="ciRevocarOk">Revocar consentimiento</button><button class="btn" type="button" data-act="ciRevocarNo">Cancelar</button></div></div>`:""}
+    ${ro?"":`<div class="fld" style="margin-top:8px"><label for="ci-cond">Condiciones de participación (frecuencia, duración, horarios, cancelaciones y honorarios)</label>
+      <textarea id="ci-cond" style="min-height:60px" placeholder="Ej. Sesiones semanales de 50 minutos. Las cancelaciones se avisan con 24 horas. Honorarios por sesión: $___.">${esc(S.ciCond||"")}</textarea></div>
+      <div class="usr-fila"><button class="btn sm primary" type="button" data-act="ciSesion">${vigente?"Firmar uno nuevo en esta sesión":"Firmar en esta sesión"}</button>
+        <button class="btn sm" type="button" data-act="ciPortal">Enviar al portal para firma</button></div>
+      <span class="status">Para firmar desde el portal, la persona necesita un código de acceso vigente (sección Portal del consultante). El texto es el formato base de CEMEPI, sujeto a revisión jurídica.</span>`}
+  </section>`;
+}
+function firmaCIHtml(p){
+  const f=S.firmaCI, menor=esMenor(p);
+  return `<section class="doc-sec">
+    <div class="note-h"><button class="btn sm" type="button" data-act="ciSalir">← Cancelar</button><h3>Consentimiento informado · firma en sesión</h3></div>
+    <p class="banner" style="display:block;margin:0">Entrega el dispositivo a ${menor?"la madre, el padre o el representante legal":"la persona consultante"} para que lea, marque las casillas y firme con el dedo o el lápiz.</p>
+    <div class="ci-texto"><b>${esc(f.texto.titulo)}</b><p class="status">Folio ${esc(p.folio)}</p>${f.texto.secciones.map(x=>`${x.titulo?`<h4>${esc(x.titulo)}</h4>`:""}${String(x.texto).split(/\n{2,}/).map(t=>`<p>${esc(t)}</p>`).join("")}`).join("")}</div>
+    <div class="ci-checks">
+      <label><input type="checkbox" class="ci-ck" value="leido"> He leído la información, pude hacer preguntas y se resolvieron mis dudas.</label>
+      <label><input type="checkbox" class="ci-ck" value="confidencialidad"> Entiendo la confidencialidad y sus excepciones legales.</label>
+      <label><input type="checkbox" class="ci-ck" value="datos"> Acepto el tratamiento de mis datos personales conforme al aviso de privacidad de CEMEPI.</label>
+      ${menor?`<label><input type="checkbox" class="ci-ck" value="representacion"> Declaro ser representante legal de la persona menor de edad y contar con facultades para otorgar este consentimiento.</label>`:""}
+    </div>
+    <div class="datos"><div class="fld"><label for="ci-firmante">¿Quién firma? *</label><select id="ci-firmante">${menor?"":`<option value="consultante">La persona consultante</option>`}<option value="representante"${menor?" selected":""}>Representante legal</option></select></div>
+      <div class="fld" id="ci-par-fld"${menor?"":" hidden"}><label for="ci-parentesco">Parentesco o calidad *</label><select id="ci-parentesco"><option value="">Elige…</option>${CI_PARENTESCOS.map(x=>`<option>${esc(x)}</option>`).join("")}</select></div></div>
+    <div class="fld"><label for="padCI">Firma *</label><canvas id="padCI" width="900" height="300" aria-label="Área para firmar"></canvas>
+      <div class="usr-fila" style="margin-top:6px"><button class="btn sm" type="button" data-act="ciLimpiar">Borrar firma</button></div></div>
+    <div class="actions"><button class="btn primary" type="button" data-act="ciFirmar">Firmar consentimiento</button></div>
+    <span class="status">No se guarda el nombre. En el PDF queda una línea para escribirlo a mano si se imprime.</span>
+  </section>`;
+}
+/* PDF del consentimiento firmado (texto aceptado + firma + quién firmó) */
+async function pdfConsentimiento(p, x){
+  const {PDFDocument, StandardFonts, rgb} = PDFLib;
+  const pdf=await PDFDocument.create(); pdf.setTitle("Consentimiento informado"); pdf.setAuthor("CEMEPI · Centro Mexicano de Plenitud Humana, S.C."); pdf.setLanguage("es-MX");
+  const font=await pdf.embedFont(StandardFonts.Helvetica), bold=await pdf.embedFont(StandardFonts.HelveticaBold);
+  const b64=(document.querySelector(".appbar img")?.src||"").split(",")[1], logo=b64?await pdf.embedPng(Uint8Array.from(atob(b64), ch=>ch.charCodeAt(0))):null;
+  const W=612, H=792, M=54, CW=W-2*M, FS=11, LH=13.8, azul=rgb(0.02,0.376,0.741), tinta=rgb(0.06,0.14,0.25), gris=rgb(0.33,0.41,0.54), rojo=rgb(0.776,0.157,0.157);
+  const nota=envolver(NOTA_ACLARATORIA, font, 7, CW), pieH=nota.length*8.6, BASE=26+pieH+18; let page, y;
+  const nueva=()=>{ page=pdf.addPage([W,H]); y=H-M; }, espacio=h=>{ if (y-h<BASE) nueva(); };
+  const centro=(t,sz,f,col)=>{ const s2=limpiarPdf(t); page.drawText(s2,{x:(W-f.widthOfTextAtSize(s2,sz))/2, y, size:sz, font:f, color:col}); };
+  const parrafo=(texto, o={})=>{ const fo=o.b?bold:font, sz=o.size||FS, lh=o.lh||LH;
+    for (const par of limpiarPdf(String(texto??"")).split("\n")){ if (!par.trim()){ y-=lh*0.5; continue; }
+      const pal=par.split(/ +/).filter(Boolean), lineas=[]; let act=[];
+      for (const w of pal){ if (fo.widthOfTextAtSize([...act,w].join(" "),sz)<=CW || !act.length) act.push(w); else { lineas.push(act); act=[w]; } }
+      if (act.length) lineas.push(act);
+      lineas.forEach((ws,i)=>{ espacio(lh); y-=lh; if (i===lineas.length-1 || ws.length<2){ page.drawText(ws.join(" "),{x:M, y, size:sz, font:fo, color:o.color||tinta}); return; }
+        const an=ws.map(w=>fo.widthOfTextAtSize(w,sz)), gap=(CW-an.reduce((a,b)=>a+b,0))/(ws.length-1); let xx=M; ws.forEach((w,k)=>{ page.drawText(w,{x:xx, y, size:sz, font:fo, color:o.color||tinta}); xx+=an[k]+gap; }); });
+      y-=3; } };
+  nueva();
+  if (logo) page.drawImage(logo,{x:M, y:y-42, width:48, height:42});
+  y-=15; page.drawText("Centro Mexicano de Plenitud Humana, S.C.",{x:M+58, y, size:13, font:bold, color:azul});
+  y-=14; page.drawText("CEMEPI · Atención psicológica · www.cemepi.com.mx",{x:M+58, y, size:8.5, font, color:gris});
+  page.drawText("Folio",{x:W-M-font.widthOfTextAtSize("Folio",8), y:y+16, size:8, font, color:gris});
+  page.drawText(limpiarPdf(p.folio),{x:W-M-bold.widthOfTextAtSize(limpiarPdf(p.folio),11), y:y+2, size:11, font:bold, color:tinta});
+  y-=18; page.drawLine({start:{x:M,y}, end:{x:W-M,y}, thickness:1.5, color:azul});
+  if (x.estado==="revocado"){ y-=16; centro(`CONSENTIMIENTO REVOCADO el ${fechaHora(Date.parse(x.revocado_en))}`, 10, bold, rojo); }
+  y-=28; centro((x.texto?.titulo||"Consentimiento informado").toUpperCase(), 12, bold, azul); y-=8;
+  for (const sc of x.texto?.secciones||[]){ if (sc.titulo){ espacio(LH*3); y-=LH+2; page.drawText(limpiarPdf(sc.titulo),{x:M, y, size:FS, font:bold, color:azul}); } parrafo(sc.texto||""); }
+  const ac=x.aceptaciones||{}, marcas=[ac.leido&&"leyó la información y se resolvieron sus dudas", ac.confidencialidad&&"entiende la confidencialidad y sus excepciones", ac.datos&&"acepta el tratamiento de datos personales", ac.representacion&&"declara ser representante legal con facultades para otorgar el consentimiento"].filter(Boolean);
+  if (marcas.length){ y-=4; parrafo(`Al firmar, la persona marcó que ${marcas.join("; ")}.`, {size:10, color:gris}); }
+  /* Firma */
+  let img=null; try{ img=await pdf.embedPng(Uint8Array.from(atob(String(x.firma).split(",")[1]), ch=>ch.charCodeAt(0))); }catch(e){ console.warn("firma",e); }
+  espacio(210); y-=16;
+  if (img){ let fw=180, fh=fw*img.height/img.width; if (fh>64){ fh=64; fw=fh*img.width/img.height; } page.drawImage(img,{x:W/2-fw/2, y:y-fh, width:fw, height:fh}); y-=fh+2; } else y-=60;
+  page.drawLine({start:{x:W/2-130,y}, end:{x:W/2+130,y}, thickness:0.8, color:tinta});
+  y-=14; centro(x.firmante==="representante"?`Firma de ${x.parentesco||"el representante"}, representante legal de la persona consultante`:"Firma de la persona consultante", 10, bold, tinta);
+  y-=22; centro("Nombre: ____________________________________________", 10, font, tinta);
+  y-=14; centro("(escribir a mano; el sistema no guarda nombres)", 8, font, gris);
+  y-=16; centro(`Firmado electrónicamente el ${fechaHora(Date.parse(x.firmado_en))}, ${CI_VIA[x.via]||""}.`, 9, font, gris);
+  y-=30; centro(x.profesional||"", 10, bold, tinta);
+  y-=13; centro(`Profesional responsable · Cédula profesional: ${x.cedula||PEND}`, 9, font, tinta);
+  y-=12; centro("Centro Mexicano de Plenitud Humana, S.C.", 9, font, gris);
+  const total=pdf.getPageCount();
+  pdf.getPages().forEach((pg,i)=>{ nota.forEach((l,j)=>pg.drawText(l,{x:M, y:26+(nota.length-1-j)*8.6, size:7, font, color:gris}));
+    const t=limpiarPdf(`Folio ${p.folio} · Página ${i+1} de ${total}`); pg.drawText(t,{x:W-M-font.widthOfTextAtSize(t,7), y:26+pieH+4, size:7, font, color:gris}); });
+  return pdf.save();
+}
 async function cargarPortal(expId){
   try{ S.portalData = await S.api.portalExpediente(expId); }catch(e){ S.portalData = {error: e?.message||"No se pudo cargar el portal."}; }
   if (S.sel===expId && S.tab!=="notas" && !S.gen) render();
@@ -2131,7 +2237,7 @@ function markStale(){ const b=$("#staleBox"); if(!b||S.stale||S.gen) return; S.s
   b.innerHTML=`<div class="banner">Este expediente se actualizó en otra ventana. <button class="btn sm" type="button" data-act="reload">Ver cambios</button> <span class="status">(se descartan los cambios sin guardar)</span></div>`; }
 
 /* ================= Acciones ================= */
-function select(id){ S.sel=id; S.view="exp"; S.tab="notas"; S.gen=null; watch(); renderList(); render(); $("#detail").scrollTop=0; }
+function select(id){ S.sel=id; S.view="exp"; S.tab="notas"; S.gen=null; S.firmaCI=null; S.ciRevocar=null; watch(); renderList(); render(); $("#detail").scrollTop=0; }
 async function crear(){
   if (!S.db){ toast("La base de datos no está disponible en esta vista."); return; }
   if (!S.canWrite){ toast("Tienes acceso de solo lectura."); return; }
@@ -2171,7 +2277,7 @@ async function generar(p){
 document.addEventListener("click", async ev => {
   const b=ev.target.closest("button"); if(!b||b.disabled) return;
   if (b.classList.contains("row")) return select(b.dataset.id);
-  if (b.dataset.tab){ if((S.dirty||(S.gen?.contenido && !S.gen.guardado)) && !arm(b,"tab"+b.dataset.tab,"¿Descartar cambios?")) return; armed=null; S.ctl?.abort(); S.tab=b.dataset.tab; S.gen=null; return render(); }
+  if (b.dataset.tab){ if((S.dirty||(S.gen?.contenido && !S.gen.guardado)) && !arm(b,"tab"+b.dataset.tab,"¿Descartar cambios?")) return; armed=null; S.ctl?.abort(); S.tab=b.dataset.tab; S.gen=null; S.firmaCI=null; return render(); }
   const a=b.dataset.act; if(!a) return;
   const p=S.pacientes.get(S.sel);
   if (a==="new") return crear();
@@ -2364,6 +2470,36 @@ document.addEventListener("click", async ev => {
     S.sedeF=t.sede||"todas"; S.terF=t.id; S.q=""; $("#q").value="";
     try{ localStorage.setItem("cemepi.sede",S.sedeF); localStorage.setItem("cemepi.ter",S.terF); }catch{}
     S.view=S.sel?"exp":"inicio"; renderList(); render(); toast(`Expedientes de ${t.nombre}`); return; }
+  if (a==="ciSesion"||a==="ciPortal"){ S.ciCond=$("#ci-cond")?.value||""; const texto=textoConsentimiento(p, S.ciCond);
+    if (!(S.ciCond||"").trim() && !arm(b,"cicond"+a,"Sin condiciones: ¿continuar?")){ toast("Conviene escribir las condiciones de participación; si no, quedará \"Dato pendiente de recabar\"."); return; } armed=null;
+    if (a==="ciSesion"){ S.firmaCI={texto}; render(); $("#detail").scrollTop=0; return; }
+    try{ await S.api.enviarConsentimientoPortal(p.id, texto); toast("Consentimiento enviado al portal. La persona lo firma al entrar con su código."); }catch(e){ toast(e?.message||"No se pudo enviar."); }
+    return cargarConsent(p.id); }
+  if (a==="ciSalir"){ S.firmaCI=null; return render(); }
+  if (a==="ciLimpiar"){ const cv=$("#padCI"); cv.getContext("2d").clearRect(0,0,cv.width,cv.height); S.trazo=false; return; }
+  if (a==="ciFirmar"){ const menor=esMenor(p), checks=[...document.querySelectorAll(".ci-ck")];
+    if (checks.some(c=>!c.checked)){ toast("Marca todas las casillas para continuar."); return; }
+    const firmante=$("#ci-firmante").value, parentesco=firmante==="representante"?$("#ci-parentesco").value:"";
+    if (firmante==="representante" && !parentesco){ toast("Elige el parentesco o la calidad del representante."); $("#ci-parentesco").focus(); return; }
+    const cv=$("#padCI"); if (!S.trazo){ toast("Falta la firma."); return; }
+    const firma=procesarFirma(cv, cv.width, cv.height); if (!firma){ toast("No se detectó la firma."); return; }
+    const aceptaciones=Object.fromEntries(checks.map(c=>[c.value,true]));
+    b.disabled=true;
+    try{ await S.api.firmarConsentimiento(p.id, S.firmaCI.texto, firmante, parentesco, aceptaciones, firma);
+      S.firmaCI=null; S.ciData=null; S.ciFor=null; toast(`Consentimiento firmado${menor?" por el representante legal":""}. Ya puedes descargar el PDF.`); render(); }
+    catch(e){ b.disabled=false; toast(e?.message||"No se pudo guardar la firma."); } return; }
+  if (a==="ciCancelar"){ try{ await S.api.cancelarConsentimientoPortal(b.dataset.id); toast("Envío al portal cancelado."); }catch(e){ toast(e?.message||"No se pudo cancelar."); } return cargarConsent(p.id); }
+  if (a==="ciRevocar"){ S.ciRevocar=b.dataset.id; render(); setTimeout(()=>$("#ci-motivo")?.focus(),30); return; }
+  if (a==="ciRevocarNo"){ S.ciRevocar=null; return render(); }
+  if (a==="ciRevocarOk"){ const m=($("#ci-motivo")?.value||"").trim(); if (m.length<10){ toast("Escribe el motivo (al menos 10 caracteres)."); return; }
+    if (!arm(b,"cirev","¿Revocar? No se puede deshacer")) return; armed=null;
+    try{ await S.api.revocarConsentimiento(S.ciRevocar, m); S.ciRevocar=null; toast("Consentimiento revocado. Se conserva en el expediente con su motivo."); }catch(e){ toast(e?.message||"No se pudo revocar."); }
+    return cargarConsent(p.id); }
+  if (a==="ciPdf"){ const x=(S.ciData||[]).find(y=>y.id===b.dataset.id); if (!x) return;
+    if (typeof PDFLib==="undefined"){ toast("No se pudo preparar el PDF. Recarga la página."); return; }
+    const dl=await window.claude?.use?.("downloads"); if (!dl){ toast("La descarga no está disponible en esta vista."); return; }
+    try{ await dl.save({filename:`Consentimiento-informado-${p.folio}-${String(x.firmado_en||"").slice(0,10)}.pdf`, data:await pdfConsentimiento(p, x)}); toast("PDF del consentimiento descargado."); }
+    catch(e){ if (e?.code!=="declined"){ console.warn(e); toast("No se pudo generar el PDF."); } } return; }
   if (a==="exportExp"){ S.expExport = S.expExport===p.id ? null : p.id; return render(); }
   if (a==="exportExpNo"){ S.expExport=null; return render(); }
   if (a==="exportExpGo"){ const fin=$("#exFin").value; if (!fin){ toast("Elige la finalidad de la exportación."); $("#exFin").focus(); return; }
@@ -2509,6 +2645,7 @@ document.addEventListener("input", ev => {
   if (ev.target.id==="q"){ S.q=ev.target.value; return renderList(); }
   if (ev.target.id==="ctrSalario"){ const l=$("#ctrLetra"); if (l) l.value=/^\d+(\.\d{1,2})?$/.test(ev.target.value)?numeroALetras(ev.target.value):""; }
   if (ev.target.id==="regBuscar"){ S.regQ=ev.target.value; $("#regCuerpo").innerHTML=regCuerpoHtml(); return; }
+  if (ev.target.id==="ci-firmante"){ $("#ci-par-fld").hidden = ev.target.value!=="representante"; }
   if (ev.target.id==="tbPer" || ev.target.id==="tbSede"){ S.tbPer=$("#tbPer").value; S.tbSede=$("#tbSede").value; S.tb=null; render(); return cargarTablero(); }
   if (ev.target.id==="nm-riesgo"){ const si=ev.target.value===NOM_RIESGO[1]; $("#nm-riesgo-det").hidden=!si; $("#nm-riesgo-av").hidden=!si; }
   if (ev.target.closest("#frm, #frmNota")) S.dirty=true;
@@ -2633,6 +2770,11 @@ body.solo-empleado .app{grid-template-columns:1fr!important}
 ul.pend{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 ul.pend li{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:8px;padding:8px 12px;background:var(--surface)}
 ul.pend.avisos li{border-left-color:var(--accent,#0560BD)}
+.ci-texto{max-height:52vh;overflow:auto;border:1px solid var(--line);border-radius:var(--r);padding:12px 16px;background:var(--surface);font-size:15px;text-align:justify}
+.ci-texto h4{margin:12px 0 4px;color:var(--accent)}.ci-texto p{margin:0 0 8px}
+.ci-checks label{display:flex;gap:10px;align-items:flex-start;font-size:15px;margin:6px 0;font-weight:400}
+.ci-checks input{width:22px;height:22px;flex:none;margin-top:2px}
+#padCI{width:100%;max-width:640px;height:auto;aspect-ratio:3/1;border:2px dashed var(--line);border-radius:var(--r);background:#fff;touch-action:none;display:block}
 .tablero{--viz-1:#2a78d6}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tablero{--viz-1:#3987e5}}
 :root[data-theme="dark"] .tablero{--viz-1:#3987e5}

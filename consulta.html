@@ -40,6 +40,12 @@ article.rep p{margin:0 0 10px;text-align:justify;white-space:pre-line}
 .firma{text-align:center;margin-top:28px}
 .firma img{max-height:70px;max-width:220px;display:block;margin:0 auto}
 .firma .linea{width:260px;max-width:80%;border-top:1px solid var(--fg);margin:4px auto}
+.ci h3{color:var(--accent)}.ci .texto{max-height:55vh;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:10px 14px;text-align:justify}
+.ci .texto p{margin:0 0 8px}.ci label.ck{display:flex;gap:10px;align-items:flex-start;font-weight:400;font-size:15px}
+.ci label.ck input{width:22px;height:22px;flex:none;margin-top:2px}
+.ci select{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+.ci canvas{width:100%;aspect-ratio:3/1;border:2px dashed var(--line);border-radius:8px;background:#fff;touch-action:none;display:block}
+.ok{background:var(--accent-soft);border-radius:8px;padding:10px 12px;font-weight:600}
 .nota{font-size:11px;color:var(--muted);text-align:justify;border-top:1px solid var(--line);margin-top:20px;padding-top:8px}
 @media print{
   header,.no-print{display:none!important}
@@ -53,7 +59,7 @@ article.rep p{margin:0 0 10px;text-align:justify;white-space:pre-line}
 <main>
   <section class="card" id="acceso">
     <h2 style="margin:0 0 4px;font-size:20px">Consulta tus reportes</h2>
-    <p class="status" style="margin:0">Escribe el folio de tu expediente, tu fecha de nacimiento y el código de acceso que te entregó tu psicólogo(a). Solo verás los reportes que te haya compartido.</p>
+    <p class="status" style="margin:0">Escribe el folio de tu expediente, tu fecha de nacimiento y el código de acceso que te entregó tu psicólogo(a). Solo verás los reportes que te haya compartido y, si corresponde, el consentimiento informado para firmarlo.</p>
     <form id="frm" autocomplete="off" onsubmit="return false">
       <label for="folio">Folio del expediente</label><input id="folio" required placeholder="CEMEPI-PSI-XXX-2026-0001" autocapitalize="characters" spellcheck="false">
       <label for="fnac">Fecha de nacimiento</label><input id="fnac" type="date" required>
@@ -77,8 +83,8 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
 const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 const fechaLarga = f => { if (!f) return ""; const [y,m,d] = f.split("-").map(Number); return `${d} de ${MESES[m-1]} de ${y}`; };
-let temporizador = null;
-function salir(){ $("#reportes").innerHTML = ""; $("#vista").hidden = true; $("#acceso").hidden = false; $("#frm").reset(); clearTimeout(temporizador); }
+let temporizador = null, cred = null, datosAct = null;
+function salir(){ cred = null; datosAct = null; $("#reportes").innerHTML = ""; $("#vista").hidden = true; $("#acceso").hidden = false; $("#frm").reset(); clearTimeout(temporizador); }
 function vigilar(){ clearTimeout(temporizador); temporizador = setTimeout(salir, 15 * 60 * 1000); }
 ["click","keydown","scroll","touchstart"].forEach(e => document.addEventListener(e, () => { if (!$("#vista").hidden) vigilar(); }, { passive: true }));
 $("#salir").onclick = salir;
@@ -95,6 +101,78 @@ function reporteHtml(r, i, datos){
     <p class="nota">${esc(NOTA)}</p>
   </article>`;
 }
+const PARENT = ["madre","padre","tutor legal","otro representante legal"];
+function consentHtml(c, datos){
+  const secs = (c.texto?.secciones || []).map(s => `${s.titulo ? `<h3>${esc(s.titulo)}</h3>` : ""}${String(s.texto || "").split(/\n{2,}/).map(t => `<p>${esc(t)}</p>`).join("")}`).join("");
+  if (c.estado === "firmado") return `<article class="card ci"><p class="ok" style="margin:0">Consentimiento informado firmado el ${esc(new Date(c.firmado_en).toLocaleString("es-MX"))}${c.firmante === "representante" ? ` por ${esc(c.parentesco || "el representante legal")}` : ""}.</p>
+    <details style="margin-top:8px"><summary>Ver el texto que se firmó</summary><div class="texto" style="margin-top:8px"><b>${esc(c.texto?.titulo || "")}</b>${secs}</div></details></article>`;
+  const menor = !!datos.menor;
+  return `<article class="card ci" data-ci="${esc(c.id)}">
+    <h2 style="margin:0 0 4px;font-size:20px">Consentimiento informado pendiente de firma</h2>
+    <p class="status" style="margin:0 0 10px">${menor ? "Como la persona consultante es menor de edad, debe firmar su madre, padre o representante legal." : "Léelo con calma. Si tienes dudas, coméntalas con tu psicólogo(a) antes de firmar."}</p>
+    <div class="texto"><b>${esc(c.texto?.titulo || "")}</b><p class="status">Folio ${esc(datos.folio)} · Profesional: ${esc(c.profesional || "")}</p>${secs}</div>
+    <label class="ck"><input type="checkbox" class="ck1" value="leido"> He leído la información, pude hacer preguntas y se resolvieron mis dudas.</label>
+    <label class="ck"><input type="checkbox" class="ck1" value="confidencialidad"> Entiendo la confidencialidad y sus excepciones legales.</label>
+    <label class="ck"><input type="checkbox" class="ck1" value="datos"> Acepto el tratamiento de mis datos personales conforme al aviso de privacidad de CEMEPI.</label>
+    ${menor ? `<label class="ck"><input type="checkbox" class="ck1" value="representacion"> Declaro ser representante legal de la persona menor de edad y contar con facultades para otorgar este consentimiento.</label>` : ""}
+    <label for="ci-f">¿Quién firma?</label><select id="ci-f">${menor ? "" : `<option value="consultante">Yo, la persona consultante</option>`}<option value="representante"${menor ? " selected" : ""}>Representante legal</option></select>
+    <div id="ci-pf"${menor ? "" : " hidden"}><label for="ci-p">Parentesco o calidad</label><select id="ci-p"><option value="">Elige…</option>${PARENT.map(x => `<option>${esc(x)}</option>`).join("")}</select></div>
+    <label for="ci-pad">Firma (con el dedo o el lápiz)</label><canvas id="ci-pad" width="900" height="300"></canvas>
+    <div class="fila" style="margin-top:8px"><button class="sec" type="button" id="ci-borrar">Borrar firma</button><button type="button" id="ci-firmar">Firmar consentimiento</button></div>
+    <div id="ci-err" class="error" hidden style="margin-top:10px"></div>
+    <p class="status" style="margin:8px 0 0">No se guarda tu nombre: solo la firma, la fecha y el texto que aceptas.</p>
+  </article>`;
+}
+let trazo = false;
+function activarFirma(){
+  const cv = $("#ci-pad"); if (!cv) return; const ctx = cv.getContext("2d"); ctx.lineWidth = 4; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = "#0f2340"; trazo = false; let on = false;
+  const pos = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height]; };
+  cv.onpointerdown = e => { on = true; cv.setPointerCapture(e.pointerId); const [x, y] = pos(e); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + .1, y + .1); ctx.stroke(); trazo = true; };
+  cv.onpointermove = e => { if (!on) return; const [x, y] = pos(e); ctx.lineTo(x, y); ctx.stroke(); };
+  cv.onpointerup = cv.onpointercancel = () => { on = false; };
+  $("#ci-borrar").onclick = () => { ctx.clearRect(0, 0, cv.width, cv.height); trazo = false; };
+  $("#ci-f").onchange = () => { $("#ci-pf").hidden = $("#ci-f").value !== "representante"; };
+  $("#ci-firmar").onclick = firmar;
+}
+function recortar(cv){
+  const ctx = cv.getContext("2d"), { data } = ctx.getImageData(0, 0, cv.width, cv.height); let x0 = cv.width, y0 = cv.height, x1 = -1, y1 = -1;
+  for (let y = 0; y < cv.height; y++) for (let x = 0; x < cv.width; x++) if (data[(y * cv.width + x) * 4 + 3] > 20){ if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  if (x1 < 0) return null; const m = 6; x0 = Math.max(0, x0 - m); y0 = Math.max(0, y0 - m); x1 = Math.min(cv.width - 1, x1 + m); y1 = Math.min(cv.height - 1, y1 + m);
+  const w = x1 - x0 + 1, h = y1 - y0 + 1, s = Math.min(1, 600 / w, 200 / h), o = document.createElement("canvas"); o.width = Math.max(1, Math.round(w * s)); o.height = Math.max(1, Math.round(h * s));
+  o.getContext("2d").drawImage(cv, x0, y0, w, h, 0, 0, o.width, o.height); return { src: o.toDataURL("image/png"), w: o.width, h: o.height };
+}
+async function firmar(){
+  const art = document.querySelector("[data-ci]"), err = $("#ci-err"); err.hidden = true;
+  const checks = [...art.querySelectorAll(".ck1")];
+  if (checks.some(c => !c.checked)){ err.textContent = "Marca todas las casillas para continuar."; err.hidden = false; return; }
+  const firmante = $("#ci-f").value, parentesco = firmante === "representante" ? $("#ci-p").value : null;
+  if (firmante === "representante" && !parentesco){ err.textContent = "Elige el parentesco o la calidad del representante."; err.hidden = false; return; }
+  if (!trazo){ err.textContent = "Falta la firma."; err.hidden = false; return; }
+  const f = recortar($("#ci-pad")); if (!f){ err.textContent = "No se detectó la firma."; err.hidden = false; return; }
+  if (!cred){ salir(); return; }
+  const btn = $("#ci-firmar"); btn.disabled = true; btn.textContent = "Guardando…";
+  try{
+    const { data, error } = await sb.rpc("portal_firmar_consentimiento", { p_folio: cred.folio, p_fecha_nac: cred.fnac, p_codigo: cred.codigo, p_id: art.dataset.ci,
+      p_firmante: firmante, p_parentesco: parentesco, p_aceptaciones: Object.fromEntries(checks.map(c => [c.value, true])), p_firma: f.src, p_w: f.w, p_h: f.h });
+    if (error) throw error;
+    if (data?.error){ err.textContent = data.error; err.hidden = false; return; }
+    await cargar();
+  }catch(e){ err.textContent = "No se pudo guardar la firma. Revisa tu conexión e inténtalo de nuevo."; err.hidden = false; }
+  finally{ if (document.body.contains(btn)){ btn.disabled = false; btn.textContent = "Firmar consentimiento"; } }
+}
+function pintar(data){
+  datosAct = data; const reps = data.reportes || [], cis = data.consentimientos || [];
+  const pend = cis.filter(c => c.estado === "pendiente").slice(0, 1), firm = cis.filter(c => c.estado === "firmado").slice(0, 1);
+  $("#titExp").textContent = `Expediente ${data.folio} · ${data.iniciales || ""}`;
+  $("#reportes").innerHTML = pend.map(c => consentHtml(c, data)).join("") + firm.map(c => consentHtml(c, data)).join("") + (reps.length ? reps.map((r, i) => reporteHtml(r, i, data)).join("")
+    : (pend.length ? "" : `<div class="card"><p style="margin:0">Por ahora no tienes reportes compartidos. Tu psicólogo(a) te avisará cuando haya uno disponible.</p></div>`));
+  if (pend.length) activarFirma();
+}
+async function cargar(){
+  const { data, error } = await sb.rpc("portal_consultante", { p_folio: cred.folio, p_fecha_nac: cred.fnac, p_codigo: cred.codigo });
+  if (error) throw error; if (data?.error){ salir(); $("#err").textContent = data.error; $("#err").hidden = false; return; }
+  pintar(data);
+}
 $("#reportes").addEventListener("click", ev => {
   const b = ev.target.closest("[data-imprimir]"); if (!b) return;
   const art = $("#rep-" + b.dataset.imprimir); art.classList.add("imprimir"); document.body.classList.add("imprime-uno");
@@ -103,13 +181,11 @@ $("#reportes").addEventListener("click", ev => {
 $("#frm").onsubmit = async ev => {
   ev.preventDefault(); const btn = $("#entrar"); $("#err").hidden = true; btn.disabled = true; btn.textContent = "Consultando…";
   try{
-    const { data, error } = await sb.rpc("portal_consultante", { p_folio: $("#folio").value.trim(), p_fecha_nac: $("#fnac").value, p_codigo: $("#codigo").value.trim() });
+    const c0 = { folio: $("#folio").value.trim(), fnac: $("#fnac").value, codigo: $("#codigo").value.trim() };
+    const { data, error } = await sb.rpc("portal_consultante", { p_folio: c0.folio, p_fecha_nac: c0.fnac, p_codigo: c0.codigo });
     if (error) throw error;
     if (data?.error){ $("#err").textContent = data.error; $("#err").hidden = false; return; }
-    const reps = data.reportes || [];
-    $("#titExp").textContent = `Expediente ${data.folio} · ${data.iniciales || ""}`;
-    $("#reportes").innerHTML = reps.length ? reps.map((r, i) => reporteHtml(r, i, data)).join("")
-      : `<div class="card"><p style="margin:0">Por ahora no tienes reportes compartidos. Tu psicólogo(a) te avisará cuando haya uno disponible.</p></div>`;
+    cred = c0; pintar(data);
     $("#acceso").hidden = true; $("#vista").hidden = false; $("#codigo").value = ""; vigilar(); window.scrollTo(0, 0);
   }catch(e){ $("#err").textContent = "No se pudo consultar en este momento. Revisa tu conexión e inténtalo de nuevo."; $("#err").hidden = false; }
   finally{ btn.disabled = false; btn.textContent = "Ver mis reportes"; }
