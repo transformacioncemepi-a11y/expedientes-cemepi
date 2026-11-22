@@ -97,7 +97,7 @@ function reporteHtml(r, i, datos){
     <div class="ident">Folio: <b>${esc(datos.folio)}</b> · Iniciales: <b>${esc(datos.iniciales || "")}</b></div>
     ${secciones}
     <div class="firma">${r.firma ? `<img src="${esc(r.firma)}" alt="Firma del profesional">` : `<div style="height:50px"></div>`}<div class="linea"></div>
-      <b>${esc(r.profesional)}</b><br><span class="status">Psicólogo(a) · Cédula profesional: ${esc(r.cedula || "")}</span><br><span class="status">Centro Mexicano de Plenitud Humana, S.C.${r.sede ? " · Sede " + esc(r.sede) : ""}</span></div>
+      <b>${esc(r.profesional)}</b><br><span class="status">Psicólogo(a) · Cédula profesional: ${esc(r.cedula || "")}</span><br><span class="status">Centro Mexicano de Plenitud Humana, S.C.${r.sede ? " · Sede " + esc(r.sede) : ""}</span><br><span class="status">Tel. 55 9506 9766 · Dirección administrativa: Av. Victoria 18, Industrial, Gustavo A. Madero, 07800 Ciudad de México, CDMX.</span></div>
     <p class="nota">${esc(NOTA)}</p>
   </article>`;
 }

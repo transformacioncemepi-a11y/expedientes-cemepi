@@ -728,13 +728,17 @@ const P = (runs, o={}) => `<w:p><w:pPr>${o.keep?"<w:keepNext/>":""}${o.border?`<
 const BD = ["top","left","bottom","right","insideH","insideV"].map(s=>`<w:${s} w:val="single" w:sz="4" w:space="0" w:color="B8C7DD"/>`).join("");
 const fila = (label, v="", h=420) => `<w:tr><w:trPr><w:trHeight w:val="${h}"/><w:cantSplit/></w:trPr><w:tc><w:tcPr><w:tcW w:w="3400" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="EAF1FB"/><w:vAlign w:val="center"/></w:tcPr>${P(R(label,{sz:18,color:"334A6B"}))}</w:tc><w:tc><w:tcPr><w:tcW w:w="6500" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>${P(RL(v))}</w:tc></w:tr>`;
 const tabla = rows => `<w:tbl><w:tblPr><w:tblW w:w="9900" w:type="dxa"/><w:tblBorders>${BD}</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="50" w:type="dxa"/><w:left w:w="100" w:type="dxa"/><w:bottom w:w="50" w:type="dxa"/><w:right w:w="100" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid><w:gridCol w:w="3400"/><w:gridCol w:w="6500"/></w:tblGrid>${rows}</w:tbl>`;
+/* Datos de contacto institucionales (decisión del Director, 2026-11-21): van en el encabezado de todos los documentos */
+const CEMEPI_CONTACTO = "Tel. 55 9506 9766 · Dirección administrativa: Av. Victoria 18, Industrial, Gustavo A. Madero, 07800 Ciudad de México, CDMX.";
+/* PDF: línea de contacto centrada bajo el encabezado; reduce el tamaño si no cabe */
+const pdfContacto = (page, font, y, W, M, color) => { const t=CEMEPI_CONTACTO; let sz=8; while (sz>6 && font.widthOfTextAtSize(t,sz)>W-2*M) sz-=0.25; page.drawText(t,{x:(W-font.widthOfTextAtSize(t,sz))/2, y, size:sz, font, color}); };
 const encabezado = (folio, etiqueta="Folio") => { const cx=640080, cy=552000;
   const logo = `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="1" name="Logotipo CEMEPI"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="1" name="logo.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rIdLogo"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`;
   return `<w:tbl><w:tblPr><w:tblW w:w="9900" w:type="dxa"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid><w:gridCol w:w="1300"/><w:gridCol w:w="5200"/><w:gridCol w:w="3400"/></w:tblGrid><w:tr>
     <w:tc><w:tcPr><w:tcW w:w="1300" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>${P(logo)}</w:tc>
     <w:tc><w:tcPr><w:tcW w:w="5200" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>${P(R("Centro Mexicano de Plenitud Humana, S.C.",{b:1,sz:24,color:"0560BD"}))}${P(R("CEMEPI · Atención psicológica · www.cemepi.com.mx",{sz:17,color:"55688A"}))}</w:tc>
     <w:tc><w:tcPr><w:tcW w:w="3400" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>${P(R(etiqueta,{sz:17,color:"55688A"}),{jc:"right"})}${P(R(folio||"________________",{b:1,sz:20}),{jc:"right"})}</w:tc>
-  </w:tr></w:tbl>${P("",{border:1,after:160})}`; };
+  </w:tr></w:tbl>${P(R(CEMEPI_CONTACTO,{color:"55688A"}),{jc:"center",border:1,after:160})}`; };
 const imgXml = (rid, cx, cy, id, name) => `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${id}" name="${name}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${id}" name="${name}.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`;
 /* Firma: si el profesional cargó una, va centrada sobre la línea (máx. 1.9" de ancho y 0.75" de alto) */
 const firmaImgXml = c => { if (!c.firma) return ""; const r=c.firmaH/c.firmaW, maxW=1737360, maxH=685800;
@@ -870,7 +874,8 @@ async function pdfExpediente(p, finalidad, generado){
   if (logo) page.drawImage(logo,{x:M, y:y-42, width:48, height:42});
   y-=15; T("Centro Mexicano de Plenitud Humana, S.C.",{x:M+58, b:1, size:13, color:azul});
   y-=14; T("CEMEPI · Atención psicológica · www.cemepi.com.mx",{x:M+58, size:8.5, color:gris});
-  y-=24; page.drawLine({start:{x:M,y}, end:{x:W-M,y}, thickness:1.5, color:azul});
+  y-=26; pdfContacto(page, font, y, W, M, gris);
+  y-=8; page.drawLine({start:{x:M,y}, end:{x:W-M,y}, thickness:1.5, color:azul});
   y-=34; { const t="EXPEDIENTE CLÍNICO COMPLETO"; page.drawText(t,{x:(W-bold.widthOfTextAtSize(t,15))/2, y, size:15, font:bold, color:azul}); }
   y-=16; { const t="Documento de uso interno · Confidencial"; page.drawText(t,{x:(W-font.widthOfTextAtSize(t,10))/2, y, size:10, font, color:rojo}); }
   y-=10;
@@ -973,7 +978,8 @@ async function pdfEditable(g, c){
   const fol = c.folio||"________________";
   page.drawText("Folio",{x:W-M-font.widthOfTextAtSize("Folio",8), y:y+16, size:8, font, color:gris});
   page.drawText(limpiarPdf(fol),{x:W-M-bold.widthOfTextAtSize(limpiarPdf(fol),11), y:y+2, size:11, font:bold, color:tinta});
-  y -= 18; page.drawLine({start:{x:M,y}, end:{x:W-M,y}, thickness:1.5, color:azul});
+  y -= 26; pdfContacto(page, font, y, W, M, gris);
+  y -= 8; page.drawLine({start:{x:M,y}, end:{x:W-M,y}, thickness:1.5, color:azul});
   if (c.marca){ const mt=limpiarPdf(marcaTexto(c.marca)), sz=c.marca.t==="emitido"?9:10, rojo=rgb(0.776,0.157,0.157);
     for (const ln of envolver(mt, bold, sz, CW)){ y -= 14;
       if (c.marca.t==="emitido") page.drawText(ln,{x:W-M-bold.widthOfTextAtSize(ln,sz), y, size:sz, font:bold, color:azul});
@@ -2499,7 +2505,8 @@ async function pdfConsentimiento(p, x){
   y-=14; page.drawText("CEMEPI · Atención psicológica · www.cemepi.com.mx",{x:M+58, y, size:8.5, font, color:gris});
   page.drawText("Folio",{x:W-M-font.widthOfTextAtSize("Folio",8), y:y+16, size:8, font, color:gris});
   page.drawText(limpiarPdf(p.folio),{x:W-M-bold.widthOfTextAtSize(limpiarPdf(p.folio),11), y:y+2, size:11, font:bold, color:tinta});
-  y-=18; page.drawLine({start:{x:M,y}, end:{x:W-M,y}, thickness:1.5, color:azul});
+  y-=26; pdfContacto(page, font, y, W, M, gris);
+  y-=8; page.drawLine({start:{x:M,y}, end:{x:W-M,y}, thickness:1.5, color:azul});
   if (x.estado==="revocado"){ y-=16; centro(`CONSENTIMIENTO REVOCADO el ${fechaHora(Date.parse(x.revocado_en))}`, 10, bold, rojo); }
   y-=28; centro((x.texto?.titulo||"Consentimiento informado").toUpperCase(), 12, bold, azul); y-=8;
   for (const sc of x.texto?.secciones||[]){ if (sc.titulo){ espacio(LH*3); y-=LH+2; page.drawText(limpiarPdf(sc.titulo),{x:M, y, size:FS, font:bold, color:azul}); } parrafo(sc.texto||""); }
