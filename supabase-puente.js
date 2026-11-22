@@ -199,6 +199,7 @@ sb.auth.onAuthStateChange((evento) => {
 const { usuario, perfil } = await esperarAcceso();
 /* Permisos adicionales que el superusuario le otorgó a esta persona */
 const { data: permRows } = await sb.from("permisos").select("permiso").eq("user_id", usuario.id);
+const { data: orgNivel } = await sb.rpc("nivel_maximo", { p_modulo: "organizacion" });   /* Módulo 01: 0 sin acceso · 1 lectura · 2 operación · 3 admin · 4 superusuario */
 login.hidden = true;
 const rol = perfil.rol;
 const ROL_TXT = { superusuario: "Superusuario", direccion: "Directivo(a)", admin_sede: "Administración de sede", administrativo: "Administrativo", psicologo: "Psicólogo(a)" };
@@ -252,6 +253,7 @@ const fallo = e => { throw { code: "invalid_argument", message: e?.message || St
 const cemepi = {
   rol, sede: perfil.sede || "", nombre: perfil.nombre || "", uid: usuario.id, email: usuario.email, modalidad: perfil.modalidad || null,
   permisos: (permRows || []).map(r => r.permiso),
+  orgNivel: orgNivel || 0,
   async permisosTodos(){ const { data, error } = await sb.from("permisos").select("user_id,permiso,otorgado_en"); if (error) fallo(error); return data || []; },
   async otorgarPermiso(id, permiso, activo){ const { error } = await sb.rpc("otorgar_permiso", { p_id: id, p_permiso: permiso, p_activo: !!activo }); if (error) fallo(error); },
   async cambiarModalidad(id, m){ const { error } = await sb.rpc("cambiar_modalidad", { p_id: id, p_modalidad: m }); if (error) fallo(error); },
@@ -259,6 +261,55 @@ const cemepi = {
     const { data, error } = await q; if (error) fallo(error); return data || []; },
   async guardarSede(s){ const row = { nombre: s.nombre.trim(), clave: s.clave.trim().toUpperCase(), activa: s.activa !== false };
     const { error } = s.id ? await sb.from("sedes").update(row).eq("id", s.id) : await sb.from("sedes").insert(row); if (error) fallo(error); },
+  /* ---------- Módulo 01 · Organización (catálogos). Todo pasa por RLS y el servicio de permisos de la base ---------- */
+  async orgCatalogos(){
+    const q = await Promise.all([
+      sb.from("sedes").select("*").order("nombre"),
+      sb.from("sede_entidad").select("id,sede_id,entidad_id,desde,hasta").is("hasta", null),
+      sb.from("entidades_fiscales").select("*").order("principal", { ascending: false }),
+      sb.from("entidades_fiscales_datos").select("*"),
+      sb.from("areas").select("*").order("nombre"),
+      sb.from("puestos").select("*").order("codigo"),
+      sb.from("posiciones").select("*").order("created_at"),
+      sb.rpc("sedes_autorizadas", { p_modulo: "organizacion" })]);
+    for (const r of q) if (r.error) fallo(r.error);
+    const [sd, se, en, ed, ar, pu, po, au] = q.map(r => r.data || []);
+    const aut = au.map(x => typeof x === "string" ? x : x.sedes_autorizadas);
+    const niveles = {};
+    await Promise.all(aut.map(async id => { const { data } = await sb.rpc("nivel_acceso", { p_modulo: "organizacion", p_sede: id }); niveles[id] = data || 0; }));
+    return { sedes: sd, sedeEnt: se, entidades: en, datosFiscales: ed, areas: ar, puestos: pu, posiciones: po, autorizadas: aut, niveles }; },
+  async guardarSedeOrg(s){
+    const row = { direccion: s.direccion || null, alcaldia_municipio: s.alcaldia_municipio || null, estado_republica: s.estado_republica || null,
+      horarios: s.horarios || null, capacidad: s.capacidad === "" || s.capacidad == null ? null : Number(s.capacidad), observaciones: s.observaciones || null };
+    if (s.nombre != null) row.nombre = s.nombre.trim();
+    if (s.clave != null) row.clave = s.clave.trim().toUpperCase();
+    if (s.activa != null) row.activa = s.activa !== false;
+    let id = s.id;
+    if (id){ const { error } = await sb.from("sedes").update(row).eq("id", id); if (error) fallo(error); }
+    else { const { data, error } = await sb.from("sedes").insert(row).select("id").single(); if (error) fallo(error); id = data.id; }
+    if (s.entidad_id && s.entidadCambio){ const { error } = await sb.rpc("cambiar_entidad_sede", { p_sede: id, p_entidad: s.entidad_id, p_motivo: s.motivo || "Asignación de entidad fiscal" }); if (error) fallo(error); }
+    return id; },
+  async guardarEntidad(e){
+    const row = { nombre_corto: e.nombre_corto.trim(), tipo_persona: e.tipo_persona || null, estatus: e.estatus || "por_validar",
+      vigente_desde: e.vigente_desde || null, vigente_hasta: e.vigente_hasta || null, representante_legal: e.representante_legal || null };
+    let id = e.id;
+    if (id){ const { error } = await sb.from("entidades_fiscales").update(row).eq("id", id); if (error) fallo(error); }
+    else { const { data, error } = await sb.from("entidades_fiscales").insert(row).select("id").single(); if (error) fallo(error); id = data.id; }
+    const d = { entidad_id: id, razon_social: e.razon_social || null, rfc: e.rfc ? e.rfc.trim().toUpperCase() : null,
+      regimen_fiscal: e.regimen_fiscal || null, domicilio_fiscal: e.domicilio_fiscal || null, updated_at: new Date().toISOString() };
+    const { error } = await sb.from("entidades_fiscales_datos").upsert(d); if (error) fallo(error);
+    return id; },
+  async guardarArea(a){
+    const row = { nombre: a.nombre.trim(), proposito: a.proposito || null, funciones: a.funciones || null, estatus: a.estatus || "propuesta" };
+    const { error } = a.id ? await sb.from("areas").update(row).eq("id", a.id) : await sb.from("areas").insert(row); if (error) fallo(error); },
+  async guardarPuesto(p){
+    const campos = ["proposito","responsabilidades","actividades_diarias","actividades_semanales","competencias","formacion","indicadores","limites_autoridad","herramientas","capacitacion"];
+    const row = { codigo: p.codigo.trim().toUpperCase(), nombre: p.nombre.trim(), area_id: p.area_id || null, estatus: p.estatus || "propuesta" };
+    campos.forEach(k => { row[k] = p[k] || null; });
+    const { error } = p.id ? await sb.from("puestos").update(row).eq("id", p.id) : await sb.from("puestos").insert(row); if (error) fallo(error); },
+  async guardarPosicion(p){
+    const row = { puesto_id: p.puesto_id, sede_id: p.sede_id, estado: p.estado || "vacante", prioridad: p.prioridad || null, abierta_en: p.abierta_en || null };
+    const { error } = p.id ? await sb.from("posiciones").update(row).eq("id", p.id) : await sb.from("posiciones").insert(row); if (error) fallo(error); },
   async usuarios(){ const { data, error } = await sb.from("perfiles").select("id,email,nombre,cedula,telefono,sede,rol,rol_solicitado,modalidad,estado,created_at,autorizado_en").order("created_at", { ascending: false });
     if (error) fallo(error); return data || []; },
   async gestionar(id, estado, nuevoRol, sede){ const { error } = await sb.rpc("gestionar_usuario", { p_id: id, p_estado: estado, p_rol: nuevoRol, p_sede: sede || "" });

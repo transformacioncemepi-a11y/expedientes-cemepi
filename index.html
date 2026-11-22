@@ -346,10 +346,15 @@ td.res{white-space:pre-wrap;min-width:220px}
     <button class="nav-i" id="ctrBtn" type="button" data-act="contratos" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17c3-4 5 2 8-2s2-7 5-7 1 7 5 5"/><path d="M3 21h18"/></svg><span>Contratos</span></button>
     <button class="nav-i" id="docpBtn" type="button" data-act="documentacion" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg><span>Documentación</span></button>
     <button class="nav-i" id="regBtn" type="button" data-act="reglamento"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5z"/><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/></svg><span>Reglamento</span></button></nav>
+  <nav class="nav-g" aria-label="Organización"><span class="nav-l">Organización</span>
+    <button class="nav-i" id="sedBtn" type="button" data-act="sedes" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg><span>Sedes</span></button>
+    <button class="nav-i" id="entBtn" type="button" data-act="entidades" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V5l4-2 4 2 4-2 4 2v16l-4-2-4 2-4-2z"/><path d="M8 9h8M8 13h8M8 17h4"/></svg><span>Entidades fiscales</span></button>
+    <button class="nav-i" id="areBtn" type="button" data-act="areas" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg><span>Áreas</span></button>
+    <button class="nav-i" id="pueBtn" type="button" data-act="puestos" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg><span>Puestos y funciones</span></button>
+    <button class="nav-i" id="vacBtn" type="button" data-act="vacantes" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" stroke-dasharray="3 2"/><path d="M4 21a8 8 0 0 1 16 0" stroke-dasharray="3 2"/></svg><span>Vacantes</span></button></nav>
   <nav class="nav-g" aria-label="Administración"><span class="nav-l">Administración</span>
     <button class="nav-i" id="usrBtn" type="button" data-act="usuarios" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>Usuarios</span></button>
     <button class="nav-i" id="permBtn" type="button" data-act="permisos" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Permisos</span></button>
-    <button class="nav-i" id="sedBtn" type="button" data-act="sedes" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg><span>Sedes</span></button>
     <button class="nav-i" id="usoBtn" type="button" data-act="uso" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span>Tiempo de uso</span></button>
     <button class="nav-i" id="tabBtn" type="button" data-act="tablero" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg><span>Tablero</span></button></nav>
   <nav class="nav-g" aria-label="Mi cuenta"><span class="nav-l">Mi cuenta</span>
@@ -1097,11 +1102,11 @@ function renderList(){
   el.innerHTML=grupos.map(s=>{ const g=arr.filter(p=>(p.ficha?.sede||"")===s); if(!g.length) return "";
     return `<div class="grupo"><span>${esc(s||"Sin sede")}</span><b>${g.length}</b></div>${porTerapeuta(g)}`; }).join("");
 }
-const VISTA_TXT={inicio:"Inicio",exp:"Expediente",perfil:"Mi perfil",terapeutas:"Terapeutas",usuarios:"Usuarios",sedes:"Sedes",uso:"Tiempo de uso",tablero:"Tablero",
+const VISTA_TXT={inicio:"Inicio",exp:"Expediente",perfil:"Mi perfil",terapeutas:"Terapeutas",usuarios:"Usuarios",sedes:"Sedes",entidades:"Entidades fiscales",areas:"Áreas",puestos:"Puestos y funciones",vacantes:"Vacantes",uso:"Tiempo de uso",tablero:"Tablero",
   reglamento:"Reglamento",contratos:"Contratos",permisos:"Permisos",documentacion:"Documentación",ayuda:"Ayuda"};
-const VISTA_BTN={inicio:"iniBtn",terapeutas:"terBtn",contratos:"ctrBtn",documentacion:"docpBtn",reglamento:"regBtn",usuarios:"usrBtn",permisos:"permBtn",sedes:"sedBtn",uso:"usoBtn",tablero:"tabBtn",ayuda:"ayudaBtn",perfil:"perfilBtn"};
+const VISTA_BTN={inicio:"iniBtn",terapeutas:"terBtn",contratos:"ctrBtn",documentacion:"docpBtn",reglamento:"regBtn",usuarios:"usrBtn",permisos:"permBtn",sedes:"sedBtn",entidades:"entBtn",areas:"areBtn",puestos:"pueBtn",vacantes:"vacBtn",uso:"usoBtn",tablero:"tabBtn",ayuda:"ayudaBtn",perfil:"perfilBtn"};
 const GRUPO_VISTA={exp:"Atención",terapeutas:"Atención",contratos:"Mi trabajo",documentacion:"Mi trabajo",reglamento:"Mi trabajo",usuarios:"Administración",
-  permisos:"Administración",sedes:"Administración",uso:"Administración",tablero:"Administración",ayuda:"Mi cuenta",perfil:"Mi cuenta"};
+  permisos:"Administración",sedes:"Organización",entidades:"Organización",areas:"Organización",puestos:"Organización",vacantes:"Organización",uso:"Administración",tablero:"Administración",ayuda:"Mi cuenta",perfil:"Mi cuenta"};
 /* Ruta de navegación: Inicio / grupo / [vista padre]. El título de la página va en el h1. */
 function migas(padre){
   const v = S.sel && S.view==="exp" ? "exp" : S.view, it=[`<button type="button" data-act="back">Inicio</button>`];
@@ -1110,7 +1115,7 @@ function migas(padre){
   return `<nav class="crumbs" aria-label="Ruta">${it.join('<span class="sep" aria-hidden="true">/</span>')}</nav>`;
 }
 /* ---------- Tablas: filtros en una fila y orden por columna (sistema visual, etapa 3) ---------- */
-const VISTAS_TABLA=["usuarios","contratos","documentacion","sedes","tablero","uso"];
+const VISTAS_TABLA=["usuarios","contratos","documentacion","sedes","tablero","uso","areas","puestos","vacantes"];
 const norm=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
 S.ft=S.ft||{}; S.orden=S.orden||{};
 /* Barra de filtros: buscador + selectores opcionales + conteo. Las filas filtrables llevan data-f y data-sede/data-estado/data-rol/data-faltan */
@@ -1185,11 +1190,15 @@ function marcarNav(){
 function render(){
   const d=$("#detail"); S.dirty=false; S.stale=false; marcarNav(); document.body.classList.remove("menu-abierto");
   const p=S.pacientes.get(S.sel);
-  $("#app").classList.toggle("open", !!p || ["perfil","terapeutas","usuarios","sedes","uso","reglamento","contratos","permisos","documentacion","ayuda","tablero"].includes(S.view));
+  $("#app").classList.toggle("open", !!p || ["perfil","terapeutas","usuarios","sedes","entidades","areas","puestos","vacantes","uso","reglamento","contratos","permisos","documentacion","ayuda","tablero"].includes(S.view));
   if (S.view==="perfil"){ d.innerHTML=perfilHtml(); activarPad(); return; }
   if (S.view==="terapeutas"){ d.innerHTML=terapeutasHtml(); return; }
   if (S.view==="usuarios"){ d.innerHTML=usuariosHtml(); return; }
   if (S.view==="sedes"){ d.innerHTML=sedesHtml(); return; }
+  if (S.view==="entidades"){ d.innerHTML=entidadesHtml(); return; }
+  if (S.view==="areas"){ d.innerHTML=areasHtml(); return; }
+  if (S.view==="puestos"){ d.innerHTML=puestosHtml(); return; }
+  if (S.view==="vacantes"){ d.innerHTML=vacantesHtml(); return; }
   if (S.view==="uso"){ d.innerHTML=usoHtml(); return; }
   if (S.view==="tablero"){ d.innerHTML=tableroHtml(); return; }
   if (S.view==="permisos"){ d.innerHTML=permisosHtml(); return; }
@@ -1240,7 +1249,7 @@ const ACCESOS = () => [
   {t:"Reglamento", d:"Reglamento Interior de Trabajo y constancia de recepción.", act:"reglamento", si:true},
   {t:"Usuarios", d:S.rol==="admin_sede"?"Autoriza y edita las cuentas de tu sede.":"Autoriza cuentas, edita datos y asigna contraseñas.", act:"usuarios", si:gestionaCuentas()},
   {t:"Permisos", d:"Otorga permisos adicionales a personas específicas.", act:"permisos", si:S.rol==="superusuario"},
-  {t:"Sedes", d:"Alta y edición de sedes y su clave de folio.", act:"sedes", si:["superusuario","direccion"].includes(S.rol)},
+  {t:"Organización", d:"Sedes, entidades fiscales, áreas, puestos y vacantes de la red.", act:"sedes", si:(S.api?.orgNivel||0)>=1},
   {t:"Tablero", d:"Indicadores de atención, documentos, riesgo, personal y portal, por sede y periodo.", act:"tablero", si:["superusuario","direccion"].includes(S.rol)},
   {t:"Tiempo de uso", d:"Minutos de uso de la app por persona.", act:"uso", si:tengo("tiempo_uso")},
   {t:"Mi perfil", d:"Tus datos, tu firma y tu contraseña.", act:"perfil", si:true},
@@ -1460,7 +1469,6 @@ const fmtDur = s => { s=Number(s)||0; const h=Math.floor(s/3600), m=Math.round((
 async function cargarAdmin(tipo){
   try{
     if (tipo==="usuarios") S.usuarios = await S.api.usuarios();
-    if (tipo==="sedes"){ S.sedesTodas = await S.api.sedes(true); S.usuarios = S.usuarios || await S.api.usuarios(); }
     if (tipo==="reglamento"){ S.reg = await S.api.reglamento(); S.regAcuses = S.reg ? await S.api.acuses(S.reg.id) : [];
       if (["superusuario","direccion","admin_sede"].includes(S.rol)) S.usuarios = await S.api.usuarios(); }
     if (tipo==="contratos"){ const [pl, ls] = await Promise.all([S.api.plantillasContrato(), S.api.contratos()]); S.ctrPls=pl; S.ctrs=ls;
@@ -1523,26 +1531,236 @@ function usuariosHtml(){
     ${otros.length?tabla("Rechazadas o suspendidas", otros, filaUsr, ""):""}
   </div>`;
 }
-function sedesHtml(){
-  if (!S.sedesTodas) return `<div class="wrap" style="padding-block:24px"><p class="status">Cargando sedes…</p></div>`;
-  const cuenta=(s,r)=>(S.usuarios||[]).filter(u=>u.sede===s && u.rol===r && u.estado==="activo").length;
-  const ed=S.sedeEdit;
-  const form = ed ? `<form id="frmSede" class="note"><div class="note-h"><h3>${ed.id?"Editar sede":"Nueva sede"}</h3></div>
-      <div class="datos"><div class="fld" style="grid-column:span 2"><label for="sd-nombre">Nombre *</label><input id="sd-nombre" type="text" value="${esc(ed.nombre||"")}" placeholder="Ej. Coyoacán"></div>
-      <div class="fld"><label for="sd-clave">Clave del folio (3 letras) *</label><input id="sd-clave" type="text" maxlength="3" value="${esc(ed.clave||"")}" placeholder="COY" style="text-transform:uppercase"></div>
-      <div class="fld"><label for="sd-activa">Estado</label><select id="sd-activa"><option value="1"${ed.activa!==false?" selected":""}>Activa</option><option value="0"${ed.activa===false?" selected":""}>Inactiva</option></select></div></div>
-      ${ed.id?`<p class="status" style="margin:0">Cambiar el nombre no actualiza los expedientes ni las cuentas que ya tienen la sede anterior; para eso conviene crear una sede nueva y desactivar la anterior.</p>`:""}
-      <div class="actions"><button class="btn primary" type="button" data-act="saveSede">Guardar sede</button><button class="btn" type="button" data-act="cancelSede">Cancelar</button></div></form>` : "";
-  return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:18px">
-    <div class="phead">${migas()}<h1>Sedes</h1><span style="display:flex;gap:8px">${ed?"":`<button class="btn primary" type="button" data-act="newSede">+ Nueva sede</button>`}</span></div>
-    <p class="status" style="margin:0">Cada sede se compone de sus administrativos y psicólogos. La clave de 3 letras aparece en el folio de sus expedientes.</p>
-    ${form}
-    <div class="tbl-wrap"><table><thead><tr><th>Sede</th><th>Clave</th><th>Administrativos</th><th>Psicólogos</th><th>Estado</th><th></th></tr></thead><tbody>
-      ${S.sedesTodas.map(s=>`<tr><td><b>${esc(s.nombre)}</b></td><td class="mono">${esc(s.clave)}</td><td>${cuenta(s.nombre,"admin_sede")+cuenta(s.nombre,"administrativo")}</td><td>${cuenta(s.nombre,"psicologo")}</td>
-        <td><span class="pill ${s.activa?"estado-activo":"estado-suspendido"}">${s.activa?"Activa":"Inactiva"}</span></td>
-        <td><button class="btn sm" type="button" data-act="editSede" data-id="${s.id}">Editar</button></td></tr>`).join("")}
-    </tbody></table></div></div>`;
+/* ======================= Módulo 01 · Organización: catálogos (diseño aprobado 2026-11-21) =======================
+   Todo lo que se muestra ya viene filtrado por la base de datos (RLS + servicio de permisos):
+   cada persona solo recibe las sedes, entidades, plazas y datos fiscales que tiene autorizados. */
+const ORG_VISTAS=["sedes","entidades","areas","puestos","vacantes"];
+const pendH = () => `<span class="status">${PEND}</span>`;
+const ESTADO_POS={ocupada:"Ocupada",vacante:"Vacante",suspendida:"Suspendida",inactiva:"Inactiva"};
+const PILL_POS={ocupada:"estado-activo",vacante:"estado-pendiente",suspendida:"estado-suspendido",inactiva:""};
+const PRIO_TXT={alta:"Alta",media:"Media",baja:"Baja"};
+const ESTATUS_ENT={activa:"Activa",por_validar:"Por validar",inactiva:"Inactiva"};
+const PUESTO_CAMPOS=[["responsabilidades","Responsabilidades"],["actividades_diarias","Actividades diarias"],["actividades_semanales","Actividades semanales"],["competencias","Competencias"],["formacion","Formación requerida"],["indicadores","Indicadores"],["limites_autoridad","Límites de autoridad"],["herramientas","Herramientas"],["capacitacion","Capacitación requerida"]];
+const orgSU = () => S.rol==="superusuario";
+const orgNivelSede = id => orgSU() ? 4 : (S.org?.niveles?.[id]||0);
+const orgEditaSede = id => orgSU() || (S.rol==="direccion" && orgNivelSede(id)>=2);
+const orgEditaCatalogo = () => (S.api?.orgNivel||0) >= 2;
+const orgSedesVis = () => { const o=S.org; if (!o) return []; const a=new Set(o.autorizadas); return o.sedes.filter(s=>orgSU()||a.has(s.id)); };
+const orgEntDeSede = id => { const r=S.org?.sedeEnt.find(x=>x.sede_id===id); return r ? S.org.entidades.find(e=>e.id===r.entidad_id) : null; };
+const orgSede = id => S.org?.sedes.find(s=>s.id===id);
+const orgPuesto = id => S.org?.puestos.find(p=>p.id===id);
+const orgArea = id => S.org?.areas.find(a=>a.id===id);
+async function cargarOrg(){
+  try{ S.org = await S.api.orgCatalogos(); if (S.view==="sedes" && gestionaCuentas() && !S.usuarios) S.usuarios = await S.api.usuarios(); }
+  catch(e){ S.org = {error: e?.message||"No se pudo cargar la información."}; }
+  if (ORG_VISTAS.includes(S.view)) render();
 }
+const orgCargando = t => `<div class="wrap" style="padding-block:24px"><div class="phead">${migas()}<h1>${t}</h1></div><p class="status">Cargando…</p></div>`;
+const orgError = t => `<div class="wrap" style="padding-block:24px"><div class="phead">${migas()}<h1>${t}</h1></div><div class="banner bad">No se pudo cargar: ${esc(S.org.error)}. Revisa tu conexión y vuelve a abrir la sección.</div></div>`;
+function orgAlcance(){
+  if (orgSU()) return `<p class="status" style="margin:0">Superusuario: ves las ${S.org.sedes.length} sedes y todas las entidades fiscales.</p>`;
+  const v=orgSedesVis(), fuera=S.org.sedes.length-v.length;
+  return `<p class="status" style="margin:0">Ves <b>${v.length}</b> sede${v.length===1?"":"s"} autorizada${v.length===1?"":"s"}${fuera?`; ${fuera} sede${fuera===1?"":"s"} no aparece${fuera===1?"":"n"} porque no tienes autorización. Si la necesitas, pídela al Superusuario`:""}.</p>`;
+}
+const orgPagina = (t, desc, acciones, cuerpo) => `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">
+  <div class="phead">${migas()}<h1>${t}</h1><span style="display:flex;gap:8px;flex-wrap:wrap">${acciones||""}</span></div>
+  <p class="status" style="margin:0">${desc}</p>${orgAlcance()}${cuerpo}</div>`;
+const fld = (id, label, val, o={}) => `<div class="fld"${o.span?` style="grid-column:span ${o.span}"`:""}><label for="${id}">${label}</label>${
+  o.area ? `<textarea id="${id}" rows="${o.rows||3}"${o.ro?" disabled":""}>${esc(val||"")}</textarea>`
+  : o.opts ? `<select id="${id}"${o.ro?" disabled":""}>${o.opts.map(([v,l])=>`<option value="${esc(v)}"${String(v)===String(val??"")?" selected":""}>${esc(l)}</option>`).join("")}</select>`
+  : `<input id="${id}" type="${o.type||"text"}" value="${esc(val??"")}"${o.max?` maxlength="${o.max}"`:""}${o.ph?` placeholder="${esc(o.ph)}"`:""}${o.ro?" disabled":""}${o.up?' style="text-transform:uppercase"':""}>`}${o.hint?`<span class="status">${o.hint}</span>`:""}</div>`;
+
+/* ---------- Sedes ---------- */
+function sedesHtml(){
+  if (!S.org) return orgCargando("Sedes"); if (S.org.error) return orgError("Sedes");
+  const cuenta=(s,r)=>(S.usuarios||[]).filter(u=>u.sede===s && u.rol===r && u.estado==="activo").length;
+  const ed=S.orgEdit?.tipo==="sede" ? S.orgEdit : null, su=orgSU();
+  let form="";
+  if (ed){ const ent=ed.id?orgEntDeSede(ed.id):null, nuevo=!ed.id;
+    form=`<form id="frmSede" class="note" onsubmit="return false"><div class="note-h"><h3>${nuevo?"Nueva sede":"Editar sede · "+esc(ed.nombre)}</h3></div>
+      <div class="datos">
+        ${fld("sd-nombre","Nombre *",ed.nombre,{span:2,ph:"Ej. Coyoacán",ro:!su})}
+        ${fld("sd-clave","Clave del folio (3 letras) *",ed.clave,{max:3,ph:"COY",up:1,ro:!su})}
+        ${fld("sd-activa","Estado",ed.activa===false?"0":"1",{opts:[["1","Activa"],["0","Inactiva"]],ro:!su})}
+        ${fld("sd-entidad","Entidad fiscal"+(nuevo?" *":""),ent?.id||"",{opts:[["","— Selecciona —"],...S.org.entidades.map(e=>[e.id,e.nombre_corto])],ro:!su,span:2,
+           hint:su?"Cambiarla conserva la anterior en el historial, con fechas.":"Solo el Superusuario cambia la entidad fiscal."})}
+        ${su&&!nuevo?fld("sd-motivo","Motivo del cambio de entidad","",{span:2,ph:"Solo si cambias la entidad fiscal"}):""}
+        ${fld("sd-dir","Dirección",ed.direccion,{span:2,ph:PEND})}
+        ${fld("sd-alc","Alcaldía o municipio",ed.alcaldia_municipio,{ph:PEND})}
+        ${fld("sd-edo","Estado de la República",ed.estado_republica,{ph:PEND})}
+        ${fld("sd-hor","Horarios",ed.horarios,{span:2,ph:"Ej. Lunes a viernes de 9:00 a 20:00"})}
+        ${fld("sd-cap","Capacidad (consultorios)",ed.capacidad,{type:"number"})}
+        ${fld("sd-obs","Observaciones",ed.observaciones,{area:1,span:3,rows:2})}
+      </div>
+      ${!nuevo&&su?`<p class="status" style="margin:0">Cambiar el nombre no actualiza los expedientes ni las cuentas que ya tienen la sede anterior; para eso conviene crear una sede nueva y desactivar la anterior.</p>`:""}
+      <div class="actions"><button class="btn primary" type="button" data-act="saveSede">Guardar sede</button><button class="btn" type="button" data-act="cancelOrg">Cancelar</button></div></form>`; }
+  const filas=orgSedesVis().map(s=>{ const e=orgEntDeSede(s.id);
+    return `<tr data-f data-estado="${s.activa?"Activa":"Inactiva"}"><td><b>${esc(s.nombre)}</b><br><span class="status mono">${esc(s.clave)}</span></td>
+      <td>${e?esc(e.nombre_corto)+(e.principal?"":` <span class="pill estado-pendiente">Entidad propia</span>`):pendH()}</td>
+      <td>${s.direccion?esc(s.direccion):pendH()}${s.horarios?`<br><span class="status">${esc(s.horarios)}</span>`:""}</td>
+      <td>${S.usuarios?cuenta(s.nombre,"admin_sede")+cuenta(s.nombre,"administrativo"):"—"}</td><td>${S.usuarios?cuenta(s.nombre,"psicologo"):"—"}</td>
+      <td><span class="pill ${s.activa?"estado-activo":"estado-suspendido"}">${s.activa?"Activa":"Inactiva"}</span></td>
+      <td>${orgEditaSede(s.id)?`<button class="btn sm" type="button" data-act="editSede" data-id="${s.id}">Editar</button>`:`<span class="status">Solo lectura</span>`}</td></tr>`; }).join("");
+  return orgPagina("Sedes","Catálogo de sedes de la red. La clave de 3 letras aparece en el folio. Las sedes con historial no se borran: se desactivan.",
+    su&&!ed?`<button class="btn primary" type="button" data-act="newSede">+ Nueva sede</button>`:"",
+    `${form}${barraFiltros("sedes",{ph:"Buscar sede o clave",estados:["Activa","Inactiva"]})}
+    <div class="tbl-wrap"><table><thead><tr><th>Sede</th><th>Entidad fiscal</th><th>Dirección y horario</th><th>Administrativos</th><th>Psicólogos</th><th>Estado</th><th></th></tr></thead><tbody>${filas||`<tr><td colspan="7" class="status">No tienes sedes autorizadas.</td></tr>`}</tbody></table></div>`);
+}
+
+/* ---------- Entidades fiscales ---------- */
+function entidadesHtml(){
+  if (!S.org) return orgCargando("Entidades fiscales"); if (S.org.error) return orgError("Entidades fiscales");
+  const su=orgSU(), ed=S.orgEdit?.tipo==="entidad"?S.orgEdit:null, vis=new Set(orgSedesVis().map(s=>s.id));
+  const datos=id=>S.org.datosFiscales.find(d=>d.entidad_id===id);
+  let form="";
+  if (ed){ const d=ed.id?datos(ed.id)||{}:{};
+    form=`<form class="note" onsubmit="return false"><div class="note-h"><h3>${ed.id?"Editar entidad fiscal":"Nueva entidad fiscal"}</h3></div><div class="datos">
+      ${fld("ef-corto","Nombre para mostrar *",ed.nombre_corto,{span:2,ph:"Ej. CEMEPI, S.C."})}
+      ${fld("ef-tipo","Tipo de persona",ed.tipo_persona||"",{opts:[["","Por confirmar"],["moral","Persona moral"],["fisica","Persona física"]]})}
+      ${fld("ef-estatus","Estatus",ed.estatus||"por_validar",{opts:Object.entries(ESTATUS_ENT)})}
+      ${fld("ef-razon","Razón social o nombre fiscal",d.razon_social,{span:2,ph:PEND})}
+      ${fld("ef-rfc","RFC",d.rfc,{max:13,up:1,ph:PEND,hint:"12 caracteres (moral) o 13 (física)."})}
+      ${fld("ef-regimen","Régimen fiscal",d.regimen_fiscal,{ph:PEND})}
+      ${fld("ef-dom","Domicilio fiscal",d.domicilio_fiscal,{span:2,ph:PEND})}
+      ${fld("ef-rep","Representante legal",ed.representante_legal,{ph:"Solo si está confirmado"})}
+      ${fld("ef-desde","Vigente desde",ed.vigente_desde,{type:"date"})}
+      ${fld("ef-hasta","Vigente hasta",ed.vigente_hasta,{type:"date",hint:"Vacío = vigente."})}
+    </div><p class="status" style="margin:0">RFC, razón social, régimen y domicilio fiscal solo los ve quien tenga el permiso “Información sensible”. La bitácora registra que cambiaron, sin guardar su contenido.</p>
+    <div class="actions"><button class="btn primary" type="button" data-act="saveEntidad">Guardar entidad</button><button class="btn" type="button" data-act="cancelOrg">Cancelar</button></div></form>`; }
+  const tarjeta=e=>{ const d=datos(e.id), sedes=S.org.sedeEnt.filter(x=>x.entidad_id===e.id).map(x=>orgSede(x.sede_id)).filter(s=>s&&(su||vis.has(s.id)));
+    const sens=v=>d?(v?`<span class="sens mono">${esc(v)}</span>`:pendH()):`<span class="status">Requiere permiso “Información sensible”</span>`;
+    return `<section class="note"><div class="note-h"><h3>${esc(e.nombre_corto)}</h3><span class="pill ${e.estatus==="activa"?"estado-activo":e.estatus==="inactiva"?"estado-suspendido":"estado-pendiente"}">${ESTATUS_ENT[e.estatus]||e.estatus}</span></div>
+      ${e.principal?"":`<div class="banner">Entidad diferenciada: sus operaciones, nómina y facturación se separan de la entidad principal. No se asume que su responsable operativa sea representante legal ni titular fiscal.</div>`}
+      <dl class="dl-org"><dt>Tipo de persona</dt><dd>${e.tipo_persona==="moral"?"Persona moral":e.tipo_persona==="fisica"?"Persona física":pendH()}</dd>
+      <dt>Razón social</dt><dd>${sens(d?.razon_social)}</dd><dt>RFC</dt><dd>${sens(d?.rfc)}</dd><dt>Régimen fiscal</dt><dd>${sens(d?.regimen_fiscal)}</dd><dt>Domicilio fiscal</dt><dd>${sens(d?.domicilio_fiscal)}</dd>
+      <dt>Representante legal</dt><dd>${e.representante_legal?esc(e.representante_legal):pendH()}</dd><dt>Sedes</dt><dd>${sedes.map(s=>esc(s.nombre)).join(", ")||"—"}</dd>
+      <dt>Vigencia</dt><dd>${e.vigente_desde?"Desde "+fmtDate(e.vigente_desde):pendH()}${e.vigente_hasta?" hasta "+fmtDate(e.vigente_hasta):""}</dd></dl>
+      ${su?`<div class="actions"><button class="btn sm" type="button" data-act="editEntidad" data-id="${e.id}">Editar</button></div>`:""}</section>`; };
+  return orgPagina("Entidades fiscales","Personas físicas o morales responsables de las operaciones de cada sede. Una sede pertenece a una sola entidad a la vez; los cambios se conservan con fechas.",
+    su&&!ed?`<button class="btn primary" type="button" data-act="newEntidad">+ Registrar entidad</button>`:"",
+    `${form}<div class="org-grid">${S.org.entidades.map(tarjeta).join("")||`<p class="status">No tienes entidades fiscales autorizadas.</p>`}</div>`);
+}
+
+/* ---------- Áreas ---------- */
+function areasHtml(){
+  if (!S.org) return orgCargando("Áreas"); if (S.org.error) return orgError("Áreas");
+  const ed=S.orgEdit?.tipo==="area"?S.orgEdit:null, puede=orgEditaCatalogo();
+  const form = ed ? `<form class="note" onsubmit="return false"><div class="note-h"><h3>${ed.id?"Editar área":"Nueva área"}</h3></div><div class="datos">
+      ${fld("ar-nombre","Nombre *",ed.nombre,{span:2})}${fld("ar-estatus","Estatus",ed.estatus||"propuesta",{opts:[["propuesta","Propuesta (por validar)"],["activa","Activa (validada)"],["inactiva","Inactiva"]]})}
+      ${fld("ar-prop","Propósito",ed.proposito,{area:1,span:3,rows:2})}${fld("ar-fun","Funciones",ed.funciones,{area:1,span:3,rows:3})}</div>
+      <div class="actions"><button class="btn primary" type="button" data-act="saveArea">Guardar área</button><button class="btn" type="button" data-act="cancelOrg">Cancelar</button></div></form>` : "";
+  const propuestas=S.org.areas.filter(a=>a.estatus==="propuesta").length;
+  return orgPagina("Áreas","Unidades funcionales de la red. Un área “propuesta” no es estructura oficial hasta que la Dirección la valide.",
+    puede&&!ed?`<button class="btn primary" type="button" data-act="newArea">+ Nueva área</button>`:"",
+    `${propuestas?`<div class="banner">${propuestas} área${propuestas===1?"":"s"} por validar. Al validarlas puedes renombrarlas, fusionarlas o marcarlas como inactivas.</div>`:""}${form}
+    <div class="tbl-wrap"><table><thead><tr><th>Área</th><th>Propósito</th><th>Puestos</th><th>Estatus</th><th></th></tr></thead><tbody>
+    ${S.org.areas.map(a=>`<tr><td><b>${esc(a.nombre)}</b></td><td>${a.proposito?esc(a.proposito):pendH()}</td><td>${S.org.puestos.filter(p=>p.area_id===a.id).length}</td>
+      <td><span class="pill ${a.estatus==="activa"?"estado-activo":a.estatus==="inactiva"?"estado-suspendido":"estado-pendiente"}">${a.estatus==="propuesta"?"Propuesta":a.estatus==="activa"?"Activa":"Inactiva"}</span></td>
+      <td>${puede?`<button class="btn sm" type="button" data-act="editArea" data-id="${a.id}">Editar</button>`:""}</td></tr>`).join("")||`<tr><td colspan="5" class="status">Sin áreas registradas.</td></tr>`}</tbody></table></div>`);
+}
+
+/* ---------- Puestos y funciones ---------- */
+function puestosHtml(){
+  if (!S.org) return orgCargando("Puestos y funciones"); if (S.org.error) return orgError("Puestos y funciones");
+  const ed=S.orgEdit?.tipo==="puesto"?S.orgEdit:null, puede=orgEditaCatalogo(), vis=new Set(orgSedesVis().map(s=>s.id));
+  const form = ed ? `<form class="note" onsubmit="return false"><div class="note-h"><h3>${ed.id?"Editar puesto":"Nuevo puesto"}</h3></div><div class="datos">
+      ${fld("pu-cod","Código *",ed.codigo,{max:7,up:1,ph:"PS-01",hint:"2 a 4 letras, guion y 2 números."})}${fld("pu-nombre","Nombre *",ed.nombre,{ph:"Ej. Psicólogo(a) base"})}
+      ${fld("pu-area","Área",ed.area_id||"",{opts:[["","Sin área"],...S.org.areas.map(a=>[a.id,a.nombre])]})}${fld("pu-estatus","Estatus",ed.estatus||"propuesta",{opts:[["propuesta","Propuesta"],["activo","Activo"],["inactivo","Inactivo"]]})}
+      ${fld("pu-prop","Propósito",ed.proposito,{area:1,span:3,rows:2})}
+      ${PUESTO_CAMPOS.map(([k,l])=>fld("pu-"+k,l,ed[k],{area:1,span:3,rows:2,ph:PEND})).join("")}</div>
+      <div class="actions"><button class="btn primary" type="button" data-act="savePuesto">Guardar puesto</button><button class="btn" type="button" data-act="cancelOrg">Cancelar</button></div></form>` : "";
+  const ver=S.orgVerPuesto?orgPuesto(S.orgVerPuesto):null;
+  const detalle = ver&&!ed ? `<section class="note"><div class="note-h"><h3>${esc(ver.codigo)} · ${esc(ver.nombre)}</h3><button class="btn sm" type="button" data-act="cerrarPuesto">Cerrar</button></div>
+      <dl class="dl-org"><dt>Área</dt><dd>${orgArea(ver.area_id)?esc(orgArea(ver.area_id).nombre):pendH()}</dd><dt>Propósito</dt><dd>${ver.proposito?esc(ver.proposito):pendH()}</dd>
+      ${PUESTO_CAMPOS.map(([k,l])=>`<dt>${l}</dt><dd style="white-space:pre-wrap">${ver[k]?esc(ver[k]):pendH()}</dd>`).join("")}</dl></section>` : "";
+  return orgPagina("Puestos y funciones","Perfiles de puesto: qué se hace y con qué límites. Un puesto puede existir sin estar ocupado; crear un puesto nunca genera contrataciones.",
+    puede&&!ed?`<button class="btn primary" type="button" data-act="newPuesto">+ Nuevo puesto</button>`:"",
+    `${form}${detalle}<div class="tbl-wrap"><table><thead><tr><th>Código</th><th>Puesto</th><th>Área</th><th>Plazas</th><th>Vacantes</th><th>Estatus</th><th></th></tr></thead><tbody>
+    ${S.org.puestos.map(p=>{ const ps=S.org.posiciones.filter(x=>x.puesto_id===p.id&&(orgSU()||vis.has(x.sede_id)));
+      return `<tr><td class="mono">${esc(p.codigo)}</td><td><b>${esc(p.nombre)}</b></td><td>${orgArea(p.area_id)?esc(orgArea(p.area_id).nombre):"—"}</td><td>${ps.length}</td><td>${ps.filter(x=>x.estado==="vacante").length}</td>
+      <td><span class="pill ${p.estatus==="activo"?"estado-activo":p.estatus==="inactivo"?"estado-suspendido":"estado-pendiente"}">${p.estatus==="propuesta"?"Propuesta":p.estatus==="activo"?"Activo":"Inactivo"}</span></td>
+      <td style="white-space:nowrap"><button class="btn sm" type="button" data-act="verPuesto" data-id="${p.id}">Ver</button>${puede?` <button class="btn sm" type="button" data-act="editPuesto" data-id="${p.id}">Editar</button>`:""}</td></tr>`; }).join("")
+      ||`<tr><td colspan="7" class="status">Aún no hay puestos. ${puede?"Registra el primero con “+ Nuevo puesto”.":""}</td></tr>`}</tbody></table></div>`);
+}
+
+/* ---------- Vacantes (posiciones) ---------- */
+function vacantesHtml(){
+  if (!S.org) return orgCargando("Vacantes"); if (S.org.error) return orgError("Vacantes");
+  const ed=S.orgEdit?.tipo==="posicion"?S.orgEdit:null, sedes=orgSedesVis(), editables=sedes.filter(s=>orgNivelSede(s.id)>=2);
+  const form = ed ? `<form class="note" onsubmit="return false"><div class="note-h"><h3>${ed.id?"Editar plaza":"Nueva plaza"}</h3></div><div class="datos">
+      ${fld("po-puesto","Puesto *",ed.puesto_id||"",{opts:[["","— Selecciona —"],...S.org.puestos.map(p=>[p.id,p.codigo+" · "+p.nombre])],span:2})}
+      ${fld("po-sede","Sede *",ed.sede_id||"",{opts:[["","— Selecciona —"],...editables.map(s=>[s.id,s.nombre])]})}
+      ${fld("po-estado","Estado",ed.estado||"vacante",{opts:Object.entries(ESTADO_POS)})}
+      ${fld("po-prio","Prioridad",ed.prioridad||"",{opts:[["","Sin prioridad"],...Object.entries(PRIO_TXT)]})}
+      ${fld("po-abierta","Fecha de apertura",ed.abierta_en||today(),{type:"date"})}</div>
+      <p class="status" style="margin:0">Una plaza ocupada se vinculará con su colaborador en la siguiente etapa (Colaboradores). Este módulo no recluta: solo deja visible qué falta y dónde.</p>
+      <div class="actions"><button class="btn primary" type="button" data-act="savePosicion">Guardar plaza</button><button class="btn" type="button" data-act="cancelOrg">Cancelar</button></div></form>` : "";
+  const ps=S.org.posiciones.filter(p=>sedes.some(s=>s.id===p.sede_id));
+  const kp=k=>ps.filter(p=>p.estado===k).length;
+  return orgPagina("Vacantes","Plazas por sede: ocupadas, vacantes, suspendidas o inactivas.",
+    editables.length&&S.org.puestos.length&&!ed?`<button class="btn primary" type="button" data-act="newPosicion">+ Nueva plaza</button>`:"",
+    `<div class="kpis">${Object.entries(ESTADO_POS).map(([k,l])=>`<div class="kpi"><span>${l}s</span><b>${kp(k)}</b></div>`).join("")}</div>
+    ${!S.org.puestos.length?`<div class="banner">Primero registra los puestos en “Puestos y funciones”; cada plaza pertenece a un puesto.</div>`:""}${form}
+    ${barraFiltros("vacantes",{ph:"Buscar puesto",sedes:sedes.map(s=>s.nombre),estados:Object.values(ESTADO_POS)})}
+    <div class="tbl-wrap"><table><thead><tr><th>Puesto</th><th>Sede</th><th>Estado</th><th>Prioridad</th><th>Apertura</th><th></th></tr></thead><tbody>
+    ${ps.map(p=>{ const pu=orgPuesto(p.puesto_id), s=orgSede(p.sede_id);
+      return `<tr data-f data-sede="${esc(s?.nombre||"")}" data-estado="${ESTADO_POS[p.estado]}"><td><b>${esc(pu?.nombre||"—")}</b><br><span class="status mono">${esc(pu?.codigo||"")}</span></td><td>${esc(s?.nombre||"")}</td>
+      <td><span class="pill ${PILL_POS[p.estado]}">${ESTADO_POS[p.estado]}</span></td><td>${p.prioridad?PRIO_TXT[p.prioridad]:"—"}</td><td>${p.abierta_en?fmtDate(p.abierta_en):"—"}</td>
+      <td>${orgNivelSede(p.sede_id)>=2?`<button class="btn sm" type="button" data-act="editPosicion" data-id="${p.id}">Editar</button>`:""}</td></tr>`; }).join("")
+      ||`<tr><td colspan="6" class="status">Sin plazas registradas en tus sedes.</td></tr>`}</tbody></table></div>`);
+}
+
+/* ---------- Acciones del módulo ---------- */
+async function orgAccion(a, b){
+  const v=id=>($("#"+id)?.value??"").trim(), guardar=async(fn, ok)=>{ try{ await fn(); S.orgEdit=null; toast(ok); }catch(e){ toast(orgErrorTxt(e)); return false; } await cargarOrg(); return true; };
+  if (ORG_VISTAS.includes(a)){ S.view=a; S.orgEdit=null; S.orgVerPuesto=null; render(); return cargarOrg(); }
+  if (a==="cancelOrg"){ S.orgEdit=null; return render(); }
+  if (a==="newSede"){ S.orgEdit={tipo:"sede",activa:true}; render(); setTimeout(()=>$("#sd-nombre")?.focus(),30); return; }
+  if (a==="editSede"){ S.orgEdit={tipo:"sede",...orgSede(b.dataset.id)}; render(); setTimeout(()=>$("#frmSede")?.scrollIntoView({block:"start"}),30); return; }
+  if (a==="saveSede"){ const ed=S.orgEdit, su=orgSU(), nombre=v("sd-nombre"), clave=v("sd-clave").toUpperCase(), ent=v("sd-entidad"), antes=ed.id?orgEntDeSede(ed.id)?.id||"":"";
+    if (su){ if (nombre.length<3) return toast("Escribe el nombre de la sede.");
+      if (!/^[A-Z]{3}$/.test(clave)) return toast("La clave debe tener exactamente 3 letras, por ejemplo COY.");
+      if (!ed.id && !ent) return toast("Elige la entidad fiscal de la nueva sede.");
+      if (ed.id && ent!==antes && v("sd-motivo").length<5) return toast("Escribe el motivo del cambio de entidad fiscal."); }
+    const cap=v("sd-cap"); if (cap && !(Number(cap)>=0)) return toast("La capacidad debe ser un número.");
+    const ok=await guardar(()=>S.api.guardarSedeOrg({id:ed.id, ...(su?{nombre, clave, activa:v("sd-activa")==="1"}:{}),
+      direccion:v("sd-dir"), alcaldia_municipio:v("sd-alc"), estado_republica:v("sd-edo"), horarios:v("sd-hor"), capacidad:cap, observaciones:v("sd-obs"),
+      entidad_id:ent, entidadCambio:su && ent && ent!==antes, motivo:v("sd-motivo")||(ed.id?"":"Alta de la sede")}), "Sede guardada");
+    if (ok && su){ try{ const ss=await S.api.sedes(false); SEDES.splice(0,SEDES.length,...ss.map(s=>s.nombre)); for (const k of Object.keys(SEDE_COD)) delete SEDE_COD[k]; ss.forEach(s=>{ SEDE_COD[s.nombre]=s.clave; }); renderList(); }catch{} }
+    return; }
+  if (a==="newEntidad"){ S.orgEdit={tipo:"entidad",estatus:"por_validar"}; render(); setTimeout(()=>$("#ef-corto")?.focus(),30); return; }
+  if (a==="editEntidad"){ const e=S.org.entidades.find(x=>x.id===b.dataset.id), d=S.org.datosFiscales.find(x=>x.entidad_id===e.id)||{}; S.orgEdit={tipo:"entidad",...e,_d:d}; return render(); }
+  if (a==="saveEntidad"){ const rfc=v("ef-rfc").toUpperCase();
+    if (v("ef-corto").length<3) return toast("Escribe el nombre para mostrar de la entidad.");
+    if (rfc && !RFC_OK.test(rfc)) return toast("El RFC no tiene un formato válido (12 o 13 caracteres).");
+    return guardar(()=>S.api.guardarEntidad({id:S.orgEdit.id, nombre_corto:v("ef-corto"), tipo_persona:v("ef-tipo"), estatus:v("ef-estatus"), razon_social:v("ef-razon"), rfc,
+      regimen_fiscal:v("ef-regimen"), domicilio_fiscal:v("ef-dom"), representante_legal:v("ef-rep"), vigente_desde:v("ef-desde"), vigente_hasta:v("ef-hasta")}), "Entidad fiscal guardada"); }
+  if (a==="newArea"){ S.orgEdit={tipo:"area",estatus:"propuesta"}; render(); setTimeout(()=>$("#ar-nombre")?.focus(),30); return; }
+  if (a==="editArea"){ S.orgEdit={tipo:"area",...orgArea(b.dataset.id)}; return render(); }
+  if (a==="saveArea"){ if (v("ar-nombre").length<3) return toast("Escribe el nombre del área.");
+    return guardar(()=>S.api.guardarArea({id:S.orgEdit.id, nombre:v("ar-nombre"), estatus:v("ar-estatus"), proposito:v("ar-prop"), funciones:v("ar-fun")}), "Área guardada"); }
+  if (a==="newPuesto"){ S.orgEdit={tipo:"puesto",estatus:"propuesta"}; S.orgVerPuesto=null; render(); setTimeout(()=>$("#pu-cod")?.focus(),30); return; }
+  if (a==="editPuesto"){ S.orgEdit={tipo:"puesto",...orgPuesto(b.dataset.id)}; S.orgVerPuesto=null; return render(); }
+  if (a==="verPuesto"){ S.orgVerPuesto=b.dataset.id; return render(); }
+  if (a==="cerrarPuesto"){ S.orgVerPuesto=null; return render(); }
+  if (a==="savePuesto"){ const cod=v("pu-cod").toUpperCase();
+    if (!/^[A-Z]{2,4}-\d{2}$/.test(cod)) return toast("El código lleva 2 a 4 letras, guion y 2 números; por ejemplo PS-01.");
+    if (v("pu-nombre").length<3) return toast("Escribe el nombre del puesto.");
+    const p={id:S.orgEdit.id, codigo:cod, nombre:v("pu-nombre"), area_id:v("pu-area"), estatus:v("pu-estatus"), proposito:v("pu-prop")}; PUESTO_CAMPOS.forEach(([k])=>p[k]=v("pu-"+k));
+    return guardar(()=>S.api.guardarPuesto(p), "Puesto guardado"); }
+  if (a==="newPosicion"){ S.orgEdit={tipo:"posicion",estado:"vacante"}; return render(); }
+  if (a==="editPosicion"){ S.orgEdit={tipo:"posicion",...S.org.posiciones.find(x=>x.id===b.dataset.id)}; return render(); }
+  if (a==="savePosicion"){ if (!v("po-puesto")) return toast("Elige el puesto."); if (!v("po-sede")) return toast("Elige la sede.");
+    return guardar(()=>S.api.guardarPosicion({id:S.orgEdit.id, puesto_id:v("po-puesto"), sede_id:v("po-sede"), estado:v("po-estado"), prioridad:v("po-prio"), abierta_en:v("po-abierta")}), "Plaza guardada"); }
+  return null;
+}
+const ORG_ACCIONES=new Set([...ORG_VISTAS,"cancelOrg","newSede","editSede","saveSede","newEntidad","editEntidad","saveEntidad","newArea","editArea","saveArea","newPuesto","editPuesto","verPuesto","cerrarPuesto","savePuesto","newPosicion","editPosicion","savePosicion"]);
+function orgErrorTxt(e){ const m=e?.message||"";
+  if (/duplicate|unique/i.test(m)) return "Ya existe un registro con ese nombre, clave o código.";
+  if (/row-level security|permission denied|violates row/i.test(m)) return "No tienes autorización para ese cambio. Si lo necesitas, pídelo al Superusuario.";
+  if (/rfc/i.test(m)) return "El RFC no tiene un formato válido.";
+  return m || "No se pudo guardar."; }
+
 /* ---------- Reglamento Interior de Trabajo (texto en la base de datos, solo cuentas activas) ---------- */
 const sinAcentos = t => String(t).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 const fmtFechaHora = f => new Date(f).toLocaleString("es-MX",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"});
@@ -2692,7 +2910,7 @@ document.addEventListener("click", async ev => {
   /* Terapeutas */
   /* Usuarios, sedes y tiempo de uso */
   if (a==="usuarios"){ S.view="usuarios"; S.usrEdit=null; S.usuarios=null; render(); return cargarAdmin("usuarios"); }
-  if (a==="sedes"){ S.view="sedes"; S.sedeEdit=null; S.sedesTodas=null; render(); return cargarAdmin("sedes"); }
+  if (ORG_ACCIONES.has(a)) return orgAccion(a, b);   /* Módulo 01 · Organización */
   if (a==="reglamento"){ S.view="reglamento"; S.reg=undefined; S.regQ=""; S.regLeyEdit=false; render(); return cargarAdmin("reglamento"); }
   if (a==="irReg"){ if (S.regQ){ S.regQ=""; $("#regBuscar").value=""; $("#regCuerpo").innerHTML=regCuerpoHtml(); } $(`#reg-${b.dataset.i}`)?.scrollIntoView({behavior:"smooth",block:"start"}); return; }
   if (a==="acusarReg"){ if(!arm(b,"acuse","¿Confirmar recepción y lectura?")) return; armed=null;
@@ -2795,16 +3013,6 @@ document.addEventListener("click", async ev => {
     if (p!==p2){ toast("Las dos contraseñas no coinciden."); return; }
     try{ await S.api.cambiarMiContrasena(p); $("#mp-pass").value=""; $("#mp-pass2").value=""; toast("Tu contraseña se cambió."); }
     catch(e){ toast(/different|same/i.test(e?.message||"")?"La nueva contraseña debe ser distinta de la actual.":(e?.message||"No se pudo cambiar la contraseña.")); } return; }
-  if (a==="newSede"){ S.sedeEdit={activa:true}; render(); setTimeout(()=>$("#sd-nombre")?.focus(),30); return; }
-  if (a==="editSede"){ S.sedeEdit={...S.sedesTodas.find(s=>s.id===b.dataset.id)}; return render(); }
-  if (a==="cancelSede"){ S.sedeEdit=null; return render(); }
-  if (a==="saveSede"){ const nombre=$("#sd-nombre").value.trim(), clave=$("#sd-clave").value.trim().toUpperCase();
-    if (nombre.length<3){ toast("Escribe el nombre de la sede."); return; }
-    if (!/^[A-Z]{3}$/.test(clave)){ toast("La clave debe tener exactamente 3 letras, por ejemplo COY."); return; }
-    try{ await S.api.guardarSede({id:S.sedeEdit.id, nombre, clave, activa:$("#sd-activa").value==="1"}); S.sedeEdit=null; toast("Sede guardada");
-      const ss=await S.api.sedes(false); SEDES.splice(0,SEDES.length,...ss.map(s=>s.nombre)); for (const k of Object.keys(SEDE_COD)) delete SEDE_COD[k]; ss.forEach(s=>{ SEDE_COD[s.nombre]=s.clave; }); renderList(); }
-    catch(e){ toast(/duplicate|unique/i.test(e?.message||"")?"Ya existe una sede con ese nombre o esa clave.":(e?.message||"No se pudo guardar la sede.")); }
-    return cargarAdmin("sedes"); }
   if (a==="terapeutas"){ S.view="terapeutas"; S.terEdit=null; return render(); }
   if (a==="newTer"){ S.terEdit={sede:S.sedeF!=="todas"?S.sedeF:""}; render(); setTimeout(()=>$("#tr-nombre")?.focus(),30); return; }
   if (a==="editTer"){ const t=S.terapeutas.get(b.dataset.id); if(!t) return; S.terEdit={...t}; render(); return; }
@@ -3161,7 +3369,7 @@ render();
     try{ const ss=await S.api.sedes(false);
       if (ss.length){ SEDES.splice(0, SEDES.length, ...ss.map(s=>s.nombre)); for (const k of Object.keys(SEDE_COD)) delete SEDE_COD[k]; ss.forEach(s=>{ SEDE_COD[s.nombre]=s.clave; }); } }catch(e){ console.warn("sedes", e); }
     $("#usrBtn").hidden = !["superusuario","direccion","admin_sede"].includes(S.rol);
-    $("#sedBtn").hidden = !["superusuario","direccion"].includes(S.rol);
+    ["sedBtn","entBtn","areBtn","pueBtn","vacBtn"].forEach(id=>{ $("#"+id).hidden = !((S.api.orgNivel||0) >= 1); });   /* Módulo 01: según el servicio de permisos */
     $("#usoBtn").hidden = !tengo("tiempo_uso");
     $("#tabBtn").hidden = !["superusuario","direccion"].includes(S.rol);
     $("#permBtn").hidden = S.rol!=="superusuario";
@@ -3271,6 +3479,9 @@ ul.pend.avisos li{border-left-color:var(--accent,#0560BD)}
 .tablero{--viz-1:#2a78d6}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tablero{--viz-1:#3987e5}}
 :root[data-theme="dark"] .tablero{--viz-1:#3987e5}
+.org-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+.dl-org{display:grid;grid-template-columns:minmax(110px,170px) minmax(0,1fr);gap:6px 14px;margin:0;font-size:14px}.dl-org dt{color:var(--muted)}.dl-org dd{margin:0;min-width:0;overflow-wrap:anywhere}
+@media (max-width:560px){.dl-org{grid-template-columns:1fr}.dl-org dd{margin-bottom:6px}}
 .kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
 .kpi{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;background:var(--surface)}
 .kpi small{display:block;color:var(--muted);font-size:12px}.kpi b{display:block;font-size:26px;line-height:1.2;font-variant-numeric:tabular-nums}
