@@ -497,7 +497,7 @@ if (rol !== "administrativo"){
     const p = await llamarRedactar({ ping: true }, ctl.signal); clearTimeout(t);
     if (p.ok && p.j?.configurada) sample = {
       async json(prompt, opts = {}){
-        try{ const r = await llamarRedactar({ prompt }, opts.signal);
+        try{ const r = await llamarRedactar({ prompt, expediente: opts.expediente || null }, opts.signal);   /* el servidor verifica que la persona puede ver ese expediente */
           if (!r.ok || !r.j || r.j.error) throw { code: r.j?.error || "api" };
           return r.j; }
         catch(e){ if (e?.name === "AbortError") throw { code: "cancelled" }; throw e?.code ? e : { code: "red" }; }

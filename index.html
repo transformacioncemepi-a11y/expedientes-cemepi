@@ -347,6 +347,7 @@ td.res{white-space:pre-wrap;min-width:220px}
     <button class="nav-i" id="docpBtn" type="button" data-act="documentacion" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg><span>Documentación</span></button>
     <button class="nav-i" id="regBtn" type="button" data-act="reglamento"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5z"/><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/></svg><span>Reglamento</span></button></nav>
   <nav class="nav-g" aria-label="Organización"><span class="nav-l">Organización</span>
+    <button class="nav-i" id="resBtn" type="button" data-act="orgresumen" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg><span>Resumen</span></button>
     <button class="nav-i" id="ogBtn" type="button" data-act="organigrama" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-4h12v4"/></svg><span>Organigrama</span></button>
     <button class="nav-i" id="colBtn" type="button" data-act="colaboradores" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/></svg><span>Colaboradores</span></button>
     <button class="nav-i" id="supBtn" type="button" data-act="supervision" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="6" r="3"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M12 9v3M12 12l-6 4M12 12l6 4"/></svg><span>Supervisión</span></button>
@@ -354,7 +355,8 @@ td.res{white-space:pre-wrap;min-width:220px}
     <button class="nav-i" id="entBtn" type="button" data-act="entidades" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V5l4-2 4 2 4-2 4 2v16l-4-2-4 2-4-2z"/><path d="M8 9h8M8 13h8M8 17h4"/></svg><span>Entidades fiscales</span></button>
     <button class="nav-i" id="areBtn" type="button" data-act="areas" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg><span>Áreas</span></button>
     <button class="nav-i" id="pueBtn" type="button" data-act="puestos" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg><span>Puestos y funciones</span></button>
-    <button class="nav-i" id="vacBtn" type="button" data-act="vacantes" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" stroke-dasharray="3 2"/><path d="M4 21a8 8 0 0 1 16 0" stroke-dasharray="3 2"/></svg><span>Vacantes</span></button></nav>
+    <button class="nav-i" id="vacBtn" type="button" data-act="vacantes" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" stroke-dasharray="3 2"/><path d="M4 21a8 8 0 0 1 16 0" stroke-dasharray="3 2"/></svg><span>Vacantes</span></button>
+    <button class="nav-i" id="indBtn" type="button" data-act="indicadores" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg><span>Indicadores</span></button></nav>
   <nav class="nav-g" aria-label="Administración"><span class="nav-l">Administración</span>
     <button class="nav-i" id="usrBtn" type="button" data-act="usuarios" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>Usuarios</span></button>
     <button class="nav-i" id="permBtn" type="button" data-act="permisos" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Permisos</span></button>
@@ -721,7 +723,7 @@ async function revisarCalidad(p){
   g.revisando=true; render(); $("#revPanel")?.scrollIntoView({block:"center"});
   S.ctlRev=new AbortController();
   try{
-    const r = await S.sample.json(promptRevision(g, ctxOf(p)), {modelTier:"complex", signal:S.ctlRev.signal, cache:false});
+    const r = await S.sample.json(promptRevision(g, ctxOf(p)), {modelTier:"complex", signal:S.ctlRev.signal, cache:false, expediente:p?.id||S.sel});
     g.revision = {...normalizarRevision(r), fecha:new Date().toISOString(), por:S.uid||"", firma:firmaContenido(g.contenido)}; g.guardado=false;
     toast(g.revision.veredicto==="listo"?"Revisión lista: Claude no encontró problemas importantes.":`Revisión lista: ${g.revision.hallazgos.length} hallazgo${g.revision.hallazgos.length===1?"":"s"}.`);
   }catch(e){ if (e?.code!=="cancelled") toast({rate_limited:"Alcanzaste el límite de solicitudes. Espera un momento.",invalid_json:"La revisión llegó incompleta. Intenta de nuevo.",
@@ -1107,11 +1109,11 @@ function renderList(){
   el.innerHTML=grupos.map(s=>{ const g=arr.filter(p=>(p.ficha?.sede||"")===s); if(!g.length) return "";
     return `<div class="grupo"><span>${esc(s||"Sin sede")}</span><b>${g.length}</b></div>${porTerapeuta(g)}`; }).join("");
 }
-const VISTA_TXT={inicio:"Inicio",exp:"Expediente",perfil:"Mi perfil",terapeutas:"Terapeutas",usuarios:"Usuarios",seguridad:"Usuarios y permisos",organigrama:"Organigrama",colaboradores:"Colaboradores",supervision:"Supervisión",sedes:"Sedes",entidades:"Entidades fiscales",areas:"Áreas",puestos:"Puestos y funciones",vacantes:"Vacantes",uso:"Tiempo de uso",tablero:"Tablero",
+const VISTA_TXT={inicio:"Inicio",exp:"Expediente",perfil:"Mi perfil",terapeutas:"Terapeutas",usuarios:"Usuarios",seguridad:"Usuarios y permisos",orgresumen:"Resumen organizacional",indicadores:"Indicadores",organigrama:"Organigrama",colaboradores:"Colaboradores",supervision:"Supervisión",sedes:"Sedes",entidades:"Entidades fiscales",areas:"Áreas",puestos:"Puestos y funciones",vacantes:"Vacantes",uso:"Tiempo de uso",tablero:"Tablero",
   reglamento:"Reglamento",contratos:"Contratos",permisos:"Permisos",documentacion:"Documentación",ayuda:"Ayuda"};
-const VISTA_BTN={inicio:"iniBtn",terapeutas:"terBtn",contratos:"ctrBtn",documentacion:"docpBtn",reglamento:"regBtn",usuarios:"usrBtn",permisos:"permBtn",seguridad:"segBtn",organigrama:"ogBtn",colaboradores:"colBtn",supervision:"supBtn",sedes:"sedBtn",entidades:"entBtn",areas:"areBtn",puestos:"pueBtn",vacantes:"vacBtn",uso:"usoBtn",tablero:"tabBtn",ayuda:"ayudaBtn",perfil:"perfilBtn"};
+const VISTA_BTN={inicio:"iniBtn",terapeutas:"terBtn",contratos:"ctrBtn",documentacion:"docpBtn",reglamento:"regBtn",usuarios:"usrBtn",permisos:"permBtn",seguridad:"segBtn",orgresumen:"resBtn",indicadores:"indBtn",organigrama:"ogBtn",colaboradores:"colBtn",supervision:"supBtn",sedes:"sedBtn",entidades:"entBtn",areas:"areBtn",puestos:"pueBtn",vacantes:"vacBtn",uso:"usoBtn",tablero:"tabBtn",ayuda:"ayudaBtn",perfil:"perfilBtn"};
 const GRUPO_VISTA={exp:"Atención",terapeutas:"Atención",contratos:"Mi trabajo",documentacion:"Mi trabajo",reglamento:"Mi trabajo",usuarios:"Administración",
-  permisos:"Administración",seguridad:"Configuración",organigrama:"Organización",colaboradores:"Organización",supervision:"Organización",sedes:"Organización",entidades:"Organización",areas:"Organización",puestos:"Organización",vacantes:"Organización",uso:"Administración",tablero:"Administración",ayuda:"Mi cuenta",perfil:"Mi cuenta"};
+  permisos:"Administración",seguridad:"Configuración",orgresumen:"Organización",indicadores:"Organización",organigrama:"Organización",colaboradores:"Organización",supervision:"Organización",sedes:"Organización",entidades:"Organización",areas:"Organización",puestos:"Organización",vacantes:"Organización",uso:"Administración",tablero:"Administración",ayuda:"Mi cuenta",perfil:"Mi cuenta"};
 /* Ruta de navegación: Inicio / grupo / [vista padre]. El título de la página va en el h1. */
 function migas(padre){
   const v = S.sel && S.view==="exp" ? "exp" : S.view, it=[`<button type="button" data-act="back">Inicio</button>`];
@@ -1195,7 +1197,7 @@ function marcarNav(){
 function render(){
   const d=$("#detail"); S.dirty=false; S.stale=false; marcarNav(); document.body.classList.remove("menu-abierto");
   const p=S.pacientes.get(S.sel);
-  $("#app").classList.toggle("open", !!p || ["perfil","terapeutas","usuarios","sedes","entidades","areas","puestos","vacantes","colaboradores","supervision","organigrama","seguridad","uso","reglamento","contratos","permisos","documentacion","ayuda","tablero"].includes(S.view));
+  $("#app").classList.toggle("open", !!p || ["perfil","terapeutas","usuarios","sedes","entidades","areas","puestos","vacantes","colaboradores","supervision","organigrama","seguridad","orgresumen","indicadores","uso","reglamento","contratos","permisos","documentacion","ayuda","tablero"].includes(S.view));
   if (S.view==="perfil"){ d.innerHTML=perfilHtml(); activarPad(); return; }
   if (S.view==="terapeutas"){ d.innerHTML=terapeutasHtml(); return; }
   if (S.view==="usuarios"){ d.innerHTML=usuariosHtml(); return; }
@@ -1208,6 +1210,8 @@ function render(){
   if (S.view==="supervision"){ d.innerHTML=supervisionHtml(); return; }
   if (S.view==="organigrama"){ d.innerHTML=organigramaHtml(); return; }
   if (S.view==="seguridad"){ d.innerHTML=seguridadHtml(); return; }
+  if (S.view==="orgresumen"){ d.innerHTML=orgResumenHtml(); return; }
+  if (S.view==="indicadores"){ d.innerHTML=orgIndicadoresHtml(); return; }
   if (S.view==="uso"){ d.innerHTML=usoHtml(); return; }
   if (S.view==="tablero"){ d.innerHTML=tableroHtml(); return; }
   if (S.view==="permisos"){ d.innerHTML=permisosHtml(); return; }
@@ -1258,7 +1262,7 @@ const ACCESOS = () => [
   {t:"Reglamento", d:"Reglamento Interior de Trabajo y constancia de recepción.", act:"reglamento", si:true},
   {t:"Usuarios", d:S.rol==="admin_sede"?"Autoriza y edita las cuentas de tu sede.":"Autoriza cuentas, edita datos y asigna contraseñas.", act:"usuarios", si:gestionaCuentas()},
   {t:"Permisos", d:"Otorga permisos adicionales a personas específicas.", act:"permisos", si:S.rol==="superusuario"},
-  {t:"Organización", d:"Sedes, entidades fiscales, áreas, puestos y vacantes de la red.", act:"sedes", si:(S.api?.orgNivel||0)>=1},
+  {t:"Organización", d:"Resumen, organigrama, colaboradores, sedes, entidades fiscales, áreas, puestos y vacantes.", act:"orgresumen", si:(S.api?.orgNivel||0)>=1},
   {t:"Tablero", d:"Indicadores de atención, documentos, riesgo, personal y portal, por sede y periodo.", act:"tablero", si:["superusuario","direccion"].includes(S.rol)},
   {t:"Tiempo de uso", d:"Minutos de uso de la app por persona.", act:"uso", si:tengo("tiempo_uso")},
   {t:"Mi perfil", d:"Tus datos, tu firma y tu contraseña.", act:"perfil", si:true},
@@ -1543,7 +1547,7 @@ function usuariosHtml(){
 /* ======================= Módulo 01 · Organización: catálogos (diseño aprobado 2026-11-21) =======================
    Todo lo que se muestra ya viene filtrado por la base de datos (RLS + servicio de permisos):
    cada persona solo recibe las sedes, entidades, plazas y datos fiscales que tiene autorizados. */
-const ORG_VISTAS=["sedes","entidades","areas","puestos","vacantes","colaboradores","supervision","organigrama"];
+const ORG_VISTAS=["sedes","entidades","areas","puestos","vacantes","colaboradores","supervision","organigrama","orgresumen","indicadores"];
 const pendH = () => `<span class="status">${PEND}</span>`;
 const ESTADO_POS={ocupada:"Ocupada",vacante:"Vacante",suspendida:"Suspendida",inactiva:"Inactiva"};
 const PILL_POS={ocupada:"estado-activo",vacante:"estado-pendiente",suspendida:"estado-suspendido",inactiva:""};
@@ -1857,6 +1861,70 @@ function organigramaHtml(){
     `<div class="tabs" role="tablist">${ORG_VISTAS_OG.map(([k,l])=>`<button class="tab" role="tab" type="button" data-act="ogVista" data-v="${k}" aria-selected="${v===k}">${l}</button>`).join("")}</div>
     <section class="note og-wrap">${cuerpo}${nota?`<p class="status" style="margin:0">${nota}</p>`:""}</section>`);
 }
+
+/* ---------- Organización · Resumen e Indicadores (etapa 7). Todo se calcula con lo que la base ya filtró por permisos. ---------- */
+const hbar = (filas, eti) => { const max=Math.max(1,...filas.map(f=>f[1]));
+  return filas.length ? `<div class="hb">${filas.map(([t,n])=>`<div class="hb-f" title="${esc(t)}: ${n} ${eti}"><span>${esc(t)}</span><span class="hb-t"><i style="width:${Math.round(100*n/max)}%"></i></span><b>${n}</b></div>`).join("")}</div>` : `<p class="status" style="margin:0">Sin datos.</p>`; };
+function orgDatosFiltrados(){
+  const F=S.orgFR||{}, vis=orgSedesVis().filter(s=>(!F.sede||s.id===F.sede)&&(!F.ent||orgEntDeSede(s.id)?.id===F.ent)), ids=new Set(vis.map(s=>s.id));
+  const asigV=(S.org.asignaciones||[]).filter(a=>vigente(a)&&ids.has(a.sede_id));
+  let cols=S.org.colaboradores.filter(c=>ids.has(c.sede_principal_id)||asigV.some(a=>a.colaborador_id===c.id));
+  const areaDe=c=>{ const x=orgPuestosDe(c.id)[0]; return x?.pu?.area_id||null; };
+  if (F.area) cols=cols.filter(c=>areaDe(c)===F.area);
+  if (F.estado) cols=cols.filter(c=>c.estatus===F.estado);
+  let pos=S.org.posiciones.filter(p=>ids.has(p.sede_id)); if (F.area) pos=pos.filter(p=>orgPuesto(p.puesto_id)?.area_id===F.area);
+  return {sedes:vis, cols, pos, asigV, areaDe};
+}
+const esTerapeuta = c => orgPuestosDe(c.id).some(x=>/^PS-/.test(x.pu?.codigo||"")) || /psic/i.test(c.tipo_funcion||"");
+function orgResumenHtml(){
+  if (!S.org) return orgCargando("Resumen organizacional"); if (S.org.error) return orgError("Resumen organizacional");
+  const F=S.orgFR||{}, {sedes, cols, pos, areaDe}=orgDatosFiltrados();
+  const ter=cols.filter(esTerapeuta).length, vac=pos.filter(p=>p.estado==="vacante");
+  const areasAct=S.org.areas.filter(a=>a.estatus!=="inactiva"), sinResp=areasAct.filter(a=>!a.responsable_id).length+sedes.filter(s=>!s.responsable_admin_id).length;
+  const kp=(t,v,d,act)=>`<button class="kpi" type="button" data-act="${act}" style="text-align:left;cursor:pointer;font:inherit;color:inherit"><span>${t}</span><b>${v}</b>${d?`<small class="status">${d}</small>`:""}</button>`;
+  const ents=S.org.entidades.filter(e=>sedes.some(s=>orgEntDeSede(s.id)?.id===e.id));
+  const alertas=[...vac.filter(p=>p.prioridad==="alta").map(p=>["Vacante de prioridad alta",`${orgPuesto(p.puesto_id)?.nombre||"Plaza"} · ${orgSede(p.sede_id)?.nombre||""}`,"vacantes"]),
+    ...areasAct.filter(a=>!a.responsable_id).map(a=>["Área sin responsable",a.nombre,"areas"]),
+    ...cols.filter(c=>!orgSuperior(c.id)&&!orgPuestosDe(c.id).some(x=>x.pu?.codigo==="DG-01")).slice(0,5).map(c=>["Sin línea de reporte",c.nombre,"supervision"]),
+    ...cols.filter(c=>c.estatus==="por_validar").map(c=>["Por validar",c.nombre,"colaboradores"]),
+    ...(areasAct.some(a=>a.estatus==="propuesta")?[["Estructura por validar",`${areasAct.filter(a=>a.estatus==="propuesta").length} áreas y ${S.org.puestos.filter(p=>p.estatus==="propuesta").length} puestos siguen como propuesta`,"areas"]]:[])];
+  const recientes=(S.org.asignaciones||[]).filter(a=>sedes.some(s=>s.id===a.sede_id)).sort((a,b)=>String(b.desde).localeCompare(String(a.desde))).slice(0,6);
+  const sel=(id,ph,ops,v)=>`<select id="${id}" aria-label="${ph}"><option value="">${ph}</option>${ops.map(([k,t])=>`<option value="${esc(k)}"${v===k?" selected":""}>${esc(t)}</option>`).join("")}</select>`;
+  return orgPagina("Resumen organizacional","Cómo está organizada la red: sedes, personas, puestos y vacantes. Las cifras se calculan con lo que tienes autorizado.",
+    `<button class="btn" type="button" data-act="indicadores">Indicadores</button><button class="btn primary" type="button" data-act="organigrama">Ver organigrama</button>`,
+    `<div class="filtros">${sel("orFS","Todas mis sedes",orgSedesVis().map(s=>[s.id,s.nombre]),F.sede)}${sel("orFE","Todas las entidades",S.org.entidades.map(e=>[e.id,e.nombre_corto]),F.ent)}${sel("orFA","Todas las áreas",S.org.areas.map(a=>[a.id,a.nombre]),F.area)}${sel("orFX","Todos los estatus",Object.entries(COL_ESTATUS),F.estado)}</div>
+    <div class="kpis">${kp("Sedes autorizadas",sedes.length,`${ents.length} entidad${ents.length===1?"":"es"} fiscal${ents.length===1?"":"es"}`,"sedes")}${kp("Colaboradores",cols.length,"En el directorio","colaboradores")}${kp("Terapeutas",ter,"Puesto de psicólogo(a)","colaboradores")}${kp("Administrativos y directivos",cols.length-ter,"Resto del personal","colaboradores")}
+      ${kp("Áreas",areasAct.length,`${areasAct.filter(a=>a.estatus==="activa").length} validadas`,"areas")}${kp("Puestos",S.org.puestos.length,"Perfiles de puesto","puestos")}${kp("Vacantes",vac.length,"Plazas por cubrir","vacantes")}${kp("Sin responsable",sinResp,"Áreas y sedes","areas")}</div>
+    <div class="org-grid">
+      <section class="note"><div class="note-h"><h3>Colaboradores por sede</h3></div>${hbar(sedes.map(s=>[s.nombre,cols.filter(c=>c.sede_principal_id===s.id).length]),"colaboradores")}</section>
+      <section class="note"><div class="note-h"><h3>Colaboradores por área</h3></div>${hbar(S.org.areas.map(a=>[a.nombre,cols.filter(c=>areaDe(c)===a.id).length]).filter(x=>x[1]),"colaboradores")}</section>
+      <section class="note"><div class="note-h"><h3>Por entidad fiscal</h3></div>${hbar(ents.map(e=>[e.nombre_corto,cols.filter(c=>orgEntDeSede(c.sede_principal_id)?.id===e.id).length]),"colaboradores")}<p class="status" style="margin:0">Consolidación operativa; los reportes fiscales se emiten por entidad.</p></section>
+      <section class="note"><div class="note-h"><h3>Alertas</h3></div><ul class="pend">${alertas.slice(0,8).map(([t,d,act])=>`<li><b>${esc(t)}</b><br><span class="status">${esc(d)}</span> <button class="btn sm" type="button" data-act="${act}">Abrir</button></li>`).join("")||`<li class="status">Sin alertas.</li>`}</ul></section>
+      <section class="note"><div class="note-h"><h3>Cambios recientes de plantilla</h3></div><ul class="pend">${recientes.map(a=>{ const c=orgCol(a.colaborador_id), pos=S.org.posiciones.find(p=>p.id===a.posicion_id);
+        return `<li><b>${esc(c?.nombre||"Persona")}</b> · ${esc(orgPuesto(pos?.puesto_id)?.nombre||"Plaza")}<br><span class="status">${a.hasta?"Dejó la plaza el "+fmtDate(a.hasta):"Desde "+fmtDate(a.desde)} · ${esc(orgSede(a.sede_id)?.nombre||"")}</span></li>`; }).join("")||`<li class="status">Sin movimientos.</li>`}</ul></section>
+    </div>`);
+}
+function orgIndicadoresHtml(){
+  if (!S.org) return orgCargando("Indicadores"); if (S.org.error) return orgError("Indicadores");
+  const {sedes, cols, pos, areaDe}=orgDatosFiltrados(), ahora=new Date().toLocaleString("es-MX",{dateStyle:"short",timeStyle:"short"}), alc=`${sedes.length} sede${sedes.length===1?"":"s"} autorizada${sedes.length===1?"":"s"}`;
+  const relV=orgRelVig(), hace30=new Date(Date.now()-30*864e5).toISOString().slice(0,10);
+  const IND=[
+    ["Colaboradores por sede","Personas del directorio con esa sede principal.","conteo(colaboradores) agrupado por sede principal","colaboradores",sedes.map(s=>[s.nombre,cols.filter(c=>c.sede_principal_id===s.id).length])],
+    ["Colaboradores por área","Personas cuyo puesto vigente pertenece al área.","conteo(colaboradores) por puesto.área","colaboradores + asignaciones + puestos",S.org.areas.map(a=>[a.nombre,cols.filter(c=>areaDe(c)===a.id).length]).filter(x=>x[1])],
+    ["Terapeutas por sede","Personas con puesto de psicólogo(a).","conteo(colaboradores con puesto PS-*) por sede","colaboradores + puestos",sedes.map(s=>[s.nombre,cols.filter(c=>c.sede_principal_id===s.id&&esTerapeuta(c)).length])],
+    ["Administrativos y directivos por sede","Personal que no ocupa un puesto de psicólogo(a).","conteo(colaboradores sin puesto PS-*) por sede","colaboradores + puestos",sedes.map(s=>[s.nombre,cols.filter(c=>c.sede_principal_id===s.id&&!esTerapeuta(c)).length])],
+    ["Plazas por estado","Plazas registradas según su estado.","conteo(posiciones) por estado","posiciones",Object.entries(ESTADO_POS).map(([k,t])=>[t,pos.filter(p=>p.estado===k).length])],
+    ["Puestos sin responsable","Áreas sin titular y sedes sin responsable administrativo.","áreas sin responsable + sedes sin responsable","areas + sedes",[["Áreas sin responsable",S.org.areas.filter(a=>a.estatus!=="inactiva"&&!a.responsable_id).length],["Sedes sin responsable administrativo",sedes.filter(s=>!s.responsable_admin_id).length]]],
+    ["Carga de supervisión","Personas que reporta o supervisa cada responsable.","conteo(relaciones vigentes) por responsable","relaciones",[...new Set(relV.filter(r=>["administrativa","supervision_clinica"].includes(r.tipo)).map(r=>r.de_id))].map(id=>[orgCol(id)?.nombre||"Persona",relV.filter(r=>r.de_id===id&&["administrativa","supervision_clinica"].includes(r.tipo)).length])],
+    ["Cambios de plantilla (30 días)","Altas y salidas de plazas en los últimos 30 días.","conteo(asignaciones con inicio o fin en el periodo)","asignaciones",[["Altas",(S.org.asignaciones||[]).filter(a=>a.desde>=hace30&&sedes.some(s=>s.id===a.sede_id)).length],["Salidas",(S.org.asignaciones||[]).filter(a=>a.hasta&&a.hasta>=hace30&&sedes.some(s=>s.id===a.sede_id)).length]]],
+    ["Distribución por entidad fiscal","Personas por la entidad fiscal de su sede principal. Consolidación operativa, no fiscal.","conteo(colaboradores) por sede_entidad vigente","colaboradores + sede_entidad",S.org.entidades.filter(e=>sedes.some(s=>orgEntDeSede(s.id)?.id===e.id)).map(e=>[e.nombre_corto,cols.filter(c=>orgEntDeSede(c.sede_principal_id)?.id===e.id).length])]];
+  return orgPagina("Indicadores","Cada indicador dice qué mide, cómo se calcula, de dónde sale y con qué alcance. Se calculan al abrir la pantalla con las sedes que tienes autorizadas; no se guardan cifras fijas.",
+    `<button class="btn" type="button" data-act="orgresumen">Resumen</button>`,
+    `<div class="org-grid">${IND.map(([t,d,f,fu,serie])=>`<section class="note"><div class="note-h"><h3>${t}</h3></div>${hbar(serie,"")}
+      <details><summary class="status" style="cursor:pointer">Definición, fórmula y fuente</summary><dl class="dl-org" style="margin-top:8px"><dt>Definición</dt><dd>${d}</dd><dt>Fórmula</dt><dd class="mono">${esc(f)}</dd><dt>Fuente</dt><dd class="mono">${fu}</dd><dt>Actualizado</dt><dd>${ahora}</dd><dt>Alcance</dt><dd>${alc}</dd></dl></details></section>`).join("")}</div>`);
+}
+document.addEventListener("change", e=>{ const t=e.target; if (!["orFS","orFE","orFA","orFX"].includes(t.id)) return;
+  S.orgFR=S.orgFR||{}; S.orgFR[{orFS:"sede",orFE:"ent",orFA:"area",orFX:"estado"}[t.id]]=t.value; render(); });
 
 /* ---------- Acciones del módulo ---------- */
 async function orgAccion(a, b){
@@ -2703,15 +2771,21 @@ const GUIAS = [
   {t:"Verificar documentación del personal", si:()=>veDocsTodos(), pasos:["Entra a Documentación y abre a la persona.","Pulsa Ver PDF y cotéjalo con el original.","Pulsa Verificar. Un documento verificado ya no lo puede borrar su titular."]},
   {t:"Respaldar la documentación del personal", si:()=>ES_DIR(), pasos:["Entra a Documentación y pulsa Descargar respaldo (ZIP).","Se descargan todos los PDF en carpetas por sede y persona, con un índice (indice.csv) que se abre en Excel.","Guarda el ZIP en un disco o carpeta segura de CEMEPI; contiene datos personales. Hazlo al menos una vez al mes.","Los respaldos automáticos de Supabase no incluyen los PDF: este ZIP es su único respaldo."]},
   {t:"Recuperar un documento eliminado", si:()=>ES_DIR(), pasos:["Entra a Documentación y baja a Papelera.","Pulsa Restaurar: el documento vuelve a la lista de su titular.","Los documentos se conservan 30 días en la papelera; después puedes eliminarlos definitivamente."]},
-  {t:"Otorgar permisos", si:()=>S.rol==="superusuario", pasos:["Entra a Permisos.","Marca o desmarca la casilla del permiso junto a la persona. Se aplica al instante y queda en la bitácora."]},
+  {t:"Otorgar permisos anteriores (supervisión clínica, contratos, tiempo de uso)", si:()=>S.rol==="superusuario", pasos:["Entra a Permisos.","Marca o desmarca la casilla del permiso junto a la persona. Se aplica al instante y queda en la bitácora."]},
+  {t:"Conceder o revocar acceso a una sede (por ejemplo, Bosques de Santa Fe)", si:()=>S.rol==="superusuario", pasos:["Entra a Configuración → Usuarios y permisos → Accesos por sede y elige la sede.","Pulsa + Conceder acceso, elige a la persona, marca solo los módulos que necesita, el nivel, la fecha de fin (opcional) y el motivo.","Para quitarlo pulsa Revocar junto a la persona: deja de funcionar en su siguiente consulta.","Para ajustes finos (exportar, aprobar, información sensible o denegar) usa la Matriz de permisos: revisa el antes y el después y confirma."]},
+  {t:"Asignar un rol adicional o cambiar el estado de una cuenta", si:()=>S.rol==="superusuario", pasos:["Entra a Configuración → Usuarios y permisos → Usuarios y pulsa Abrir junto a la persona.","En Roles adicionales elige el rol (por ejemplo Recursos Humanos o Auditor), la fecha de fin si aplica y el motivo, y pulsa Agregar rol.","Para suspender, reactivar o desactivar escribe el motivo y pulsa el botón correspondiente. Desactivar corta el acceso y cierra sus sesiones, pero conserva el historial."]},
+  {t:"Responder solicitudes de acceso", si:()=>S.rol==="superusuario", pasos:["Entra a Configuración → Usuarios y permisos → Solicitudes de acceso.","Pulsa Responder: puedes aprobar (eligiendo nivel y fecha de fin), pedir más información o rechazar.","Las revisiones automáticas aparecen cuando un colaborador pasa a Baja en Organización: abre su cuenta y decide si la desactivas."]},
+  {t:"Pedir un acceso que no tengo", si:()=>true, pasos:["Entra a Configuración → Usuarios y permisos → Solicitudes de acceso.","Pulsa + Nueva solicitud, elige la sede, el módulo y el nivel, y explica para qué lo necesitas.","El Superusuario la revisa. Nada cambia hasta que la apruebe; verás la respuesta en la misma pantalla."]},
+  {t:"Consultar la organización", si:()=>(S.api?.orgNivel||0)>=1, pasos:["Entra a Organización → Resumen para ver sedes, personas, vacantes y alertas de las sedes que tienes autorizadas.","En Organigrama elige la vista (línea de reporte, área, sede, supervisión clínica o coordinación) y pulsa a una persona para ver su ficha.","En Supervisión registra a quién reporta cada persona; en Vacantes, quién ocupa cada plaza."]},
+  {t:"Registrar mi código de verificación (opcional)", si:()=>true, pasos:["Instala en tu celular Google Authenticator o Microsoft Authenticator.","Entra a Mi perfil → Código de verificación (MFA) y pulsa Activar código de verificación.","Escanea el código QR con la aplicación y escribe el número de 6 dígitos.","Desde entonces, al entrar se te pedirá ese número. Registra un segundo dispositivo como respaldo."]},
   {t:"Buscar en la plataforma", si:()=>true, pasos:["Usa el buscador de la barra superior (o Ctrl K / ⌘ K). En el celular, toca la lupa.","Escribe iniciales, folio o fecha de nacimiento de un expediente, el nombre de una persona o terapeuta, o el nombre de una sección (por ejemplo, Contratos).","Muévete con las flechas y pulsa Enter, o toca el resultado. Solo aparece lo que tu rol puede ver."]},
   {t:"Cambiar la apariencia u ocultar datos sensibles", si:()=>true, pasos:["Entra a Mi perfil → Apariencia y privacidad.","Elige el tema (claro, oscuro o como el dispositivo), la densidad (cómoda o compacta) y el tamaño del texto. Se aplica al instante y se guarda en ese dispositivo.","Para compartir pantalla o trabajar en un lugar con gente, activa el Modo privado (o el ícono del ojo en la barra superior): los datos sensibles se ven borrosos y se leen al pasar el cursor."]},
   {t:"Instalar la app en mi celular o computadora", si:()=>true, pasos:["Android (Chrome): abre la app, pulsa Instalar app en el menú (o en el menú ⋮ del navegador, Instalar aplicación) y confirma.","iPhone o iPad (Safari): abre la app, pulsa el botón Compartir (cuadro con flecha) y elige Agregar a pantalla de inicio.","Computadora (Chrome o Edge): pulsa Instalar app o el ícono de instalar en la barra de direcciones.","La app instalada abre en su propia ventana con el ícono de CEMEPI. Tus datos siguen en el servidor seguro: no se guardan en el teléfono. Si pierdes el dispositivo, cambia tu contraseña en Mi perfil."]},
   {t:"Cambiar mi contraseña o mi firma", si:()=>true, pasos:["Entra a Mi perfil.","Para la firma: súbela en imagen o dibújala y pulsa Guardar mis datos.","Para la contraseña: escríbela dos veces en Cambiar mi contraseña (mínimo 10 caracteres)."]},
 ];
 const MATRIZ = [
-  ["Expedientes", ["Todos","Todos","Su sede","—","Los suyos","Los suyos"]],
-  ["Notas y documentos clínicos", ["Todos","Todos","Su sede","—","Los suyos","Los suyos"]],
+  ["Expedientes", ["Todos","Sedes de CEMEPI, S.C.","Su sede","—","Los suyos","Los suyos"]],
+  ["Notas y documentos clínicos", ["Todos","Sedes de CEMEPI, S.C.","Su sede","—","Los suyos","Los suyos"]],
   ["Compartir reportes con consultantes", ["✓","✓","Su sede","—","Los suyos","Los suyos"]],
   ["Terapeutas", ["Editar","Editar","Editar su sede","—","Consultar","Consultar"]],
   ["Contratos", ["Todos y firma CEMEPI","Todos","El suyo","El suyo","El suyo","No aplica"]],
@@ -2719,7 +2793,9 @@ const MATRIZ = [
   ["Reglamento", ["✓ + editar leyenda","✓ + editar leyenda","✓ + constancias de su sede","✓","✓","✓"]],
   ["Usuarios", ["Todos","Sin Directivos","Su sede","—","—","—"]],
   ["Permisos", ["✓","—","—","—","—","—"]],
-  ["Sedes", ["✓","✓","—","—","—","—"]],
+  ["Organización (sedes, áreas, puestos, organigrama)", ["✓ todo","Sedes de CEMEPI, S.C.","Su sede (consulta)","—","—","—"]],
+  ["Usuarios y permisos", ["✓ todo","Solicitudes y sesiones","Solicitudes y sesiones","Solicitudes y sesiones","Solicitudes y sesiones","Solicitudes y sesiones"]],
+  ["Bosques de Santa Fe (otra entidad fiscal)", ["✓","Solo con autorización","Si es su sede","—","Si es su sede","Si es su sede"]],
   ["Tiempo de uso", ["✓","Con permiso","Con permiso","Con permiso","Con permiso","Con permiso"]],
   ["Tablero de indicadores", ["✓","✓","—","—","—","—"]],
 ];
@@ -2873,6 +2949,23 @@ const MANUALES = {
     "Por mensajería solo folio e iniciales. La hoja administrativa llena no se envía por mensajería."]}
   ]}
 };
+/* Capítulos de los Módulos 01 y 02 (2026-11-22) */
+MANUALES.direccion.caps.push(
+ {t:"Organización", p:[
+  "En el grupo Organización consultas y mantienes la estructura de la red: Resumen, Organigrama, Colaboradores, Supervisión, Sedes, Entidades fiscales, Áreas, Puestos y funciones, Vacantes e Indicadores.",
+  "Como Directivo ves las 7 sedes de CEMEPI, S.C. La sede Bosques de Santa Fe pertenece a otra entidad fiscal: no la ves salvo que el Superusuario te autorice, por módulo y con fecha de fin.",
+  "Puedes editar los datos operativos de tus sedes, las áreas, los puestos, las plazas y las líneas de reporte. Crear sedes, cambiar su entidad fiscal y ver RFC o datos fiscales solo lo hace el Superusuario o quien tenga permiso de información sensible.",
+  "En Supervisión registra a quién reporta cada persona y quién da supervisión clínica. La supervisión clínica registrada ahí no abre expedientes: ese acceso se concede aparte."]},
+ {t:"Si eres el Superusuario", p:[
+  "En Configuración → Usuarios y permisos administras cuentas, roles, la matriz de permisos, los accesos por sede y por entidad fiscal, las solicitudes de acceso, las sesiones y la auditoría.",
+  "Para dar acceso a Bosques de Santa Fe a alguien: Accesos por sede → elige la sede → + Conceder acceso → persona, módulos, nivel, fecha de fin y motivo. Para quitarlo, Revocar.",
+  "El código de verificación (MFA) está desactivado. Puedes activarlo en Configuración de seguridad después de registrar tu propio código en Mi perfil; activado, lo pide a ti y a los Directivos."]});
+MANUALES.admin_sede.caps.push({t:"Organización de tu sede", p:[
+  "En Organización consultas la información de tu sede: sus colaboradores, plazas y vacantes, su lugar en el organigrama y los indicadores. Es de consulta; los cambios los hace la Dirección."]});
+for (const k of Object.keys(MANUALES)) MANUALES[k].caps.push({t:"Accesos y seguridad de tu cuenta", p:[
+  "Si necesitas consultar algo que hoy no ves, entra a Configuración → Usuarios y permisos → Solicitudes de acceso, pulsa + Nueva solicitud y explica para qué lo necesitas. Nada cambia hasta que el Superusuario la apruebe.",
+  "En Sesiones y dispositivos ves dónde tienes la sesión abierta y puedes cerrar las de otros dispositivos. La sesión se cierra sola después de un tiempo sin actividad.",
+  "Opcional: en Mi perfil → Código de verificación (MFA) puedes registrar un código en tu celular (Google o Microsoft Authenticator). Desde entonces, al entrar se te pedirá el número de 6 dígitos."]});
 const manualDeRol = k => k==="psicologo_base"||k==="psicologo_ind"||k==="psicologo" ? "psicologo" : k==="superusuario" ? "direccion" : k;
 
 function manualHtml(k){
@@ -3418,7 +3511,7 @@ async function generar(p){
   g.loading=true; g.contenido=null; render();
   S.ctl=new AbortController();
   try{
-    const r = await S.sample.json(promptDe(g.tipo, ctxOf(p), g.indicaciones, g.notaId), {modelTier:"complex", signal:S.ctl.signal, cache:false});
+    const r = await S.sample.json(promptDe(g.tipo, ctxOf(p), g.indicaciones, g.notaId), {modelTier:"complex", signal:S.ctl.signal, cache:false, expediente:p?.id||S.sel});
     const secs = Array.isArray(r?.secciones) ? r.secciones.filter(s=>s&&typeof s.texto==="string").map(s=>({titulo:String(s.titulo||""),texto:s.texto})) : [];
     if (!secs.length) throw {code:"invalid_json"};
     g.contenido={destinatario:t.dest||"", secciones:secs, advertencias:Array.isArray(r.advertencias)?r.advertencias.map(String):[]};
@@ -3915,7 +4008,7 @@ render();
       if (ss.length){ SEDES.splice(0, SEDES.length, ...ss.map(s=>s.nombre)); for (const k of Object.keys(SEDE_COD)) delete SEDE_COD[k]; ss.forEach(s=>{ SEDE_COD[s.nombre]=s.clave; }); } }catch(e){ console.warn("sedes", e); }
     $("#usrBtn").hidden = !["superusuario","direccion","admin_sede"].includes(S.rol);
     $("#segBtn").hidden = !S.rol;   /* Módulo 02: cada quien ve lo que le corresponde */
-    ["ogBtn","colBtn","supBtn","sedBtn","entBtn","areBtn","pueBtn","vacBtn"].forEach(id=>{ $("#"+id).hidden = !((S.api.orgNivel||0) >= 1); });   /* Módulo 01: según el servicio de permisos */
+    ["resBtn","indBtn","ogBtn","colBtn","supBtn","sedBtn","entBtn","areBtn","pueBtn","vacBtn"].forEach(id=>{ $("#"+id).hidden = !((S.api.orgNivel||0) >= 1); });   /* Módulo 01: según el servicio de permisos */
     $("#usoBtn").hidden = !tengo("tiempo_uso");
     $("#tabBtn").hidden = !["superusuario","direccion"].includes(S.rol);
     $("#permBtn").hidden = S.rol!=="superusuario";
@@ -4044,6 +4137,7 @@ ul.pend.avisos li{border-left-color:var(--accent,#0560BD)}
 .og-coord{display:flex;flex-direction:column;gap:10px}.og-fila{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:10px;align-items:center}.og-fila .og-node{max-width:none}
 @media (max-width:560px){.og-fila{grid-template-columns:1fr}}
 .filtros select{max-width:100%;min-width:0}
+.hb{display:flex;flex-direction:column;gap:8px}.hb-f{display:grid;grid-template-columns:minmax(90px,170px) minmax(0,1fr) 34px;gap:10px;align-items:center;font-size:13px}.hb-f span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hb-t{height:10px;background:var(--sunk);border-radius:99px;overflow:hidden}.hb-t i{display:block;height:100%;background:var(--accent);border-radius:99px}.hb-f b{text-align:right;font-variant-numeric:tabular-nums}
 .org-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
 .dl-org{display:grid;grid-template-columns:minmax(110px,170px) minmax(0,1fr);gap:6px 14px;margin:0;font-size:14px}.dl-org dt{color:var(--muted)}.dl-org dd{margin:0;min-width:0;overflow-wrap:anywhere}
 @media (max-width:560px){.dl-org{grid-template-columns:1fr}.dl-org dd{margin-bottom:6px}}
