@@ -360,6 +360,8 @@ td.res{white-space:pre-wrap;min-width:220px}
     <button class="nav-i" id="permBtn" type="button" data-act="permisos" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Permisos</span></button>
     <button class="nav-i" id="usoBtn" type="button" data-act="uso" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span>Tiempo de uso</span></button>
     <button class="nav-i" id="tabBtn" type="button" data-act="tablero" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg><span>Tablero</span></button></nav>
+  <nav class="nav-g" aria-label="Configuración"><span class="nav-l">Configuración</span>
+    <button class="nav-i" id="segBtn" type="button" data-act="seguridad" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg><span>Usuarios y permisos</span></button></nav>
   <nav class="nav-g" aria-label="Mi cuenta"><span class="nav-l">Mi cuenta</span>
     <button class="nav-i" id="instalarBtn" type="button" data-act="instalar" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12M6 10l6 6 6-6"/><path d="M4 20h16"/></svg><span>Instalar app</span></button>
     <button class="nav-i" id="ayudaBtn" type="button" data-act="ayuda"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17h.01"/></svg><span>Ayuda</span></button>
@@ -1105,11 +1107,11 @@ function renderList(){
   el.innerHTML=grupos.map(s=>{ const g=arr.filter(p=>(p.ficha?.sede||"")===s); if(!g.length) return "";
     return `<div class="grupo"><span>${esc(s||"Sin sede")}</span><b>${g.length}</b></div>${porTerapeuta(g)}`; }).join("");
 }
-const VISTA_TXT={inicio:"Inicio",exp:"Expediente",perfil:"Mi perfil",terapeutas:"Terapeutas",usuarios:"Usuarios",organigrama:"Organigrama",colaboradores:"Colaboradores",supervision:"Supervisión",sedes:"Sedes",entidades:"Entidades fiscales",areas:"Áreas",puestos:"Puestos y funciones",vacantes:"Vacantes",uso:"Tiempo de uso",tablero:"Tablero",
+const VISTA_TXT={inicio:"Inicio",exp:"Expediente",perfil:"Mi perfil",terapeutas:"Terapeutas",usuarios:"Usuarios",seguridad:"Usuarios y permisos",organigrama:"Organigrama",colaboradores:"Colaboradores",supervision:"Supervisión",sedes:"Sedes",entidades:"Entidades fiscales",areas:"Áreas",puestos:"Puestos y funciones",vacantes:"Vacantes",uso:"Tiempo de uso",tablero:"Tablero",
   reglamento:"Reglamento",contratos:"Contratos",permisos:"Permisos",documentacion:"Documentación",ayuda:"Ayuda"};
-const VISTA_BTN={inicio:"iniBtn",terapeutas:"terBtn",contratos:"ctrBtn",documentacion:"docpBtn",reglamento:"regBtn",usuarios:"usrBtn",permisos:"permBtn",organigrama:"ogBtn",colaboradores:"colBtn",supervision:"supBtn",sedes:"sedBtn",entidades:"entBtn",areas:"areBtn",puestos:"pueBtn",vacantes:"vacBtn",uso:"usoBtn",tablero:"tabBtn",ayuda:"ayudaBtn",perfil:"perfilBtn"};
+const VISTA_BTN={inicio:"iniBtn",terapeutas:"terBtn",contratos:"ctrBtn",documentacion:"docpBtn",reglamento:"regBtn",usuarios:"usrBtn",permisos:"permBtn",seguridad:"segBtn",organigrama:"ogBtn",colaboradores:"colBtn",supervision:"supBtn",sedes:"sedBtn",entidades:"entBtn",areas:"areBtn",puestos:"pueBtn",vacantes:"vacBtn",uso:"usoBtn",tablero:"tabBtn",ayuda:"ayudaBtn",perfil:"perfilBtn"};
 const GRUPO_VISTA={exp:"Atención",terapeutas:"Atención",contratos:"Mi trabajo",documentacion:"Mi trabajo",reglamento:"Mi trabajo",usuarios:"Administración",
-  permisos:"Administración",organigrama:"Organización",colaboradores:"Organización",supervision:"Organización",sedes:"Organización",entidades:"Organización",areas:"Organización",puestos:"Organización",vacantes:"Organización",uso:"Administración",tablero:"Administración",ayuda:"Mi cuenta",perfil:"Mi cuenta"};
+  permisos:"Administración",seguridad:"Configuración",organigrama:"Organización",colaboradores:"Organización",supervision:"Organización",sedes:"Organización",entidades:"Organización",areas:"Organización",puestos:"Organización",vacantes:"Organización",uso:"Administración",tablero:"Administración",ayuda:"Mi cuenta",perfil:"Mi cuenta"};
 /* Ruta de navegación: Inicio / grupo / [vista padre]. El título de la página va en el h1. */
 function migas(padre){
   const v = S.sel && S.view==="exp" ? "exp" : S.view, it=[`<button type="button" data-act="back">Inicio</button>`];
@@ -1118,7 +1120,7 @@ function migas(padre){
   return `<nav class="crumbs" aria-label="Ruta">${it.join('<span class="sep" aria-hidden="true">/</span>')}</nav>`;
 }
 /* ---------- Tablas: filtros en una fila y orden por columna (sistema visual, etapa 3) ---------- */
-const VISTAS_TABLA=["usuarios","contratos","documentacion","sedes","tablero","uso","areas","puestos","vacantes","colaboradores","supervision"];
+const VISTAS_TABLA=["usuarios","contratos","documentacion","sedes","tablero","uso","areas","puestos","vacantes","colaboradores","supervision","seguridad"];
 const norm=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
 S.ft=S.ft||{}; S.orden=S.orden||{};
 /* Barra de filtros: buscador + selectores opcionales + conteo. Las filas filtrables llevan data-f y data-sede/data-estado/data-rol/data-faltan */
@@ -1193,7 +1195,7 @@ function marcarNav(){
 function render(){
   const d=$("#detail"); S.dirty=false; S.stale=false; marcarNav(); document.body.classList.remove("menu-abierto");
   const p=S.pacientes.get(S.sel);
-  $("#app").classList.toggle("open", !!p || ["perfil","terapeutas","usuarios","sedes","entidades","areas","puestos","vacantes","colaboradores","supervision","organigrama","uso","reglamento","contratos","permisos","documentacion","ayuda","tablero"].includes(S.view));
+  $("#app").classList.toggle("open", !!p || ["perfil","terapeutas","usuarios","sedes","entidades","areas","puestos","vacantes","colaboradores","supervision","organigrama","seguridad","uso","reglamento","contratos","permisos","documentacion","ayuda","tablero"].includes(S.view));
   if (S.view==="perfil"){ d.innerHTML=perfilHtml(); activarPad(); return; }
   if (S.view==="terapeutas"){ d.innerHTML=terapeutasHtml(); return; }
   if (S.view==="usuarios"){ d.innerHTML=usuariosHtml(); return; }
@@ -1205,6 +1207,7 @@ function render(){
   if (S.view==="colaboradores"){ d.innerHTML=colaboradoresHtml(); return; }
   if (S.view==="supervision"){ d.innerHTML=supervisionHtml(); return; }
   if (S.view==="organigrama"){ d.innerHTML=organigramaHtml(); return; }
+  if (S.view==="seguridad"){ d.innerHTML=seguridadHtml(); return; }
   if (S.view==="uso"){ d.innerHTML=usoHtml(); return; }
   if (S.view==="tablero"){ d.innerHTML=tableroHtml(); return; }
   if (S.view==="permisos"){ d.innerHTML=permisosHtml(); return; }
@@ -1358,7 +1361,7 @@ function activarPad(id="padFirma"){
 }
 function perfilHtml(){
   const pf={...(S.perfil||{}), ...(S.perfilDraft||{})};
-  return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px"><div class="phead">${migas()}<h1>Mi perfil</h1></div>${preferenciasHtml()}<div class="card">
+  return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px"><div class="phead">${migas()}<h1>Mi perfil</h1></div>${preferenciasHtml()}${S.api?mfaPerfilHtml():""}<div class="card">
     <p class="status" style="margin:0">Se usan en la firma de tus documentos. Tu rol y tu sede los asigna quien autorizó tu cuenta.</p>
     <form id="frmPerfil" class="datos">
       <div class="fld" style="grid-column:1/-1"><label for="pf-nombre">Nombre completo, como aparecerá en la firma</label><input id="pf-nombre" data-k="nombre" type="text" value="${esc(pf.nombre||"")}" placeholder="Psic. Nombre Apellido"></div>
@@ -1929,6 +1932,377 @@ function orgErrorTxt(e){ const m=e?.message||"";
   if (/row-level security|permission denied|violates row/i.test(m)) return "No tienes autorización para ese cambio. Si lo necesitas, pídelo al Superusuario.";
   if (/rfc/i.test(m)) return "El RFC no tiene un formato válido.";
   return m || "No se pudo guardar."; }
+
+/* ======================= Módulo 02 · Usuarios, perfiles y permisos (diseño aprobado 2026-11-21) =======================
+   Todo se valida en la base de datos (RLS + funciones). Aquí solo se muestra lo que cada quien puede consultar. */
+const SEG_TABS=[["resumen","Resumen de seguridad"],["usuarios","Usuarios"],["roles","Perfiles y roles"],["matriz","Matriz de permisos"],["sedes","Accesos por sede"],["entidades","Accesos por entidad fiscal"],["solicitudes","Solicitudes de acceso"],["sesiones","Sesiones y dispositivos"],["auditoria","Auditoría"],["config","Configuración de seguridad"]];
+const SEG_MODS=[["organizacion","Organización"],["recursos_humanos","Recursos Humanos (laboral)"],["atencion","Atención psicológica (clínico)"],["operacion","Operación y agenda"],["finanzas","Finanzas"],["fiscal","Información fiscal"],["reportes","Reportes"]];
+const SEG_MOD=k=>(SEG_MODS.find(m=>m[0]===k)||[k,k==="*"?"Todos los módulos":k])[1];
+const SEG_NIV=["Sin acceso","Lectura","Operación","Administración","Total (Superusuario)"];
+const SEG_ESP=[["exportar","Exportar"],["aprobar","Aprobar"],["eliminar","Eliminar definitivo"],["sensible","Información sensible"]];
+const SEG_ESTADOS={invitado:"Invitado",pendiente:"Pendiente de activación",activo:"Activo",suspendido:"Suspendido",desactivado:"Desactivado",rechazado:"Rechazado"};
+const SEG_PILL={invitado:"estado-pendiente",pendiente:"estado-pendiente",activo:"estado-activo",suspendido:"estado-suspendido",desactivado:"",rechazado:"estado-suspendido"};
+const SEG_TRANS={activo:[["suspendido","Suspender"],["desactivado","Desactivar"]],suspendido:[["activo","Reactivar"],["desactivado","Desactivar"]],desactivado:[["activo","Reactivar"]],invitado:[["desactivado","Cancelar invitación"]],pendiente:[["desactivado","Desactivar"]],rechazado:[["desactivado","Desactivar"]]};
+const segSU=()=>S.rol==="superusuario";
+const segAud=()=>(S.api?.misRoles||[]).includes("auditor");
+const segTabsPermitidas=()=>segSU()?SEG_TABS.map(t=>t[0]):segAud()?["resumen","usuarios","auditoria","solicitudes","sesiones"]:["solicitudes","sesiones"];
+const segP=id=>S.seg?.perfiles.find(p=>p.id===id);
+const segNom=id=>segP(id)?.nombre||segP(id)?.email||(id?"Cuenta no visible":"Sistema");
+const segSeg=id=>S.seg?.seguridad.find(x=>x.id===id)||{};
+const segRol=k=>S.seg?.roles.find(r=>r.clave===k);
+const segRolesDe=id=>S.seg?.usuarioRoles.filter(r=>r.user_id===id&&(!r.hasta||r.hasta>=today()))||[];
+const segSede=id=>S.seg?.sedes.find(s=>s.id===id);
+const segEntDe=sid=>{ const x=S.seg?.sedeEnt.find(r=>r.sede_id===sid); return x?S.seg.entidades.find(e=>e.id===x.entidad_id):null; };
+const segFecha=f=>f?new Date(f).toLocaleString("es-MX",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"—";
+const segRolesTxt=p=>[segRol(p.rol)?.nombre||p.rol,...segRolesDe(p.id).map(r=>`${segRol(r.rol)?.nombre||r.rol}${r.hasta?" (hasta "+fmtDate(r.hasta)+")":""}`)].join(" + ");
+async function cargarSeg(){
+  try{ S.seg=await S.api.segDatos(); }catch(e){ S.seg={error:e?.message||"No se pudo cargar."}; }
+  if (S.view==="seguridad") render();
+}
+async function segEfectivo(uid){ S.segEf=S.segEf||{}; if (!S.segEf[uid]) S.segEf[uid]=await S.api.accesoEfectivo(uid); return S.segEf[uid]; }
+const segNivel=(uid,mod,sede)=>{ const r=(S.segEf?.[uid]||[]).find(x=>x.modulo===mod&&x.sede_id===sede); return r?r.nivel:null; };
+function segPagina(titulo, desc, acciones, cuerpo){
+  const tabs=segTabsPermitidas();
+  return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">
+    <div class="phead">${migas()}<h1>Usuarios y permisos</h1><span style="display:flex;gap:8px;flex-wrap:wrap">${acciones||""}</span></div>
+    <div class="tabs" role="tablist">${tabs.map(k=>`<button class="tab" role="tab" type="button" data-act="segTab" data-t="${k}" aria-selected="${S.segTab===k}">${SEG_TABS.find(t=>t[0]===k)[1]}</button>`).join("")}</div>
+    <h2 style="margin:0;font-size:20px">${titulo}</h2>${desc?`<p class="status" style="margin:0">${desc}</p>`:""}${cuerpo}</div>`;
+}
+function seguridadHtml(){
+  if (!S.seg) return `<div class="wrap" style="padding-block:24px"><div class="phead">${migas()}<h1>Usuarios y permisos</h1></div><p class="status">Cargando…</p></div>`;
+  if (S.seg.error) return `<div class="wrap" style="padding-block:24px"><div class="phead">${migas()}<h1>Usuarios y permisos</h1></div><div class="banner bad">No se pudo cargar: ${esc(S.seg.error)}</div></div>`;
+  if (!segTabsPermitidas().includes(S.segTab)) S.segTab=segTabsPermitidas()[0];
+  const f={resumen:segResumen,usuarios:segUsuarios,roles:segRoles,matriz:segMatriz,sedes:segSedes,entidades:segEntidades,solicitudes:segSolicitudes,sesiones:segSesiones,auditoria:segAuditoria,config:segConfig}[S.segTab];
+  return f();
+}
+
+/* ---------- Resumen ---------- */
+function segResumen(){
+  const F=S.segFR||{}, ps=S.seg.perfiles.filter(p=>(!F.sede||p.sede===F.sede)&&(!F.rol||p.rol===F.rol||segRolesDe(p.id).some(r=>r.rol===F.rol))&&(!F.estado||p.estado===F.estado));
+  const c=e=>ps.filter(p=>p.estado===e).length, priv=ps.filter(p=>["superusuario","direccion"].includes(p.rol)||segRolesDe(p.id).some(r=>["rrhh","auditor"].includes(r.rol))).length;
+  const dias=Number(F.periodo||7), desde=new Date(Date.now()-dias*864e5).toISOString();
+  const ev=S.seg.eventos.filter(e=>e.fecha>=desde), den=ev.filter(e=>e.resultado==="denegado").length;
+  const vence=[...S.seg.accesos.filter(a=>a.hasta&&a.hasta>=today()).map(a=>[a.user_id,`${SEG_MOD(a.modulo)} · ${a.alcance==="sede"?segSede(a.alcance_id)?.nombre||"":a.alcance}`,a.hasta]),
+    ...S.seg.usuarioRoles.filter(r=>r.hasta&&r.hasta>=today()).map(r=>[r.user_id,`Rol ${segRol(r.rol)?.nombre||r.rol}`,r.hasta])].filter(x=>diasHasta(x[2])<=15);
+  const kp=(t,v,d)=>`<div class="kpi"><span>${t}</span><b>${v}</b>${d?`<small class="status">${d}</small>`:""}</div>`;
+  const sel=(id,ph,ops,v)=>`<select id="${id}" aria-label="${ph}"><option value="">${ph}</option>${ops.map(([k,t])=>`<option value="${esc(k)}"${v===k?" selected":""}>${esc(t)}</option>`).join("")}</select>`;
+  return segPagina("Resumen de seguridad","Cifras calculadas en el momento con lo que tu cuenta puede consultar.","",
+    `<div class="filtros">${sel("sgFS","Todas las sedes",S.seg.sedes.map(s=>[s.nombre,s.nombre]),F.sede)}${sel("sgFR","Todos los roles",S.seg.roles.map(r=>[r.clave,r.nombre]),F.rol)}${sel("sgFE","Todos los estados",Object.entries(SEG_ESTADOS),F.estado)}${sel("sgFP","Últimos 7 días",[["30","Últimos 30 días"],["90","Últimos 90 días"]],F.periodo)}</div>
+    <div class="kpis">${kp("Usuarios",ps.length)}${kp("Activos",c("activo"))}${kp("Suspendidos",c("suspendido"))}${kp("Pendientes o invitados",c("pendiente")+c("invitado"))}${kp("Acceso privilegiado",priv,"Superusuario, Dirección, RR. HH., Auditor")}
+      ${kp("Solicitudes pendientes",S.seg.solicitudes.filter(s=>["pendiente","info"].includes(s.estado)).length)}${kp("Sesiones activas",S.seg.sesiones.length)}${kp("Accesos denegados",den,`En ${dias} días`)}${kp("Temporales por vencer",vence.length,"15 días")}</div>
+    <section class="note"><div class="note-h"><h3>Permisos temporales por vencer</h3></div><ul class="pend">${vence.map(([u,t,h])=>`<li><b>${esc(segNom(u))}</b> · ${esc(t)}<br><span class="status">Vence el ${fmtDate(h)} (${diasHasta(h)} días)</span></li>`).join("")||`<li class="status">Ninguno en los próximos 15 días.</li>`}</ul>
+      <p class="status" style="margin:0">Al vencer dejan de funcionar solos: la base revisa la fecha en cada consulta.</p></section>
+    <section class="note"><div class="note-h"><h3>Cambios recientes</h3></div><ul class="pend">${ev.filter(e=>e.resultado==="ok").slice(0,8).map(e=>`<li><b>${esc(e.tipo)}</b> · ${esc(segNom(e.afectado))}${e.recurso?" · "+esc(e.recurso):""}<br><span class="status">${segFecha(e.fecha)} · por ${esc(segNom(e.actor))}</span></li>`).join("")||`<li class="status">Sin cambios en el periodo.</li>`}</ul></section>
+    <p class="status" style="margin:0">Los accesos denegados son los que registran las funciones de la base y la app. Los intentos fallidos de contraseña los controla Supabase con sus propios límites automáticos.</p>`);
+}
+
+/* ---------- Usuarios ---------- */
+function segUsuarios(){
+  const su=segSU(), ver=S.segVer?segP(S.segVer):null, inv=S.segForm==="invitar";
+  const formInv = inv ? `<form class="note" onsubmit="return false"><div class="note-h"><h3>Invitar usuario</h3></div><div class="datos">
+      ${fld("ivNombre","Nombre completo *","",{span:2})}${fld("ivEmail","Correo *","",{type:"email"})}
+      ${fld("ivRol","Rol base *","psicologo",{opts:S.seg.roles.filter(r=>r.base&&r.clave!=="superusuario").map(r=>[r.clave,r.nombre])})}
+      ${fld("ivSede","Sede","",{opts:[["","Sin sede (solo Dirección)"],...S.seg.sedes.map(s=>[s.nombre,s.nombre])]})}</div>
+      <p class="status" style="margin:0">Se genera un enlace de un solo uso para que la persona ponga su contraseña. Cópialo y envíalo por Signal o WhatsApp. La cuenta queda “Invitado” y se activa sola en su primer acceso, con el rol y la sede que elegiste.</p>
+      ${S.segEnlace?`<div class="banner ok-b" style="flex-direction:column;align-items:flex-start"><b>Enlace listo</b><span class="mono sens" style="word-break:break-all">${esc(S.segEnlace)}</span><button class="btn sm" type="button" data-act="segCopiar">Copiar enlace</button></div>`:""}
+      <div class="actions"><button class="btn primary" type="button" data-act="segInvitar">Crear invitación</button><button class="btn" type="button" data-act="segCancelar">Cerrar</button></div></form>` : "";
+  const filas=S.seg.perfiles.map(p=>{ const sg=segSeg(p.id);
+    return `<tr data-f data-estado="${SEG_ESTADOS[p.estado]||p.estado}" data-sede="${esc(p.sede||"")}"><td><b>${esc(p.nombre||"—")}</b><br><span class="status sens">${esc(p.email||"")}</span></td><td>${esc(segRolesTxt(p))}</td><td>${esc(p.sede||"—")}</td>
+      <td>${sg.mfa?`<span class="pill estado-activo">Activo</span>`:`<span class="status">No</span>`}</td><td>${sg.ultimo_acceso?segFecha(sg.ultimo_acceso):"—"}</td>
+      <td><span class="pill ${SEG_PILL[p.estado]||""}">${SEG_ESTADOS[p.estado]||p.estado}</span>${p.rol==="superusuario"?` <span class="pill">Protegida</span>`:""}</td>
+      <td><button class="btn sm" type="button" data-act="segVer" data-id="${p.id}">Abrir</button></td></tr>`; }).join("");
+  return segPagina("Usuarios","Cuentas de acceso. Un colaborador puede no tener cuenta y una cuenta puede no ser de un colaborador (por ejemplo, la cuenta compartida de una sede). Nunca se muestran ni guardan contraseñas en texto plano. Para autorizar solicitudes nuevas o editar datos y contraseñas usa la ventana “Usuarios” de Administración.",
+    su&&!inv?`<button class="btn primary" type="button" data-act="segFormInv">+ Invitar usuario</button>`:"",
+    `${formInv}${ver?segFicha(ver):""}${barraFiltros("segusr",{ph:"Buscar nombre o correo",sedes:S.seg.sedes.map(s=>s.nombre),estados:Object.values(SEG_ESTADOS)})}
+    <div class="tbl-wrap"><table><thead><tr><th>Usuario</th><th>Rol(es)</th><th>Sede</th><th>MFA</th><th>Último acceso</th><th>Estado</th><th></th></tr></thead><tbody>${filas}</tbody></table></div>`);
+}
+function segFicha(p){
+  const su=segSU(), prot=p.rol==="superusuario", sg=segSeg(p.id), ef=S.segEf?.[p.id];
+  const roles=segRolesDe(p.id), ses=S.seg.sesiones.filter(x=>x.user_id===p.id), ev=S.seg.eventos.filter(e=>e.afectado===p.id).slice(0,10);
+  const resumen=ef?SEG_MODS.map(([k,t])=>{ const ss=S.seg.sedes.filter(s=>(ef.find(r=>r.modulo===k&&r.sede_id===s.id)?.nivel||0)>=1); return ss.length?`<li><b>${t}</b>: ${ss.length===S.seg.sedes.length?"todas las sedes":ss.map(s=>s.clave).join(", ")}</li>`:""; }).join("")||`<li class="status">Sin acceso a módulos.</li>`:`<li class="status">Cargando…</li>`;
+  return `<section class="note" id="segFicha"><div class="note-h"><h3>${esc(p.nombre||p.email)}</h3><button class="btn sm" type="button" data-act="segCerrarFicha">Cerrar</button></div>
+    ${prot?`<div class="banner">Cuenta del Superusuario protegida: solo su titular la modifica. Nadie puede convertirse en Superusuario desde aquí.</div>`:""}
+    <dl class="dl-org"><dt>Estado</dt><dd><span class="pill ${SEG_PILL[p.estado]||""}">${SEG_ESTADOS[p.estado]||p.estado}</span>${p.desactivado_en?` desde ${segFecha(p.desactivado_en)}`:""}</dd>
+      <dt>Inicio de sesión</dt><dd class="sens">${esc(p.email||"")}</dd><dt>Rol base</dt><dd>${esc(segRol(p.rol)?.nombre||p.rol)}</dd><dt>Sede</dt><dd>${esc(p.sede||"—")}</dd>
+      <dt>Creada</dt><dd>${segFecha(sg.creado||p.created_at)}</dd><dt>Último acceso</dt><dd>${segFecha(sg.ultimo_acceso)}</dd><dt>MFA</dt><dd>${sg.mfa?"Registrado":"No registrado"}</dd></dl>
+    <h4 style="margin:4px 0 0">Roles adicionales</h4>
+    <ul class="pend">${roles.map(r=>`<li><b>${esc(segRol(r.rol)?.nombre||r.rol)}</b>${r.hasta?` · hasta ${fmtDate(r.hasta)}`:""}<br><span class="status">${esc(r.motivo)}</span>${su&&!prot?` <button class="btn sm danger" type="button" data-act="segRetirarRol" data-id="${r.id}">Retirar</button>`:""}</li>`).join("")||`<li class="status">Ninguno.</li>`}</ul>
+    ${su&&!prot?`<div class="datos">${fld("srRol","Agregar rol","",{opts:S.seg.roles.filter(r=>!r.base&&r.activo).map(r=>[r.clave,r.nombre+(r.plantilla?" (plantilla)":"")])})}${fld("srHasta","Vigente hasta","",{type:"date",hint:"Vacío = sin fecha de fin."})}${fld("srMotivo","Motivo *","")}</div>
+      <div class="actions"><button class="btn sm" type="button" data-act="segAsignarRol" data-id="${p.id}">Agregar rol</button></div>
+      <p class="status" style="margin:0">Un rol adicional nunca amplía el alcance de sede: sus accesos son relativos (su sede o la entidad principal).</p>`:""}
+    <h4 style="margin:4px 0 0">Acceso efectivo</h4><ul class="pend">${resumen}</ul>
+    <h4 style="margin:4px 0 0">Sesiones</h4><ul class="pend">${ses.map(x=>`<li>${esc(x.agente||"Dispositivo")}<br><span class="status">Desde ${segFecha(x.creada)} · última actividad ${segFecha(x.actualizada)}</span>${su?` <button class="btn sm danger" type="button" data-act="segCerrarSes" data-id="${x.id}">Cerrar</button>`:""}</li>`).join("")||`<li class="status">Sin sesiones activas.</li>`}</ul>
+    <h4 style="margin:4px 0 0">Historial</h4><ul class="pend">${ev.map(e=>`<li><b>${esc(e.tipo)}</b>${e.recurso?" · "+esc(e.recurso):""}<br><span class="status">${segFecha(e.fecha)} · por ${esc(segNom(e.actor))}</span></li>`).join("")||`<li class="status">Sin eventos.</li>`}</ul>
+    ${su&&!prot?`<div class="datos">${fld("seMotivo","Motivo del cambio de estado *","",{span:3})}</div><div class="actions">${(SEG_TRANS[p.estado]||[]).map(([e,t])=>`<button class="btn sm${e==="desactivado"||e==="suspendido"?" danger":""}" type="button" data-act="segEstado" data-id="${p.id}" data-e="${e}">${t}</button>`).join("")}
+      ${["activo","invitado","pendiente"].includes(p.estado)?`<button class="btn sm" type="button" data-act="segEnlacePass" data-id="${p.id}">Enlace para poner contraseña</button>`:""}</div>
+      ${S.segEnlacePass?.id===p.id?`<div class="banner ok-b" style="flex-direction:column;align-items:flex-start"><b>Enlace de un solo uso</b><span class="mono sens" style="word-break:break-all">${esc(S.segEnlacePass.enlace)}</span><button class="btn sm" type="button" data-act="segCopiar">Copiar enlace</button></div>`:""}
+      <p class="status" style="margin:0">Desactivar corta el acceso y cierra sus sesiones; la cuenta y su historial se conservan.</p>`:""}</section>`;
+}
+
+/* ---------- Roles ---------- */
+function segRoles(){
+  const su=segSU(), ed=S.segRolEd?segRol(S.segRolEd)||{nuevo:true,clave:"",nombre:"",descripcion:"",plantilla:true,activo:true}:null;
+  const acc=k=>S.seg.rolAccesos.filter(a=>a.rol===k);
+  const alc={global:"toda la red",entidad_principal:"sedes de la entidad principal",sede_propia:"su sede"};
+  const form = ed ? `<form class="note" onsubmit="return false"><div class="note-h"><h3>${ed.nuevo?"Nuevo rol":"Editar rol · "+esc(ed.nombre)}</h3></div><div class="datos">
+      ${ed.nuevo?fld("rlClave","Clave interna * (minúsculas)",S.segRolBase?S.segRolBase+"_copia":"",{ph:"ej. recepcion_lin"}):""}${fld("rlNombre","Nombre *",ed.nombre,{span:ed.nuevo?2:3})}
+      ${fld("rlDesc","Descripción",ed.descripcion,{area:1,span:3,rows:2})}
+      ${fld("rlPlant","Estado",ed.plantilla?"plantilla":ed.activo===false?"inactivo":"activo",{opts:[["plantilla","Plantilla por validar"],["activo","Validado (activo)"],["inactivo","Inactivo"]]})}</div>
+      <div class="tbl-wrap"><table><thead><tr><th>Módulo</th><th>Nivel</th><th>Alcance</th></tr></thead><tbody>${SEG_MODS.map(([k,t])=>{ const a=acc(S.segRolBase||ed.clave).find(x=>x.modulo===k)||{};
+        return `<tr><td>${t}</td><td><select id="rlN_${k}" aria-label="Nivel en ${t}">${[0,1,2,3].map(n=>`<option value="${n}"${(a.nivel||0)===n?" selected":""}>${SEG_NIV[n]}</option>`).join("")}</select></td>
+        <td><select id="rlA_${k}" aria-label="Alcance en ${t}"><option value="entidad_principal"${a.alcance!=="sede_propia"?" selected":""}>Sedes de la entidad principal</option><option value="sede_propia"${a.alcance==="sede_propia"?" selected":""}>Solo su sede</option></select></td></tr>`; }).join("")}</tbody></table></div>
+      <p class="status" style="margin:0">Los roles nunca dan acceso a una sede de otra entidad fiscal: eso solo se concede por persona. Exportar, aprobar, eliminar e información sensible tampoco vienen con un rol.</p>
+      <div class="actions"><button class="btn primary" type="button" data-act="segGuardarRol">Guardar rol</button><button class="btn" type="button" data-act="segCancelar">Cancelar</button></div></form>` : "";
+  return segPagina("Perfiles y roles","Los roles base son los que usa la app y están protegidos. Las plantillas se suman como roles adicionales y deben validarse antes de asignarse a personas.",
+    su&&!ed?`<button class="btn primary" type="button" data-act="segNuevoRol">+ Crear rol</button>`:"",
+    `${form}<div class="org-grid">${S.seg.roles.map(r=>{ const n=S.seg.perfiles.filter(p=>p.rol===r.clave||segRolesDe(p.id).some(x=>x.rol===r.clave)).length, a=acc(r.clave);
+      return `<section class="note"><div class="note-h"><h3>${esc(r.nombre)}</h3><span>${r.base?`<span class="pill">Base</span> `:""}${r.protegido?`<span class="pill">Protegido</span> `:""}${r.plantilla?`<span class="pill estado-pendiente">Plantilla por validar</span>`:""}${!r.activo?`<span class="pill estado-suspendido">Inactivo</span>`:""}</span></div>
+        <p style="margin:0">${esc(r.descripcion||"")}</p>
+        <dl class="dl-org">${a.map(x=>`<dt>${esc(SEG_MOD(x.modulo))}</dt><dd>${SEG_NIV[x.nivel]} · ${alc[x.alcance]||x.alcance}</dd>`).join("")||(r.clave==="superusuario"?`<dt>Módulos</dt><dd>Todos</dd>`:`<dt>Módulos</dt><dd>${r.base?"Definidos por las reglas actuales de la app":"Solo su información personal"}</dd>`)}</dl>
+        <div class="actions"><span class="status">${n} persona${n===1?"":"s"}</span>${su?`<button class="btn sm" type="button" data-act="segDupRol" data-k="${r.clave}">Duplicar</button>${r.protegido?"":`<button class="btn sm" type="button" data-act="segEditRol" data-k="${r.clave}">Editar</button>`}`:""}</div></section>`; }).join("")}</div>`);
+}
+
+/* ---------- Matriz ---------- */
+function segMatriz(){
+  const M=S.segMx=S.segMx||{user:"",sede:"",cambios:{}}, us=S.seg.perfiles.filter(p=>p.estado==="activo"&&p.rol!=="superusuario");
+  if (!M.user) M.user=us[0]?.id||""; if (!M.sede) M.sede=S.seg.sedes[0]?.id||"";
+  const ef=S.segEf?.[M.user], ent=segEntDe(M.sede);
+  if (!ef){ segEfectivo(M.user).then(()=>{ if (S.segTab==="matriz") render(); }); }
+  const ind=S.seg.accesos.filter(a=>a.user_id===M.user&&(a.alcance==="sede"&&a.alcance_id===M.sede||a.alcance==="entidad"&&a.alcance_id===ent?.id||a.alcance==="global"));
+  const fila=([k,t])=>{ const r=(ef||[]).find(x=>x.modulo===k&&x.sede_id===M.sede)||{nivel:0,especiales:[]}, g=ind.filter(a=>a.modulo===k||a.modulo==="*"), c=M.cambios[k];
+    const origen=r.nivel===-1?`<span class="pill estado-suspendido">Denegado</span>`:g.some(a=>a.efecto==="permitir"&&a.hasta)?`<span class="pill estado-pendiente">Temporal</span>`:g.some(a=>a.efecto==="permitir")?`<span class="pill estado-activo">Individual</span>`:r.nivel>0?`<span class="pill">Heredado del rol</span>`:"—";
+    const pend=S.seg.solicitudes.some(s=>s.user_id===M.user&&s.modulo===k&&s.sede_id===M.sede&&["pendiente","info"].includes(s.estado));
+    const nv=c?c.nivel:Math.max(0,r.nivel), esp=c?c.especiales:(r.especiales||[]), den=c?c.denegar:r.nivel===-1;
+    return `<tr${c?' style="outline:2px solid var(--accent);outline-offset:-2px"':""}><td><b>${t}</b>${pend?`<br><span class="pill">Solicitud pendiente</span>`:""}</td><td>${origen}</td>
+      <td><select data-mx="${k}" data-campo="nivel" aria-label="Nivel en ${t}"${den?" disabled":""}>${[0,1,2,3].map(n=>`<option value="${n}"${nv===n?" selected":""}>${SEG_NIV[n]}</option>`).join("")}</select></td>
+      ${SEG_ESP.map(([e,et])=>`<td><input type="checkbox" data-mx="${k}" data-campo="${e}" aria-label="${et} en ${t}"${esp.includes(e)?" checked":""}${den?" disabled":""}></td>`).join("")}
+      <td><input type="checkbox" data-mx="${k}" data-campo="denegar" aria-label="Denegar ${t}"${den?" checked":""}></td></tr>`; };
+  const n=Object.keys(M.cambios).length;
+  const rev = S.segRevisar && n ? segRevision() : "";
+  return segPagina("Matriz de permisos","Módulos por acciones para una persona en una sede. Los cambios no se guardan hasta revisarlos y confirmarlos. Ver, crear, editar y desactivar vienen con el nivel; exportar, aprobar, eliminar definitivo e información sensible se conceden aparte.",
+    n?`<button class="btn" type="button" data-act="segMxDescartar">Descartar</button><button class="btn primary" type="button" data-act="segMxRevisar">Revisar ${n} cambio${n===1?"":"s"}</button>`:"",
+    `<div class="filtros"><select id="sgMxU" aria-label="Persona">${us.map(p=>`<option value="${p.id}"${p.id===M.user?" selected":""}>${esc(p.nombre||p.email)} · ${esc(segRol(p.rol)?.nombre||p.rol)}</option>`).join("")}</select>
+      <select id="sgMxS" aria-label="Sede">${S.seg.sedes.map(s=>`<option value="${s.id}"${s.id===M.sede?" selected":""}>${esc(s.nombre)}${segEntDe(s.id)&&!segEntDe(s.id).principal?" (otra entidad)":""}</option>`).join("")}</select></div>
+    ${ent&&!ent.principal?`<div class="banner">Sede de otra entidad fiscal (${esc(ent.nombre_corto)}): ningún rol da acceso automático; solo autorizaciones individuales.</div>`:""}
+    ${rev}
+    ${ef?`<div class="tbl-wrap"><table><thead><tr><th>Módulo</th><th>Origen</th><th>Nivel</th>${SEG_ESP.map(([,t])=>`<th>${t}</th>`).join("")}<th>Denegar</th></tr></thead><tbody>${SEG_MODS.map(fila).join("")}</tbody></table></div>
+    <p class="status" style="margin:0"><b>Acceso efectivo:</b> ${SEG_MODS.map(([k,t])=>{ const r=ef.find(x=>x.modulo===k&&x.sede_id===M.sede); return r&&r.nivel>0?`${t} (${SEG_NIV[r.nivel]})`:""; }).filter(Boolean).join(" · ")||"sin acceso en esta sede."}</p>
+    <p class="status" style="margin:0">Para quitar un acceso que viene del rol, marca “Denegar”: una denegación explícita gana sobre cualquier rol.</p>`:`<p class="status">Calculando acceso efectivo…</p>`}`);
+}
+function segRevision(){
+  const M=S.segMx, ef=S.segEf[M.user], s=segSede(M.sede), ent=segEntDe(M.sede), riesgos=[];
+  if (ent&&!ent.principal) riesgos.push("Abre o cambia acceso en una sede de otra entidad fiscal.");
+  Object.entries(M.cambios).forEach(([k,c])=>{ if (c.especiales.some(e=>["exportar","eliminar"].includes(e))) riesgos.push(`${SEG_MOD(k)}: incluye exportar o eliminar definitivo.`); if (["atencion","finanzas","fiscal"].includes(k)&&(c.nivel>0||c.especiales.length)) riesgos.push(`${SEG_MOD(k)}: información clínica, financiera o fiscal.`); });
+  const antes=k=>{ const r=ef.find(x=>x.modulo===k&&x.sede_id===M.sede)||{nivel:0,especiales:[]}; return r.nivel===-1?"Denegado":SEG_NIV[Math.max(0,r.nivel)]+(r.especiales?.length?" + "+r.especiales.join(", "):""); };
+  const despues=c=>c.denegar?"Denegado":SEG_NIV[c.nivel]+(c.especiales.length?" + "+c.especiales.join(", "):"");
+  return `<section class="note"><div class="note-h"><h3>Revisar cambios</h3></div>
+    <dl class="dl-org"><dt>Persona</dt><dd>${esc(segNom(M.user))}</dd><dt>Sede</dt><dd>${esc(s?.nombre||"")}</dd><dt>Entidad fiscal</dt><dd>${esc(ent?.nombre_corto||"—")}</dd></dl>
+    <div class="tbl-wrap"><table><thead><tr><th>Módulo</th><th>Antes</th><th>Después</th></tr></thead><tbody>${Object.entries(M.cambios).map(([k,c])=>`<tr><td>${SEG_MOD(k)}</td><td>${antes(k)}</td><td><b>${despues(c)}</b></td></tr>`).join("")}</tbody></table></div>
+    ${riesgos.length?`<div class="banner">Riesgos detectados: ${riesgos.map(esc).join(" ")}</div>`:""}
+    <div class="datos">${fld("mxHasta","Vigente hasta","",{type:"date",hint:"Vacío = hasta que se revoque."})}${fld("mxMotivo","Motivo *","",{span:2,ph:"Queda en la auditoría"})}</div>
+    <div class="actions"><button class="btn primary" type="button" data-act="segMxGuardar">Confirmar y guardar</button><button class="btn" type="button" data-act="segMxVolver">Volver</button></div></section>`;
+}
+
+/* ---------- Accesos por sede y por entidad ---------- */
+function segSedes(){
+  const sid=S.segSedeSel=S.segSedeSel||S.seg.sedes.find(s=>segEntDe(s.id)&&!segEntDe(s.id).principal)?.id||S.seg.sedes[0]?.id, s=segSede(sid), ent=segEntDe(sid), us=S.seg.perfiles.filter(p=>p.estado==="activo");
+  const faltan=us.filter(p=>!S.segEf?.[p.id]); if (faltan.length&&!S.segCargandoEf){ S.segCargandoEf=true; Promise.all(faltan.map(p=>segEfectivo(p.id))).finally(()=>{ S.segCargandoEf=false; if (S.view==="seguridad") render(); }); }
+  const ind=S.seg.accesos.filter(a=>a.alcance==="sede"&&a.alcance_id===sid);
+  const form = S.segForm==="conceder" ? `<form class="note" onsubmit="return false"><div class="note-h"><h3>Conceder acceso · ${esc(s.nombre)}</h3></div><div class="datos">
+      ${fld("cnUser","Persona *","",{opts:[["","— Selecciona —"],...us.filter(p=>p.rol!=="superusuario").map(p=>[p.id,`${p.nombre||p.email} · ${segRol(p.rol)?.nombre||p.rol}`])],span:3})}
+      ${fld("cnNivel","Nivel","1",{opts:[["1","Lectura"],["2","Operación"],["3","Administración"]]})}${fld("cnHasta","Vigente hasta","",{type:"date",hint:"Vacío = hasta que se revoque."})}${fld("cnMotivo","Motivo *","")}</div>
+      <fieldset style="border:0;padding:0;margin:0"><legend class="status">Módulos * (solo los que marques)</legend><div style="display:flex;flex-wrap:wrap;gap:10px">${SEG_MODS.map(([k,t])=>`<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" name="cnMod" value="${k}">${t}</label>`).join("")}</div></fieldset>
+      <div class="actions"><button class="btn primary" type="button" data-act="segConceder">Conceder acceso</button><button class="btn" type="button" data-act="segCancelar">Cancelar</button></div></form>` : "";
+  const filas=us.map(p=>{ const ef=S.segEf?.[p.id]; if (!ef) return ""; const mods=SEG_MODS.filter(([k])=>(ef.find(r=>r.modulo===k&&r.sede_id===sid)?.nivel||0)>=1);
+    const den=ef.filter(r=>r.sede_id===sid&&r.nivel===-1), gs=ind.filter(a=>a.user_id===p.id);
+    if (!mods.length&&!den.length&&!gs.length) return "";
+    return `<tr><td><b>${esc(p.nombre||p.email)}</b><br><span class="status">${esc(segRolesTxt(p))}</span></td><td>${mods.map(([k,t])=>`${t} (${SEG_NIV[ef.find(r=>r.modulo===k&&r.sede_id===sid).nivel]})`).join("<br>")||"—"}</td>
+      <td>${p.rol==="superusuario"?"Superusuario":gs.filter(a=>a.efecto==="permitir").length?gs.filter(a=>a.efecto==="permitir").map(a=>`Individual: ${SEG_MOD(a.modulo)}${a.hasta?" hasta "+fmtDate(a.hasta):""}`).join("<br>"):"Heredado del rol"}</td>
+      <td>${den.map(r=>`<span class="pill estado-suspendido">${SEG_MOD(r.modulo)}</span>`).join(" ")||"—"}</td>
+      <td>${segSU()?gs.map(a=>`<button class="btn sm danger" type="button" data-act="segRevocar" data-id="${a.id}">Revocar ${esc(SEG_MOD(a.modulo))}</button>`).join(" "):""}</td></tr>`; }).join("");
+  return segPagina("Accesos por sede","Quién tiene acceso a cada sede, por qué (rol, individual o temporal) y qué está denegado.",
+    segSU()&&S.segForm!=="conceder"?`<button class="btn primary" type="button" data-act="segFormConceder">+ Conceder acceso</button>`:"",
+    `<div class="filtros"><select id="sgSede" aria-label="Sede">${S.seg.sedes.map(x=>`<option value="${x.id}"${x.id===sid?" selected":""}>${esc(x.nombre)}</option>`).join("")}</select>${ent&&!ent.principal?`<span class="pill estado-pendiente">Acceso restringido · ${esc(ent.nombre_corto)}</span>`:`<span class="pill estado-activo">Entidad principal</span>`}</div>
+    ${ent&&!ent.principal?`<div class="banner">${esc(s.nombre)} es de otra entidad fiscal. Ningún Directivo tiene acceso automático: cada acceso se concede por persona, módulo y vigencia, con motivo, y queda en la auditoría. Autorizar un módulo no abre los demás.</div>`:""}
+    ${form}<div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Módulos y nivel</th><th>Origen</th><th>Denegaciones</th><th></th></tr></thead><tbody>${filas||`<tr><td colspan="5" class="status">${S.segCargandoEf?"Calculando accesos…":"Nadie más que el Superusuario tiene acceso a esta sede."}</td></tr>`}</tbody></table></div>`);
+}
+function segEntidades(){
+  const eid=S.segEntSel=S.segEntSel||S.seg.entidades.find(e=>!e.principal)?.id||S.seg.entidades[0]?.id, e=S.seg.entidades.find(x=>x.id===eid);
+  const sedes=S.seg.sedes.filter(s=>segEntDe(s.id)?.id===eid), us=S.seg.perfiles.filter(p=>p.estado==="activo");
+  const faltan=us.filter(p=>!S.segEf?.[p.id]); if (faltan.length&&!S.segCargandoEf){ S.segCargandoEf=true; Promise.all(faltan.map(p=>segEfectivo(p.id))).finally(()=>{ S.segCargandoEf=false; if (S.view==="seguridad") render(); }); }
+  const tipos=[["operacion","Operativo"],["organizacion","Organizacional"],["recursos_humanos","Laboral"],["finanzas","Financiero"],["fiscal","Fiscal"],["sensible","Información sensible"]];
+  const tiene=(p,t)=>{ const ef=S.segEf?.[p.id]; if (!ef) return null; return t==="sensible"?ef.some(r=>sedes.some(s=>s.id===r.sede_id)&&(r.nivel===4||(r.especiales||[]).includes("sensible"))):ef.some(r=>r.modulo===t&&sedes.some(s=>s.id===r.sede_id)&&r.nivel>=1); };
+  return segPagina("Accesos por entidad fiscal","Trabajar en una sede no abre toda la información de su entidad fiscal. Cada tipo de acceso se concede por separado (en la Matriz o con “Conceder acceso”).","",
+    `<div class="filtros"><select id="sgEnt" aria-label="Entidad fiscal">${S.seg.entidades.map(x=>`<option value="${x.id}"${x.id===eid?" selected":""}>${esc(x.nombre_corto)}</option>`).join("")}</select><span class="status">Sedes: ${sedes.map(s=>esc(s.nombre)).join(", ")||"—"}</span></div>
+    ${e&&!e.principal?`<div class="banner">Entidad separada: sus datos financieros y fiscales solo los ve quien tenga autorización expresa.</div>`:""}
+    <div class="tbl-wrap"><table><thead><tr><th>Persona</th>${tipos.map(([,t])=>`<th>${t}</th>`).join("")}</tr></thead><tbody>${us.map(p=>`<tr><td>${esc(p.nombre||p.email)}<br><span class="status">${esc(segRol(p.rol)?.nombre||p.rol)}</span></td>${tipos.map(([k])=>{ const v=tiene(p,k); return `<td>${v===null?"…":v?"✓":"—"}</td>`; }).join("")}</tr>`).join("")}</tbody></table></div>`);
+}
+
+/* ---------- Solicitudes ---------- */
+function segSolicitudes(){
+  const su=segSU(), ls=S.seg.solicitudes, nueva=S.segForm==="solicitar";
+  const form = nueva ? `<form class="note" onsubmit="return false"><div class="note-h"><h3>Nueva solicitud de acceso</h3></div><div class="datos">
+      ${fld("slSede","Sede","",{opts:[["","— Selecciona —"],...S.seg.sedes.map(s=>[s.id,s.nombre])]})}${fld("slMod","Módulo *","organizacion",{opts:SEG_MODS})}${fld("slNivel","Nivel","1",{opts:[["1","Lectura"],["2","Operación"],["3","Administración"]]})}
+      ${fld("slFun","Funcionalidad","",{span:2,ph:"Ej. Tablero de mi sede"})}${fld("slHasta","Hasta","",{type:"date"})}
+      ${fld("slJust","Justificación * (para qué lo necesitas)","",{area:1,span:3,rows:2})}</div>
+      <div class="actions"><button class="btn primary" type="button" data-act="segEnviarSol">Enviar solicitud</button><button class="btn" type="button" data-act="segCancelar">Cancelar</button></div></form>` : "";
+  const resp=S.segResp?ls.find(x=>x.id===S.segResp):null;
+  const formResp = resp ? `<form class="note" onsubmit="return false"><div class="note-h"><h3>Responder solicitud de ${esc(segNom(resp.user_id))}</h3></div><div class="datos">
+      ${fld("rsNivel","Nivel a conceder",String(resp.nivel||1),{opts:[["1","Lectura"],["2","Operación"],["3","Administración"]]})}${fld("rsHasta","Vigente hasta",resp.hasta||"",{type:"date"})}${fld("rsTxt","Respuesta para la persona","",{span:3})}</div>
+      <div class="actions"><button class="btn primary" type="button" data-act="segResponder" data-d="aprobada">Aprobar</button><button class="btn" type="button" data-act="segResponder" data-d="info">Pedir más información</button><button class="btn danger" type="button" data-act="segResponder" data-d="rechazada">Rechazar</button><button class="btn" type="button" data-act="segCancelar">Cancelar</button></div></form>` : "";
+  const est={pendiente:["Pendiente","estado-pendiente"],aprobada:["Aprobada","estado-activo"],rechazada:["Rechazada","estado-suspendido"],info:["Más información","estado-pendiente"],cancelada:["Cancelada",""]};
+  return segPagina("Solicitudes de acceso",su?"Revisa, aprueba (total o parcialmente), rechaza o pide más información. Nada se activa antes de aprobarse.":"Pide acceso a un módulo o sede que necesitas. El Superusuario decide; mientras tanto no cambia nada.",
+    !nueva?`<button class="btn primary" type="button" data-act="segFormSol">+ Nueva solicitud</button>`:"",
+    `${form}${formResp}<div class="tbl-wrap"><table><thead><tr><th>Solicitante</th><th>Sede y módulo</th><th>Justificación</th><th>Vigencia</th><th>Estado</th><th></th></tr></thead><tbody>
+    ${ls.map(x=>`<tr><td><b>${esc(segNom(x.user_id))}</b><br><span class="status">${segFecha(x.creado_en)}</span></td>
+      <td>${x.automatica?`<span class="pill estado-pendiente">Automática</span><br>`:""}${esc(segSede(x.sede_id)?.nombre||"—")}<br><span class="status">${esc(SEG_MOD(x.modulo==="cuenta"?"Revisión de cuenta":x.modulo))}${x.funcionalidad?" · "+esc(x.funcionalidad):""}</span></td>
+      <td>${esc(x.justificacion)}${x.respuesta?`<br><span class="status">Respuesta: ${esc(x.respuesta)}</span>`:""}</td><td>${x.hasta?fmtDate(x.hasta):"—"}</td>
+      <td><span class="pill ${est[x.estado]?.[1]||""}">${est[x.estado]?.[0]||x.estado}</span></td>
+      <td style="white-space:nowrap">${su&&["pendiente","info"].includes(x.estado)?(x.modulo==="cuenta"?`<button class="btn sm" type="button" data-act="segVerCuenta" data-id="${x.user_id}">Revisar cuenta</button>`:`<button class="btn sm primary" type="button" data-act="segRespForm" data-id="${x.id}">Responder</button>`)
+        :x.user_id===S.uid&&["pendiente","info"].includes(x.estado)?`<button class="btn sm" type="button" data-act="segCancelarSol" data-id="${x.id}">Cancelar</button>`:""}</td></tr>`).join("")||`<tr><td colspan="6" class="status">Sin solicitudes.</td></tr>`}</tbody></table></div>`);
+}
+
+/* ---------- Sesiones ---------- */
+function segSesiones(){
+  const amplio=segSU()||segAud();
+  return segPagina("Sesiones y dispositivos",amplio?"Sesiones abiertas en la plataforma. Nunca se muestran tokens ni cookies.":"Tus sesiones abiertas. Si no reconoces un dispositivo, ciérralo y cambia tu contraseña.",
+    `<button class="btn" type="button" data-act="segOtras">Cerrar mis otras sesiones</button>`,
+    `<div class="tbl-wrap"><table><thead><tr>${amplio?"<th>Persona</th>":""}<th>Dispositivo</th><th>Inicio</th><th>Última actividad</th><th>Con código</th><th></th></tr></thead><tbody>
+    ${S.seg.sesiones.map(x=>`<tr>${amplio?`<td>${esc(x.nombre||segNom(x.user_id))}</td>`:""}<td>${esc(x.agente||"Dispositivo")}</td><td>${segFecha(x.creada)}</td><td>${segFecha(x.actualizada)}</td><td>${x.aal==="aal2"?"Sí":"No"}</td>
+      <td>${segSU()&&x.user_id!==S.uid?`<button class="btn sm danger" type="button" data-act="segCerrarSes" data-id="${x.id}">Cerrar</button>`:!amplio||x.user_id===S.uid?`<button class="btn sm" type="button" data-act="segCerrarMia" data-id="${x.id}">Cerrar</button>`:""}</td></tr>`).join("")||`<tr><td colspan="6" class="status">Sin sesiones.</td></tr>`}</tbody></table></div>
+    <p class="status" style="margin:0">La sesión se cierra sola tras ${S.api?.inactividadMin||30} minutos sin actividad. Cerrar una sesión obliga a volver a entrar en ese dispositivo.</p>`);
+}
+
+/* ---------- Auditoría ---------- */
+function segAuditoria(){
+  return segPagina("Auditoría","Eventos de seguridad: cuentas, roles, permisos, sesiones, solicitudes, configuración y accesos denegados. Nadie puede editarlos ni borrarlos. No guardan contraseñas, tokens ni datos clínicos.","",
+    `${barraFiltros("segaud",{ph:"Buscar persona, acción o recurso",estados:["Correcto","Denegado"]})}
+    <div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Quién</th><th>Afectado</th><th>Acción</th><th>Recurso</th><th>Resultado</th></tr></thead><tbody>
+    ${S.seg.eventos.map(e=>`<tr data-f data-estado="${e.resultado==="denegado"?"Denegado":"Correcto"}"><td>${segFecha(e.fecha)}</td><td>${esc(segNom(e.actor))}</td><td>${esc(e.afectado?segNom(e.afectado):"—")}</td><td>${esc(e.tipo)}</td><td>${esc(e.recurso||"")}</td>
+      <td><span class="pill ${e.resultado==="denegado"?"estado-suspendido":"estado-activo"}">${e.resultado==="denegado"?"Denegado":"Correcto"}</span></td></tr>`).join("")||`<tr><td colspan="6" class="status">Sin eventos todavía.</td></tr>`}</tbody></table></div>
+    <p class="status" style="margin:0">Se muestran los 400 eventos más recientes.</p>`);
+}
+
+/* ---------- Configuración ---------- */
+function segConfig(){
+  const c=S.seg.config, mfa=c.mfa_obligatorio===true;
+  return segPagina("Configuración de seguridad","Políticas generales. Cada cambio queda en la auditoría.","",
+    `<section class="note"><div class="note-h"><h3>Código de verificación (MFA)</h3><span class="pill ${mfa?"estado-activo":""}">${mfa?"Activado":"Desactivado"}</span></div>
+      <p style="margin:0">${mfa?"Activado: el Superusuario y los Directivos deben escribir su código al entrar y para las acciones privilegiadas. Quien no lo tenga registrado debe hacerlo antes de entrar.":"Desactivado: nadie necesita código. Quien lo registre en Mi perfil lo usará al entrar."}</p>
+      <p class="status" style="margin:0">${mfa?"Para desactivarlo debes haber entrado con tu código.":"Para activarlo primero registra tu código en Mi perfil → Código de verificación y vuelve a entrar con él. Pide a los Directivos que registren el suyo antes."}</p>
+      <div class="actions"><button class="btn${mfa?"":" primary"}" type="button" data-act="segMfaToggle">${mfa?"Desactivar MFA":"Activar MFA"}</button></div></section>
+    <section class="note"><div class="note-h"><h3>Sesiones</h3></div><div class="datos">${fld("cfInact","Cerrar sesión tras inactividad (minutos)",c.inactividad_min??30,{type:"number"})}</div>
+      <div class="actions"><button class="btn" type="button" data-act="segGuardarCfg" data-c="inactividad_min" data-i="cfInact">Guardar</button></div></section>
+    <section class="note"><div class="note-h"><h3>Contraseñas y acceso</h3></div><dl class="dl-org"><dt>Longitud mínima</dt><dd>10 caracteres</dd><dt>Intentos fallidos</dt><dd>Límites automáticos de Supabase</dd><dt>Recuperación por correo</dt><dd>Requiere SMTP propio; mientras tanto usa “Enlace para poner contraseña” en la ficha de la persona.</dd></dl></section>`);
+}
+
+/* ---------- Acciones ---------- */
+const SEG_ACC=new Set(["seguridad","segTab","segVer","segCerrarFicha","segFormInv","segInvitar","segCopiar","segCancelar","segEstado","segEnlacePass","segAsignarRol","segRetirarRol","segNuevoRol","segEditRol","segDupRol","segGuardarRol","segMxDescartar","segMxRevisar","segMxVolver","segMxGuardar","segFormConceder","segConceder","segRevocar","segFormSol","segEnviarSol","segCancelarSol","segRespForm","segResponder","segVerCuenta","segCerrarSes","segCerrarMia","segOtras","segMfaToggle","segGuardarCfg"]);
+function segErr(e){ const m=e?.message||"";
+  if (/MFA|segundo factor|mfa_requerido/i.test(m)) return "Esta acción pide tu código de verificación: entra con tu código (Mi perfil → Código de verificación).";
+  if (/row-level|permission|not_granted|autoriz/i.test(m)){ S.api.registrarDenegado("Usuarios y permisos: "+(S.segTab||"")); return "No tienes autorización para esa acción."; }
+  if (/ya_existe/.test(m)) return "Ese correo ya tiene una cuenta.";
+  if (/Failed to send|FunctionsFetchError|not found|404/i.test(m)) return "La función de invitaciones aún no está desplegada en Supabase.";
+  return m||"No se pudo completar."; }
+async function segAccion(a, b){
+  const v=id=>($("#"+id)?.value??"").trim(), hecho=async(fn,ok,keep)=>{ try{ await fn(); if (!keep){ S.segForm=null; S.segRolEd=null; S.segResp=null; } toast(ok); S.segEf={}; await cargarSeg(); return true; }catch(e){ toast(segErr(e)); return false; } };
+  if (a==="seguridad"){ S.view="seguridad"; S.segTab=S.segTab||segTabsPermitidas()[0]; S.segForm=null; S.segVer=null; S.seg=null; S.segEf={}; render(); return cargarSeg(); }
+  if (a==="segTab"){ S.segTab=b.dataset.t; S.segForm=null; S.segVer=null; S.segRolEd=null; S.segResp=null; S.segRevisar=false; return render(); }
+  if (a==="segCancelar"){ S.segForm=null; S.segRolEd=null; S.segResp=null; S.segEnlace=null; return render(); }
+  if (a==="segVer"||a==="segVerCuenta"){ S.segTab="usuarios"; S.segVer=b.dataset.id; S.segEnlacePass=null; render(); setTimeout(()=>$("#segFicha")?.scrollIntoView({block:"start",behavior:"smooth"}),40);
+    if (segSU()||segAud()) segEfectivo(b.dataset.id).then(()=>render()).catch(()=>{}); return; }
+  if (a==="segCerrarFicha"){ S.segVer=null; return render(); }
+  if (a==="segFormInv"){ S.segForm="invitar"; S.segEnlace=null; render(); setTimeout(()=>$("#ivNombre")?.focus(),30); return; }
+  if (a==="segInvitar"){ const nombre=v("ivNombre"), email=v("ivEmail"), rol=v("ivRol"), sede=v("ivSede");
+    if (nombre.length<3||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast("Escribe el nombre y un correo válido.");
+    if (rol!=="direccion"&&!sede) return toast("Elige la sede de la persona.");
+    try{ const r=await S.api.adminUsuarios({accion:"invitar", email, nombre, rol, sede}); S.segEnlace=r.enlace; toast("Invitación creada. Copia el enlace y envíalo."); await cargarSeg(); }catch(e){ toast(segErr(e)); } return; }
+  if (a==="segCopiar"){ const t=S.segEnlace||S.segEnlacePass?.enlace||""; try{ await navigator.clipboard.writeText(t); toast("Enlace copiado."); }catch{ toast("No se pudo copiar; selecciona el enlace y cópialo."); } return; }
+  if (a==="segEstado"){ const m=v("seMotivo"); if (m.length<5) return toast("Escribe el motivo del cambio (5 caracteres o más).");
+    if (["desactivado","suspendido"].includes(b.dataset.e) && !arm(b,"est"+b.dataset.id+b.dataset.e,"¿Confirmar?")) return; armed=null;
+    return hecho(()=>S.api.cambiarEstadoCuenta(b.dataset.id,b.dataset.e,m),"Estado actualizado.",true); }
+  if (a==="segEnlacePass"){ try{ const r=await S.api.adminUsuarios({accion:"enlace_contrasena", id:b.dataset.id}); S.segEnlacePass={id:b.dataset.id, enlace:r.enlace}; toast("Enlace generado. Envíalo por Signal o WhatsApp."); render(); }catch(e){ toast(segErr(e)); } return; }
+  if (a==="segAsignarRol"){ const r=v("srRol"), m=v("srMotivo"); if (!r) return toast("Elige el rol."); if (m.length<5) return toast("Escribe el motivo.");
+    return hecho(()=>S.api.asignarRol(b.dataset.id,r,v("srHasta"),m),"Rol asignado.",true); }
+  if (a==="segRetirarRol"){ if (!arm(b,"ret"+b.dataset.id,"¿Retirar?")) return; armed=null; return hecho(()=>S.api.retirarRol(b.dataset.id,"Retirado desde Usuarios y permisos"),"Rol retirado.",true); }
+  if (a==="segNuevoRol"){ S.segRolEd="__nuevo"; S.segRolBase=null; return render(); }
+  if (a==="segEditRol"){ S.segRolEd=b.dataset.k; S.segRolBase=null; return render(); }
+  if (a==="segDupRol"){ S.segRolEd="__nuevo"; S.segRolBase=b.dataset.k; return render(); }
+  if (a==="segGuardarRol"){ const ed=segRol(S.segRolEd), nuevo=!ed, clave=nuevo?v("rlClave").toLowerCase():ed.clave, nombre=v("rlNombre"), est=v("rlPlant");
+    if (nuevo&&!/^[a-z_]{3,30}$/.test(clave)) return toast("La clave lleva de 3 a 30 letras minúsculas o guion bajo."); if (nombre.length<3) return toast("Escribe el nombre del rol.");
+    const filas=SEG_MODS.map(([k])=>({modulo:k, nivel:+v("rlN_"+k), alcance:v("rlA_"+k)})).filter(f=>f.nivel>0);
+    return hecho(async()=>{ await S.api.guardarRol({nuevo, clave, nombre, descripcion:v("rlDesc"), plantilla:est==="plantilla", activo:est!=="inactivo"}); await S.api.guardarRolAccesos(clave, filas); },"Rol guardado."); }
+  if (a==="segMxDescartar"){ S.segMx.cambios={}; S.segRevisar=false; return render(); }
+  if (a==="segMxRevisar"){ S.segRevisar=true; return render(); }
+  if (a==="segMxVolver"){ S.segRevisar=false; return render(); }
+  if (a==="segMxGuardar"){ const M=S.segMx, m=v("mxMotivo"), hasta=v("mxHasta"); if (m.length<5) return toast("Escribe el motivo (queda en la auditoría).");
+    return hecho(async()=>{ for (const [k,c] of Object.entries(M.cambios)){
+        for (const g of S.seg.accesos.filter(x=>x.user_id===M.user&&x.alcance==="sede"&&x.alcance_id===M.sede&&x.modulo===k)) await S.api.revocarAcceso(g.id,"Reemplazado desde la matriz: "+m);
+        if (c.denegar) await S.api.otorgarAcceso({user:M.user, efecto:"denegar", alcance:"sede", alcance_id:M.sede, modulo:k, nivel:0, especiales:[], hasta, motivo:m});
+        else if (c.nivel>0||c.especiales.length) await S.api.otorgarAcceso({user:M.user, efecto:"permitir", alcance:"sede", alcance_id:M.sede, modulo:k, nivel:Math.max(c.nivel,1), especiales:c.especiales, hasta, motivo:m}); }
+      M.cambios={}; S.segRevisar=false; },"Permisos guardados. Surten efecto en la siguiente consulta de esa persona.",true); }
+  if (a==="segFormConceder"){ S.segForm="conceder"; return render(); }
+  if (a==="segConceder"){ const u=v("cnUser"), mods=[...document.querySelectorAll('input[name="cnMod"]:checked')].map(x=>x.value), m=v("cnMotivo");
+    if (!u) return toast("Elige a la persona."); if (!mods.length) return toast("Marca al menos un módulo."); if (m.length<5) return toast("Escribe el motivo.");
+    return hecho(async()=>{ for (const k of mods) await S.api.otorgarAcceso({user:u, efecto:"permitir", alcance:"sede", alcance_id:S.segSedeSel, modulo:k, nivel:+v("cnNivel"), especiales:[], hasta:v("cnHasta"), motivo:m}); },"Acceso concedido."); }
+  if (a==="segRevocar"){ if (!arm(b,"rev"+b.dataset.id,"¿Revocar?")) return; armed=null; return hecho(()=>S.api.revocarAcceso(b.dataset.id,"Revocado desde Accesos por sede"),"Acceso revocado: deja de funcionar en la siguiente consulta.",true); }
+  if (a==="segFormSol"){ S.segForm="solicitar"; return render(); }
+  if (a==="segEnviarSol"){ const j=v("slJust"); if (j.length<10) return toast("Explica para qué lo necesitas (10 caracteres o más).");
+    return hecho(()=>S.api.crearSolicitud({sede_id:v("slSede"), modulo:v("slMod"), nivel:+v("slNivel"), funcionalidad:v("slFun"), hasta:v("slHasta"), justificacion:j}),"Solicitud enviada. No cambia nada hasta que el Superusuario la apruebe."); }
+  if (a==="segCancelarSol"){ return hecho(()=>S.api.cancelarSolicitud(b.dataset.id),"Solicitud cancelada.",true); }
+  if (a==="segRespForm"){ S.segResp=b.dataset.id; return render(); }
+  if (a==="segResponder"){ const d=b.dataset.d; if (d!=="aprobada"&&v("rsTxt").length<5) return toast("Escribe la respuesta para la persona.");
+    return hecho(()=>S.api.responderSolicitud(S.segResp,d,v("rsTxt"),+v("rsNivel"),v("rsHasta")),({aprobada:"Solicitud aprobada: el acceso ya está activo.",rechazada:"Solicitud rechazada.",info:"Se pidió más información."})[d]); }
+  if (a==="segCerrarSes"){ if (!arm(b,"ses"+b.dataset.id,"¿Cerrar?")) return; armed=null; return hecho(()=>S.api.cerrarSesionUsuario(b.dataset.id),"Sesión cerrada: esa persona tendrá que volver a entrar.",true); }
+  if (a==="segCerrarMia"){ return hecho(()=>S.api.cerrarMiSesion(b.dataset.id),"Sesión cerrada.",true); }
+  if (a==="segOtras"){ return hecho(()=>S.api.cerrarMisOtrasSesiones(),"Se cerraron tus sesiones en otros dispositivos.",true); }
+  if (a==="segMfaToggle"){ const act=S.seg.config.mfa_obligatorio!==true;
+    if (act){ const fs=await S.api.mfaFactores(); if (!fs.some(f=>f.status==="verified")) return toast("Primero registra tu código en Mi perfil → Código de verificación."); }
+    if (!arm(b,"mfa","¿Confirmar?")) return; armed=null;
+    return hecho(()=>S.api.guardarConfigSeguridad("mfa_obligatorio",act),act?"MFA activado para Superusuario y Directivos.":"MFA desactivado.",true); }
+  if (a==="segGuardarCfg"){ const n=Number(v(b.dataset.i)); if (!(n>=5&&n<=720)) return toast("Escribe un número entre 5 y 720.");
+    return hecho(()=>S.api.guardarConfigSeguridad(b.dataset.c,n),"Configuración guardada. Aplica en el siguiente inicio de sesión.",true); }
+}
+document.addEventListener("change", e=>{ const t=e.target; if (S.view!=="seguridad") return;
+  if (t.dataset?.mx){ const M=S.segMx, k=t.dataset.mx, ef=S.segEf[M.user], r=ef.find(x=>x.modulo===k&&x.sede_id===M.sede)||{nivel:0,especiales:[]};
+    const c=M.cambios[k]||{nivel:Math.max(0,r.nivel),especiales:[...(r.especiales||[])],denegar:r.nivel===-1};
+    if (t.dataset.campo==="nivel") c.nivel=+t.value; else if (t.dataset.campo==="denegar") c.denegar=t.checked; else c.especiales=t.checked?[...new Set([...c.especiales,t.dataset.campo])]:c.especiales.filter(x=>x!==t.dataset.campo);
+    const igual=c.denegar===(r.nivel===-1)&&c.nivel===Math.max(0,r.nivel)&&c.especiales.slice().sort().join()===(r.especiales||[]).slice().sort().join();
+    if (igual) delete M.cambios[k]; else M.cambios[k]=c; S.segRevisar=false; render(); return; }
+  if (t.id==="sgMxU"){ S.segMx.user=t.value; S.segMx.cambios={}; S.segRevisar=false; render(); return; }
+  if (t.id==="sgMxS"){ S.segMx.sede=t.value; S.segMx.cambios={}; S.segRevisar=false; render(); return; }
+  if (t.id==="sgSede"){ S.segSedeSel=t.value; S.segForm=null; render(); return; }
+  if (t.id==="sgEnt"){ S.segEntSel=t.value; render(); return; }
+  if (["sgFS","sgFR","sgFE","sgFP"].includes(t.id)){ S.segFR=S.segFR||{}; S.segFR[{sgFS:"sede",sgFR:"rol",sgFE:"estado",sgFP:"periodo"}[t.id]]=t.value; render(); }
+});
+
+/* ---------- Código de verificación en Mi perfil (para todas las cuentas) ---------- */
+function mfaPerfilHtml(){
+  const fs=S.mfaFs, alta=S.mfaAlta;
+  if (!fs) return `<section class="panel" id="mfaPerfil"><h3>Código de verificación (MFA)</h3><p class="status">Cargando…</p></section>`;
+  const ver=fs.filter(f=>f.status==="verified");
+  return `<section class="panel" id="mfaPerfil"><h3>Código de verificación (MFA)</h3>
+    <p class="status" style="margin:0">Opcional mientras la Dirección no lo active. Con tu código registrado, al entrar se te pedirá el número de 6 dígitos de tu aplicación de autenticación (Google o Microsoft Authenticator). Registra también un segundo dispositivo como respaldo.</p>
+    <ul class="pend">${ver.map(f=>`<li><b>${esc(f.friendly_name||"Dispositivo")}</b><br><span class="status">Registrado el ${segFecha(f.created_at)}</span> <button class="btn sm danger" type="button" data-act="mfaQuitar" data-id="${f.id}">Quitar</button></li>`).join("")||`<li class="status">Aún no tienes código registrado.</li>`}</ul>
+    ${alta?`<div style="display:flex;flex-direction:column;gap:10px"><p style="margin:0">1) Abre la aplicación de autenticación. 2) Toca “+” y escanea este código. 3) Escribe el número de 6 dígitos.</p>
+      <img src="${alta.qr}" alt="Código QR para la aplicación de autenticación" style="width:180px;height:180px;background:#fff;border-radius:8px">
+      <p class="status" style="margin:0">¿No puedes escanear? Clave: <span class="mono sens">${esc(alta.clave)}</span></p>
+      <div class="fld"><label for="mfaCod">Código de 6 dígitos</label><input id="mfaCod" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></div>
+      <div class="actions"><button class="btn primary" type="button" data-act="mfaConfirmar">Confirmar</button><button class="btn" type="button" data-act="mfaCancelar">Cancelar</button></div></div>`
+    :`<div class="actions"><button class="btn${ver.length?"":" primary"}" type="button" data-act="mfaAlta">${ver.length?"Agregar otro dispositivo":"Activar código de verificación"}</button></div>`}</section>`;
+}
+async function mfaCargar(){ try{ S.mfaFs=await S.api.mfaFactores(); }catch{ S.mfaFs=[]; } if (S.view==="perfil"){ const el=$("#mfaPerfil"); if (el) el.outerHTML=mfaPerfilHtml(); } }
+async function mfaAccion(a,b){
+  const pinta=()=>{ const el=$("#mfaPerfil"); if (el) el.outerHTML=mfaPerfilHtml(); };
+  if (a==="mfaAlta"){ try{ for (const f of (S.mfaFs||[]).filter(f=>f.status!=="verified")) await S.api.mfaQuitar(f.id).catch(()=>{});
+      S.mfaAlta=await S.api.mfaAlta("CEMEPI "+new Date().toLocaleDateString("es-MX")+" "+((S.mfaFs||[]).length+1)); pinta(); setTimeout(()=>$("#mfaCod")?.focus(),30); }catch(e){ toast(e?.message||"No se pudo preparar el código."); } return; }
+  if (a==="mfaCancelar"){ if (S.mfaAlta) await S.api.mfaQuitar(S.mfaAlta.id).catch(()=>{}); S.mfaAlta=null; return mfaCargar(); }
+  if (a==="mfaConfirmar"){ const c=($("#mfaCod")?.value||"").trim(); if (!/^\d{6}$/.test(c)) return toast("Escribe los 6 dígitos.");
+    try{ await S.api.mfaConfirmar(S.mfaAlta.id,c); S.mfaAlta=null; toast("Código de verificación activado. Al entrar se te pedirá."); await mfaCargar(); }catch{ toast("Código incorrecto o vencido. Escribe el número actual."); } return; }
+  if (a==="mfaQuitar"){ if (!arm(b,"mq"+b.dataset.id,"¿Quitar?")) return; armed=null;
+    try{ await S.api.mfaQuitar(b.dataset.id); toast("Dispositivo quitado."); await mfaCargar(); }catch(e){ toast(/aal2|AAL2/i.test(e?.message||"")?"Para quitarlo debes haber entrado con tu código.":(e?.message||"No se pudo quitar.")); } return; }
+}
+const MFA_ACC=new Set(["mfaAlta","mfaCancelar","mfaConfirmar","mfaQuitar"]);
 
 /* ---------- Reglamento Interior de Trabajo (texto en la base de datos, solo cuentas activas) ---------- */
 const sinAcentos = t => String(t).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
@@ -3067,7 +3441,7 @@ document.addEventListener("click", async ev => {
   const p=S.pacientes.get(S.sel);
   if (a==="new") return crear();
   if (a==="perfil"){ S.view="perfil"; S.perfilDraft=null; S.dibujando=false;
-    S.firmaTmp = S.perfil.firma ? {src:S.perfil.firma, w:S.perfil.firmaW||600, h:S.perfil.firmaH||200} : null; return render(); }
+    S.firmaTmp = S.perfil.firma ? {src:S.perfil.firma, w:S.perfil.firmaW||600, h:S.perfil.firmaH||200} : null; S.mfaFs=null; S.mfaAlta=null; render(); return mfaCargar(); }
   if (a==="dibujarFirma"){ leerPerfilForm(); S.dibujando=true; return render(); }
   if (a==="cancelarTrazo"){ leerPerfilForm(); S.dibujando=false; return render(); }
   if (a==="limpiarTrazo"){ const cv=$("#padFirma"); cv.getContext("2d").clearRect(0,0,cv.width,cv.height); S.trazo=false; return; }
@@ -3080,6 +3454,8 @@ document.addEventListener("click", async ev => {
   /* Usuarios, sedes y tiempo de uso */
   if (a==="usuarios"){ S.view="usuarios"; S.usrEdit=null; S.usuarios=null; render(); return cargarAdmin("usuarios"); }
   if (ORG_ACCIONES.has(a)) return orgAccion(a, b);   /* Módulo 01 · Organización */
+  if (SEG_ACC.has(a)) return segAccion(a, b);   /* Módulo 02 · Usuarios y permisos */
+  if (MFA_ACC.has(a)) return mfaAccion(a, b);
   if (a==="reglamento"){ S.view="reglamento"; S.reg=undefined; S.regQ=""; S.regLeyEdit=false; render(); return cargarAdmin("reglamento"); }
   if (a==="irReg"){ if (S.regQ){ S.regQ=""; $("#regBuscar").value=""; $("#regCuerpo").innerHTML=regCuerpoHtml(); } $(`#reg-${b.dataset.i}`)?.scrollIntoView({behavior:"smooth",block:"start"}); return; }
   if (a==="acusarReg"){ if(!arm(b,"acuse","¿Confirmar recepción y lectura?")) return; armed=null;
@@ -3538,6 +3914,7 @@ render();
     try{ const ss=await S.api.sedes(false);
       if (ss.length){ SEDES.splice(0, SEDES.length, ...ss.map(s=>s.nombre)); for (const k of Object.keys(SEDE_COD)) delete SEDE_COD[k]; ss.forEach(s=>{ SEDE_COD[s.nombre]=s.clave; }); } }catch(e){ console.warn("sedes", e); }
     $("#usrBtn").hidden = !["superusuario","direccion","admin_sede"].includes(S.rol);
+    $("#segBtn").hidden = !S.rol;   /* Módulo 02: cada quien ve lo que le corresponde */
     ["ogBtn","colBtn","supBtn","sedBtn","entBtn","areBtn","pueBtn","vacBtn"].forEach(id=>{ $("#"+id).hidden = !((S.api.orgNivel||0) >= 1); });   /* Módulo 01: según el servicio de permisos */
     $("#usoBtn").hidden = !tengo("tiempo_uso");
     $("#tabBtn").hidden = !["superusuario","direccion"].includes(S.rol);
@@ -3666,6 +4043,7 @@ ul.pend.avisos li{border-left-color:var(--accent,#0560BD)}
 .og-node.vac{border-style:dashed;border-color:var(--line-strong);background:var(--sunk)}.og-node.vac .og-av{background:var(--line-strong)}
 .og-coord{display:flex;flex-direction:column;gap:10px}.og-fila{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:10px;align-items:center}.og-fila .og-node{max-width:none}
 @media (max-width:560px){.og-fila{grid-template-columns:1fr}}
+.filtros select{max-width:100%;min-width:0}
 .org-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
 .dl-org{display:grid;grid-template-columns:minmax(110px,170px) minmax(0,1fr);gap:6px 14px;margin:0;font-size:14px}.dl-org dt{color:var(--muted)}.dl-org dd{margin:0;min-width:0;overflow-wrap:anywhere}
 @media (max-width:560px){.dl-org{grid-template-columns:1fr}.dl-org dd{margin-bottom:6px}}
@@ -3744,6 +4122,20 @@ article.note.nota-nueva{outline:2px solid var(--accent);outline-offset:2px}
     <form id="lgNueva" hidden>
       <div class="fld"><label for="lgPass2">Nueva contraseña (mínimo 10 caracteres)</label><input id="lgPass2" type="password" autocomplete="new-password" required></div>
       <button class="btn primary" type="submit">Guardar contraseña</button>
+    </form>
+    <form id="lgMfa" hidden>
+      <p style="margin:0">Escribe el número de 6 dígitos que muestra tu aplicación de autenticación (Google o Microsoft Authenticator).</p>
+      <div class="fld"><label for="mfCodigo">Código de verificación</label><input id="mfCodigo" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required></div>
+      <button class="btn primary" type="submit" id="mfBtn">Verificar</button>
+      <button class="btn" type="button" id="mfSalir">Usar otra cuenta</button>
+    </form>
+    <form id="lgMfaAlta" hidden>
+      <p style="margin:0"><b>Registra tu código de verificación.</b> La Dirección activó el código para tu tipo de cuenta. 1) Abre Google o Microsoft Authenticator en tu celular. 2) Toca “+” y escanea este código. 3) Escribe el número de 6 dígitos que aparece.</p>
+      <img id="maQr" alt="Código QR para la aplicación de autenticación" style="width:180px;height:180px;background:#fff;border-radius:8px;align-self:center">
+      <p class="status" style="margin:0">¿No puedes escanear? Escribe esta clave en la aplicación: <span class="mono" id="maClave"></span></p>
+      <div class="fld"><label for="maCodigo">Código de 6 dígitos</label><input id="maCodigo" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required></div>
+      <button class="btn primary" type="submit">Activar y entrar</button>
+      <button class="btn" type="button" id="maSalir">Salir</button>
     </form>
     <div class="lg-msg" id="lgMsg" role="alert"></div>
     <small>Información clínica confidencial. Solo personal autorizado de CEMEPI.</small>

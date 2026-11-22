@@ -11,7 +11,7 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const cfg = window.CEMEPI_CONFIG || {};
 const $ = s => document.querySelector(s);
 const login = $("#login");
-const vistas = ["#lgForm", "#lgRegistro", "#lgPendiente", "#lgNueva"];
+const vistas = ["#lgForm", "#lgRegistro", "#lgPendiente", "#lgNueva", "#lgMfa", "#lgMfaAlta"];
 const mostrar = sel => { login.hidden = false; vistas.forEach(v => { const el = $(v); if (el) el.hidden = v !== sel; }); };
 function aviso(msg, ok){ const m = $("#lgMsg"); m.textContent = msg || ""; m.classList.toggle("ok", !!ok); }
 
@@ -125,6 +125,7 @@ function pantallaPendiente(p){
     pendiente: ["Cuenta pendiente de autorización", "Tu solicitud ya está registrada. Cuando un administrativo de tu sede, la Dirección o el superusuario la autorice, podrás entrar."],
     rechazado: ["Solicitud no autorizada", "Tu solicitud no fue autorizada. Si crees que es un error, comunícate con la Dirección de CEMEPI."],
     suspendido: ["Cuenta suspendida", "Tu acceso está suspendido. Comunícate con la Dirección de CEMEPI."],
+    desactivado: ["Cuenta desactivada", "Esta cuenta ya no tiene acceso. Si crees que es un error, comunícate con la Dirección de CEMEPI."],
   };
   const [t, x] = textos[p?.estado] || textos.pendiente;
   $("#pdTitulo").textContent = t; $("#pdTexto").textContent = x; aviso(""); mostrar("#lgPendiente");
@@ -134,8 +135,9 @@ async function esperarAcceso(){
   for (;;){
     const { data: { session } } = await sb.auth.getSession();
     if (session){
-      const p = await leerPerfil(session.user.id);
-      if (p?.estado === "activo") return { usuario: session.user, perfil: p };
+      let p = await leerPerfil(session.user.id);
+      if (p?.estado === "invitado"){ await sb.rpc("activar_invitacion"); p = await leerPerfil(session.user.id); }   /* invitación del Superusuario: se activa al primer acceso */
+      if (p?.estado === "activo"){ if (await verificarMfa(p)) return { usuario: session.user, perfil: p }; continue; }
       pantallaPendiente(p);
       await new Promise(res => {
         $("#pdRevisar").onclick = () => res();
@@ -185,6 +187,40 @@ async function esperarAcceso(){
   }
 }
 
+/* ---------- Código de verificación (MFA). Opcional: se pide a quien registró su código; si el Superusuario
+   activa el MFA, quien lo requiera y no lo tenga debe registrarlo antes de entrar. ---------- */
+async function verificarMfa(perfil){
+  const { data: aal } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal?.currentLevel === "aal2") return true;
+  const { data: fs } = await sb.auth.mfa.listFactors();
+  const factor = (fs?.totp || []).find(f => f.status === "verified");
+  if (factor){
+    mostrar("#lgMfa"); aviso(""); $("#mfCodigo").value = "";
+    return await new Promise(res => {
+      $("#lgMfa").onsubmit = async ev => { ev.preventDefault(); $("#mfBtn").disabled = true;
+        const { error } = await sb.auth.mfa.challengeAndVerify({ factorId: factor.id, code: $("#mfCodigo").value.trim() });
+        $("#mfBtn").disabled = false;
+        if (error){ aviso("Código incorrecto o vencido. Escribe el número que aparece ahora en tu aplicación."); return; }
+        res(true); };
+      $("#mfSalir").onclick = async () => { await sb.auth.signOut(); res(false); };
+    });
+  }
+  const [{ data: activo }, { data: cfg }] = await Promise.all([sb.rpc("mfa_activo"), sb.from("config_seguridad").select("valor").eq("clave", "mfa_roles").maybeSingle()]);
+  if (!activo || !(cfg?.valor || []).includes(perfil.rol)) return true;
+  /* MFA activado para este rol y aún sin código: registrarlo antes de entrar */
+  mostrar("#lgMfaAlta"); aviso("");
+  const { data: alta, error } = await sb.auth.mfa.enroll({ factorType: "totp", friendlyName: "CEMEPI " + new Date().toISOString().slice(0, 10) });
+  if (error){ aviso("No se pudo preparar el código. Recarga la página."); return false; }
+  $("#maQr").src = alta.totp.qr_code; $("#maClave").textContent = alta.totp.secret;
+  return await new Promise(res => {
+    $("#lgMfaAlta").onsubmit = async ev => { ev.preventDefault();
+      const { error: e2 } = await sb.auth.mfa.challengeAndVerify({ factorId: alta.id, code: $("#maCodigo").value.trim() });
+      if (e2){ aviso("Código incorrecto. Revisa que escaneaste el código y escribe el número actual."); return; }
+      res(true); };
+    $("#maSalir").onclick = async () => { await sb.auth.mfa.unenroll({ factorId: alta.id }).catch(() => {}); await sb.auth.signOut(); res(false); };
+  });
+}
+
 /* Enlace de recuperación de contraseña: pide la nueva antes de entrar */
 sb.auth.onAuthStateChange((evento) => {
   if (evento !== "PASSWORD_RECOVERY") return;
@@ -199,7 +235,10 @@ sb.auth.onAuthStateChange((evento) => {
 const { usuario, perfil } = await esperarAcceso();
 /* Permisos adicionales que el superusuario le otorgó a esta persona */
 const { data: permRows } = await sb.from("permisos").select("permiso").eq("user_id", usuario.id);
-const { data: orgNivel } = await sb.rpc("nivel_maximo", { p_modulo: "organizacion" });   /* Módulo 01: 0 sin acceso · 1 lectura · 2 operación · 3 admin · 4 superusuario */
+const { data: orgNivel } = await sb.rpc("nivel_maximo", { p_modulo: "organizacion" });
+const { data: rolesRows } = await sb.from("usuario_roles").select("rol,hasta").eq("user_id", usuario.id).is("revocado_en", null);
+const misRoles = (rolesRows || []).filter(r => !r.hasta || r.hasta >= new Date().toISOString().slice(0, 10)).map(r => r.rol);
+const { data: cfgInact } = await sb.from("config_seguridad").select("valor").eq("clave", "inactividad_min").maybeSingle();   /* Módulo 01: 0 sin acceso · 1 lectura · 2 operación · 3 admin · 4 superusuario */
 login.hidden = true;
 const rol = perfil.rol;
 const ROL_TXT = { superusuario: "Superusuario", direccion: "Directivo(a)", admin_sede: "Administración de sede", administrativo: "Administrativo", psicologo: "Psicólogo(a)" };
@@ -212,6 +251,8 @@ document.addEventListener("click", ev => { if (ev.target.closest('[data-act="sal
 const sesionUso = crypto.randomUUID();
 let ultimaActividad = Date.now(), ultimoEnvio = Date.now(), acumulado = 0;
 ["pointerdown", "keydown", "scroll", "pointermove"].forEach(t => document.addEventListener(t, () => { ultimaActividad = Date.now(); }, { passive: true, capture: true }));
+/* Cierre de sesión por inactividad (minutos definidos por el Superusuario en Configuración de seguridad) */
+setInterval(() => { if (Date.now() - ultimaActividad > (Number(cfgInact?.valor) || 30) * 60000) sb.auth.signOut().then(() => location.reload()); }, 60000);
 setInterval(() => {
   const ahora = Date.now(), dt = Math.round((ahora - ultimoEnvio) / 1000); ultimoEnvio = ahora;
   if (!document.hidden && ahora - ultimaActividad < 5 * 60000) acumulado += Math.min(dt, 60);
@@ -254,6 +295,7 @@ const cemepi = {
   rol, sede: perfil.sede || "", nombre: perfil.nombre || "", uid: usuario.id, email: usuario.email, modalidad: perfil.modalidad || null,
   permisos: (permRows || []).map(r => r.permiso),
   orgNivel: orgNivel || 0,
+  misRoles, inactividadMin: Number(cfgInact?.valor) || 30,
   async permisosTodos(){ const { data, error } = await sb.from("permisos").select("user_id,permiso,otorgado_en"); if (error) fallo(error); return data || []; },
   async otorgarPermiso(id, permiso, activo){ const { error } = await sb.rpc("otorgar_permiso", { p_id: id, p_permiso: permiso, p_activo: !!activo }); if (error) fallo(error); },
   async cambiarModalidad(id, m){ const { error } = await sb.rpc("cambiar_modalidad", { p_id: id, p_modalidad: m }); if (error) fallo(error); },
@@ -261,6 +303,55 @@ const cemepi = {
     const { data, error } = await q; if (error) fallo(error); return data || []; },
   async guardarSede(s){ const row = { nombre: s.nombre.trim(), clave: s.clave.trim().toUpperCase(), activa: s.activa !== false };
     const { error } = s.id ? await sb.from("sedes").update(row).eq("id", s.id) : await sb.from("sedes").insert(row); if (error) fallo(error); },
+  /* ---------- Módulo 02 · Usuarios, perfiles y permisos ---------- */
+  async segDatos(){
+    const amplio = rol === "superusuario" || misRoles.includes("auditor");
+    const q = await Promise.all([
+      sb.from("roles").select("*").order("base", { ascending: false }),
+      sb.from("rol_accesos").select("*"),
+      sb.from("usuario_roles").select("*").is("revocado_en", null),
+      sb.from("accesos").select("*").is("revocado_en", null).order("otorgado_en", { ascending: false }),
+      sb.from("solicitudes_acceso").select("*").order("creado_en", { ascending: false }),
+      sb.from("eventos_seguridad").select("*").order("fecha", { ascending: false }).limit(400),
+      sb.from("config_seguridad").select("*"),
+      amplio ? sb.rpc("usuarios_seguridad") : Promise.resolve({ data: [] }),
+      amplio ? sb.rpc("sesiones_activas") : sb.rpc("mis_sesiones"),
+      sb.from("perfiles").select("id,email,nombre,sede,rol,estado,modalidad,created_at,desactivado_en,invitado_en").order("nombre"),
+      sb.from("sedes").select("id,nombre,clave"),
+      sb.from("sede_entidad").select("sede_id,entidad_id").is("hasta", null),
+      sb.from("entidades_fiscales").select("id,nombre_corto,principal")]);
+    for (const r of q) if (r.error) fallo(r.error);
+    const [ro, ra, ur, ac, so, ev, cf, us, se, pf, sd, sx, en] = q.map(r => r.data || []);
+    return { roles: ro, rolAccesos: ra, usuarioRoles: ur, accesos: ac, solicitudes: so, eventos: ev,
+      config: Object.fromEntries(cf.map(c => [c.clave, c.valor])), seguridad: us, sesiones: se, perfiles: pf, sedes: sd, sedeEnt: sx, entidades: en }; },
+  async accesoEfectivo(uid){ const { data, error } = await sb.rpc("acceso_efectivo", { p_user: uid }); if (error) fallo(error); return data || []; },
+  async cambiarEstadoCuenta(id, estado, motivo){ const { error } = await sb.rpc("cambiar_estado_cuenta", { p_id: id, p_estado: estado, p_motivo: motivo }); if (error) fallo(error); },
+  async asignarRol(uid, r, hasta, motivo){ const { error } = await sb.rpc("asignar_rol", { p_user: uid, p_rol: r, p_hasta: hasta || null, p_motivo: motivo }); if (error) fallo(error); },
+  async retirarRol(id, motivo){ const { error } = await sb.rpc("retirar_rol", { p_id: id, p_motivo: motivo }); if (error) fallo(error); },
+  async otorgarAcceso(a){ const { data, error } = await sb.rpc("otorgar_acceso", { p_user: a.user, p_efecto: a.efecto, p_alcance: a.alcance, p_alcance_id: a.alcance_id || null,
+      p_modulo: a.modulo, p_nivel: a.nivel || 0, p_especiales: a.especiales || [], p_desde: a.desde || null, p_hasta: a.hasta || null, p_motivo: a.motivo }); if (error) fallo(error); return data; },
+  async revocarAcceso(id, motivo){ const { error } = await sb.rpc("revocar_acceso", { p_id: id, p_motivo: motivo }); if (error) fallo(error); },
+  async crearSolicitud(s){ const { error } = await sb.from("solicitudes_acceso").insert({ sede_id: s.sede_id || null, entidad_id: s.entidad_id || null, modulo: s.modulo,
+      funcionalidad: s.funcionalidad || null, nivel: s.nivel || 1, justificacion: s.justificacion, hasta: s.hasta || null }); if (error) fallo(error); },
+  async cancelarSolicitud(id){ const { error } = await sb.from("solicitudes_acceso").update({ estado: "cancelada" }).eq("id", id); if (error) fallo(error); },
+  async responderSolicitud(id, decision, respuesta, nivel, hasta){ const { error } = await sb.rpc("responder_solicitud", { p_id: id, p_decision: decision, p_respuesta: respuesta || null, p_nivel: nivel ?? null, p_hasta: hasta || null }); if (error) fallo(error); },
+  async cerrarSesionUsuario(id){ const { error } = await sb.rpc("cerrar_sesion_usuario", { p_sesion: id }); if (error) fallo(error); },
+  async cerrarMiSesion(id){ const { error } = await sb.rpc("cerrar_mi_sesion", { p_sesion: id }); if (error) fallo(error); },
+  async cerrarMisOtrasSesiones(){ const { error } = await sb.auth.signOut({ scope: "others" }); if (error) fallo(error); },
+  async guardarConfigSeguridad(clave, valor){ const { error } = await sb.rpc("guardar_config_seguridad", { p_clave: clave, p_valor: valor }); if (error) fallo(error); },
+  async guardarRol(r){ const row = { nombre: r.nombre, descripcion: r.descripcion || null, plantilla: !!r.plantilla, activo: r.activo !== false };
+    const { error } = r.nuevo ? await sb.from("roles").insert({ clave: r.clave, ...row }) : await sb.from("roles").update(row).eq("clave", r.clave); if (error) fallo(error); },
+  async guardarRolAccesos(clave, filas){ const { error: e1 } = await sb.from("rol_accesos").delete().eq("rol", clave); if (e1) fallo(e1);
+    if (filas.length){ const { error } = await sb.from("rol_accesos").insert(filas.map(f => ({ rol: clave, alcance: f.alcance, modulo: f.modulo, nivel: f.nivel }))); if (error) fallo(error); } },
+  async registrarDenegado(recurso){ await sb.rpc("registrar_denegado", { p_recurso: String(recurso || "").slice(0, 200) }).catch(() => {}); },
+  async adminUsuarios(cuerpo){ const { data, error } = await sb.functions.invoke("admin-usuarios", { body: cuerpo });
+    if (error){ let m = ""; try{ m = (await error.context?.json?.())?.error || ""; }catch{} fallo({ message: m || error.message }); } if (data?.error) fallo({ message: data.error }); return data; },
+  async mfaFactores(){ const { data } = await sb.auth.mfa.listFactors(); return (data?.totp || []); },
+  async mfaNivel(){ const { data } = await sb.auth.mfa.getAuthenticatorAssuranceLevel(); return data || {}; },
+  async mfaAlta(nombre){ const { data, error } = await sb.auth.mfa.enroll({ factorType: "totp", friendlyName: nombre }); if (error) fallo(error); return { id: data.id, qr: data.totp.qr_code, clave: data.totp.secret }; },
+  async mfaConfirmar(id, codigo){ const { error } = await sb.auth.mfa.challengeAndVerify({ factorId: id, code: codigo }); if (error) fallo(error); },
+  async mfaQuitar(id){ const { error } = await sb.auth.mfa.unenroll({ factorId: id }); if (error) fallo(error); },
+  async cerrarSesion(){ await sb.auth.signOut(); location.reload(); },
   /* ---------- Módulo 01 · Organización (catálogos). Todo pasa por RLS y el servicio de permisos de la base ---------- */
   async orgCatalogos(){
     const q = await Promise.all([
