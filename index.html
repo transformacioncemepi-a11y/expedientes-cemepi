@@ -2292,6 +2292,7 @@ const asisSede=id=>A()?.sedes.find(s=>s.id===id);
 const asisEnt=sid=>{ const x=A()?.sedeEnt.find(r=>r.sede_id===sid); return x?A().entidades.find(e=>e.id===x.entidad_id):null; };
 const asisActivo=()=>A()?.config?.activo===true;
 const asisTol=()=>Number(A()?.config?.tolerancia_min ?? 10);
+const asisConHor=()=>A()?.config?.usar_horarios!==false;   /* false = solo entrada y salida (decisión del Director, 2026-11-22) */
 const asisSupervisa=()=>(S.api?.asisNivel||0)>=1||S.rol==="superusuario"||(A()?.personas||[]).some(p=>p.colaborador_id!==A().yo);
 /* Horario vigente de una persona para un día (puede tener varios: multisede) */
 function asisHorariosDia(col,f){ return (A()?.asignaciones||[]).filter(a=>a.colaborador_id===col&&a.desde<=f&&(!a.hasta||a.hasta>=f))
@@ -2305,7 +2306,7 @@ function asisEstadoDia(col,f){
   const ms=asisMarcasDia(col,f), e=ms.find(m=>m.tipo==="entrada"), s=[...ms].reverse().find(m=>m.tipo==="salida"), hs=asisHorariosDia(col,f);
   const perm=(A()?.incidencias||[]).find(i=>i.colaborador_id===col&&i.estado==="confirmada"&&["permiso","vacaciones","incapacidad"].includes(i.tipo)&&f>=i.fecha&&f<=(i.fecha_fin||i.fecha));
   if (perm) return {t:ASIS_INC[perm.tipo],c:""};
-  if (!hs.length&&!ms.length) return {t:"Sin horario",c:""};
+  if (!hs.length&&!ms.length) return asisConHor()?{t:"Sin horario",c:""}:{t:f===asisHoy()?"Sin entrada registrada":"Sin registro",c:""};
   if (!e) return {t:f===asisHoy()?"Sin entrada registrada":"Ausencia por aclarar",c:"estado-pendiente"};
   let punt=""; if (hs.length){ const ini=Math.min(...hs.map(x=>asisMin(x.h.inicio))), llego=asisMin(asisHora(e.momento)), dif=llego-ini;
     const just=(A()?.incidencias||[]).some(i=>i.colaborador_id===col&&i.fecha===f&&i.tipo==="retardo"&&i.estado==="justificada");
@@ -2348,7 +2349,7 @@ function miAsistenciaHtml(){
       ${fld("slDet","Detalle *","",{area:1,span:3,rows:2,ph:"Explica brevemente. En incapacidades no escribas el diagnóstico."})}</form>
       <p class="status" style="margin:0">La revisa tu jefe directo; nada cambia hasta que se apruebe.</p>
       <div class="actions"><button class="btn primary" type="button" data-act="asisEnviarSol">Enviar</button><button class="btn" type="button" data-act="asisCancelar">Cancelar</button></div></section>` : "";
-  return asisPag("Mi asistencia","Registra tu entrada y salida, consulta tu horario y tu historial, y pide correcciones. La hora la pone el servidor, no tu dispositivo.",
+  return asisPag("Mi asistencia",`Registra tu entrada y salida, consulta ${asisConHor()?"tu horario y ":""}tu historial, y pide correcciones. La hora la pone el servidor, no tu dispositivo.`,
     `<button class="btn" type="button" data-act="asisFormSol">Pedir corrección o permiso</button>`,
     `${asisActivo()?"":asisApagado()}
     <section class="note" style="align-items:center;text-align:center"><span class="status">${new Date().toLocaleDateString("es-MX",{timeZone:ASIS_TZ,weekday:"long",day:"numeric",month:"long"})}</span>
@@ -2361,8 +2362,8 @@ function miAsistenciaHtml(){
     ${formSol}
     <div class="org-grid">
       <section class="note"><div class="note-h"><h3>Hoy</h3></div><ul class="pend">${ms.map(m=>`<li><b>${m.tipo==="entrada"?"Entrada":"Salida"} · ${asisHora(m.momento)}</b><br><span class="status">${m.ajuste?"Ajuste aprobado":esc(asisSede(m.sede_id)?.nombre||"")+" · "+(m.metodo==="qr"?"QR de sede":"App")}</span></li>`).join("")||`<li class="status">Sin registros hoy.</li>`}</ul></section>
-      <section class="note"><div class="note-h"><h3>Mi horario</h3></div><ul class="pend">${[...new Map(a.asignaciones.filter(x=>x.colaborador_id===yo&&(!x.hasta||x.hasta>=hoy)).map(x=>[x.id,x])).values()].map(x=>{ const h=a.horarios.find(y=>y.id===x.horario_id); return h?`<li><b>${esc(h.nombre)}</b><br><span class="status">${h.dias.map(d=>ASIS_DIAS[d]).join(", ")} · ${String(h.inicio).slice(0,5)} a ${String(h.fin).slice(0,5)}${h.descanso_min?` · descanso ${h.descanso_min} min`:""} · ${esc(asisSede(x.sede_id)?.nombre||"")}${x.modalidad!=="presencial"?" · "+x.modalidad:""}</span></li>`:""; }).join("")||`<li class="status">Aún no tienes horario asignado.</li>`}</ul>
-        <p class="status" style="margin:0">Jornada contractual: ${jor?`${jor.horas_semana} h semanales`:"Dato pendiente de recabar"}.</p></section>
+      ${asisConHor()?`<section class="note"><div class="note-h"><h3>Mi horario</h3></div><ul class="pend">${[...new Map(a.asignaciones.filter(x=>x.colaborador_id===yo&&(!x.hasta||x.hasta>=hoy)).map(x=>[x.id,x])).values()].map(x=>{ const h=a.horarios.find(y=>y.id===x.horario_id); return h?`<li><b>${esc(h.nombre)}</b><br><span class="status">${h.dias.map(d=>ASIS_DIAS[d]).join(", ")} · ${String(h.inicio).slice(0,5)} a ${String(h.fin).slice(0,5)}${h.descanso_min?` · descanso ${h.descanso_min} min`:""} · ${esc(asisSede(x.sede_id)?.nombre||"")}${x.modalidad!=="presencial"?" · "+x.modalidad:""}</span></li>`:""; }).join("")||`<li class="status">Aún no tienes horario asignado.</li>`}</ul>
+        <p class="status" style="margin:0">Jornada contractual: ${jor?`${jor.horas_semana} h semanales`:"Dato pendiente de recabar"}.</p></section>`:""}
     </div>
     <section class="note"><div class="note-h"><h3>Últimos 7 días</h3></div><div class="tbl-wrap"><table><thead><tr><th>Día</th><th>Entrada</th><th>Salida</th><th>Horas</th><th>Estado</th></tr></thead><tbody>
       ${dias.map(f=>{ const s=asisEstadoDia(yo,f), x=asisMarcasDia(yo,f), e=x.find(m=>m.tipo==="entrada"), o=[...x].reverse().find(m=>m.tipo==="salida"); const mn=e&&o&&o.momento>e.momento?(new Date(o.momento)-new Date(e.momento))/60000:0;
@@ -2377,7 +2378,7 @@ function miAsistenciaHtml(){
 const ASIS_TABS=[["resumen","Resumen"],["registros","Entradas y salidas"],["horarios","Horarios y turnos"],["calendario","Calendario laboral"],["incidencias","Incidencias"],["solicitudes","Permisos y solicitudes"],["actividades","Actividades complementarias"],["cumplimiento","Cumplimiento de jornada"],["reportes","Reportes y corte"],["qr","QR de sede"],["config","Configuración"]];
 function asistenciaHtml(){
   if (!S.asis) return asisEspera("Asistencia y jornadas"); if (S.asis.error) return asisErr("Asistencia y jornadas");
-  const tabs=ASIS_TABS.filter(([k])=>k!=="config"||S.rol==="superusuario").filter(([k])=>k!=="qr"||S.rol==="superusuario"||S.rol==="admin_sede"||(S.api?.asisNivel||0)>=2);
+  const tabs=ASIS_TABS.filter(([k])=>k!=="config"||S.rol==="superusuario").filter(([k])=>asisConHor()||!["horarios","calendario","cumplimiento"].includes(k)).filter(([k])=>k!=="qr"||S.rol==="superusuario"||S.rol==="admin_sede"||(S.api?.asisNivel||0)>=2);
   if (!tabs.some(t=>t[0]===S.asisTab)) S.asisTab="resumen";
   const f={resumen:asisResumen,registros:asisRegistros,horarios:asisHorarios,calendario:asisCalendario,incidencias:asisIncidencias,solicitudes:asisSolicitudes,actividades:asisActividades,cumplimiento:asisCumplimiento,reportes:asisReportes,qr:asisQr,config:asisConfig}[S.asisTab];
   if (S.asisTab!=="qr") asisQrParar();
@@ -2389,17 +2390,17 @@ const asisFiltros=(conFecha=true)=>{ const F=S.asisF||{}, fechas=[...Array(14)].
   return `<div class="filtros"><select id="asFS" aria-label="Sede"><option value="">Todas las sedes que veo</option>${A().sedes.filter(s=>A().personas.some(p=>p.sede_id===s.id)).map(s=>`<option value="${s.id}"${F.sede===s.id?" selected":""}>${esc(s.nombre)}</option>`).join("")}</select>
     ${conFecha?`<select id="asFF" aria-label="Fecha">${fechas.map(f=>`<option value="${f}"${(F.fecha||asisHoy())===f?" selected":""}>${asisFechaTxt(f)}${f===asisHoy()?" (hoy)":""}</option>`).join("")}</select>`:""}</div>`; };
 function asisResumen(){
-  const f=(S.asisF||{}).fecha||asisHoy(), g=asisGente().filter(p=>p.aplica), prog=g.filter(p=>asisHorariosDia(p.colaborador_id,f).length);
+  const f=(S.asisF||{}).fecha||asisHoy(), g=asisGente().filter(p=>p.aplica), prog=asisConHor()?g.filter(p=>asisHorariosDia(p.colaborador_id,f).length):g;
   const est=prog.map(p=>({p,s:asisEstadoDia(p.colaborador_id,f)}));
   const ent=est.filter(x=>x.s.e), sal=est.filter(x=>x.s.s), en=est.filter(x=>x.s.e&&!x.s.s), fuera=est.filter(x=>/fuera/i.test(x.s.punt||"")), sin=est.filter(x=>!x.s.e&&!/Permiso|Vacaciones|Incapacidad/.test(x.s.t));
   const hp=prog.reduce((t,p)=>t+asisProgMin(p.colaborador_id,f),0), hr=est.reduce((t,x)=>t+(x.s.e&&x.s.s?(new Date(x.s.s.momento)-new Date(x.s.e.momento))/60000:0),0);
   const ids=new Set(g.map(p=>p.colaborador_id)), pend=A().solicitudes.filter(s=>["enviada","en_revision"].includes(s.estado)&&ids.has(s.colaborador_id)&&s.colaborador_id!==A().yo).length;
   const kp=(t,v,d)=>`<div class="kpi"><span>${t}</span><b>${v}</b>${d?`<small class="status">${d}</small>`:""}</div>`;
-  return `${asisFiltros()}<div class="kpis">${kp("Programadas",prog.length,"Con horario ese día")}${kp("Entradas registradas",ent.length)}${kp("Salidas registradas",sal.length)}${kp("En jornada (según registro)",f===asisHoy()?en.length:"—")}
-    ${kp("Fuera de horario",fuera.length,`Tolerancia ${asisTol()} min`)}${kp(f===asisHoy()?"Sin entrada todavía":"Ausencias por aclarar",sin.length)}${kp("Horas programadas",asisH(hp))}${kp("Horas registradas",asisH(hr))}
+  return `${asisFiltros()}<div class="kpis">${asisConHor()?kp("Programadas",prog.length,"Con horario ese día"):kp("Personas con control",g.length,"Solo entrada y salida")}${kp("Entradas registradas",ent.length)}${kp("Salidas registradas",sal.length)}${kp("En jornada (según registro)",f===asisHoy()?en.length:"—")}
+    ${asisConHor()?kp("Fuera de horario",fuera.length,`Tolerancia ${asisTol()} min`):""}${kp(f===asisHoy()?"Sin entrada todavía":asisConHor()?"Ausencias por aclarar":"Sin registro",sin.length)}${asisConHor()?kp("Horas programadas",asisH(hp)):""}${kp("Horas registradas",asisH(hr))}
     ${kp("Incidencias por revisar",A().incidencias.filter(i=>i.estado==="detectada"&&ids.has(i.colaborador_id)).length)}${kp("Permisos autorizados",A().incidencias.filter(i=>i.estado==="confirmada"&&["permiso","vacaciones","incapacidad"].includes(i.tipo)&&ids.has(i.colaborador_id)&&f>=i.fecha&&f<=(i.fecha_fin||i.fecha)).length,"Ese día")}${kp("Solicitudes pendientes",pend)}</div>
-    <div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Sede</th><th>Horario</th><th>Entrada</th><th>Salida</th><th>Estado</th></tr></thead><tbody>
-    ${g.map(p=>{ const hs=asisHorariosDia(p.colaborador_id,f), s=asisEstadoDia(p.colaborador_id,f); return `<tr><td><b>${esc(p.nombre)}</b></td><td>${esc(asisSede(p.sede_id)?.nombre||"—")}</td><td>${hs.map(x=>`${String(x.h.inicio).slice(0,5)}–${String(x.h.fin).slice(0,5)}`).join(", ")||"—"}</td>
+    <div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Sede</th>${asisConHor()?"<th>Horario</th>":""}<th>Entrada</th><th>Salida</th><th>Estado</th></tr></thead><tbody>
+    ${g.map(p=>{ const hs=asisHorariosDia(p.colaborador_id,f), s=asisEstadoDia(p.colaborador_id,f); return `<tr><td><b>${esc(p.nombre)}</b></td><td>${esc(asisSede(p.sede_id)?.nombre||"—")}</td>${asisConHor()?`<td>${hs.map(x=>`${String(x.h.inicio).slice(0,5)}–${String(x.h.fin).slice(0,5)}`).join(", ")||"—"}</td>`:""}
       <td>${s.e?asisHora(s.e.momento):"—"}</td><td>${s.s?asisHora(s.s.momento):"—"}</td><td><span class="pill ${s.c}">${esc(s.t)}</span>${s.punt&&/fuera/i.test(s.punt)?` <span class="pill estado-pendiente">Fuera de horario</span>`:""}</td></tr>`; }).join("")||`<tr><td colspan="6" class="status">Sin personas con control de asistencia.</td></tr>`}</tbody></table></div>
     <p class="status" style="margin:0">“En jornada” y “entrada registrada” reflejan registros digitales; no son confirmación física de presencia.</p>`;
 }
@@ -2448,7 +2449,7 @@ function asisCalendario(){
 }
 function asisIncidencias(){ const ids=new Set(asisGente().map(p=>p.colaborador_id)), ls=A().incidencias.filter(i=>ids.has(i.colaborador_id)), ayer=asisMas(asisHoy(),-1);
   return `<div class="banner">Una incidencia <b>detectada</b> no es una falta confirmada. Se revisa con la persona y se resuelve como justificada, confirmada o descartada. Nunca genera sanción ni descuento automático; los retardos se evalúan individualmente (Reglamento, art. 21).</div>
-    ${asisActivo()?`<div class="actions"><button class="btn" type="button" data-act="asisDetectar" data-f="${ayer}">Revisar el día de ayer</button><span class="status">Busca ausencias y marcas faltantes de días ya concluidos.</span></div>`:""}
+    ${asisActivo()&&asisConHor()?`<div class="actions"><button class="btn" type="button" data-act="asisDetectar" data-f="${ayer}">Revisar el día de ayer</button><span class="status">Busca ausencias y marcas faltantes de días ya concluidos.</span></div>`:""}
     ${S.asisResInc?`<section class="note"><div class="note-h"><h3>Resolver incidencia de ${esc(asisNom(ls.find(i=>i.id===S.asisResInc)?.colaborador_id))}</h3></div><div class="datos">${fld("riRes","Resolución *","",{span:3,ph:"Qué se revisó y qué se decidió"})}</div>
       <div class="actions"><button class="btn primary" type="button" data-act="asisResInc" data-e="justificada">Justificada</button><button class="btn" type="button" data-act="asisResInc" data-e="confirmada">Confirmada</button><button class="btn" type="button" data-act="asisResInc" data-e="descartada">Descartar</button><button class="btn" type="button" data-act="asisCancelar">Cancelar</button></div></section>`:""}
     <div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Fecha</th><th>Tipo</th><th>Descripción</th><th>Estado</th><th></th></tr></thead><tbody>
@@ -2481,7 +2482,7 @@ function asisReportes(){ const a=A(), ps=asisGente().filter(p=>p.aplica);
   const porSede=a.sedes.map(s=>{ const x=ps.filter(p=>p.sede_id===s.id); return [s,x.length,x.reduce((t,p)=>t+p.programados_min,0),x.reduce((t,p)=>t+p.registrados_min,0)]; }).filter(r=>r[1]);
   const ents=a.entidades.filter(e=>ps.some(p=>asisEnt(p.sede_id)?.id===e.id)), puedeCorte=S.rol==="superusuario"||(S.api?.misRoles||[]).includes("rrhh");
   const hoy=asisHoy(), d=Number(hoy.slice(8)), ini=d<=15?hoy.slice(0,8)+"01":hoy.slice(0,8)+"16", fin=d<=15?hoy.slice(0,8)+"15":asisMas(asisMas(hoy.slice(0,8)+"01",32).slice(0,8)+"01",-1);
-  return `<div class="org-grid"><section class="note"><div class="note-h"><h3>Por sede (14 días)</h3></div><div class="tbl-wrap"><table><thead><tr><th>Sede</th><th>Personas</th><th>Programadas</th><th>Registradas</th></tr></thead><tbody>${porSede.map(([s,n,p,r])=>`<tr><td>${esc(s.nombre)}</td><td>${n}</td><td>${asisH(p)}</td><td>${asisH(r)}</td></tr>`).join("")||`<tr><td colspan="4" class="status">Sin datos.</td></tr>`}</tbody></table></div></section>
+  return `<div class="org-grid"><section class="note"><div class="note-h"><h3>Por sede (14 días)</h3></div><div class="tbl-wrap"><table><thead><tr><th>Sede</th><th>Personas</th>${asisConHor()?"<th>Programadas</th>":""}<th>Registradas</th></tr></thead><tbody>${porSede.map(([s,n,p,r])=>`<tr><td>${esc(s.nombre)}</td><td>${n}</td>${asisConHor()?`<td>${asisH(p)}</td>`:""}<td>${asisH(r)}</td></tr>`).join("")||`<tr><td colspan="4" class="status">Sin datos.</td></tr>`}</tbody></table></div></section>
     <section class="note"><div class="note-h"><h3>Por entidad fiscal</h3></div><ul class="pend">${ents.map(e=>`<li><b>${esc(e.nombre_corto)}</b> · ${ps.filter(p=>asisEnt(p.sede_id)?.id===e.id).length} personas</li>`).join("")||`<li class="status">Sin datos.</li>`}</ul><p class="status" style="margin:0">Cada entidad fiscal tiene su propio corte para nómina.</p></section></div>
     <section class="note"><div class="note-h"><h3>Corte para nómina</h3></div>
       <p style="margin:0">Validar un corte congela, por entidad fiscal, la asistencia, los permisos, las incidencias y las actividades validadas del periodo. <b>Este módulo no calcula descuentos ni pagos</b>: el corte lo usará el Módulo 04 (Nómina) con reglas legales y contractuales verificadas.</p>
@@ -2510,6 +2511,9 @@ function asisConfig(){ const c=A().config, ap=c.aplica||{}, met=c.metodos||{};
   return `<section class="note"><div class="note-h"><h3>Control de asistencia</h3><span class="pill ${c.activo?"estado-activo":""}">${c.activo?"Activado":"Apagado"}</span></div>
       <p style="margin:0">${c.activo?"El personal ya puede registrar entrada y salida en las 8 sedes.":"Nadie puede registrar entrada ni salida. Al activarlo, aplica en las 8 sedes a la vez (decisión de la Dirección)."}</p>
       <div class="actions"><button class="btn${c.activo?"":" primary"}" type="button" data-act="asisActivar">${c.activo?"Apagar el control":"Activar el control"}</button></div></section>
+    <section class="note"><div class="note-h"><h3>Horarios</h3><span class="pill ${c.usar_horarios===false?"":"estado-activo"}">${c.usar_horarios===false?"Solo entrada y salida":"Con horarios"}</span></div>
+      <label style="display:flex;justify-content:space-between;gap:10px;align-items:center"><span>Usar horarios (puntualidad, horas programadas, calendario y cumplimiento)</span><input type="checkbox" data-asiscfgb="usar_horarios"${c.usar_horarios===false?"":" checked"}></label>
+      <p class="status" style="margin:0">Apagado: solo se registra entrada y salida, y el QR de cualquier sede es válido. Encendido: se comparan los registros con los horarios asignados.</p></section>
     <div class="org-grid"><section class="note"><div class="note-h"><h3>A quién aplica</h3></div>${sw("aplica","psicologo_nomina","Psicólogos(as) base (nómina)",ap.psicologo_nomina)}${sw("aplica","administrativo","Administrativos",ap.administrativo)}${sw("aplica","admin_sede","Responsables de sede",ap.admin_sede)}${sw("aplica","direccion","Directivos",ap.direccion)}${sw("aplica","psicologo_comision","Psicólogos(as) independientes",ap.psicologo_comision)}
       <p class="status" style="margin:0">Independientes sin control (decisión de la Dirección): prestan servicios por comisión.</p></section>
      <section class="note"><div class="note-h"><h3>Métodos de registro</h3></div>${sw("metodos","app","Desde la app",met.app)}${sw("metodos","qr","QR dinámico de sede",met.qr)}<p class="status" style="margin:0">Sin geolocalización ni biometría. La integración con dispositivos queda preparada para más adelante.</p></section>
@@ -2573,6 +2577,7 @@ document.addEventListener("change", async e=>{ const t=e.target; if (!["miasis",
   if (t.id==="asFS"||t.id==="asFF"){ S.asisF=S.asisF||{}; if (t.id==="asFS") S.asisF.sede=t.value; else S.asisF.fecha=t.value; render(); }
   if (t.id==="asCalP"){ S.asisCalP=t.value; render(); }
   if (t.id==="asQrS"){ S.asisQrSede=t.value; asisQrPintar(); }
+  if (t.dataset?.asiscfgb){ try{ await S.api.guardarConfigAsistencia(t.dataset.asiscfgb, t.checked); toast("Configuración guardada."); await asisCargar(S.asisRango?.desde,S.asisRango?.hasta); }catch(err){ t.checked=!t.checked; toast(asisErrTxt(err)); } return; }
   if (t.dataset?.asiscfg){ const [g,k]=t.dataset.asiscfg.split("|"), val={...(A().config[g]||{}), [k]:t.checked};
     try{ await S.api.guardarConfigAsistencia(g, val); toast("Configuración guardada."); await asisCargar(S.asisRango?.desde,S.asisRango?.hasta); }catch(err){ t.checked=!t.checked; toast(asisErrTxt(err)); } }
 });
@@ -3093,7 +3098,7 @@ const GUIAS = [
   {t:"Pedir un permiso, vacaciones o justificar una incidencia", si:()=>!!S.rol, pasos:["En Mi asistencia pulsa Pedir corrección o permiso.","Elige el tipo, la fecha y explica brevemente. En incapacidades no escribas el diagnóstico.","Tu jefe directo la revisa. Nada cambia hasta que se apruebe; verás la respuesta en Mis solicitudes."]},
   {t:"Supervisar la asistencia de mi equipo", si:()=>asisSupervisa(), pasos:["Entra a Administración → Asistencia y jornadas. Solo ves a las personas que te corresponden.","En Resumen eliges sede y fecha. Fuera de horario y Sin entrada son datos por revisar, nunca faltas ni descuentos automáticos.","En Permisos y solicitudes e Incidencias revisa y resuelve con un motivo. No puedes resolver lo tuyo.","En Actividades complementarias valida el tiempo reportado (notas, supervisión, capacitación: son tiempo de trabajo)."]},
   {t:"Poner el código QR de asistencia en recepción", si:()=>S.rol==="superusuario"||S.rol==="admin_sede"||(S.api?.asisNivel||0)>=2, pasos:["En el equipo de recepción entra a Asistencia y jornadas → QR de sede y elige la sede.","Deja la pantalla abierta: el código cambia cada 30 segundos, así que una foto vieja no sirve.","Cada persona lo escanea con la cámara de su celular, entra con su cuenta y registra. No se guarda la ubicación de nadie."]},
-  {t:"Activar o apagar el control de asistencia", si:()=>S.rol==="superusuario", pasos:["Entra a Asistencia y jornadas → Configuración.","Antes de activarlo, crea los horarios y asígnalos en Horarios y turnos.","Pulsa Activar el control y confirma: aplica en las 8 sedes a la vez. Puedes apagarlo igual."]},
+  {t:"Activar o apagar el control de asistencia", si:()=>S.rol==="superusuario", pasos:["Entra a Asistencia y jornadas → Configuración.","Si decides usar horarios, enciende Usar horarios y créalos en Horarios y turnos; apagado, solo se registra entrada y salida.","Pulsa Activar el control y confirma: aplica en las 8 sedes a la vez. Puedes apagarlo igual."]},
   {t:"Registrar mi código de verificación (opcional)", si:()=>true, pasos:["Instala en tu celular Google Authenticator o Microsoft Authenticator.","Entra a Mi perfil → Código de verificación (MFA) y pulsa Activar código de verificación.","Escanea el código QR con la aplicación y escribe el número de 6 dígitos.","Desde entonces, al entrar se te pedirá ese número. Registra un segundo dispositivo como respaldo."]},
   {t:"Buscar en la plataforma", si:()=>true, pasos:["Usa el buscador de la barra superior (o Ctrl K / ⌘ K). En el celular, toca la lupa.","Escribe iniciales, folio o fecha de nacimiento de un expediente, el nombre de una persona o terapeuta, o el nombre de una sección (por ejemplo, Contratos).","Muévete con las flechas y pulsa Enter, o toca el resultado. Solo aparece lo que tu rol puede ver."]},
   {t:"Cambiar la apariencia u ocultar datos sensibles", si:()=>true, pasos:["Entra a Mi perfil → Apariencia y privacidad.","Elige el tema (claro, oscuro o como el dispositivo), la densidad (cómoda o compacta) y el tamaño del texto. Se aplica al instante y se guarda en ese dispositivo.","Para compartir pantalla o trabajar en un lugar con gente, activa el Modo privado (o el ícono del ojo en la barra superior): los datos sensibles se ven borrosos y se leen al pasar el cursor."]},
