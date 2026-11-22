@@ -1550,8 +1550,14 @@ const orgEntDeSede = id => { const r=S.org?.sedeEnt.find(x=>x.sede_id===id); ret
 const orgSede = id => S.org?.sedes.find(s=>s.id===id);
 const orgPuesto = id => S.org?.puestos.find(p=>p.id===id);
 const orgArea = id => S.org?.areas.find(a=>a.id===id);
+const orgCol = id => S.org?.colaboradores?.find(c=>c.id===id);
+const orgOcupante = posId => { const a=S.org?.asignaciones?.find(x=>x.posicion_id===posId); return a ? orgCol(a.colaborador_id) : null; };
+const orgNomCol = id => { if (!id) return pendH(); const c=orgCol(id); return c ? esc(c.nombre) : `<span class="status">Persona de una sede no autorizada</span>`; };
+/* Personas con cuenta activa (para elegir responsable u ocupante). Las cuentas compartidas de sede no son personas. */
+const orgPersonas = () => (S.usuarios||[]).filter(u=>u.estado==="activo" && !/^cemepi\s/i.test(u.nombre||"")).sort((a,b)=>(a.nombre||"").localeCompare(b.nombre||"","es"));
+const orgOpcPersonas = (vacio) => [["",vacio],...orgPersonas().map(u=>[u.id,`${u.nombre||u.email}${u.sede?" · "+u.sede:""}`])];
 async function cargarOrg(){
-  try{ S.org = await S.api.orgCatalogos(); if (S.view==="sedes" && gestionaCuentas() && !S.usuarios) S.usuarios = await S.api.usuarios(); }
+  try{ S.org = await S.api.orgCatalogos(); if ((S.view==="sedes" && gestionaCuentas()) || orgEditaCatalogo() || S.rol==="superusuario") S.usuarios = await S.api.usuarios(); }
   catch(e){ S.org = {error: e?.message||"No se pudo cargar la información."}; }
   if (ORG_VISTAS.includes(S.view)) render();
 }
@@ -1647,16 +1653,17 @@ function areasHtml(){
   const ed=S.orgEdit?.tipo==="area"?S.orgEdit:null, puede=orgEditaCatalogo();
   const form = ed ? `<form class="note" onsubmit="return false"><div class="note-h"><h3>${ed.id?"Editar área":"Nueva área"}</h3></div><div class="datos">
       ${fld("ar-nombre","Nombre *",ed.nombre,{span:2})}${fld("ar-estatus","Estatus",ed.estatus||"propuesta",{opts:[["propuesta","Propuesta (por validar)"],["activa","Activa (validada)"],["inactiva","Inactiva"]]})}
+      ${fld("ar-resp","Responsable",orgCol(ed.responsable_id)?.perfil_id||"",{opts:orgOpcPersonas("Sin responsable ("+PEND+")"),span:2,hint:"Persona con cuenta en la app. Se registra en el directorio de colaboradores."})}
       ${fld("ar-prop","Propósito",ed.proposito,{area:1,span:3,rows:2})}${fld("ar-fun","Funciones",ed.funciones,{area:1,span:3,rows:3})}</div>
       <div class="actions"><button class="btn primary" type="button" data-act="saveArea">Guardar área</button><button class="btn" type="button" data-act="cancelOrg">Cancelar</button></div></form>` : "";
   const propuestas=S.org.areas.filter(a=>a.estatus==="propuesta").length;
   return orgPagina("Áreas","Unidades funcionales de la red. Un área “propuesta” no es estructura oficial hasta que la Dirección la valide.",
     puede&&!ed?`<button class="btn primary" type="button" data-act="newArea">+ Nueva área</button>`:"",
     `${propuestas?`<div class="banner">${propuestas} área${propuestas===1?"":"s"} por validar. Al validarlas puedes renombrarlas, fusionarlas o marcarlas como inactivas.</div>`:""}${form}
-    <div class="tbl-wrap"><table><thead><tr><th>Área</th><th>Propósito</th><th>Puestos</th><th>Estatus</th><th></th></tr></thead><tbody>
-    ${S.org.areas.map(a=>`<tr><td><b>${esc(a.nombre)}</b></td><td>${a.proposito?esc(a.proposito):pendH()}</td><td>${S.org.puestos.filter(p=>p.area_id===a.id).length}</td>
+    <div class="tbl-wrap"><table><thead><tr><th>Área</th><th>Responsable</th><th>Propósito</th><th>Puestos</th><th>Estatus</th><th></th></tr></thead><tbody>
+    ${S.org.areas.map(a=>`<tr><td><b>${esc(a.nombre)}</b></td><td>${orgNomCol(a.responsable_id)}</td><td>${a.proposito?esc(a.proposito):pendH()}</td><td>${S.org.puestos.filter(p=>p.area_id===a.id).map(p=>esc(p.nombre)).join("<br>")||"—"}</td>
       <td><span class="pill ${a.estatus==="activa"?"estado-activo":a.estatus==="inactiva"?"estado-suspendido":"estado-pendiente"}">${a.estatus==="propuesta"?"Propuesta":a.estatus==="activa"?"Activa":"Inactiva"}</span></td>
-      <td>${puede?`<button class="btn sm" type="button" data-act="editArea" data-id="${a.id}">Editar</button>`:""}</td></tr>`).join("")||`<tr><td colspan="5" class="status">Sin áreas registradas.</td></tr>`}</tbody></table></div>`);
+      <td>${puede?`<button class="btn sm" type="button" data-act="editArea" data-id="${a.id}">Editar</button>`:""}</td></tr>`).join("")||`<tr><td colspan="6" class="status">Sin áreas registradas.</td></tr>`}</tbody></table></div>`);
 }
 
 /* ---------- Puestos y funciones ---------- */
@@ -1671,16 +1678,17 @@ function puestosHtml(){
       <div class="actions"><button class="btn primary" type="button" data-act="savePuesto">Guardar puesto</button><button class="btn" type="button" data-act="cancelOrg">Cancelar</button></div></form>` : "";
   const ver=S.orgVerPuesto?orgPuesto(S.orgVerPuesto):null;
   const detalle = ver&&!ed ? `<section class="note"><div class="note-h"><h3>${esc(ver.codigo)} · ${esc(ver.nombre)}</h3><button class="btn sm" type="button" data-act="cerrarPuesto">Cerrar</button></div>
-      <dl class="dl-org"><dt>Área</dt><dd>${orgArea(ver.area_id)?esc(orgArea(ver.area_id).nombre):pendH()}</dd><dt>Propósito</dt><dd>${ver.proposito?esc(ver.proposito):pendH()}</dd>
+      <dl class="dl-org"><dt>Área</dt><dd>${orgArea(ver.area_id)?esc(orgArea(ver.area_id).nombre):pendH()}</dd>
+      <dt>Ocupado por</dt><dd>${S.org.posiciones.filter(x=>x.puesto_id===ver.id).map(x=>{ const c=orgOcupante(x.id); return c?`${esc(c.nombre)} · ${esc(orgSede(x.sede_id)?.nombre||"")}`:""; }).filter(Boolean).join("<br>")||"—"}</dd><dt>Propósito</dt><dd>${ver.proposito?esc(ver.proposito):pendH()}</dd>
       ${PUESTO_CAMPOS.map(([k,l])=>`<dt>${l}</dt><dd style="white-space:pre-wrap">${ver[k]?esc(ver[k]):pendH()}</dd>`).join("")}</dl></section>` : "";
   return orgPagina("Puestos y funciones","Perfiles de puesto: qué se hace y con qué límites. Un puesto puede existir sin estar ocupado; crear un puesto nunca genera contrataciones.",
     puede&&!ed?`<button class="btn primary" type="button" data-act="newPuesto">+ Nuevo puesto</button>`:"",
-    `${form}${detalle}<div class="tbl-wrap"><table><thead><tr><th>Código</th><th>Puesto</th><th>Área</th><th>Plazas</th><th>Vacantes</th><th>Estatus</th><th></th></tr></thead><tbody>
+    `${form}${detalle}<div class="tbl-wrap"><table><thead><tr><th>Código</th><th>Puesto</th><th>Área</th><th>Personas</th><th>Plazas</th><th>Vacantes</th><th>Estatus</th><th></th></tr></thead><tbody>
     ${S.org.puestos.map(p=>{ const ps=S.org.posiciones.filter(x=>x.puesto_id===p.id&&(orgSU()||vis.has(x.sede_id)));
-      return `<tr><td class="mono">${esc(p.codigo)}</td><td><b>${esc(p.nombre)}</b></td><td>${orgArea(p.area_id)?esc(orgArea(p.area_id).nombre):"—"}</td><td>${ps.length}</td><td>${ps.filter(x=>x.estado==="vacante").length}</td>
+      return `<tr><td class="mono">${esc(p.codigo)}</td><td><b>${esc(p.nombre)}</b></td><td>${orgArea(p.area_id)?esc(orgArea(p.area_id).nombre):"—"}</td><td>${ps.map(x=>orgOcupante(x.id)).filter(Boolean).map(c=>esc(c.nombre)).join("<br>")||"—"}</td><td>${ps.length}</td><td>${ps.filter(x=>x.estado==="vacante").length}</td>
       <td><span class="pill ${p.estatus==="activo"?"estado-activo":p.estatus==="inactivo"?"estado-suspendido":"estado-pendiente"}">${p.estatus==="propuesta"?"Propuesta":p.estatus==="activo"?"Activo":"Inactivo"}</span></td>
       <td style="white-space:nowrap"><button class="btn sm" type="button" data-act="verPuesto" data-id="${p.id}">Ver</button>${puede?` <button class="btn sm" type="button" data-act="editPuesto" data-id="${p.id}">Editar</button>`:""}</td></tr>`; }).join("")
-      ||`<tr><td colspan="7" class="status">Aún no hay puestos. ${puede?"Registra el primero con “+ Nuevo puesto”.":""}</td></tr>`}</tbody></table></div>`);
+      ||`<tr><td colspan="8" class="status">Aún no hay puestos. ${puede?"Registra el primero con “+ Nuevo puesto”.":""}</td></tr>`}</tbody></table></div>`);
 }
 
 /* ---------- Vacantes (posiciones) ---------- */
@@ -1690,10 +1698,11 @@ function vacantesHtml(){
   const form = ed ? `<form class="note" onsubmit="return false"><div class="note-h"><h3>${ed.id?"Editar plaza":"Nueva plaza"}</h3></div><div class="datos">
       ${fld("po-puesto","Puesto *",ed.puesto_id||"",{opts:[["","— Selecciona —"],...S.org.puestos.map(p=>[p.id,p.codigo+" · "+p.nombre])],span:2})}
       ${fld("po-sede","Sede *",ed.sede_id||"",{opts:[["","— Selecciona —"],...editables.map(s=>[s.id,s.nombre])]})}
-      ${fld("po-estado","Estado",ed.estado||"vacante",{opts:Object.entries(ESTADO_POS)})}
+      ${fld("po-persona","Ocupada por",orgOcupante(ed.id)?.perfil_id||"",{opts:orgOpcPersonas("Nadie (plaza sin ocupar)"),span:2,hint:"Al elegir a una persona la plaza queda “Ocupada”; al quitarla, “Vacante”. Se conserva el historial."})}
+      ${fld("po-estado","Estado (si no está ocupada)",ed.estado==="ocupada"?"vacante":(ed.estado||"vacante"),{opts:Object.entries(ESTADO_POS).filter(([k])=>k!=="ocupada")})}
       ${fld("po-prio","Prioridad",ed.prioridad||"",{opts:[["","Sin prioridad"],...Object.entries(PRIO_TXT)]})}
       ${fld("po-abierta","Fecha de apertura",ed.abierta_en||today(),{type:"date"})}</div>
-      <p class="status" style="margin:0">Una plaza ocupada se vinculará con su colaborador en la siguiente etapa (Colaboradores). Este módulo no recluta: solo deja visible qué falta y dónde.</p>
+      <p class="status" style="margin:0">Este módulo no recluta: solo deja visible qué plazas existen, quién las ocupa y cuáles faltan.</p>
       <div class="actions"><button class="btn primary" type="button" data-act="savePosicion">Guardar plaza</button><button class="btn" type="button" data-act="cancelOrg">Cancelar</button></div></form>` : "";
   const ps=S.org.posiciones.filter(p=>sedes.some(s=>s.id===p.sede_id));
   const kp=k=>ps.filter(p=>p.estado===k).length;
@@ -1702,12 +1711,12 @@ function vacantesHtml(){
     `<div class="kpis">${Object.entries(ESTADO_POS).map(([k,l])=>`<div class="kpi"><span>${l}s</span><b>${kp(k)}</b></div>`).join("")}</div>
     ${!S.org.puestos.length?`<div class="banner">Primero registra los puestos en “Puestos y funciones”; cada plaza pertenece a un puesto.</div>`:""}${form}
     ${barraFiltros("vacantes",{ph:"Buscar puesto",sedes:sedes.map(s=>s.nombre),estados:Object.values(ESTADO_POS)})}
-    <div class="tbl-wrap"><table><thead><tr><th>Puesto</th><th>Sede</th><th>Estado</th><th>Prioridad</th><th>Apertura</th><th></th></tr></thead><tbody>
+    <div class="tbl-wrap"><table><thead><tr><th>Puesto</th><th>Sede</th><th>Ocupada por</th><th>Estado</th><th>Prioridad</th><th>Apertura</th><th></th></tr></thead><tbody>
     ${ps.map(p=>{ const pu=orgPuesto(p.puesto_id), s=orgSede(p.sede_id);
-      return `<tr data-f data-sede="${esc(s?.nombre||"")}" data-estado="${ESTADO_POS[p.estado]}"><td><b>${esc(pu?.nombre||"—")}</b><br><span class="status mono">${esc(pu?.codigo||"")}</span></td><td>${esc(s?.nombre||"")}</td>
+      return `<tr data-f data-sede="${esc(s?.nombre||"")}" data-estado="${ESTADO_POS[p.estado]}"><td><b>${esc(pu?.nombre||"—")}</b><br><span class="status mono">${esc(pu?.codigo||"")}</span></td><td>${esc(s?.nombre||"")}</td><td>${orgOcupante(p.id)?esc(orgOcupante(p.id).nombre):"—"}</td>
       <td><span class="pill ${PILL_POS[p.estado]}">${ESTADO_POS[p.estado]}</span></td><td>${p.prioridad?PRIO_TXT[p.prioridad]:"—"}</td><td>${p.abierta_en?fmtDate(p.abierta_en):"—"}</td>
       <td>${orgNivelSede(p.sede_id)>=2?`<button class="btn sm" type="button" data-act="editPosicion" data-id="${p.id}">Editar</button>`:""}</td></tr>`; }).join("")
-      ||`<tr><td colspan="6" class="status">Sin plazas registradas en tus sedes.</td></tr>`}</tbody></table></div>`);
+      ||`<tr><td colspan="7" class="status">Sin plazas registradas en tus sedes.</td></tr>`}</tbody></table></div>`);
 }
 
 /* ---------- Acciones del módulo ---------- */
@@ -1738,7 +1747,9 @@ async function orgAccion(a, b){
   if (a==="newArea"){ S.orgEdit={tipo:"area",estatus:"propuesta"}; render(); setTimeout(()=>$("#ar-nombre")?.focus(),30); return; }
   if (a==="editArea"){ S.orgEdit={tipo:"area",...orgArea(b.dataset.id)}; return render(); }
   if (a==="saveArea"){ if (v("ar-nombre").length<3) return toast("Escribe el nombre del área.");
-    return guardar(()=>S.api.guardarArea({id:S.orgEdit.id, nombre:v("ar-nombre"), estatus:v("ar-estatus"), proposito:v("ar-prop"), funciones:v("ar-fun")}), "Área guardada"); }
+    const resp=v("ar-resp"), actual=orgCol(S.orgEdit.responsable_id);
+    return guardar(async()=>{ const rid = !resp ? null : (actual?.perfil_id===resp ? actual.id : await S.api.asegurarColaborador(resp));
+      await S.api.guardarArea({id:S.orgEdit.id, nombre:v("ar-nombre"), estatus:v("ar-estatus"), proposito:v("ar-prop"), funciones:v("ar-fun"), responsable_id:rid}); }, "Área guardada"); }
   if (a==="newPuesto"){ S.orgEdit={tipo:"puesto",estatus:"propuesta"}; S.orgVerPuesto=null; render(); setTimeout(()=>$("#pu-cod")?.focus(),30); return; }
   if (a==="editPuesto"){ S.orgEdit={tipo:"puesto",...orgPuesto(b.dataset.id)}; S.orgVerPuesto=null; return render(); }
   if (a==="verPuesto"){ S.orgVerPuesto=b.dataset.id; return render(); }
@@ -1751,7 +1762,9 @@ async function orgAccion(a, b){
   if (a==="newPosicion"){ S.orgEdit={tipo:"posicion",estado:"vacante"}; return render(); }
   if (a==="editPosicion"){ S.orgEdit={tipo:"posicion",...S.org.posiciones.find(x=>x.id===b.dataset.id)}; return render(); }
   if (a==="savePosicion"){ if (!v("po-puesto")) return toast("Elige el puesto."); if (!v("po-sede")) return toast("Elige la sede.");
-    return guardar(()=>S.api.guardarPosicion({id:S.orgEdit.id, puesto_id:v("po-puesto"), sede_id:v("po-sede"), estado:v("po-estado"), prioridad:v("po-prio"), abierta_en:v("po-abierta")}), "Plaza guardada"); }
+    const persona=v("po-persona"), antes=orgOcupante(S.orgEdit.id)?.perfil_id||"";
+    return guardar(async()=>{ const id=await S.api.guardarPosicion({id:S.orgEdit.id, puesto_id:v("po-puesto"), sede_id:v("po-sede"), estado:persona?"ocupada":v("po-estado"), prioridad:v("po-prio"), abierta_en:v("po-abierta")});
+      if (persona!==antes) await S.api.asignarPlaza(id, persona||null); }, "Plaza guardada"); }
   return null;
 }
 const ORG_ACCIONES=new Set([...ORG_VISTAS,"cancelOrg","newSede","editSede","saveSede","newEntidad","editEntidad","saveEntidad","newArea","editArea","saveArea","newPuesto","editPuesto","verPuesto","cerrarPuesto","savePuesto","newPosicion","editPosicion","savePosicion"]);

@@ -271,13 +271,17 @@ const cemepi = {
       sb.from("areas").select("*").order("nombre"),
       sb.from("puestos").select("*").order("codigo"),
       sb.from("posiciones").select("*").order("created_at"),
-      sb.rpc("sedes_autorizadas", { p_modulo: "organizacion" })]);
+      sb.rpc("sedes_autorizadas", { p_modulo: "organizacion" }),
+      sb.from("colaboradores").select("id,nombre,perfil_id,sede_principal_id,tipo_funcion,estatus").order("nombre"),
+      sb.from("asignaciones").select("id,colaborador_id,posicion_id,sede_id,principal,desde,hasta").is("hasta", null)]);
     for (const r of q) if (r.error) fallo(r.error);
-    const [sd, se, en, ed, ar, pu, po, au] = q.map(r => r.data || []);
+    const [sd, se, en, ed, ar, pu, po, au, co, asg] = q.map(r => r.data || []);
     const aut = au.map(x => typeof x === "string" ? x : x.sedes_autorizadas);
     const niveles = {};
     await Promise.all(aut.map(async id => { const { data } = await sb.rpc("nivel_acceso", { p_modulo: "organizacion", p_sede: id }); niveles[id] = data || 0; }));
-    return { sedes: sd, sedeEnt: se, entidades: en, datosFiscales: ed, areas: ar, puestos: pu, posiciones: po, autorizadas: aut, niveles }; },
+    return { sedes: sd, sedeEnt: se, entidades: en, datosFiscales: ed, areas: ar, puestos: pu, posiciones: po, autorizadas: aut, niveles, colaboradores: co, asignaciones: asg }; },
+  async asegurarColaborador(perfil){ const { data, error } = await sb.rpc("asegurar_colaborador", { p_perfil: perfil }); if (error) fallo(error); return data; },
+  async asignarPlaza(posicion, perfil){ const { error } = await sb.rpc("asignar_plaza", { p_posicion: posicion, p_perfil: perfil || null }); if (error) fallo(error); },
   async guardarSedeOrg(s){
     const row = { direccion: s.direccion || null, alcaldia_municipio: s.alcaldia_municipio || null, estado_republica: s.estado_republica || null,
       horarios: s.horarios || null, capacidad: s.capacidad === "" || s.capacidad == null ? null : Number(s.capacidad), observaciones: s.observaciones || null };
@@ -300,7 +304,7 @@ const cemepi = {
     const { error } = await sb.from("entidades_fiscales_datos").upsert(d); if (error) fallo(error);
     return id; },
   async guardarArea(a){
-    const row = { nombre: a.nombre.trim(), proposito: a.proposito || null, funciones: a.funciones || null, estatus: a.estatus || "propuesta" };
+    const row = { nombre: a.nombre.trim(), proposito: a.proposito || null, funciones: a.funciones || null, estatus: a.estatus || "propuesta", responsable_id: a.responsable_id || null };
     const { error } = a.id ? await sb.from("areas").update(row).eq("id", a.id) : await sb.from("areas").insert(row); if (error) fallo(error); },
   async guardarPuesto(p){
     const campos = ["proposito","responsabilidades","actividades_diarias","actividades_semanales","competencias","formacion","indicadores","limites_autoridad","herramientas","capacitacion"];
@@ -309,7 +313,8 @@ const cemepi = {
     const { error } = p.id ? await sb.from("puestos").update(row).eq("id", p.id) : await sb.from("puestos").insert(row); if (error) fallo(error); },
   async guardarPosicion(p){
     const row = { puesto_id: p.puesto_id, sede_id: p.sede_id, estado: p.estado || "vacante", prioridad: p.prioridad || null, abierta_en: p.abierta_en || null };
-    const { error } = p.id ? await sb.from("posiciones").update(row).eq("id", p.id) : await sb.from("posiciones").insert(row); if (error) fallo(error); },
+    if (p.id){ const { error } = await sb.from("posiciones").update(row).eq("id", p.id); if (error) fallo(error); return p.id; }
+    const { data, error } = await sb.from("posiciones").insert(row).select("id").single(); if (error) fallo(error); return data.id; },
   async usuarios(){ const { data, error } = await sb.from("perfiles").select("id,email,nombre,cedula,telefono,sede,rol,rol_solicitado,modalidad,estado,created_at,autorizado_en").order("created_at", { ascending: false });
     if (error) fallo(error); return data || []; },
   async gestionar(id, estado, nuevoRol, sede){ const { error } = await sb.rpc("gestionar_usuario", { p_id: id, p_estado: estado, p_rol: nuevoRol, p_sede: sede || "" });
