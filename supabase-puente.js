@@ -238,7 +238,8 @@ const { data: permRows } = await sb.from("permisos").select("permiso").eq("user_
 const { data: orgNivel } = await sb.rpc("nivel_maximo", { p_modulo: "organizacion" });
 const { data: rolesRows } = await sb.from("usuario_roles").select("rol,hasta").eq("user_id", usuario.id).is("revocado_en", null);
 const misRoles = (rolesRows || []).filter(r => !r.hasta || r.hasta >= new Date().toISOString().slice(0, 10)).map(r => r.rol);
-const { data: cfgInact } = await sb.from("config_seguridad").select("valor").eq("clave", "inactividad_min").maybeSingle();   /* Módulo 01: 0 sin acceso · 1 lectura · 2 operación · 3 admin · 4 superusuario */
+const { data: cfgInact } = await sb.from("config_seguridad").select("valor").eq("clave", "inactividad_min").maybeSingle();
+const { data: asisNivel } = await sb.rpc("nivel_maximo", { p_modulo: "asistencia" });   /* Módulo 03 */   /* Módulo 01: 0 sin acceso · 1 lectura · 2 operación · 3 admin · 4 superusuario */
 login.hidden = true;
 const rol = perfil.rol;
 const ROL_TXT = { superusuario: "Superusuario", direccion: "Directivo(a)", admin_sede: "Administración de sede", administrativo: "Administrativo", psicologo: "Psicólogo(a)" };
@@ -296,6 +297,7 @@ const cemepi = {
   permisos: (permRows || []).map(r => r.permiso),
   orgNivel: orgNivel || 0,
   misRoles, inactividadMin: Number(cfgInact?.valor) || 30,
+  asisNivel: asisNivel || 0,
   async permisosTodos(){ const { data, error } = await sb.from("permisos").select("user_id,permiso,otorgado_en"); if (error) fallo(error); return data || []; },
   async otorgarPermiso(id, permiso, activo){ const { error } = await sb.rpc("otorgar_permiso", { p_id: id, p_permiso: permiso, p_activo: !!activo }); if (error) fallo(error); },
   async cambiarModalidad(id, m){ const { error } = await sb.rpc("cambiar_modalidad", { p_id: id, p_modalidad: m }); if (error) fallo(error); },
@@ -303,6 +305,58 @@ const cemepi = {
     const { data, error } = await q; if (error) fallo(error); return data || []; },
   async guardarSede(s){ const row = { nombre: s.nombre.trim(), clave: s.clave.trim().toUpperCase(), activa: s.activa !== false };
     const { error } = s.id ? await sb.from("sedes").update(row).eq("id", s.id) : await sb.from("sedes").insert(row); if (error) fallo(error); },
+  /* ---------- Módulo 03 · Asistencia y jornadas (todo se valida en la base: RLS + funciones) ---------- */
+  async asisDatos(desde, hasta){
+    const q = await Promise.all([
+      sb.from("asistencia_config").select("clave,valor"),
+      sb.rpc("mi_colaborador"),
+      sb.from("horarios").select("*").order("nombre"),
+      sb.from("horario_asignaciones").select("*"),
+      sb.from("jornadas").select("*"),
+      sb.from("marcas").select("id,colaborador_id,tipo,momento,sede_id,modalidad,metodo").gte("momento", desde + "T00:00:00-06:00").lte("momento", hasta + "T23:59:59-06:00").order("momento"),
+      sb.from("marca_ajustes").select("*").gte("momento", desde + "T00:00:00-06:00").lte("momento", hasta + "T23:59:59-06:00"),
+      sb.from("asistencia_solicitudes").select("*").order("creado_en", { ascending: false }).limit(300),
+      sb.from("incidencias").select("*").gte("fecha", desde).order("fecha", { ascending: false }),
+      sb.from("actividades").select("*").gte("fecha", desde).lte("fecha", hasta).order("fecha", { ascending: false }),
+      sb.from("actividad_categorias").select("*").eq("activo", true),
+      sb.from("politicas_asistencia").select("*").order("desde", { ascending: false }),
+      sb.from("cortes_asistencia").select("id,entidad_id,desde,hasta,estado,validado_en"),
+      sb.rpc("resumen_asistencia", { p_desde: desde, p_hasta: hasta, p_sede: null }),
+      sb.from("sedes").select("id,nombre,clave").eq("activa", true).order("nombre"),
+      sb.from("sede_entidad").select("sede_id,entidad_id").is("hasta", null),
+      sb.from("entidades_fiscales").select("id,nombre_corto,principal")]);
+    const val = r => r.error ? [] : (r.data ?? []);
+    if (q[0].error) fallo(q[0].error);
+    const [cf, yo, ho, ha, jo, ma, aj, so, inc, ac, ca, po, co, re, sd, sx, en] = q.map(val);
+    const config = Object.fromEntries(cf.map(c => [c.clave, c.valor]));
+    let aplica = false; if (yo){ const { data } = await sb.rpc("asis_aplica", { p_col: yo }); aplica = !!data; }
+    return { config, yo, aplica, horarios: ho, asignaciones: ha, jornadas: jo, marcas: ma, ajustes: aj, solicitudes: so, incidencias: inc, actividades: ac,
+      categorias: ca, politicas: po, cortes: co, personas: re, sedes: sd, sedeEnt: sx, entidades: en }; },
+  async registrarMarca(tipo, metodo, modalidad, qr){ const { data, error } = await sb.rpc("registrar_marca", { p_tipo: tipo, p_metodo: metodo, p_modalidad: modalidad || "presencial", p_qr: qr || null, p_agente: navigator.userAgent.slice(0, 200) }); if (error) fallo(error); return data; },
+  async qrSede(sede){ const { data, error } = await sb.rpc("qr_sede", { p_sede: sede }); if (error) fallo(error); return (data || [])[0]; },
+  async crearSolicitudAsis(s){ const { error } = await sb.from("asistencia_solicitudes").insert({ colaborador_id: s.colaborador_id, tipo: s.tipo, fecha: s.fecha, fecha_fin: s.fecha_fin || null,
+      hora_propuesta: s.hora_propuesta || null, detalle: s.detalle, estado: "enviada" }); if (error) fallo(error); },
+  async cancelarSolicitudAsis(id){ const { error } = await sb.from("asistencia_solicitudes").update({ estado: "cancelada" }).eq("id", id); if (error) fallo(error); },
+  async resolverSolicitudAsis(id, d, r){ const { error } = await sb.rpc("resolver_solicitud_asistencia", { p_id: id, p_decision: d, p_respuesta: r || null }); if (error) fallo(error); },
+  async resolverIncidencia(id, e, r){ const { error } = await sb.rpc("resolver_incidencia", { p_id: id, p_estado: e, p_resolucion: r }); if (error) fallo(error); },
+  async detectarIncidencias(dia){ const { data, error } = await sb.rpc("detectar_incidencias", { p_dia: dia }); if (error) fallo(error); return data || 0; },
+  async crearActividad(a){ const { error } = await sb.from("actividades").insert({ colaborador_id: a.colaborador_id, fecha: a.fecha, categoria: a.categoria, minutos: a.minutos, nota: a.nota || null, sede_id: a.sede_id || null }); if (error) fallo(error); },
+  async borrarActividad(id){ const { error } = await sb.from("actividades").delete().eq("id", id); if (error) fallo(error); },
+  async validarActividad(id, ok){ const { error } = await sb.rpc("validar_actividad", { p_id: id, p_valida: !!ok }); if (error) fallo(error); },
+  async guardarHorario(h){ const row = { nombre: h.nombre, dias: h.dias, inicio: h.inicio, fin: h.fin, descanso_min: Number(h.descanso_min) || 0, sede_id: h.sede_id || null,
+      desde: h.desde || undefined, hasta: h.hasta || null, estado: h.estado || "vigente" };
+    const { error } = h.id ? await sb.from("horarios").update(row).eq("id", h.id) : await sb.from("horarios").insert(row); if (error) fallo(error); },
+  async asignarHorario(a){ const { error } = await sb.from("horario_asignaciones").insert({ colaborador_id: a.colaborador_id, horario_id: a.horario_id, sede_id: a.sede_id,
+      modalidad: a.modalidad || "presencial", desde: a.desde || undefined, hasta: a.hasta || null, motivo: a.motivo || null }); if (error) fallo(error); },
+  async terminarAsignacion(id, fecha){ const { error } = await sb.from("horario_asignaciones").update({ hasta: fecha }).eq("id", id); if (error) fallo(error); },
+  async guardarJornada(j){ const { error } = await sb.from("jornadas").insert({ colaborador_id: j.colaborador_id, horas_semana: j.horas_semana, atencion_h: j.atencion_h || null,
+      complementarias_h: j.complementarias_h || null, fuente: j.fuente || "Contrato individual", desde: j.desde || undefined }); if (error) fallo(error); },
+  async guardarPolitica(p){ const row = { nombre: p.nombre, descripcion: p.descripcion || null, sedes: p.sedes || null, aplica_a: p.aplica_a || null, condiciones: p.condiciones || null,
+      desde: p.desde || undefined, hasta: p.hasta || null, autoriza: p.autoriza || null, estado: p.estado || "vigente" };
+    const { error } = p.id ? await sb.from("politicas_asistencia").update(row).eq("id", p.id) : await sb.from("politicas_asistencia").insert(row); if (error) fallo(error); },
+  async resumenAsistencia(desde, hasta, sede){ const { data, error } = await sb.rpc("resumen_asistencia", { p_desde: desde, p_hasta: hasta, p_sede: sede || null }); if (error) fallo(error); return data || []; },
+  async validarCorte(ent, desde, hasta){ const { error } = await sb.rpc("validar_corte", { p_entidad: ent, p_desde: desde, p_hasta: hasta }); if (error) fallo(error); },
+  async guardarConfigAsistencia(clave, valor){ const { error } = await sb.rpc("guardar_config_asistencia", { p_clave: clave, p_valor: valor }); if (error) fallo(error); },
   /* ---------- Módulo 02 · Usuarios, perfiles y permisos ---------- */
   async segDatos(){
     const amplio = rol === "superusuario" || misRoles.includes("auditor");
