@@ -6,7 +6,7 @@
    - Registra el tiempo activo de uso de la app.
    Las reglas de seguridad (RLS) las aplica la base de datos, no este archivo.
    ===================================================================== */
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm";
+const { createClient } = window.supabase;   /* versión fija con huella verificada (SRI), cargada en index.html */
 
 const cfg = window.CEMEPI_CONFIG || {};
 const $ = s => document.querySelector(s);

@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; worker-src 'self'; manifest-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
 </head>
 <body>
 <script src="config.js"></script>
@@ -72,7 +73,10 @@ button,input,select,textarea{font:inherit;color:inherit}
 .navs{flex:1;overflow:auto;padding:8px 10px 14px;display:flex;flex-direction:column;gap:6px}
 .nav-g{display:flex;flex-direction:column;gap:1px}
 .nav-g[hidden]{display:none}
-.nav-l{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:10px 10px 4px}
+.nav-l{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:10px 10px 4px;cursor:pointer;user-select:none;display:flex;justify-content:space-between;align-items:center;border-radius:6px}
+.nav-l::after{content:"";width:6px;height:6px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);margin-right:4px;transition:transform .15s}
+.nav-l:hover{color:var(--fg)}.nav-l:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.nav-g.plegado .nav-l::after{transform:rotate(-45deg)}.nav-g.plegado .nav-i{display:none}
 .nav-i{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:8px 10px;border-radius:8px;color:var(--muted);font-weight:700;text-align:left;cursor:pointer;min-height:38px;font-size:14px}
 .nav-i svg{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .nav-i:hover{background:var(--sunk);color:var(--fg)}
@@ -352,7 +356,7 @@ td.res{white-space:pre-wrap;min-width:220px}
     <button class="nav-i" id="ogBtn" type="button" data-act="organigrama" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-4h12v4"/></svg><span>Organigrama</span></button>
     <button class="nav-i" id="colBtn" type="button" data-act="colaboradores" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/></svg><span>Colaboradores</span></button>
     <button class="nav-i" id="supBtn" type="button" data-act="supervision" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="6" r="3"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M12 9v3M12 12l-6 4M12 12l6 4"/></svg><span>Supervisión</span></button>
-    <button class="nav-i" id="sedBtn" type="button" data-act="sedes" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg><span>Sedes</span></button>
+    <button class="nav-i" id="sedBtn" type="button" data-act="sedes" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg><span>Estructura</span></button>
     <button class="nav-i" id="entBtn" type="button" data-act="entidades" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V5l4-2 4 2 4-2 4 2v16l-4-2-4 2-4-2z"/><path d="M8 9h8M8 13h8M8 17h4"/></svg><span>Entidades fiscales</span></button>
     <button class="nav-i" id="areBtn" type="button" data-act="areas" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg><span>Áreas</span></button>
     <button class="nav-i" id="pueBtn" type="button" data-act="puestos" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg><span>Puestos y funciones</span></button>
@@ -406,8 +410,17 @@ td.res{white-space:pre-wrap;min-width:220px}
 </div>
 <div class="scrim-side" id="scrimSide"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script>
+/* Librerías externas: versión fija y huella verificada (SRI). PDF, ZIP y QR se cargan solo cuando se usan. */
+const LIBS={zip:{g:"JSZip",src:"https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js",sri:"sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG"},
+  pdf:{g:"PDFLib",src:"https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js",sri:"sha384-weMABwrltA6jWR8DDe9Jp5blk+tZQh7ugpCsF3JwSA53WZM9/14PjS5LAJNHNjAI"},
+  qr:{g:"qrcode",src:"https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js",sri:"sha384-mZT2gIty7ZDdOGkxfP6joZcYdMW1Jvj9dRlfpTmaJAKKXTqzygtB22k7FLe+KZC1"}};
+const libsCargando={};
+function libCargar(k){ const L=LIBS[k]; if (window[L.g]) return Promise.resolve();
+  return libsCargando[k] ||= new Promise((ok,mal)=>{ const x=document.createElement("script"); x.src=L.src; x.integrity=L.sri; x.crossOrigin="anonymous";
+    x.onload=()=>ok(); x.onerror=()=>{ delete libsCargando[k]; x.remove(); mal(new Error("No se pudo cargar "+L.g)); }; document.head.appendChild(x); }); }
+async function libLista(k){ try{ await libCargar(k); return true; }catch(e){ console.warn(e); return false; } }
+</script>
 
 <script>
 (() => {
@@ -800,7 +813,8 @@ function hojaAdminXml(c){
       <w:tc><w:tcPr><w:tcW w:w="4650" w:type="dxa"/><w:tcBorders><w:top w:val="single" w:sz="6" w:space="0" w:color="0F2340"/></w:tcBorders></w:tcPr>${P(R("Nombre y firma de quien captura (equipo administrativo)",{sz:17}),{jc:"center",before:60})}${P(R("Fecha: ____ / ____ / ________",{sz:17}),{jc:"center",before:60})}</w:tc>
     </w:tr></w:tbl>`;
 }
-function docxBlob(folio, cuerpoXml, extras=[], etiqueta, sinNota=false){
+async function docxBlob(folio, cuerpoXml, extras=[], etiqueta, sinNota=false){
+  await libCargar("zip");
   const firmaB64 = cuerpoXml.includes('r:embed="rIdFirma"') ? ((S.perfil.firma||"").split(",")[1]||"") : "";
   const NS = `xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"`;
   const doc = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ${NS}><w:body>${encabezado(folio, etiqueta)}${cuerpoXml}<w:sectPr><w:footerReference w:type="default" r:id="rIdFooter"/><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1000" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="500" w:gutter="0"/></w:sectPr></w:body></w:document>`;
@@ -819,7 +833,7 @@ function docxBlob(folio, cuerpoXml, extras=[], etiqueta, sinNota=false){
   return zip.generateAsync({type:"blob"});
 }
 async function descargar(nombre, folio, cuerpoXml){
-  if (typeof JSZip === "undefined"){ toast("No se pudo preparar el archivo de Word. Recarga la página e inténtalo de nuevo."); return; }
+  if (!(await libLista("zip"))){ toast("No se pudo preparar el archivo de Word. Revisa tu conexión e inténtalo de nuevo."); return; }
   const dl = await window.claude?.use?.("downloads");
   if (!dl){ toast("La descarga no está disponible en esta vista. Abre la página en claude.ai."); return; }
   try{ const blob = await docxBlob(folio, cuerpoXml); await dl.save({filename:nombre, data:blob}); toast("Documento descargado. Ábrelo en Word para revisarlo."); }
@@ -849,6 +863,7 @@ function envolver(text, font, size, maxW){
 const EXP_FIN = {continuidad:"Continuidad o cambio de terapeuta", autoridad:"Solicitud de autoridad (verificada)", consultante:"Solicitud del consultante o su representante",
   resguardo:"Resguardo o archivo", supervision:"Supervisión clínica", otra:"Otra finalidad autorizada por la Dirección"};
 async function pdfExpediente(p, finalidad, generado){
+  await libCargar("pdf");
   const {PDFDocument, StandardFonts, rgb} = PDFLib;
   const c=ctxOf(p), f=p.ficha||{};
   const notas=[...S.notas].sort((a,b)=>(a.fecha||"").localeCompare(b.fecha||"")||(a.creado||0)-(b.creado||0));
@@ -941,6 +956,7 @@ async function pdfExpediente(p, finalidad, generado){
   return pdf.save();
 }
 async function pdfEditable(g, c){
+  await libCargar("pdf");
   const {PDFDocument, StandardFonts, rgb, TextAlignment} = PDFLib;
   const t=FORMATOS[g.tipo], k=g.contenido||{};
   const pdf = await PDFDocument.create();
@@ -1034,7 +1050,7 @@ async function pdfEditable(g, c){
   return pdf.save();
 }
 async function descargarPdf(nombre, g, c){
-  if (typeof PDFLib === "undefined"){ toast("No se pudo preparar el PDF. Recarga la página e inténtalo de nuevo."); return; }
+  if (!(await libLista("pdf"))){ toast("No se pudo preparar el PDF. Recarga la página e inténtalo de nuevo."); return; }
   const dl = await window.claude?.use?.("downloads");
   if (!dl){ toast("La descarga no está disponible en esta vista. Abre la página en claude.ai."); return; }
   try{ const bytes = await pdfEditable(g, c); await dl.save({filename:nombre, data:bytes}); toast("PDF descargado. Puedes corregir el texto directamente en el archivo."); }
@@ -1111,11 +1127,13 @@ function renderList(){
   el.innerHTML=grupos.map(s=>{ const g=arr.filter(p=>(p.ficha?.sede||"")===s); if(!g.length) return "";
     return `<div class="grupo"><span>${esc(s||"Sin sede")}</span><b>${g.length}</b></div>${porTerapeuta(g)}`; }).join("");
 }
-const VISTA_TXT={inicio:"Inicio",exp:"Expediente",perfil:"Mi perfil",terapeutas:"Terapeutas",usuarios:"Usuarios",seguridad:"Usuarios y permisos",orgresumen:"Resumen organizacional",indicadores:"Indicadores",organigrama:"Organigrama",colaboradores:"Colaboradores",supervision:"Supervisión",sedes:"Sedes",entidades:"Entidades fiscales",areas:"Áreas",puestos:"Puestos y funciones",vacantes:"Vacantes",uso:"Tiempo de uso",tablero:"Tablero",miasis:"Mi asistencia",asistencia:"Asistencia y jornadas",
-  reglamento:"Reglamento",contratos:"Contratos",permisos:"Permisos",documentacion:"Documentación",ayuda:"Ayuda"};
-const VISTA_BTN={inicio:"iniBtn",terapeutas:"terBtn",contratos:"ctrBtn",documentacion:"docpBtn",reglamento:"regBtn",usuarios:"usrBtn",permisos:"permBtn",seguridad:"segBtn",orgresumen:"resBtn",indicadores:"indBtn",organigrama:"ogBtn",colaboradores:"colBtn",supervision:"supBtn",sedes:"sedBtn",entidades:"entBtn",areas:"areBtn",puestos:"pueBtn",vacantes:"vacBtn",uso:"usoBtn",tablero:"tabBtn",miasis:"masBtn",asistencia:"asjBtn",ayuda:"ayudaBtn",perfil:"perfilBtn"};
-const GRUPO_VISTA={exp:"Atención",terapeutas:"Atención",contratos:"Mi trabajo",documentacion:"Mi trabajo",reglamento:"Mi trabajo",miasis:"Mi trabajo",asistencia:"Administración",usuarios:"Administración",
-  permisos:"Administración",seguridad:"Configuración",orgresumen:"Organización",indicadores:"Organización",organigrama:"Organización",colaboradores:"Organización",supervision:"Organización",sedes:"Organización",entidades:"Organización",areas:"Organización",puestos:"Organización",vacantes:"Organización",uso:"Administración",tablero:"Administración",ayuda:"Mi cuenta",perfil:"Mi cuenta"};
+const VISTA_TXT={inicio:"Inicio",exp:"Expediente",perfil:"Mi perfil",terapeutas:"Terapeutas",usuarios:"Usuarios y permisos",seguridad:"Usuarios y permisos",orgresumen:"Resumen organizacional",indicadores:"Indicadores",organigrama:"Organigrama",colaboradores:"Colaboradores",supervision:"Supervisión",sedes:"Sedes",entidades:"Entidades fiscales",areas:"Áreas",puestos:"Puestos y funciones",vacantes:"Vacantes",uso:"Tiempo de uso",tablero:"Tablero",miasis:"Mi asistencia",asistencia:"Asistencia y jornadas",
+  reglamento:"Reglamento",contratos:"Contratos",permisos:"Usuarios y permisos",documentacion:"Documentación",ayuda:"Ayuda"};
+/* Estructura de la organización: un solo botón con pestañas (2026-11-22) */
+const ESTR_VISTAS=[["sedes","Sedes"],["entidades","Entidades fiscales"],["areas","Áreas"],["puestos","Puestos y funciones"],["vacantes","Vacantes"]];
+const VISTA_BTN={inicio:"iniBtn",terapeutas:"terBtn",contratos:"ctrBtn",documentacion:"docpBtn",reglamento:"regBtn",usuarios:"segBtn",permisos:"segBtn",seguridad:"segBtn",orgresumen:"resBtn",indicadores:"indBtn",organigrama:"ogBtn",colaboradores:"colBtn",supervision:"supBtn",sedes:"sedBtn",entidades:"sedBtn",areas:"sedBtn",puestos:"sedBtn",vacantes:"sedBtn",uso:"usoBtn",tablero:"tabBtn",miasis:"masBtn",asistencia:"asjBtn",ayuda:"ayudaBtn",perfil:"perfilBtn"};
+const GRUPO_VISTA={exp:"Atención",terapeutas:"Atención",contratos:"Mi trabajo",documentacion:"Mi trabajo",reglamento:"Mi trabajo",miasis:"Mi trabajo",asistencia:"Administración",usuarios:"Configuración",
+  permisos:"Configuración",seguridad:"Configuración",orgresumen:"Organización",indicadores:"Organización",organigrama:"Organización",colaboradores:"Organización",supervision:"Organización",sedes:"Organización",entidades:"Organización",areas:"Organización",puestos:"Organización",vacantes:"Organización",uso:"Administración",tablero:"Administración",ayuda:"Mi cuenta",perfil:"Mi cuenta"};
 /* Ruta de navegación: Inicio / grupo / [vista padre]. El título de la página va en el h1. */
 function migas(padre){
   const v = S.sel && S.view==="exp" ? "exp" : S.view, it=[`<button type="button" data-act="back">Inicio</button>`];
@@ -1180,6 +1198,16 @@ document.addEventListener("click", e=>{
   const fx=e.target.closest("[data-ffaltan]");
   if (fx){ const k=fx.closest("[data-fk]").dataset.fk, f=S.ft[k]=S.ft[k]||{}; f.faltan=!f.faltan; fx.setAttribute("aria-pressed",f.faltan); aplicarFiltros(); }
 });
+/* Menú: grupos plegables; cada dispositivo recuerda cuáles plegó (el grupo de la vista actual siempre se abre) */
+function navPlegados(){ try{ return JSON.parse(localStorage.getItem("cemepiNavPlegados")||"[]"); }catch{ return []; } }
+function navPlegar(g, plegar){ g.classList.toggle("plegado", plegar); g.querySelector(".nav-l")?.setAttribute("aria-expanded", String(!plegar));
+  try{ const l=new Set(navPlegados()), k=g.getAttribute("aria-label"); plegar?l.add(k):l.delete(k); localStorage.setItem("cemepiNavPlegados", JSON.stringify([...l])); }catch{} }
+function navIniciar(){ const pl=navPlegados(); document.querySelectorAll(".nav-g").forEach(g=>{ const l=g.querySelector(".nav-l"); if (!l) return;
+  l.setAttribute("role","button"); l.tabIndex=0; const p=pl.includes(g.getAttribute("aria-label")); g.classList.toggle("plegado",p); l.setAttribute("aria-expanded",String(!p));
+  l.title="Mostrar u ocultar"; }); }
+document.addEventListener("click", e=>{ const l=e.target.closest?.(".nav-l"); if (l) navPlegar(l.parentElement, !l.parentElement.classList.contains("plegado")); });
+document.addEventListener("keydown", e=>{ const l=e.target.closest?.(".nav-l"); if (l&&(e.key==="Enter"||e.key===" ")){ e.preventDefault(); navPlegar(l.parentElement, !l.parentElement.classList.contains("plegado")); } });
+navIniciar();
 document.addEventListener("input", e=>{
   const bar=e.target.closest?.(".filtros[data-fk]"); if (!bar || e.target.id==="usrSede") return;
   const f=S.ft[bar.dataset.fk]=S.ft[bar.dataset.fk]||{};
@@ -1192,7 +1220,7 @@ document.addEventListener("input", e=>{
 function marcarNav(){
   const v = S.sel && S.view==="exp" ? "exp" : (S.view||"inicio");
   document.querySelectorAll(".nav-i").forEach(b=>b.removeAttribute("aria-current"));
-  const id=VISTA_BTN[v==="exp"?"inicio":v]; if (id) $("#"+id)?.setAttribute("aria-current","page");
+  const id=VISTA_BTN[v==="exp"?"inicio":v]; if (id){ const bt=$("#"+id); bt?.setAttribute("aria-current","page"); bt?.closest(".nav-g")?.classList.remove("plegado"); }
   const p=S.pacientes?.get?.(S.sel);
   $("#topTitulo").textContent = v==="exp" && p ? `Expediente ${p.ficha?.nombre||""} · ${p.folio||""}` : (VISTA_TXT[v]||"Inicio");
 }
@@ -1203,11 +1231,8 @@ function render(){
   if (S.view==="perfil"){ d.innerHTML=perfilHtml(); activarPad(); return; }
   if (S.view==="terapeutas"){ d.innerHTML=terapeutasHtml(); return; }
   if (S.view==="usuarios"){ d.innerHTML=usuariosHtml(); return; }
-  if (S.view==="sedes"){ d.innerHTML=sedesHtml(); return; }
-  if (S.view==="entidades"){ d.innerHTML=entidadesHtml(); return; }
-  if (S.view==="areas"){ d.innerHTML=areasHtml(); return; }
-  if (S.view==="puestos"){ d.innerHTML=puestosHtml(); return; }
-  if (S.view==="vacantes"){ d.innerHTML=vacantesHtml(); return; }
+  if (ESTR_VISTAS.some(([v])=>v===S.view)){ d.innerHTML={sedes:sedesHtml,entidades:entidadesHtml,areas:areasHtml,puestos:puestosHtml,vacantes:vacantesHtml}[S.view]();
+    d.querySelector(".phead")?.insertAdjacentHTML("afterend", `<div class="tabs" role="tablist" aria-label="Estructura" style="margin-bottom:12px">${ESTR_VISTAS.map(([v,t])=>`<button class="tab" role="tab" type="button" data-act="${v}" aria-selected="${S.view===v}">${t}</button>`).join("")}</div>`); return; }
   if (S.view==="colaboradores"){ d.innerHTML=colaboradoresHtml(); return; }
   if (S.view==="supervision"){ d.innerHTML=supervisionHtml(); return; }
   if (S.view==="organigrama"){ d.innerHTML=organigramaHtml(); return; }
@@ -1264,8 +1289,8 @@ const ACCESOS = () => [
   {t:veTodosContratos()?"Contratos del personal":"Mi contrato", d:veTodosContratos()?"Fecha de alta, salario, datos del empleador y firmas.":"Captura tus datos y firma tu contrato.", act:"contratos", si:tieneContrato()||veTodosContratos()},
   {t:veDocsTodos()?"Documentación del personal":"Mi documentación", d:veDocsTodos()?"Revisa y verifica los PDF del personal.":"Sube en PDF tu identificación, comprobantes y constancias.", act:"documentacion", si:true},
   {t:"Reglamento", d:"Reglamento Interior de Trabajo y constancia de recepción.", act:"reglamento", si:true},
-  {t:"Usuarios", d:S.rol==="admin_sede"?"Autoriza y edita las cuentas de tu sede.":"Autoriza cuentas, edita datos y asigna contraseñas.", act:"usuarios", si:gestionaCuentas()},
-  {t:"Permisos", d:"Otorga permisos adicionales a personas específicas.", act:"permisos", si:S.rol==="superusuario"},
+  {t:"Usuarios y permisos", d:S.rol==="admin_sede"?"Autoriza y edita las cuentas de tu sede.":"Autoriza cuentas, edita datos y asigna contraseñas.", act:"usuarios", si:gestionaCuentas()},
+  {t:"Permisos adicionales", d:"Otorga permisos adicionales a personas específicas (en Usuarios y permisos).", act:"permisos", si:S.rol==="superusuario"},
   {t:"Organización", d:"Resumen, organigrama, colaboradores, sedes, entidades fiscales, áreas, puestos y vacantes.", act:"orgresumen", si:(S.api?.orgNivel||0)>=1},
   {t:"Tablero", d:"Indicadores de atención, documentos, riesgo, personal y portal, por sede y periodo.", act:"tablero", si:["superusuario","direccion"].includes(S.rol)},
   {t:"Tiempo de uso", d:"Minutos de uso de la app por persona.", act:"uso", si:tengo("tiempo_uso")},
@@ -1442,7 +1467,7 @@ const ROL_TXT = {superusuario:"Superusuario", direccion:"Directivo(a)", admin_se
 const rolClave = () => S.rol==="psicologo" ? (S.api?.modalidad==="comision" ? "psicologo_ind" : "psicologo_base") : S.rol;
 const ROLES_INFO = {
   superusuario:{n:"Superusuario", d:"Responsable de toda la plataforma y representante legal de CEMEPI.",
-    puede:["Ver y editar todos los expedientes, notas y documentos clínicos de todas las sedes.","Autorizar cualquier cuenta (incluidos Directivos y Administración de sede), editar sus datos y asignarles contraseña.","Otorgar permisos adicionales a personas específicas (ventana Permisos).","Administrar la Organización: crear sedes, registrar entidades fiscales y cambiar la entidad de una sede; consultar el tiempo de uso.","En los contratos: registrar fecha de alta, salario y datos del empleador, y firmar por CEMEPI.","Ver y verificar la documentación de todo el personal.","Editar la leyenda de vigencia y los datos del empleador del reglamento."],
+    puede:["Ver y editar todos los expedientes, notas y documentos clínicos de todas las sedes.","Autorizar cualquier cuenta (incluidos Directivos y Administración de sede), editar sus datos y asignarles contraseña.","Otorgar permisos adicionales a personas específicas (Usuarios y permisos → Permisos adicionales).","Administrar la Organización: crear sedes, registrar entidades fiscales y cambiar la entidad de una sede; consultar el tiempo de uso.","En los contratos: registrar fecha de alta, salario y datos del empleador, y firmar por CEMEPI.","Ver y verificar la documentación de todo el personal.","Editar la leyenda de vigencia y los datos del empleador del reglamento."],
     no:["Modificar su propia cuenta desde Usuarios (usa Mi perfil)."]},
   direccion:{n:"Directivo(a)", d:"Ve y edita la plataforma en las sedes de CEMEPI, S.C., excepto lo que solo hace el superusuario.",
     puede:["Ver y editar los expedientes, notas y documentos clínicos de las sedes de CEMEPI, S.C.","Compartir reportes con consultantes.","Autorizar y editar cuentas de Administración de sede, administrativos y psicólogos de las sedes de CEMEPI, S.C.","En Organización: editar los datos de tus sedes, las áreas, los puestos y las vacantes.","En los contratos: registrar fecha de alta, salario y datos del empleador.","Ver y verificar la documentación de todo el personal.","Ver las constancias del reglamento y editar su leyenda."],
@@ -1499,7 +1524,7 @@ async function cargarAdmin(tipo){
   if (S.view===tipo) render();
 }
 function usuariosHtml(){
-  if (!S.usuarios) return `<div class="wrap" style="padding-block:24px"><p class="status">Cargando cuentas…</p></div>`;
+  if (!S.usuarios) return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">${segCabecera("cuentas")}<p class="status">Cargando cuentas…</p></div>`;
   const filtro=S.usrSede||"";
   const lista=S.usuarios.filter(u=>!filtro || u.sede===filtro);
   const pend=lista.filter(u=>u.estado==="pendiente"), activos=lista.filter(u=>u.estado==="activo"), otros=lista.filter(u=>!["pendiente","activo"].includes(u.estado));
@@ -1538,7 +1563,7 @@ function usuariosHtml(){
   const act=activos.filter(u=>!(u.rol==="psicologo" && u.modalidad==="comision")), comis=activos.filter(u=>u.rol==="psicologo" && u.modalidad==="comision");
   const tabla=(t,rows,fn,vacio)=>`<section class="doc-sec"><h3 class="sec-h">${t} (${rows.length})</h3>${rows.length?`<div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Rol y sede</th><th></th></tr></thead><tbody>${rows.map(fn).join("")}</tbody></table></div>`:`<p class="status" style="margin:0">${vacio}</p>`}</section>`;
   return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:18px">
-    <div class="phead">${migas()}<h1>Usuarios</h1>${ES_SEDE()?`<span><span class="status">Sede ${esc(S.miSede)}</span></span>`:""}</div>
+    ${segCabecera("cuentas", ES_SEDE()?`<span class="status">Sede ${esc(S.miSede)}</span>`:"")}
     <p class="status" style="margin:0">Cada persona solicita su cuenta desde la pantalla de entrada (<b>Solicita tu cuenta</b>). ${S.rol==="superusuario"?"Como superusuario autorizas a cualquiera y administras las cuentas de Dirección.":S.rol==="direccion"?"La Dirección autoriza administrativos y psicólogos de cualquier sede.":"Autorizas administrativos y psicólogos de tu sede."} Al autorizar a un psicólogo, aparece en el directorio de terapeutas de su sede.</p>
     ${barraFiltros("usuarios",{ph:"Buscar por nombre, correo o cédula", antes: ES_SEDE()?"":`<select id="usrSede" aria-label="Filtrar por sede"><option value="">Todas las sedes</option>${SEDES.map(s=>`<option${s===filtro?" selected":""}>${esc(s)}</option>`).join("")}</select>`,
       roles:[...new Set(lista.map(u=>u.rol_solicitado&&u.estado==="pendiente"?u.rol_solicitado:u.rol))].filter(Boolean).map(r=>[r,ROL_TXT[r]||r])})}
@@ -2033,11 +2058,18 @@ async function cargarSeg(){
 }
 async function segEfectivo(uid){ S.segEf=S.segEf||{}; if (!S.segEf[uid]) S.segEf[uid]=await S.api.accesoEfectivo(uid); return S.segEf[uid]; }
 const segNivel=(uid,mod,sede)=>{ const r=(S.segEf?.[uid]||[]).find(x=>x.modulo===mod&&x.sede_id===sede); return r?r.nivel:null; };
+/* Una sola ventana: las antiguas "Usuarios" (altas y datos de cuentas) y "Permisos" (permisos adicionales) son pestañas aquí */
+function segTabsTodas(){ const t=segTabsPermitidas().map(k=>[k,SEG_TABS.find(x=>x[0]===k)[1],"segTab"]);
+  if (gestionaCuentas()) t.splice(segSU()?2:0,0,["cuentas","Altas y datos de cuentas","usuarios"]);
+  if (segSU()) t.push(["permisosad","Permisos adicionales","permisos"]);
+  return t; }
+function segCabecera(activo, acciones){
+  return `<div class="phead">${migas()}<h1>Usuarios y permisos</h1><span style="display:flex;gap:8px;flex-wrap:wrap">${acciones||""}</span></div>
+    <div class="tabs" role="tablist">${segTabsTodas().map(([k,t,act])=>`<button class="tab" role="tab" type="button" data-act="${S.view==="seguridad"&&act==="segTab"?"segTab":act==="segTab"?"seguridad":act}" data-t="${k}" aria-selected="${activo===k}">${t}</button>`).join("")}</div>`;
+}
 function segPagina(titulo, desc, acciones, cuerpo){
-  const tabs=segTabsPermitidas();
   return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">
-    <div class="phead">${migas()}<h1>Usuarios y permisos</h1><span style="display:flex;gap:8px;flex-wrap:wrap">${acciones||""}</span></div>
-    <div class="tabs" role="tablist">${tabs.map(k=>`<button class="tab" role="tab" type="button" data-act="segTab" data-t="${k}" aria-selected="${S.segTab===k}">${SEG_TABS.find(t=>t[0]===k)[1]}</button>`).join("")}</div>
+    ${segCabecera(S.segTab, acciones)}
     <h2 style="margin:0;font-size:20px">${titulo}</h2>${desc?`<p class="status" style="margin:0">${desc}</p>`:""}${cuerpo}</div>`;
 }
 function seguridadHtml(){
@@ -2500,7 +2532,7 @@ function asisQr(){ const sedes=S.rol==="admin_sede"?A().sedes.filter(s=>s.nombre
       <p class="status" style="margin:0" id="asQrTxt"></p>
       <p style="margin:0">Deja esta pantalla abierta en el equipo de recepción. Cada persona escanea el código con la cámara de su celular: se abre la app, confirma su identidad y registra su entrada o salida en esta sede.</p>
       <p class="status" style="margin:0">El código cambia cada 30 segundos, así que una foto vieja no sirve. No se guarda la ubicación de nadie.</p></section>`; }
-async function asisQrLib(){ if (window.qrcode) return; await new Promise((ok,mal)=>{ const s=document.createElement("script"); s.src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"; s.onload=ok; s.onerror=mal; document.head.appendChild(s); }); }
+async function asisQrLib(){ await libCargar("qr"); }
 async function asisQrPintar(){ const box=$("#asQrBox"); if (!box){ asisQrParar(); return; }
   try{ await asisQrLib(); const r=await S.api.qrSede(S.asisQrSede); const url=`${location.origin}${location.pathname}?qr=${encodeURIComponent(r.codigo)}`;
     const q=window.qrcode(0,"M"); q.addData(url); q.make(); box.innerHTML=q.createSvgTag({cellSize:5,margin:2,scalable:true}); const svg=box.querySelector("svg"); if (svg){ svg.style.width="240px"; svg.style.height="240px"; svg.setAttribute("aria-label","Código QR de asistencia de la sede"); }
@@ -2591,7 +2623,8 @@ function segErr(e){ const m=e?.message||"";
   return m||"No se pudo completar."; }
 async function segAccion(a, b){
   const v=id=>($("#"+id)?.value??"").trim(), hecho=async(fn,ok,keep)=>{ try{ await fn(); if (!keep){ S.segForm=null; S.segRolEd=null; S.segResp=null; } toast(ok); S.segEf={}; await cargarSeg(); return true; }catch(e){ toast(segErr(e)); return false; } };
-  if (a==="seguridad"){ S.view="seguridad"; S.segTab=S.segTab||segTabsPermitidas()[0]; S.segForm=null; S.segVer=null; S.seg=null; S.segEf={}; render(); return cargarSeg(); }
+  if (a==="seguridad" && !b?.dataset?.t && !S.segTab && gestionaCuentas() && !segSU()){ S.segTab="solicitudes"; S.view="usuarios"; S.usrEdit=null; S.usuarios=null; render(); return cargarAdmin("usuarios"); }
+  if (a==="seguridad"){ S.view="seguridad"; if (b?.dataset?.t) S.segTab=b.dataset.t; S.segTab=S.segTab||segTabsPermitidas()[0]; S.segForm=null; S.segVer=null; S.seg=null; S.segEf={}; render(); return cargarSeg(); }
   if (a==="segTab"){ S.segTab=b.dataset.t; S.segForm=null; S.segVer=null; S.segRolEd=null; S.segResp=null; S.segRevisar=false; return render(); }
   if (a==="segCancelar"){ S.segForm=null; S.segRolEd=null; S.segResp=null; S.segEnlace=null; return render(); }
   if (a==="segVer"||a==="segVerCuenta"){ S.segTab="usuarios"; S.segVer=b.dataset.id; S.segEnlacePass=null; render(); setTimeout(()=>$("#segFicha")?.scrollIntoView({block:"start",behavior:"smooth"}),40);
@@ -2935,7 +2968,7 @@ const PERMISOS = {
   tiempo_uso: {t:"Ver tiempo de uso", d:"Consultar la ventana Tiempo de uso."},
 };
 function permisosHtml(){
-  if (!S.usuarios || !S.permTodos) return `<div class="wrap" style="padding-block:24px"><p class="status">Cargando permisos…</p></div>`;
+  if (!S.usuarios || !S.permTodos) return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">${segCabecera("permisosad")}<p class="status">Cargando permisos…</p></div>`;
   const tiene=new Set(S.permTodos.map(p=>p.user_id+"|"+p.permiso));
   const act=S.usuarios.filter(u=>u.estado==="activo" && u.rol!=="superusuario");
   const grupos=[
@@ -2955,7 +2988,7 @@ function permisosHtml(){
     ${us.map(u=>`<tr><td><b>${esc(u.nombre||u.email)}</b><br><span class="status">${esc(u.sede||"Todas las sedes")}</span></td>${ps.map(k=>`<td><label class="perm-chk"><input type="checkbox" data-perm="${k}" data-id="${u.id}"${tiene.has(u.id+"|"+k)?" checked":""}${k==="supervision_clinica"&&!u.sede?" disabled title=\"Asigna una sede primero\"":""}> <span>${tiene.has(u.id+"|"+k)?"Otorgado":"No"}</span></label></td>`).join("")}</tr>`).join("")}
     </tbody></table></div>`:`<p class="status" style="margin:0">No hay cuentas activas en este grupo.</p>`}</section>`;
   return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:18px">
-    <div class="phead">${migas()}<h1>Permisos</h1></div>
+    ${segCabecera("permisosad")}
     <p class="status" style="margin:0">Cada rol tiene su acceso base. Aquí, como superusuario, otorgas permisos adicionales a personas específicas. Se aplican al instante y quedan en la bitácora. Si cambia el rol de una persona, sus permisos adicionales se retiran.</p>
     <section class="doc-sec"><h3 class="sec-h">Acceso base de cada rol</h3><div class="tbl-wrap"><table><tbody>${matriz.map(([r,d])=>`<tr><th style="width:28%">${esc(r)}</th><td>${esc(d)}</td></tr>`).join("")}</tbody></table></div></section>
     <section class="doc-sec"><h3 class="sec-h">Permisos que puedes otorgar</h3><div class="tbl-wrap"><table><tbody>${Object.values(PERMISOS).map(p=>`<tr><th style="width:28%">${esc(p.t)}</th><td>${esc(p.d)}</td></tr>`).join("")}</tbody></table></div></section>
@@ -3042,7 +3075,7 @@ function papeleraHtml(){
 }
 /* Respaldo de la documentación del personal: todos los PDF en un ZIP, en carpetas por persona */
 async function respaldoDocp(b){
-  if (typeof JSZip==="undefined"){ toast("No se pudo preparar el ZIP. Recarga la página."); return; }
+  if (!(await libLista("zip"))){ toast("No se pudo preparar el ZIP. Recarga la página."); return; }
   const dl = await window.claude?.use?.("downloads"); if (!dl){ toast("La descarga no está disponible en esta vista."); return; }
   b.disabled=true; const txt=b.textContent;
   try{
@@ -3082,13 +3115,13 @@ const GUIAS = [
   {t:"Firmar mi contrato", si:()=>tieneContrato(), pasos:["Entra a Mi contrato y pulsa Comenzar mi contrato.","Captura tus datos y beneficiarios y pulsa Guardar mis datos.","La Dirección registra tu fecha de alta ante el IMSS y tu salario.","Guarda tu firma en Mi perfil y pulsa Firmar mi contrato. Al final firma el representante legal de CEMEPI.","Puedes descargar tu contrato en Word."]},
   {t:"Subir mi documentación", si:()=>S.rol!=="superusuario", pasos:["Entra a Documentación.","Elige el tipo de documento (INE, CURP, comprobante de domicilio, cédula, título, curso, diplomado…). En cursos y diplomados escribe la descripción.","Selecciona el PDF (máximo 10 MB) y pulsa Subir PDF.","Las etiquetas Falta / ✓ te indican qué documentos obligatorios te faltan."]},
   {t:"Confirmar que recibí el reglamento", si:()=>true, pasos:["Entra a Reglamento y léelo (tiene índice y buscador).","Pulsa Confirmo que lo recibí y lo leí. Queda registrada la fecha y hora."]},
-  {t:"Autorizar una cuenta", si:()=>gestionaCuentas(), pasos:["Entra a Usuarios. En Solicitudes pendientes aparece cada persona que pidió su cuenta.","Verifica que el nombre y la cédula correspondan a personal real.","Revisa el rol y la sede, y pulsa Autorizar (o Rechazar)."]},
-  {t:"Asignar o cambiar la contraseña de alguien", si:()=>gestionaCuentas(), pasos:["En Usuarios pulsa Editar cuenta junto a la persona.","En Contraseña escribe una o pulsa Generar segura, y pulsa Asignar contraseña.","Entrégala por un canal distinto al correo y pídele que la cambie en Mi perfil."]},
+  {t:"Autorizar una cuenta", si:()=>gestionaCuentas(), pasos:["Entra a Configuración → Usuarios y permisos → Altas y datos de cuentas. En Solicitudes pendientes aparece cada persona que pidió su cuenta.","Verifica que el nombre y la cédula correspondan a personal real.","Revisa el rol y la sede, y pulsa Autorizar (o Rechazar)."]},
+  {t:"Asignar o cambiar la contraseña de alguien", si:()=>gestionaCuentas(), pasos:["En Usuarios y permisos → Altas y datos de cuentas pulsa Editar cuenta junto a la persona.","En Contraseña escribe una o pulsa Generar segura, y pulsa Asignar contraseña.","Entrégala por un canal distinto al correo y pídele que la cambie en Mi perfil."]},
   {t:"Completar y firmar contratos del personal", si:()=>veTodosContratos(), pasos:["Entra a Contratos y abre el contrato de la persona.","Registra fecha de alta ante el IMSS, salario y datos del empleador y guarda.","Cuando la persona firme, el superusuario pulsa Firmar por CEMEPI. Cualquier cambio posterior anula las firmas."]},
   {t:"Verificar documentación del personal", si:()=>veDocsTodos(), pasos:["Entra a Documentación y abre a la persona.","Pulsa Ver PDF y cotéjalo con el original.","Pulsa Verificar. Un documento verificado ya no lo puede borrar su titular."]},
   {t:"Respaldar la documentación del personal", si:()=>ES_DIR(), pasos:["Entra a Documentación y pulsa Descargar respaldo (ZIP).","Se descargan todos los PDF en carpetas por sede y persona, con un índice (indice.csv) que se abre en Excel.","Guarda el ZIP en un disco o carpeta segura de CEMEPI; contiene datos personales. Hazlo al menos una vez al mes.","Los respaldos automáticos de Supabase no incluyen los PDF: este ZIP es su único respaldo."]},
   {t:"Recuperar un documento eliminado", si:()=>ES_DIR(), pasos:["Entra a Documentación y baja a Papelera.","Pulsa Restaurar: el documento vuelve a la lista de su titular.","Los documentos se conservan 30 días en la papelera; después puedes eliminarlos definitivamente."]},
-  {t:"Otorgar permisos anteriores (supervisión clínica, contratos, tiempo de uso)", si:()=>S.rol==="superusuario", pasos:["Entra a Permisos.","Marca o desmarca la casilla del permiso junto a la persona. Se aplica al instante y queda en la bitácora."]},
+  {t:"Otorgar permisos anteriores (supervisión clínica, contratos, tiempo de uso)", si:()=>S.rol==="superusuario", pasos:["Entra a Configuración → Usuarios y permisos → Permisos adicionales.","Marca o desmarca la casilla del permiso junto a la persona. Se aplica al instante y queda en la bitácora."]},
   {t:"Conceder o revocar acceso a una sede (por ejemplo, Bosques de Santa Fe)", si:()=>S.rol==="superusuario", pasos:["Entra a Configuración → Usuarios y permisos → Accesos por sede y elige la sede.","Pulsa + Conceder acceso, elige a la persona, marca solo los módulos que necesita, el nivel, la fecha de fin (opcional) y el motivo.","Para quitarlo pulsa Revocar junto a la persona: deja de funcionar en su siguiente consulta.","Para ajustes finos (exportar, aprobar, información sensible o denegar) usa la Matriz de permisos: revisa el antes y el después y confirma."]},
   {t:"Asignar un rol adicional o cambiar el estado de una cuenta", si:()=>S.rol==="superusuario", pasos:["Entra a Configuración → Usuarios y permisos → Usuarios y pulsa Abrir junto a la persona.","En Roles adicionales elige el rol (por ejemplo Recursos Humanos o Auditor), la fecha de fin si aplica y el motivo, y pulsa Agregar rol.","Para suspender, reactivar o desactivar escribe el motivo y pulsa el botón correspondiente. Desactivar corta el acceso y cierra sus sesiones, pero conserva el historial."]},
   {t:"Responder solicitudes de acceso", si:()=>S.rol==="superusuario", pasos:["Entra a Configuración → Usuarios y permisos → Solicitudes de acceso.","Pulsa Responder: puedes aprobar (eligiendo nivel y fecha de fin), pedir más información o rechazar.","Las revisiones automáticas aparecen cuando un colaborador pasa a Baja en Organización: abre su cuenta y decide si la desactivas."]},
@@ -3186,7 +3219,7 @@ const MANUALES = {
     "Solicita tu cuenta eligiendo «Administración de sede»; la autoriza la Dirección.",
     "En «Mi perfil» escribe tu nombre, sube tu firma y cambia tu contraseña si te asignaron una."]},
    {t:"Autorizar y administrar cuentas de tu sede", p:[
-    "En «Usuarios», sección «Solicitudes pendientes», revisa que el nombre y la cédula correspondan a personal real de tu sede.",
+    "En «Usuarios y permisos» → «Altas y datos de cuentas», sección «Solicitudes pendientes», revisa que el nombre y la cédula correspondan a personal real de tu sede.",
     "Elige el rol y pulsa «Autorizar» (o «Rechazar»).",
     "Con «Editar cuenta» corriges nombre, cédula y teléfono, cambias rol o estado y asignas una contraseña («Generar segura»). Entrégala por un canal distinto al correo.",
     "Usa el buscador y los filtros de la tabla para encontrar a una persona."]},
@@ -3246,7 +3279,7 @@ const MANUALES = {
     "Revisa cada día «Pendientes»: solicitudes de cuenta, contratos por completar y documentos por verificar.",
     "En «Avisos» atiende el respaldo de la documentación (más de 30 días), la papelera con plazo cumplido, los comprobantes de domicilio vencidos y los expedientes sin terapeuta o sin fecha de nacimiento."]},
    {t:"Usuarios y sedes", p:[
-    "En «Usuarios» autoriza a administrativos, administraciones de sede y psicólogos de cualquier sede, después de verificar nombre y cédula.",
+    "En «Usuarios y permisos» → «Altas y datos de cuentas» autoriza a administrativos, administraciones de sede y psicólogos de cualquier sede, después de verificar nombre y cédula.",
     "Con «Editar cuenta» cambias rol, sede, estado, modalidad del psicólogo (base o independiente) y asignas contraseñas.",
     "En «Sedes» das de alta o editas sedes y su clave de 3 letras para el folio."]},
    {t:"Supervisión de la atención", p:[
@@ -3276,7 +3309,7 @@ const MANUALES = {
 /* Capítulos de los Módulos 01 y 02 (2026-11-22) */
 MANUALES.direccion.caps.push(
  {t:"Organización", p:[
-  "En el grupo Organización consultas y mantienes la estructura de la red: Resumen, Organigrama, Colaboradores, Supervisión, Sedes, Entidades fiscales, Áreas, Puestos y funciones, Vacantes e Indicadores.",
+  "En el grupo Organización consultas y mantienes la estructura de la red: Resumen, Organigrama, Colaboradores, Supervisión, Estructura (con pestañas de Sedes, Entidades fiscales, Áreas, Puestos y funciones y Vacantes) e Indicadores.",
   "Como Directivo ves las 7 sedes de CEMEPI, S.C. La sede Bosques de Santa Fe pertenece a otra entidad fiscal: no la ves salvo que el Superusuario te autorice, por módulo y con fecha de fin.",
   "Puedes editar los datos operativos de tus sedes, las áreas, los puestos, las plazas y las líneas de reporte. Crear sedes, cambiar su entidad fiscal y ver RFC o datos fiscales solo lo hace el Superusuario o quien tenga permiso de información sensible.",
   "En Supervisión registra a quién reporta cada persona y quién da supervisión clínica. La supervisión clínica registrada ahí no abre expedientes: ese acceso se concede aparte."]},
@@ -3319,7 +3352,7 @@ function manualHtml(k){
 /* Word del manual: mismo formato institucional (Arial 11, justificado, nota aclaratoria al pie) */
 async function manualWord(mk){
   const M=MANUALES[mk]; if (!M) return;
-  if (typeof JSZip === "undefined"){ toast("No se pudo preparar el archivo de Word. Recarga la página."); return; }
+  if (!(await libLista("zip"))){ toast("No se pudo preparar el archivo de Word. Recarga la página."); return; }
   const dl = await window.claude?.use?.("downloads"); if (!dl){ toast("La descarga no está disponible en esta vista."); return; }
   const xml = P(R(`INSTRUCTIVO DE USO DE LA PLATAFORMA · ${M.n.toUpperCase()}`,{b:1,sz:24,color:"0560BD"}),{jc:"center",before:120,after:80})
     + P(R(`Para: ${M.para}`,{color:"55688A"}),{jc:"center",after:240})
@@ -3675,6 +3708,7 @@ function firmaCIHtml(p){
 }
 /* PDF del consentimiento firmado (texto aceptado + firma + quién firmó) */
 async function pdfConsentimiento(p, x){
+  await libCargar("pdf");
   const {PDFDocument, StandardFonts, rgb} = PDFLib;
   const pdf=await PDFDocument.create(); pdf.setTitle("Consentimiento informado"); pdf.setAuthor("CEMEPI · Centro Mexicano de Plenitud Humana, S.C."); pdf.setLanguage("es-MX");
   const font=await pdf.embedFont(StandardFonts.Helvetica), bold=await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -3926,7 +3960,7 @@ document.addEventListener("click", async ev => {
   if (a==="reabrirCtr"){ const c=S.ctrs.find(x=>x.id===S.ctrSel); if(!arm(b,"reabrir","¿Anular ambas firmas?")) return; armed=null;
     try{ const n=await S.api.guardarContrato(c.id,{firma_cemepi:null, firma_trabajador:null}); S.ctrs=S.ctrs.map(x=>x.id===n.id?n:x); toast("Contrato reabierto: las firmas se anularon."); }catch(e){ toast(e?.message||"No se pudo reabrir."); } return render(); }
   if (a==="wordCtr"){ const c=S.ctrs.find(x=>S.ctrSel?x.id===S.ctrSel:x.user_id===S.uid); const {xml, ext}=ctrWordXml(c);
-    if (typeof JSZip==="undefined"){ toast("No se pudo preparar el Word. Recarga la página."); return; }
+    if (!(await libLista("zip"))){ toast("No se pudo preparar el Word. Recarga la página."); return; }
     const dl=await window.claude?.use?.("downloads");
     try{ const blob=await docxBlob("Contrato individual", xml, ext, "Documento", true); /* Los contratos laborales no llevan la nota aclaratoria (decisión del Director, 2026-11-20) */ await dl.save({filename:`Contrato-${slug(ctrNombre(c.datos||{})||"profesionista")}.docx`, data:blob}); toast("Contrato descargado. Contiene datos personales: resguárdalo y no lo envíes por mensajería."); }
     catch(e){ if(e?.code!=="declined") toast("No se pudo descargar el contrato."); } return; }
@@ -4084,14 +4118,14 @@ document.addEventListener("click", async ev => {
     try{ await S.api.revocarConsentimiento(S.ciRevocar, m); S.ciRevocar=null; toast("Consentimiento revocado. Se conserva en el expediente con su motivo."); }catch(e){ toast(e?.message||"No se pudo revocar."); }
     return cargarConsent(p.id); }
   if (a==="ciPdf"){ const x=(S.ciData||[]).find(y=>y.id===b.dataset.id); if (!x) return;
-    if (typeof PDFLib==="undefined"){ toast("No se pudo preparar el PDF. Recarga la página."); return; }
+    if (!(await libLista("pdf"))){ toast("No se pudo preparar el PDF. Recarga la página."); return; }
     const dl=await window.claude?.use?.("downloads"); if (!dl){ toast("La descarga no está disponible en esta vista."); return; }
     try{ await dl.save({filename:`Consentimiento-informado-${p.folio}-${String(x.firmado_en||"").slice(0,10)}.pdf`, data:await pdfConsentimiento(p, x)}); toast("PDF del consentimiento descargado."); }
     catch(e){ if (e?.code!=="declined"){ console.warn(e); toast("No se pudo generar el PDF."); } } return; }
   if (a==="exportExp"){ S.expExport = S.expExport===p.id ? null : p.id; return render(); }
   if (a==="exportExpNo"){ S.expExport=null; return render(); }
   if (a==="exportExpGo"){ const fin=$("#exFin").value; if (!fin){ toast("Elige la finalidad de la exportación."); $("#exFin").focus(); return; }
-    if (typeof PDFLib==="undefined"){ toast("No se pudo preparar el PDF. Recarga la página."); return; }
+    if (!(await libLista("pdf"))){ toast("No se pudo preparar el PDF. Recarga la página."); return; }
     const dl=await window.claude?.use?.("downloads"); if (!dl){ toast("La descarga no está disponible en esta vista."); return; }
     b.disabled=true; b.textContent="Generando…";
     try{ const nDocs=S.docs.filter(d=>d.estado && d.estado!=="borrador").length;
@@ -4345,12 +4379,12 @@ render();
     S.rol=S.api.rol; S.miSede=S.api.sede; S.perm=new Set(S.api.permisos||[]);
     try{ const ss=await S.api.sedes(false);
       if (ss.length){ SEDES.splice(0, SEDES.length, ...ss.map(s=>s.nombre)); for (const k of Object.keys(SEDE_COD)) delete SEDE_COD[k]; ss.forEach(s=>{ SEDE_COD[s.nombre]=s.clave; }); } }catch(e){ console.warn("sedes", e); }
-    $("#usrBtn").hidden = !["superusuario","direccion","admin_sede"].includes(S.rol);
+    $("#usrBtn").hidden = true;   /* unificado en Usuarios y permisos (2026-11-22) */
     $("#segBtn").hidden = !S.rol;   /* Módulo 02: cada quien ve lo que le corresponde */
-    ["resBtn","indBtn","ogBtn","colBtn","supBtn","sedBtn","entBtn","areBtn","pueBtn","vacBtn"].forEach(id=>{ $("#"+id).hidden = !((S.api.orgNivel||0) >= 1); });   /* Módulo 01: según el servicio de permisos */
+    ["resBtn","indBtn","ogBtn","colBtn","supBtn","sedBtn"].forEach(id=>{ $("#"+id).hidden = !((S.api.orgNivel||0) >= 1); });   /* Entidades, Áreas, Puestos y Vacantes van como pestañas de Estructura */   /* Módulo 01: según el servicio de permisos */
     $("#usoBtn").hidden = !tengo("tiempo_uso");
     $("#tabBtn").hidden = !["superusuario","direccion"].includes(S.rol);
-    $("#permBtn").hidden = S.rol!=="superusuario";
+    $("#permBtn").hidden = true;
     $("#docpBtn").hidden = !S.rol;
     $("#masBtn").hidden = !S.rol;   /* Módulo 03: cada quien ve su asistencia */
     $("#asjBtn").hidden = !((S.api.asisNivel||0)>=1 || S.rol==="superusuario");
@@ -4583,6 +4617,7 @@ article.note.nota-nueva{outline:2px solid var(--accent);outline-offset:2px}
   </div>
 </div>
 <script>document.getElementById("lgLogo").src = document.querySelector("#logoApp").src;</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" integrity="sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o" crossorigin="anonymous"></script>
 <script type="module" src="supabase-puente.js"></script>
 </body>
 </html>
