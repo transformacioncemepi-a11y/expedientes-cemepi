@@ -272,14 +272,23 @@ const cemepi = {
       sb.from("puestos").select("*").order("codigo"),
       sb.from("posiciones").select("*").order("created_at"),
       sb.rpc("sedes_autorizadas", { p_modulo: "organizacion" }),
-      sb.from("colaboradores").select("id,nombre,perfil_id,sede_principal_id,tipo_funcion,estatus").order("nombre"),
-      sb.from("asignaciones").select("id,colaborador_id,posicion_id,sede_id,principal,desde,hasta").is("hasta", null)]);
+      sb.from("colaboradores").select("id,nombre,perfil_id,sede_principal_id,tipo_funcion,perfil_profesional,fecha_incorporacion,estatus").order("nombre"),
+      sb.from("asignaciones").select("id,colaborador_id,posicion_id,sede_id,principal,desde,hasta"),
+      sb.from("relaciones").select("*").order("desde", { ascending: false })]);
     for (const r of q) if (r.error) fallo(r.error);
-    const [sd, se, en, ed, ar, pu, po, au, co, asg] = q.map(r => r.data || []);
+    const [sd, se, en, ed, ar, pu, po, au, co, asg, rel] = q.map(r => r.data || []);
     const aut = au.map(x => typeof x === "string" ? x : x.sedes_autorizadas);
     const niveles = {};
     await Promise.all(aut.map(async id => { const { data } = await sb.rpc("nivel_acceso", { p_modulo: "organizacion", p_sede: id }); niveles[id] = data || 0; }));
-    return { sedes: sd, sedeEnt: se, entidades: en, datosFiscales: ed, areas: ar, puestos: pu, posiciones: po, autorizadas: aut, niveles, colaboradores: co, asignaciones: asg }; },
+    return { sedes: sd, sedeEnt: se, entidades: en, datosFiscales: ed, areas: ar, puestos: pu, posiciones: po, autorizadas: aut, niveles, colaboradores: co, asignaciones: asg, relaciones: rel }; },
+  async guardarColaborador(c){
+    const row = { estatus: c.estatus, fecha_incorporacion: c.fecha_incorporacion || null, perfil_profesional: c.perfil_profesional || null, tipo_funcion: c.tipo_funcion || null };
+    if (c.sede_principal_id) row.sede_principal_id = c.sede_principal_id;
+    const { error } = await sb.from("colaboradores").update(row).eq("id", c.id); if (error) fallo(error); },
+  async guardarRelacion(r){
+    const row = { tipo: r.tipo, de_id: r.de_id, a_id: r.a_id, tema: r.tema || null, desde: r.desde || undefined, hasta: r.hasta || null, motivo: r.motivo || null };
+    const { error } = await sb.from("relaciones").insert(row); if (error) fallo(error); },
+  async terminarRelacion(id, fecha){ const { error } = await sb.from("relaciones").update({ hasta: fecha }).eq("id", id); if (error) fallo(error); },
   async asegurarColaborador(perfil){ const { data, error } = await sb.rpc("asegurar_colaborador", { p_perfil: perfil }); if (error) fallo(error); return data; },
   async asignarPlaza(posicion, perfil){ const { error } = await sb.rpc("asignar_plaza", { p_posicion: posicion, p_perfil: perfil || null }); if (error) fallo(error); },
   async guardarSedeOrg(s){
