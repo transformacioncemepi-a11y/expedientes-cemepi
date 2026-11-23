@@ -367,7 +367,8 @@ td.res{white-space:pre-wrap;min-width:220px}
     <button class="nav-i" id="permBtn" type="button" data-act="permisos" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Permisos</span></button>
     <button class="nav-i" id="usoBtn" type="button" data-act="uso" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span>Tiempo de uso</span></button>
     <button class="nav-i" id="tabBtn" type="button" data-act="tablero" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg><span>Tablero</span></button>
-    <button class="nav-i" id="asjBtn" type="button" data-act="asistencia" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M8 14l2 2 4-4"/></svg><span>Asistencia y jornadas</span></button></nav>
+    <button class="nav-i" id="asjBtn" type="button" data-act="asistencia" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M8 14l2 2 4-4"/></svg><span>Asistencia y jornadas</span></button>
+    <button class="nav-i" id="docsBtn" type="button" data-act="docs" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M7 17c1.5-2 2.5 1 4-1s1-3 2.5-3 .5 3 2.5 2"/></svg><span>Documentos y firmas</span></button></nav>
   <nav class="nav-g" aria-label="Configuración"><span class="nav-l">Configuración</span>
     <button class="nav-i" id="segBtn" type="button" data-act="seguridad" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg><span>Usuarios y permisos</span></button></nav>
   <nav class="nav-g" aria-label="Mi cuenta"><span class="nav-l">Mi cuenta</span>
@@ -1127,17 +1128,18 @@ function renderList(){
   el.innerHTML=grupos.map(s=>{ const g=arr.filter(p=>(p.ficha?.sede||"")===s); if(!g.length) return "";
     return `<div class="grupo"><span>${esc(s||"Sin sede")}</span><b>${g.length}</b></div>${porTerapeuta(g)}`; }).join("");
 }
-const VISTA_TXT={inicio:"Inicio",exp:"Expediente",perfil:"Mi perfil",terapeutas:"Terapeutas",usuarios:"Usuarios y permisos",seguridad:"Usuarios y permisos",orgresumen:"Resumen organizacional",indicadores:"Indicadores",organigrama:"Organigrama",colaboradores:"Colaboradores",supervision:"Supervisión",sedes:"Sedes",entidades:"Entidades fiscales",areas:"Áreas",puestos:"Puestos y funciones",vacantes:"Vacantes",uso:"Tiempo de uso",tablero:"Tablero",miasis:"Mi asistencia",asistencia:"Asistencia y jornadas",
+const VISTA_TXT={inicio:"Inicio",exp:"Expediente",perfil:"Mi perfil",terapeutas:"Terapeutas",usuarios:"Usuarios y permisos",seguridad:"Usuarios y permisos",orgresumen:"Resumen organizacional",indicadores:"Indicadores",organigrama:"Organigrama",colaboradores:"Colaboradores",supervision:"Supervisión",sedes:"Sedes",entidades:"Entidades fiscales",areas:"Áreas",puestos:"Puestos y funciones",vacantes:"Vacantes",uso:"Tiempo de uso",tablero:"Tablero",miasis:"Mi asistencia",asistencia:"Asistencia y jornadas",docs:"Documentos y firmas",
   reglamento:"Reglamento",contratos:"Contratos",permisos:"Usuarios y permisos",documentacion:"Documentación",ayuda:"Ayuda"};
 /* Estructura de la organización: un solo botón con pestañas (2026-11-22) */
 const ESTR_VISTAS=[["sedes","Sedes"],["entidades","Entidades fiscales"],["areas","Áreas"],["puestos","Puestos y funciones"],["vacantes","Vacantes"]];
-const VISTA_BTN={inicio:"iniBtn",terapeutas:"terBtn",contratos:"ctrBtn",documentacion:"docpBtn",reglamento:"regBtn",usuarios:"segBtn",permisos:"segBtn",seguridad:"segBtn",orgresumen:"resBtn",indicadores:"indBtn",organigrama:"ogBtn",colaboradores:"colBtn",supervision:"supBtn",sedes:"sedBtn",entidades:"sedBtn",areas:"sedBtn",puestos:"sedBtn",vacantes:"sedBtn",uso:"usoBtn",tablero:"tabBtn",miasis:"masBtn",asistencia:"asjBtn",ayuda:"ayudaBtn",perfil:"perfilBtn"};
-const GRUPO_VISTA={exp:"Atención",terapeutas:"Atención",contratos:"Mi trabajo",documentacion:"Mi trabajo",reglamento:"Mi trabajo",miasis:"Mi trabajo",asistencia:"Administración",usuarios:"Configuración",
+const VISTA_BTN={inicio:"iniBtn",terapeutas:"terBtn",contratos:"ctrBtn",documentacion:"docpBtn",reglamento:"regBtn",usuarios:"segBtn",permisos:"segBtn",seguridad:"segBtn",orgresumen:"resBtn",indicadores:"indBtn",organigrama:"ogBtn",colaboradores:"colBtn",supervision:"supBtn",sedes:"sedBtn",entidades:"sedBtn",areas:"sedBtn",puestos:"sedBtn",vacantes:"sedBtn",uso:"usoBtn",tablero:"tabBtn",miasis:"masBtn",asistencia:"asjBtn",docs:"docsBtn",ayuda:"ayudaBtn",perfil:"perfilBtn"};
+const GRUPO_VISTA={exp:"Atención",terapeutas:"Atención",contratos:"Mi trabajo",documentacion:"Mi trabajo",reglamento:"Mi trabajo",miasis:"Mi trabajo",asistencia:"Administración",docs:"Administración",usuarios:"Configuración",
   permisos:"Configuración",seguridad:"Configuración",orgresumen:"Organización",indicadores:"Organización",organigrama:"Organización",colaboradores:"Organización",supervision:"Organización",sedes:"Organización",entidades:"Organización",areas:"Organización",puestos:"Organización",vacantes:"Organización",uso:"Administración",tablero:"Administración",ayuda:"Mi cuenta",perfil:"Mi cuenta"};
 /* Ruta de navegación: Inicio / grupo / [vista padre]. El título de la página va en el h1. */
 function migas(padre){
   const v = S.sel && S.view==="exp" ? "exp" : S.view, it=[`<button type="button" data-act="back">Inicio</button>`];
-  if (GRUPO_VISTA[v]) it.push(`<span>${GRUPO_VISTA[v]}</span>`);
+  const grupo = v==="docs" && !dxPuedeGestionar() ? "Mi trabajo" : GRUPO_VISTA[v];
+  if (grupo) it.push(`<span>${grupo}</span>`);
   if (padre) it.push(`<button type="button" data-act="${padre[1]}">${esc(padre[0])}</button>`);
   return `<nav class="crumbs" aria-label="Ruta">${it.join('<span class="sep" aria-hidden="true">/</span>')}</nav>`;
 }
@@ -1220,14 +1222,15 @@ document.addEventListener("input", e=>{
 function marcarNav(){
   const v = S.sel && S.view==="exp" ? "exp" : (S.view||"inicio");
   document.querySelectorAll(".nav-i").forEach(b=>b.removeAttribute("aria-current"));
-  const id=VISTA_BTN[v==="exp"?"inicio":v]; if (id){ const bt=$("#"+id); bt?.setAttribute("aria-current","page"); bt?.closest(".nav-g")?.classList.remove("plegado"); }
+  let id=VISTA_BTN[v==="exp"?"inicio":v]; if (v==="docs" && $("#docsBtn")?.hidden) id="docpBtn";
+  if (id){ const bt=$("#"+id); bt?.setAttribute("aria-current","page"); bt?.closest(".nav-g")?.classList.remove("plegado"); }
   const p=S.pacientes?.get?.(S.sel);
   $("#topTitulo").textContent = v==="exp" && p ? `Expediente ${p.ficha?.nombre||""} · ${p.folio||""}` : (VISTA_TXT[v]||"Inicio");
 }
 function render(){
   const d=$("#detail"); S.dirty=false; S.stale=false; marcarNav(); document.body.classList.remove("menu-abierto");
   const p=S.pacientes.get(S.sel);
-  $("#app").classList.toggle("open", !!p || ["perfil","terapeutas","usuarios","sedes","entidades","areas","puestos","vacantes","colaboradores","supervision","organigrama","seguridad","orgresumen","indicadores","uso","reglamento","contratos","permisos","documentacion","ayuda","tablero","miasis","asistencia"].includes(S.view));
+  $("#app").classList.toggle("open", !!p || ["perfil","terapeutas","usuarios","sedes","entidades","areas","puestos","vacantes","colaboradores","supervision","organigrama","seguridad","orgresumen","indicadores","uso","reglamento","contratos","permisos","documentacion","ayuda","tablero","miasis","asistencia","docs"].includes(S.view));
   if (S.view==="perfil"){ d.innerHTML=perfilHtml(); activarPad(); return; }
   if (S.view==="terapeutas"){ d.innerHTML=terapeutasHtml(); return; }
   if (S.view==="usuarios"){ d.innerHTML=usuariosHtml(); return; }
@@ -1238,6 +1241,7 @@ function render(){
   if (S.view==="organigrama"){ d.innerHTML=organigramaHtml(); return; }
   if (S.view==="seguridad"){ d.innerHTML=seguridadHtml(); return; }
   if (S.view==="miasis"){ d.innerHTML=miAsistenciaHtml(); return; }
+  if (S.view==="docs"){ d.innerHTML=docsHtml(); return; }
   if (S.view==="asistencia"){ d.innerHTML=asistenciaHtml(); return; }
   if (S.view==="orgresumen"){ d.innerHTML=orgResumenHtml(); return; }
   if (S.view==="indicadores"){ d.innerHTML=orgIndicadoresHtml(); return; }
@@ -1287,7 +1291,7 @@ const ACCESOS = () => [
   {t:"Hoja administrativa", d:"Formato en Word para los datos de contacto (se resguarda aparte).", act:"hoja", si:esClinico()},
   {t:"Terapeutas", d:ES_SEDE()?"Directorio de terapeutas de tu sede.":"Directorio de terapeutas por sede.", act:"terapeutas", si:esClinico()},
   {t:veTodosContratos()?"Contratos del personal":"Mi contrato", d:veTodosContratos()?"Fecha de alta, salario, datos del empleador y firmas.":"Captura tus datos y firma tu contrato.", act:"contratos", si:tieneContrato()||veTodosContratos()},
-  {t:veDocsTodos()?"Documentación del personal":"Mi documentación", d:veDocsTodos()?"Revisa y verifica los PDF del personal.":"Sube en PDF tu identificación, comprobantes y constancias.", act:"documentacion", si:true},
+  {t:veDocsTodos()?"Documentación del personal":"Mis documentos", d:veDocsTodos()?"Revisa y verifica los PDF del personal.":"Sube en PDF tu identificación, comprobantes y constancias.", act:"documentacion", si:true},
   {t:"Reglamento", d:"Reglamento Interior de Trabajo y constancia de recepción.", act:"reglamento", si:true},
   {t:"Usuarios y permisos", d:S.rol==="admin_sede"?"Autoriza y edita las cuentas de tu sede.":"Autoriza cuentas, edita datos y asigna contraseñas.", act:"usuarios", si:gestionaCuentas()},
   {t:"Permisos adicionales", d:"Otorga permisos adicionales a personas específicas (en Usuarios y permisos).", act:"permisos", si:S.rol==="superusuario"},
@@ -1322,7 +1326,7 @@ function avisosHtml(){
   if (a.papelera) grupos.push({t:`${a.papelera} documento${a.papelera===1?"":"s"} en la papelera con el plazo de 30 días cumplido`, d:"Ya puedes eliminarlos definitivamente o restaurarlos si se borraron por error.", items:[], boton:{act:"documentacion", b:"Ver papelera"}});
   const dom=a.domicilio||[];
   if (dom.length){ const mio=dom.find(x=>x.user_id===S.uid), otros=dom.filter(x=>x.user_id!==S.uid);
-    if (mio) grupos.push({t:"Tu comprobante de domicilio tiene más de 3 meses", d:`Lo subiste el ${fmtDate(String(mio.subido).slice(0,10))}. Sube uno reciente en Mi documentación.`, items:[], boton:{act:"documentacion", b:"Subir"}});
+    if (mio) grupos.push({t:"Tu comprobante de domicilio tiene más de 3 meses", d:`Lo subiste el ${fmtDate(String(mio.subido).slice(0,10))}. Sube uno reciente en Mis documentos.`, items:[], boton:{act:"documentacion", b:"Subir"}});
     if (otros.length) add(`${otros.length} persona${otros.length===1?"":"s"} con comprobante de domicilio de más de 3 meses`, "Pídeles uno reciente.",
       otros.map(x=>{ const u=(S.usuarios||[]).find(y=>y.id===x.user_id); return `<button class="btn sm" type="button" data-act="abrirDocp" data-id="${esc(x.user_id)}">${esc(u?.nombre||u?.email||"Persona")} · ${esc(fmtDate(String(x.subido).slice(0,10)))}</button>`; })); }
   const inc=a.incompletos||[];
@@ -2303,6 +2307,150 @@ function segConfig(){
 /* ---------- Acciones ---------- */
 /* ======================= Módulo 03 · Asistencia y jornadas (diseño aprobado 2026-11-22) =======================
    La hora la pone el servidor; los registros originales no se editan; todo se valida en la base. */
+/* ======================= Módulo 05 · Documentos y firmas — Fase E1 (diseño aprobado 2026-11-22) =======================
+   Biblioteca única, versiones inmutables con huella SHA-256, expedientes y depósito privado. Las firmas llegan en la Fase E2. */
+const DOC_EST={borrador:["Borrador",""],en_revision:["En revisión","estado-pendiente"],pendiente_firma:["Pendiente de firma","estado-pendiente"],parcialmente_firmado:["Parcialmente firmado","estado-pendiente"],
+  firmado:["Firmado","estado-activo"],vigente:["Vigente","estado-activo"],rechazado:["Rechazado","estado-suspendido"],cancelado:["Cancelado",""],archivado:["Archivado",""]};
+const DOC_CONF={interna:"Interna",restringida:"Restringida",confidencial:"Confidencial",sensible:"Sensible"};
+const DOC_FIRMA={ninguna:"No requiere",simple:"Simple con evidencia",simple_nom151:"Simple + NOM-151",efirma:"e.firma del SAT",autografa:"Autógrafa (archivo escaneado)"};
+const DOC_TABS=[["resumen","Resumen"],["biblioteca","Biblioteca"],["expedientes","Expedientes"],["tipos","Tipos de documento"]];
+const DOC_ACC=new Set(["docs","docTab","docNuevo","docCrear","docCancelar","docVer","docCerrar","docSubir","docDescargar","docIntegridad","docVerificar","docEmitir","docArchivarForm","docArchivar","docEliminar","docEditar","docGuardarEd"]);
+const DX=()=>S.dx;
+const dxTipo=k=>DX()?.tipos.find(t=>t.clave===k);
+const dxSede=id=>DX()?.sedes.find(s=>s.id===id);
+const dxEnt=id=>DX()?.entidades.find(e=>e.id===id);
+const dxCol=id=>DX()?.colaboradores.find(c=>c.id===id);
+const dxVers=id=>(DX()?.versiones||[]).filter(v=>v.doc_id===id);
+const dxEntDeSede=sid=>DX()?.sedeEnt.find(x=>x.sede_id===sid)?.entidad_id;
+const dxVence=d=>!d.vence?"":diasHasta(d.vence)<0?"bad":diasHasta(d.vence)<=30?"warn":"ok";
+const dxEstado=d=>{ const e=DOC_EST[d.estado]||[d.estado,""]; return dxVence(d)==="bad"&&d.estado==="vigente"?`<span class="pill estado-suspendido">Vencido</span>`:`<span class="pill ${e[1]}">${e[0]}</span>`; };
+const dxPuedeGestionar=()=>S.rol==="superusuario"||(S.api?.docNivel||0)>=2;
+const dxTam=b=>b>=1048576?(b/1048576).toFixed(1)+" MB":Math.max(1,Math.round(b/1024))+" KB";
+async function docsCargar(){ try{ S.dx=await S.api.docsDatos(); }catch(e){ S.dx={error:e?.message||"No se pudo cargar."}; } if (["docs","documentacion"].includes(S.view)) render(); }
+const docsPag=(acc,cuerpo)=>`<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px"><div class="phead">${migas()}<h1>Documentos y firmas</h1><span style="display:flex;gap:8px;flex-wrap:wrap">${acc||""}</span></div>${cuerpo}</div>`;
+
+function docsHtml(){
+  if (!S.dx) return docsPag("",`<p class="status">Cargando…</p>`);
+  if (S.dx.error) return docsPag("",`<div class="banner bad">No se pudo cargar: ${esc(S.dx.error)}</div>`);
+  if (S.dxVer) return docDetalleHtml();
+  if (!DOC_TABS.some(t=>t[0]===S.dxTab)) S.dxTab="resumen";
+  const f={resumen:dxResumen,biblioteca:dxBiblioteca,expedientes:dxExpedientes,tipos:dxTipos}[S.dxTab];
+  return docsPag(dxPuedeGestionar()&&!S.dxNuevo?`<button class="btn primary" type="button" data-act="docNuevo">+ Nuevo documento</button>`:"",
+    `<p class="status" style="margin:0">Solo ves los documentos de las sedes, entidades y categorías que tienes autorizadas. Las firmas electrónicas llegan en la siguiente fase.</p>
+    ${S.dxNuevo?dxForm():""}
+    <div class="tabs" role="tablist">${DOC_TABS.map(([k,t])=>`<button class="tab" role="tab" type="button" data-act="docTab" data-t="${k}" aria-selected="${S.dxTab===k}">${t}</button>`).join("")}</div>${f()}`);
+}
+function dxResumen(){ const v=DX().docs, c=e=>v.filter(d=>d.estado===e).length, kp=(t,n,h)=>`<div class="kpi"><span>${t}</span><b>${n}</b>${h?`<small class="status">${h}</small>`:""}</div>`;
+  const prox=v.filter(d=>d.vence&&d.estado!=="archivado").sort((a,b)=>a.vence.localeCompare(b.vence)).slice(0,8);
+  const porSede=DX().sedes.map(s=>[s.nombre,v.filter(d=>d.sede_id===s.id).length]).filter(x=>x[1]), porEnt=DX().entidades.map(e=>[e.nombre_corto,v.filter(d=>d.entidad_id===e.id).length]).filter(x=>x[1]);
+  return `<div class="kpis">${kp("Documentos",v.length,"que puedes ver")}${kp("Vigentes",c("vigente"))}${kp("Borradores",c("borrador"))}${kp("Pendientes de firma",c("pendiente_firma")+c("parcialmente_firmado"),"Fase E2")}${kp("Por vencer (30 días)",v.filter(d=>dxVence(d)==="warn"&&d.estado!=="archivado").length)}${kp("Vencidos",v.filter(d=>dxVence(d)==="bad"&&d.estado!=="archivado").length)}${kp("Sin verificar",v.filter(d=>d.colaborador_id&&!d.verificado_en&&d.version>0&&d.estado!=="archivado").length,"de expedientes")}${kp("Archivados",c("archivado"))}</div>
+  <div class="org-grid"><section class="note"><div class="note-h"><h3>Próximos vencimientos</h3></div><ul class="pend">${prox.map(d=>`<li><span class="pill ${({bad:"estado-suspendido",warn:"estado-pendiente",ok:"estado-activo"})[dxVence(d)]}">${diasHasta(d.vence)<0?"Vencido":diasHasta(d.vence)+" días"}</span> <b>${esc(d.nombre)}</b><br><span class="status">${fmtDate(d.vence)} · ${esc(dxTipo(d.tipo)?.nombre||d.tipo)}</span> <button class="btn sm" type="button" data-act="docVer" data-id="${d.id}">Abrir</button></li>`).join("")||`<li class="status">Sin documentos con vencimiento.</li>`}</ul></section>
+   <section class="note"><div class="note-h"><h3>Por sede y por entidad fiscal</h3></div><div class="tbl-wrap"><table><tbody>${porSede.map(([n,k])=>`<tr><td>${esc(n)}</td><td>${k}</td></tr>`).join("")}${porEnt.map(([n,k])=>`<tr><td><b>${esc(n)}</b> (entidad)</td><td>${k}</td></tr>`).join("")||""}</tbody></table></div>
+   ${!porSede.length&&!porEnt.length?`<p class="status" style="margin:0">Aún no hay documentos.</p>`:""}</section></div>`; }
+function dxBiblioteca(){ const F=S.dxF||{}, q=norm(F.q||"");
+  const v=DX().docs.filter(d=>(!F.cat||dxTipo(d.tipo)?.categoria===F.cat)&&(!F.sede||d.sede_id===F.sede)&&(!F.estado||d.estado===F.estado)&&(F.estado==="archivado"||F.estado||d.estado!=="archivado")&&(!q||norm(`${d.nombre} ${d.folio||""} ${(d.etiquetas||[]).join(" ")} ${dxCol(d.colaborador_id)?.nombre||""}`).includes(q)));
+  return `<div class="filtros"><input type="search" id="dxQ" placeholder="Buscar por nombre, folio, persona o etiqueta" value="${esc(F.q||"")}" aria-label="Buscar documentos">
+    <select id="dxC" aria-label="Categoría"><option value="">Todas las categorías</option>${DX().categorias.filter(c=>c.clave!=="F").map(c=>`<option value="${c.clave}"${F.cat===c.clave?" selected":""}>${c.clave}. ${esc(c.nombre)}</option>`).join("")}</select>
+    <select id="dxS" aria-label="Sede"><option value="">Todas las sedes</option>${DX().sedes.filter(s=>DX().docs.some(d=>d.sede_id===s.id)).map(s=>`<option value="${s.id}"${F.sede===s.id?" selected":""}>${esc(s.nombre)}</option>`).join("")}</select>
+    <select id="dxE" aria-label="Estado"><option value="">Activos</option>${Object.entries(DOC_EST).map(([k,[t]])=>`<option value="${k}"${F.estado===k?" selected":""}>${t}</option>`).join("")}</select><span class="status">${v.length} documento(s)</span></div>
+  <div class="tbl-wrap"><table><thead><tr><th>Documento</th><th>Tipo</th><th>Sede · entidad</th><th>Persona</th><th>Confidencialidad</th><th>Versión</th><th>Estado</th><th></th></tr></thead><tbody>
+  ${v.map(d=>`<tr><td><b>${esc(d.nombre)}</b><br><span class="status mono">${esc(d.folio||"Sin folio")}</span></td><td>${esc(dxTipo(d.tipo)?.nombre||d.tipo)}<br><span class="status">${esc(dxTipo(d.tipo)?.categoria||"")}</span></td>
+    <td>${esc(dxSede(d.sede_id)?.nombre||"—")}<br><span class="status">${esc(dxEnt(d.entidad_id)?.nombre_corto||"")}</span></td><td class="sens">${esc(dxCol(d.colaborador_id)?.nombre||"—")}</td><td>${DOC_CONF[d.confidencialidad]}</td><td>${d.version||"—"}</td><td>${dxEstado(d)}${d.verificado_en?` <span class="pill estado-activo">Verificado</span>`:""}</td>
+    <td><button class="btn sm" type="button" data-act="docVer" data-id="${d.id}">Abrir</button></td></tr>`).join("")||`<tr><td colspan="8" class="status">${DX().docs.length?"Sin documentos con esos filtros.":"La biblioteca está vacía. Crea el primer documento con + Nuevo documento."}</td></tr>`}</tbody></table></div>
+  <p class="status" style="margin:0">Los documentos clínicos no se listan aquí: siguen en cada expediente (con folio, versiones y consentimiento firmado). Los contratos individuales y la constancia del Reglamento siguen en sus secciones.</p>`; }
+function dxExpedientes(){ const cs=DX().colaboradores.filter(c=>c.estatus!=="baja"); if (!cs.some(c=>c.id===S.dxCol)) S.dxCol=cs[0]?.id;
+  if (!cs.length) return `<p class="status">No hay colaboradores que puedas consultar.</p>`;
+  if (S.dxExpFor!==S.dxCol){ S.dxExpFor=S.dxCol; S.dxExp=null; S.api.expedienteDocs(S.dxCol).then(r=>{ S.dxExp=r; },e=>{ S.dxExp={error:e?.message}; }).finally(()=>{ if (S.view==="docs"&&S.dxTab==="expedientes") render(); }); }
+  const docs=DX().docs.filter(d=>d.colaborador_id===S.dxCol), ex=S.dxExp;
+  return `<div class="filtros"><select id="dxCol" aria-label="Persona">${cs.map(c=>`<option value="${c.id}"${c.id===S.dxCol?" selected":""}>${esc(c.nombre)} · ${esc(dxSede(c.sede_principal_id)?.nombre||"")}</option>`).join("")}</select></div>
+  <div class="org-grid"><section class="note"><div class="note-h"><h3>Documentos obligatorios</h3></div>${!ex?`<p class="status">Cargando…</p>`:ex.error?`<p class="status">${esc(ex.error)}</p>`:
+    `<ul class="pend">${ex.map(r=>`<li><b>${esc(r.nombre)}</b> ${!r.doc_id?`<span class="pill estado-pendiente">Falta</span>`:r.verificado?`<span class="pill estado-activo">Verificado</span>`:`<span class="pill">${esc(DOC_EST[r.estado]?.[0]||r.estado)}</span>`}</li>`).join("")||`<li class="status">Su rol no tiene documentos obligatorios en este catálogo.</li>`}</ul>
+     <p class="status" style="margin:0">La identificación, CURP, comprobante de domicilio, título y cédula en PDF siguen en Documentación del personal.</p>`}</section>
+   <section class="note"><div class="note-h"><h3>Documentos de la persona (${docs.length})</h3></div><ul class="pend">${docs.map(d=>`<li><b>${esc(d.nombre)}</b> ${dxEstado(d)}<br><span class="status">${esc(d.folio||"Sin folio")}${d.vence?" · vence "+fmtDate(d.vence):""}</span> <button class="btn sm" type="button" data-act="docVer" data-id="${d.id}">Abrir</button></li>`).join("")||`<li class="status">Sin documentos.</li>`}</ul></section></div>`; }
+function dxTipos(){ return `<div class="tbl-wrap"><table><thead><tr><th>Tipo</th><th>Categoría</th><th>Firma</th><th>Vence</th><th>Confidencialidad</th><th>Retención</th><th>Obligatorio para</th></tr></thead><tbody>
+  ${DX().tipos.map(t=>`<tr><td><b>${esc(t.nombre)}</b></td><td>${t.categoria}. ${esc(DX().categorias.find(c=>c.clave===t.categoria)?.nombre||"")}</td><td>${DOC_FIRMA[t.nivel_firma]}</td><td>${t.vence?"Sí":"No"}</td><td>${DOC_CONF[t.confidencialidad]}</td><td>${esc(t.retencion)}</td><td>${(t.obligatorio_en||[]).map(r=>({psicologo_nomina:"Psicólogo base",psicologo_comision:"Psicólogo independiente"})[r]||r).join(", ")||"—"}</td></tr>`).join("")}</tbody></table></div>
+  <p class="status" style="margin:0">Niveles de firma: <b>simple con evidencia</b> (contraseña o código, documento completo, aceptación, hora del servidor y huella) es la que se usará primero, sin costo. NOM-151 y e.firma quedan para después de la revisión legal. Las retenciones marcadas "por verificar" se confirman con asesoría; nada se borra en automático.</p>`; }
+function dxForm(){ const sedes=DX().sedes, ents=DX().entidades, t=S.dxNuevo.tipo||"", ti=dxTipo(t), sede=S.dxNuevo.sede||"", ent=sede?dxEntDeSede(sede):(S.dxNuevo.ent||"");
+  return `<section class="note"><div class="note-h"><h3>Nuevo documento</h3></div><form class="datos" onsubmit="return false">
+    ${fld("dnTipo","Tipo *",t,{opts:[["","— Selecciona —"],...DX().tipos.filter(x=>x.activo&&x.categoria!=="F").map(x=>[x.clave,`${x.categoria}. ${x.nombre}`])],span:2})}
+    ${fld("dnNom","Nombre *",S.dxNuevo.nombre||"",{span:2,ph:"Ej. Arrendamiento de la sede Lindavista 2027"})}
+    ${fld("dnSede","Sede",sede,{opts:[["","Sin sede (documento de la entidad)"],...sedes.map(s=>[s.id,s.nombre])]})}
+    ${fld("dnEnt","Entidad fiscal *",ent,{opts:[["","— Selecciona —"],...ents.map(e=>[e.id,e.nombre_corto])],ro:!!sede,hint:sede?"Se toma de la sede.":""})}
+    ${fld("dnCol","Persona (expediente)","",{opts:[["","— Ninguna —"],...DX().colaboradores.filter(c=>c.estatus!=="baja").map(c=>[c.id,c.nombre])]})}
+    ${fld("dnVence","Vence",""+(S.dxNuevo.vence||""),{type:"date",hint:ti?.vence?"Este tipo suele vencer; escribe la fecha solo si la conoces.":""})}
+    ${fld("dnConf","Confidencialidad",ti?.confidencialidad||"interna",{opts:Object.entries(DOC_CONF)})}
+    ${fld("dnEtq","Etiquetas","",{ph:"Separadas por coma"})}</form>
+    <p class="status" style="margin:0">El documento nace como borrador. Después subes el archivo (PDF, Word, PNG o JPG, máx. 20 MB) y lo publicas para que reciba folio.</p>
+    <div class="actions"><button class="btn primary" type="button" data-act="docCrear">Crear borrador</button><button class="btn" type="button" data-act="docCancelar">Cancelar</button></div></section>`; }
+function docDetalleHtml(){ const d=DX().docs.find(x=>x.id===S.dxVer); if (!d){ S.dxVer=null; return docsHtml(); }
+  const t=dxTipo(d.tipo), vs=dxVers(d.id), g=dxPuedeGestionar(), mio=d.colaborador_id&&d.colaborador_id===DX().yo, ed=S.dxEd;
+  return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px"><div class="phead">${migas(dxPuedeGestionar()?["Documentos y firmas","docCerrar"]:["Mis documentos","documentacion"])}<h1>${esc(d.nombre)}</h1><span>${dxEstado(d)}</span></div>
+  <div class="org-grid"><section class="note"><div class="note-h"><h3>Datos</h3>${g&&d.estado!=="archivado"&&!ed?`<button class="btn sm" type="button" data-act="docEditar">Editar</button>`:""}</div>
+    ${ed?`<form class="datos" onsubmit="return false">${fld("deNom","Nombre",d.nombre,{span:2})}${fld("deVence","Vence",d.vence||"",{type:"date"})}${fld("deEtq","Etiquetas",(d.etiquetas||[]).join(", "))}</form><div class="actions"><button class="btn primary" type="button" data-act="docGuardarEd">Guardar</button><button class="btn" type="button" data-act="docCancelar">Cancelar</button></div>`:
+    `<dl class="dl-org"><dt>Folio</dt><dd class="mono">${esc(d.folio||"Sin folio (borrador)")}</dd><dt>Tipo</dt><dd>${esc(t?.nombre||d.tipo)} · ${esc(t?.categoria||"")}</dd><dt>Entidad fiscal</dt><dd>${esc(dxEnt(d.entidad_id)?.nombre_corto||"")}</dd><dt>Sede</dt><dd>${esc(dxSede(d.sede_id)?.nombre||"—")}</dd>
+     <dt>Persona</dt><dd class="sens">${esc(dxCol(d.colaborador_id)?.nombre||"—")}</dd><dt>Confidencialidad</dt><dd>${DOC_CONF[d.confidencialidad]}</dd><dt>Firma requerida</dt><dd>${DOC_FIRMA[t?.nivel_firma||"ninguna"]}</dd>
+     <dt>Publicado</dt><dd>${d.emitido_en?fmtDate(d.emitido_en):"—"}</dd><dt>Vence</dt><dd>${d.vence?fmtDate(d.vence)+` <span class="pill ${({bad:"estado-suspendido",warn:"estado-pendiente",ok:"estado-activo"})[dxVence(d)]}">${diasHasta(d.vence)<0?"Vencido":diasHasta(d.vence)+" días"}</span>`:"—"}</dd>
+     <dt>Verificación</dt><dd>${d.verificado_en?"Verificado el "+fmtFH(d.verificado_en):"Sin verificar"}</dd>${d.etiquetas?.length?`<dt>Etiquetas</dt><dd>${d.etiquetas.map(esc).join(", ")}</dd>`:""}${d.archivado_en?`<dt>Archivado</dt><dd>${fmtFH(d.archivado_en)} · ${esc(d.archivado_motivo||"")}</dd>`:""}</dl>`}</section>
+   <section class="note"><div class="note-h"><h3>Acciones</h3></div><div class="actions" style="flex-wrap:wrap">
+     ${g&&["borrador","en_revision"].includes(d.estado)?`<button class="btn primary" type="button" data-act="docEmitir" data-id="${d.id}"${d.version<1?" disabled title=\"Sube el archivo primero\"":""}>Publicar con folio</button>`:""}
+     ${g&&!mio&&d.version>0&&!d.verificado_en&&d.estado!=="archivado"?`<button class="btn" type="button" data-act="docVerificar" data-id="${d.id}">Marcar verificado contra el original</button>`:""}
+     ${g&&d.estado!=="archivado"&&d.folio?`<button class="btn" type="button" data-act="docArchivarForm">Archivar</button>`:""}
+     ${S.rol==="superusuario"&&d.estado==="borrador"&&!d.folio?`<button class="btn danger" type="button" data-act="docEliminar" data-id="${d.id}">Eliminar borrador</button>`:""}</div>
+     ${S.dxArch?`<div class="datos">${fld("daMot","Motivo para archivar *","",{span:3,ph:"Ej. Sustituido por el contrato 2027"})}</div><div class="actions"><button class="btn danger" type="button" data-act="docArchivar" data-id="${d.id}">Archivar</button><button class="btn" type="button" data-act="docCancelar">Cancelar</button></div>`:""}
+     <p class="status" style="margin:0">Publicar asigna el folio CEMEPI-INS-AAAA-NNNNN. Un documento publicado no se elimina: se archiva con un motivo. Las firmas llegan en la siguiente fase.</p></section></div>
+  <section class="note"><div class="note-h"><h3>Versiones (${vs.length})</h3></div>
+   ${(g||(mio&&t?.carga_propia))&&d.estado!=="archivado"&&!(mio&&!g&&d.verificado_en)?`<div class="datos"><div class="fld" style="grid-column:span 2"><label for="dvArch">Archivo (PDF, Word, PNG o JPG, máx. 20 MB)</label><input id="dvArch" type="file" accept=".pdf,.docx,.png,.jpg,.jpeg,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg"></div>${fld("dvMot","Motivo de la versión *",vs.length?"":"Versión inicial")}</div>
+     <div class="actions"><button class="btn primary" type="button" data-act="docSubir" data-id="${d.id}">Subir versión ${d.version+1}</button><span class="status">La huella SHA-256 se calcula en tu dispositivo antes de subir el archivo.</span></div>`:""}
+   <div class="tbl-wrap"><table><thead><tr><th>Versión</th><th>Archivo</th><th>Huella SHA-256</th><th>Subida</th><th>Motivo</th><th></th></tr></thead><tbody>
+   ${vs.map(v=>`<tr><td>${v.version}${v.version===d.version?` <span class="pill estado-activo">Vigente</span>`:""}</td><td>${esc(v.nombre_archivo)}<br><span class="status">${dxTam(v.tamano)}</span></td><td class="mono" style="font-size:11px;word-break:break-all;max-width:240px">${esc(v.sha256)}</td><td>${fmtFH(v.creado_en)}</td><td>${esc(v.motivo)}</td>
+     <td style="white-space:nowrap"><button class="btn sm" type="button" data-act="docDescargar" data-id="${d.id}" data-v="${v.version}">Descargar</button> <button class="btn sm" type="button" data-act="docIntegridad" data-id="${d.id}" data-v="${v.version}">Verificar integridad</button></td></tr>`).join("")||`<tr><td colspan="6" class="status">Aún no hay archivo.</td></tr>`}</tbody></table></div>
+   <p class="status" style="margin:0">Las versiones no se modifican ni se borran. Ver un documento no da permiso de descargarlo: descarga su dueño, quien lo gestiona o el Superusuario, y cada descarga queda en la bitácora.</p></section></div>`; }
+
+/* ---------- Mis documentos: lo institucional de la persona (dentro de la vista de documentación) ---------- */
+function misDocsInstHtml(){
+  if (!S.dx){ if (!S.dxCargando){ S.dxCargando=true; docsCargar().finally(()=>{ S.dxCargando=false; }); } return `<section class="doc-sec"><h3 class="sec-h">Mis documentos institucionales</h3><p class="status">Cargando…</p></section>`; }
+  if (S.dx.error) return "";
+  const yo=DX().yo, mios=yo?DX().docs.filter(d=>d.colaborador_id===yo&&d.estado!=="archivado"):[];
+  return `<section class="doc-sec"><h3 class="sec-h">Mis documentos institucionales</h3>
+    <div class="org-grid"><div><ul class="pend">${mios.map(d=>`<li><b>${esc(d.nombre)}</b> ${dxEstado(d)}<br><span class="status">${esc(d.folio||"Sin folio")}${d.vence?" · vence "+fmtDate(d.vence):""}</span> <button class="btn sm" type="button" data-act="docVer" data-id="${d.id}">Abrir</button></li>`).join("")||`<li class="status">Aún no tienes documentos institucionales (constancias, convenios, acuses).</li>`}</ul></div>
+    <div><ul class="pend"><li><b>Mi contrato</b><br><span class="status">Contrato individual de trabajo y su firma.</span> <button class="btn sm" type="button" data-act="contratos">Abrir</button></li>
+      <li><b>Reglamento Interior de Trabajo</b><br><span class="status">Lectura y constancia de recepción.</span> <button class="btn sm" type="button" data-act="reglamento">Abrir</button></li></ul></div></div>
+    <p class="status" style="margin:0">Las solicitudes de firma aparecerán aquí cuando se active la siguiente fase.</p></section>`;
+}
+
+/* ---------- Acciones ---------- */
+async function docAccion(a,b){
+  const v=id=>($("#"+id)?.value??"").trim(), recargar=async(ok)=>{ toast(ok); await docsCargar(); };
+  const err=e=>toast(/row-level|permission/i.test(e?.message||"")?"No tienes autorización para esa acción.":(e?.message||"No se pudo completar."));
+  if (a==="docs"){ S.view="docs"; S.dxVer=null; S.dxNuevo=null; S.dxTab=S.dxTab||"resumen"; render(); return docsCargar(); }
+  if (a==="docTab"){ S.dxTab=b.dataset.t; return render(); }
+  if (a==="docNuevo"){ S.dxNuevo={}; render(); setTimeout(()=>$("#dnTipo")?.focus(),30); return; }
+  if (a==="docCancelar"){ S.dxNuevo=null; S.dxEd=false; S.dxArch=false; return render(); }
+  if (a==="docCrear"){ const tipo=v("dnTipo"), nombre=v("dnNom"), sede=v("dnSede"), ent=sede?dxEntDeSede(sede):v("dnEnt");
+    if (!tipo) return toast("Elige el tipo de documento."); if (nombre.length<3) return toast("Escribe el nombre del documento."); if (!ent) return toast("Elige la sede o la entidad fiscal.");
+    try{ const id=await S.api.crearDoc({tipo,nombre,sede,entidad:sede?null:ent,colaborador:v("dnCol"),vence:v("dnVence"),confidencialidad:v("dnConf"),etiquetas:v("dnEtq").split(",").map(x=>x.trim()).filter(Boolean)});
+      S.dxNuevo=null; await docsCargar(); S.dxVer=id; render(); toast("Borrador creado. Sube el archivo para continuar."); }catch(e){ err(e); } return; }
+  if (a==="docVer"){ S.view="docs"; S.dxVer=b.dataset.id; S.dxEd=false; S.dxArch=false; render(); if (!S.dx) docsCargar(); return; }
+  if (a==="docCerrar"){ S.dxVer=null; return render(); }
+  if (a==="docEditar"){ S.dxEd=true; return render(); }
+  if (a==="docGuardarEd"){ try{ await S.api.actualizarDoc(S.dxVer,{nombre:v("deNom"),vence:v("deVence"),etiquetas:v("deEtq").split(",").map(x=>x.trim()).filter(Boolean)}); S.dxEd=false; await recargar("Datos guardados."); }catch(e){ err(e); } return; }
+  if (a==="docSubir"){ const f=$("#dvArch")?.files?.[0], m=v("dvMot"); if (!f) return toast("Elige el archivo."); if (m.length<3) return toast("Escribe el motivo de la versión.");
+    b.disabled=true; b.textContent="Subiendo…"; try{ const r=await S.api.subirVersionDoc(b.dataset.id,f,m); await recargar(`Versión ${r.version} registrada con su huella.`); }catch(e){ b.disabled=false; err(e); render(); } return; }
+  if (a==="docDescargar"){ const w=window.open("","_blank"); try{ const url=await S.api.urlDoc(b.dataset.id,+b.dataset.v); if (w) w.location.href=url; else location.assign(url); }catch(e){ if (w) w.close(); err(e); } return; }
+  if (a==="docIntegridad"){ const ver=dxVers(b.dataset.id).find(x=>x.version===+b.dataset.v); if (!ver) return; b.disabled=true;
+    try{ const h=await S.api.huellaDoc(ver.archivo); toast(h===ver.sha256?"Íntegro: el archivo coincide con la huella registrada.":"Atención: el archivo NO coincide con la huella registrada."); }catch(e){ err(e); } b.disabled=false; return; }
+  if (a==="docVerificar"){ if (!arm(b,"dv"+b.dataset.id,"¿Lo comparaste con el original?")) return; armed=null; try{ await S.api.verificarDoc(b.dataset.id); await recargar("Documento verificado."); }catch(e){ err(e); } return; }
+  if (a==="docEmitir"){ if (!arm(b,"de"+b.dataset.id,"¿Publicar con folio?")) return; armed=null; try{ const fol=await S.api.emitirDoc(b.dataset.id); await recargar(`Publicado con el folio ${fol}.`); }catch(e){ err(e); } return; }
+  if (a==="docArchivarForm"){ S.dxArch=true; render(); setTimeout(()=>$("#daMot")?.focus(),30); return; }
+  if (a==="docArchivar"){ const m=v("daMot"); if (m.length<10) return toast("Escribe el motivo (10 caracteres o más)."); try{ await S.api.archivarDoc(b.dataset.id,m); S.dxArch=false; await recargar("Documento archivado."); }catch(e){ err(e); } return; }
+  if (a==="docEliminar"){ if (!arm(b,"dl"+b.dataset.id,"¿Eliminar el borrador?")) return; armed=null; try{ await S.api.eliminarBorradorDoc(b.dataset.id); S.dxVer=null; await recargar("Borrador eliminado."); }catch(e){ err(e); } return; }
+}
+document.addEventListener("input", e=>{ if (S.view!=="docs") return; const t=e.target; if (t.id==="dxQ"){ S.dxF=S.dxF||{}; S.dxF.q=t.value; const p=t.selectionStart; render(); const q=$("#dxQ"); q?.focus(); q?.setSelectionRange(p,p); } });
+document.addEventListener("change", e=>{ if (S.view!=="docs") return; const t=e.target; S.dxF=S.dxF||{};
+  if (t.id==="dxC"){ S.dxF.cat=t.value; render(); } if (t.id==="dxS"){ S.dxF.sede=t.value; render(); } if (t.id==="dxE"){ S.dxF.estado=t.value; render(); }
+  if (t.id==="dxCol"){ S.dxCol=t.value; render(); }
+  if (S.dxNuevo&&["dnTipo","dnSede","dnEnt"].includes(t.id)){ S.dxNuevo={tipo:$("#dnTipo").value,nombre:$("#dnNom").value,sede:$("#dnSede").value,ent:$("#dnEnt").value,vence:$("#dnVence").value}; render(); } });
+
 const ASIS_TZ="America/Mexico_City";
 const asisHoy=()=>new Intl.DateTimeFormat("en-CA",{timeZone:ASIS_TZ}).format(new Date());
 const asisDia=iso=>new Intl.DateTimeFormat("en-CA",{timeZone:ASIS_TZ}).format(new Date(iso));
@@ -3022,7 +3170,7 @@ function docpPersonaHtml(uid){
       </form>
       <div class="actions"><button class="btn primary" type="button" data-act="subirDocp">Subir PDF</button></div>
       <span class="status">Solo tú, la Dirección y recursos humanos ven tus documentos. No subas aquí documentos de consultantes. Escanea con buena luz y que se lea completo.</span></section>` : "";
-  const lista = `<section class="note"><div class="note-h"><h3>${propio?"Mis documentos":"Documentos"} (${docs.length})</h3></div>
+  const lista = `<section class="note"><div class="note-h"><h3>${propio?"Mis PDF personales":"Documentos"} (${docs.length})</h3></div>
     ${req.length?`<p style="margin:0 0 8px">${req.map(k=>`<span class="pill ${tipos.has(k)?"estado-activo":"estado-pendiente"}">${tipos.has(k)?"✓":"Falta"} · ${esc(DOCP_TIPOS[k])}</span>`).join(" ")}</p>`:""}
     ${docs.length?`<div class="tbl-wrap"><table><thead><tr><th>Documento</th><th>Archivo</th><th>Subido</th><th>Estado</th><th></th></tr></thead><tbody>
       ${docs.map(d=>`<tr><td><b>${esc(DOCP_TIPOS[d.tipo]||d.tipo)}</b>${d.descripcion?`<br><span class="status">${esc(d.descripcion)}</span>`:""}</td>
@@ -3054,10 +3202,10 @@ function documentacionHtml(){
         <td>${req.length?(faltan?`<span class="pill estado-pendiente">Faltan ${faltan}</span>`:`<span class="pill estado-activo">Completos</span>`):"—"}</td>
         <td><button class="btn sm" type="button" data-act="docpVer" data-id="${esc(u.id)}">Abrir</button></td></tr>`; }).join("") || `<tr><td colspan="5">No hay personal activo.</td></tr>`}
     </tbody></table></div></section>`; }
-  return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">${cab(todos?"Documentación":"Mi documentación")}
+  return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">${cab(todos?"Documentación":"Mis documentos")}
     <p class="status" style="margin:0">Sube en PDF tu identificación, CURP, comprobante de domicilio, constancia de situación fiscal, cédula y título profesional, constancias de cursos, diplomados y certificaciones. ${ES_SEDE()&&!tengo("contratos")?"Como administración de sede ves la documentación de los psicólogos de tu sede y puedes verificarla contra los originales.":todos?"Como Dirección o recursos humanos ves la documentación de todo el personal y puedes verificarla contra los originales.":"Solo tú, la Dirección y recursos humanos los ven."}</p>
     ${ES_DIR()?`<p class="banner" style="margin:0;display:block"><b>Respaldo:</b> los respaldos automáticos de Supabase guardan la base de datos, pero <b>no los PDF</b>. Pulsa <b>Descargar respaldo (ZIP)</b> al menos una vez al mes y guárdalo en un disco o carpeta segura de CEMEPI (contiene datos personales del personal). Cada descarga queda en la bitácora.</p>`:""}
-    ${S.rol==="superusuario"?"":docpPersonaHtml(S.uid)}${general}${ES_DIR()?papeleraHtml():""}</div>`;
+    ${S.rol==="superusuario"?"":misDocsInstHtml()+docpPersonaHtml(S.uid)}${general}${ES_DIR()?papeleraHtml():""}</div>`;
 }
 function papeleraHtml(){
   const ps=S.docpPapelera||[], nom=id=>{ const u=(S.usuarios||[]).find(x=>x.id===id); return u?(u.nombre||u.email):"(cuenta eliminada)"; };
@@ -3127,6 +3275,9 @@ const GUIAS = [
   {t:"Responder solicitudes de acceso", si:()=>S.rol==="superusuario", pasos:["Entra a Configuración → Usuarios y permisos → Solicitudes de acceso.","Pulsa Responder: puedes aprobar (eligiendo nivel y fecha de fin), pedir más información o rechazar.","Las revisiones automáticas aparecen cuando un colaborador pasa a Baja en Organización: abre su cuenta y decide si la desactivas."]},
   {t:"Pedir un acceso que no tengo", si:()=>true, pasos:["Entra a Configuración → Usuarios y permisos → Solicitudes de acceso.","Pulsa + Nueva solicitud, elige la sede, el módulo y el nivel, y explica para qué lo necesitas.","El Superusuario la revisa. Nada cambia hasta que la apruebe; verás la respuesta en la misma pantalla."]},
   {t:"Consultar la organización", si:()=>(S.api?.orgNivel||0)>=1, pasos:["Entra a Organización → Resumen para ver sedes, personas, vacantes y alertas de las sedes que tienes autorizadas.","En Organigrama elige la vista (línea de reporte, área, sede, supervisión clínica o coordinación) y pulsa a una persona para ver su ficha.","En Supervisión registra a quién reporta cada persona; en Vacantes, quién ocupa cada plaza."]},
+  {t:"Agregar un documento a la biblioteca", si:()=>dxPuedeGestionar(), pasos:["Entra a Administración → Documentos y firmas y pulsa + Nuevo documento.","Elige el tipo, escribe el nombre y elige la sede (la entidad fiscal se toma de la sede) o, si es un documento de la entidad, la entidad fiscal. Si es de una persona, elígela para que quede en su expediente.","Pulsa Crear borrador y sube el archivo (PDF, Word, PNG o JPG, máx. 20 MB). La app calcula su huella digital antes de subirlo.","Pulsa Publicar con folio. Un documento publicado no se elimina: si deja de valer, se archiva con un motivo."]},
+  {t:"Corregir un documento sin perder el anterior", si:()=>dxPuedeGestionar(), pasos:["Abre el documento en Documentos y firmas.","En Versiones elige el archivo nuevo, escribe el motivo y pulsa Subir versión.","La versión anterior se conserva con su huella; la nueva queda como vigente."]},
+  {t:"Comprobar que un archivo no se alteró", si:()=>dxPuedeGestionar(), pasos:["Abre el documento y, en Versiones, pulsa Verificar integridad.","La app vuelve a calcular la huella del archivo guardado y la compara con la registrada al subirlo."]},
   {t:"Registrar mi entrada y salida", si:()=>!!S.rol, pasos:["Entra a Mi trabajo → Mi asistencia.","En la sede, escanea con la cámara de tu celular el código QR de la recepción: se abre la app y confirma la sede. También puedes pulsar Registrar entrada desde la app.","Al terminar tu jornada, pulsa Registrar salida. La hora la pone el servidor, no tu celular.","Si olvidaste registrar o te equivocaste, pulsa Pedir corrección o permiso. Tu registro original no se borra: la corrección aprobada queda como ajuste.","Si eres psicólogo(a) independiente, el control no te aplica; puedes registrar actividades de forma voluntaria."]},
   {t:"Pedir un permiso, vacaciones o justificar una incidencia", si:()=>!!S.rol, pasos:["En Mi asistencia pulsa Pedir corrección o permiso.","Elige el tipo, la fecha y explica brevemente. En incapacidades no escribas el diagnóstico.","Tu jefe directo la revisa. Nada cambia hasta que se apruebe; verás la respuesta en Mis solicitudes."]},
   {t:"Supervisar la asistencia de mi equipo", si:()=>asisSupervisa(), pasos:["Entra a Administración → Asistencia y jornadas. Solo ves a las personas que te corresponden.","En Resumen eliges sede y fecha. Fuera de horario y Sin entrada son datos por revisar, nunca faltas ni descuentos automáticos.","En Permisos y solicitudes e Incidencias revisa y resuelve con un motivo. No puedes resolver lo tuyo.","En Actividades complementarias valida el tiempo reportado (notas, supervisión, capacitación: son tiempo de trabajo)."]},
@@ -3148,6 +3299,7 @@ const MATRIZ = [
   ["Reglamento", ["✓ + editar leyenda","✓ + editar leyenda","✓ + constancias de su sede","✓","✓","✓"]],
   ["Usuarios", ["Todos","Sin Directivos","Su sede","—","—","—"]],
   ["Permisos", ["✓","—","—","—","—","—"]],
+  ["Documentos y firmas", ["Todo","Sedes de CEMEPI, S.C. (sensibles con permiso)","Su sede","Solo los suyos","Solo los suyos","Solo los suyos"]],
   ["Mi asistencia (registrar)", ["✓","✓","✓","✓","✓","No aplica (actividades voluntarias)"]],
   ["Asistencia y jornadas (supervisar)", ["Todo + activar el control","Sedes de CEMEPI, S.C.","Su sede + QR","Si es jefe directo: su equipo","Si es jefe directo: su equipo","—"]],
   ["Organización (sedes, áreas, puestos, organigrama)", ["✓ todo","Sedes de CEMEPI, S.C.","Su sede (consulta)","—","—","—"]],
@@ -3204,7 +3356,7 @@ const MANUALES = {
     "Si una autoridad solicita información, avisa a la Dirección antes de entregar nada."]},
    {t:"Mi trabajo: contrato, documentación y reglamento", p:[
     "Psicólogo base: en «Mi contrato» pulsa «Comenzar mi contrato», captura tus datos y beneficiarios y guarda. La Dirección registra tu fecha de alta y salario; después firmas tú y al final firma CEMEPI. Psicólogo independiente: no tienes contrato individual de trabajo.",
-    "En «Mi documentación» sube en PDF tus documentos obligatorios (identificación, CURP, comprobante de domicilio, constancia fiscal, cédula y título). Las etiquetas «Falta» y «✓» te guían. El comprobante de domicilio debe tener menos de 3 meses.",
+    "En «Mis documentos» sube en PDF tus documentos obligatorios (identificación, CURP, comprobante de domicilio, constancia fiscal, cédula y título). Las etiquetas «Falta» y «✓» te guían. El comprobante de domicilio debe tener menos de 3 meses.",
     "En «Reglamento» léelo y pulsa «Confirmo que lo recibí y lo leí»."]},
    {t:"Reglas de privacidad", p:[
     "Del consultante solo se registran iniciales y fecha de nacimiento.",
@@ -3255,8 +3407,8 @@ const MANUALES = {
     "La Dirección registra tu fecha de alta ante el IMSS y tu salario.",
     "Cuando aparezca el aviso «Tu contrato está listo para firmar», pulsa «Firmar mi contrato». Al final firma el representante legal de CEMEPI.",
     "Puedes descargar tu contrato en Word. Si cambian tus datos, las firmas se anulan y se vuelve a firmar."]},
-   {t:"Mi documentación", p:[
-    "Entra a «Mi documentación», elige el tipo de documento y sube el PDF (máximo 10 MB). En cursos y diplomados escribe la descripción.",
+   {t:"Mis documentos", p:[
+    "Entra a «Mis documentos», elige el tipo de documento y sube el PDF (máximo 10 MB). En cursos y diplomados escribe la descripción.",
     "Las etiquetas «Falta» y «✓» te indican qué documentos obligatorios te faltan: identificación, CURP, comprobante de domicilio, constancia de situación fiscal y comprobante de estudios.",
     "El comprobante de domicilio debe tener menos de 3 meses; la app te avisará cuando haya que renovarlo.",
     "Si eliminas un documento, pasa a la papelera y la Dirección puede restaurarlo durante 30 días. Un documento ya verificado no lo puedes borrar."]},
@@ -3319,6 +3471,9 @@ MANUALES.direccion.caps.push(
   "El código de verificación (MFA) está desactivado. Puedes activarlo en Configuración de seguridad después de registrar tu propio código en Mi perfil; activado, lo pide a ti y a los Directivos."]});
 MANUALES.admin_sede.caps.push({t:"Organización de tu sede", p:[
   "En Organización consultas la información de tu sede: sus colaboradores, plazas y vacantes, su lugar en el organigrama y los indicadores. Es de consulta; los cambios los hace la Dirección."]});
+for (const k of Object.keys(MANUALES)) MANUALES[k].caps.push({t:"Mis documentos", p:[
+  "«Mis documentos» reúne tus documentos institucionales (constancias, convenios, acuses), los accesos a tu contrato y al Reglamento, y tus PDF personales (identificación, CURP, comprobante de domicilio, cédula, título). Antes se llamaba «Mi documentación».",
+  "Cuando se active la firma electrónica, aquí aparecerán los documentos que debes firmar."]});
 for (const k of Object.keys(MANUALES)) MANUALES[k].caps.push({t:"Mi asistencia", p:[
   "En Mi trabajo → Mi asistencia registras tu entrada y salida, ves tu horario, tu historial de los últimos días, tus solicitudes y tus incidencias. El control solo funciona cuando la Dirección lo activa.",
   "En la sede escanea con la cámara de tu celular el código QR de recepción: se abre la app y confirma la sede sin guardar tu ubicación. La hora la pone el servidor.",
@@ -3330,6 +3485,13 @@ MANUALES.direccion.caps.push({t:"Asistencia y jornadas", p:[
   "Las diferencias contra el horario son datos por revisar: nunca faltas, sanciones ni descuentos automáticos. Nadie aprueba lo propio.",
   "El corte para nómina lo valida el Superusuario o Recursos Humanos por entidad fiscal; este módulo no calcula descuentos ni pagos.",
   "Si eres el Superusuario: en Configuración activas o apagas el control (las 8 sedes a la vez), la tolerancia, a quién aplica y los métodos de registro."]});
+MANUALES.direccion.caps.push({t:"Documentos y firmas", p:[
+  "En Administración → Documentos y firmas está la biblioteca institucional: políticas, circulares, oficios, convenios, contratos de servicios, documentación de sedes y documentos fiscales de la entidad. Los documentos clínicos siguen en cada expediente.",
+  "Para agregar uno: + Nuevo documento → tipo, nombre, sede o entidad y, si es de una persona, la persona → Crear borrador → subir el archivo → Publicar con folio. La entidad fiscal se toma de la sede: un documento de Bosques de Santa Fe nunca queda con los datos de CEMEPI, S.C.",
+  "Cada versión guarda su huella digital y no se modifica. Para corregir, sube una versión nueva. Para retirar un documento publicado, archívalo con un motivo. Ver un documento no da permiso de descargarlo; cada descarga queda registrada.",
+  "Los documentos sensibles (fiscales) requieren el permiso de información sensible. Las firmas electrónicas llegan en la siguiente fase."]});
+MANUALES.admin_sede.caps.push({t:"Documentos de tu sede", p:[
+  "En Documentos y firmas ves y agregas los documentos de tu sede (por ejemplo, licencias o avisos de protección civil) y los de las personas de tu sede. Puedes marcar como verificado un documento comparándolo con el original, salvo los tuyos."]});
 MANUALES.admin_sede.caps.push({t:"Asistencia de tu sede", p:[
   "En Asistencia y jornadas ves la asistencia de tu sede, asignas horarios y revisas solicitudes e incidencias del personal de tu sede (nunca las tuyas).",
   "En QR de sede deja abierta la pantalla del código en el equipo de recepción: cambia cada 30 segundos y el personal lo escanea con su celular."]});
@@ -3919,6 +4081,7 @@ document.addEventListener("click", async ev => {
   /* Usuarios, sedes y tiempo de uso */
   if (a==="usuarios"){ S.view="usuarios"; S.usrEdit=null; S.usuarios=null; render(); return cargarAdmin("usuarios"); }
   if (ORG_ACCIONES.has(a)) return orgAccion(a, b);   /* Módulo 01 · Organización */
+  if (DOC_ACC.has(a)) return docAccion(a, b);   /* Módulo 05 · Documentos y firmas */
   if (ASIS_ACC.has(a)) return asisAccion(a, b);   /* Módulo 03 · Asistencia y jornadas */
   if (SEG_ACC.has(a)) return segAccion(a, b);   /* Módulo 02 · Usuarios y permisos */
   if (MFA_ACC.has(a)) return mfaAccion(a, b);
@@ -4386,7 +4549,8 @@ render();
     $("#tabBtn").hidden = !["superusuario","direccion"].includes(S.rol);
     $("#permBtn").hidden = true;
     $("#docpBtn").hidden = !S.rol;
-    $("#masBtn").hidden = !S.rol;   /* Módulo 03: cada quien ve su asistencia */
+    $("#masBtn").hidden = !S.rol;
+    $("#docsBtn").hidden = !((S.api.docNivel||0)>=1 || S.rol==="superusuario");   /* Módulo 05 */   /* Módulo 03: cada quien ve su asistencia */
     $("#asjBtn").hidden = !((S.api.asisNivel||0)>=1 || S.rol==="superusuario");
     { const q=new URLSearchParams(location.search).get("qr"); if (q){ S.qrPend=q; history.replaceState(null,"",location.pathname); setTimeout(()=>asisAccion("miasis",null),0); } }
     if (S.rol && !S.qrPend) asisCargar().catch(()=>{});   /* también muestra el botón de supervisión a jefes directos */
@@ -4399,7 +4563,7 @@ render();
     $("#avatarBtn").textContent=(S.api.nombre||S.api.email||"?").split(/[\s@.]+/).filter(Boolean).slice(0,2).map(x=>x[0].toUpperCase()).join("");
     $("#ctrBtn span").textContent = veTodosContratos() ? "Contratos" : "Mi contrato";
     $("#ctrBtn").hidden = !(tieneContrato() || veTodosContratos());
-    $("#docpBtn span").textContent = veDocsTodos() ? "Documentación" : "Mi documentación";
+    $("#docpBtn span").textContent = veDocsTodos() ? "Documentación" : "Mis documentos";
     document.querySelectorAll(".nav-g").forEach(g=>{ g.hidden=![...g.querySelectorAll("button")].some(b=>!b.hidden); });
     S.pend=null; if (!S.sel) render();
   }

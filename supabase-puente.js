@@ -239,7 +239,8 @@ const { data: orgNivel } = await sb.rpc("nivel_maximo", { p_modulo: "organizacio
 const { data: rolesRows } = await sb.from("usuario_roles").select("rol,hasta").eq("user_id", usuario.id).is("revocado_en", null);
 const misRoles = (rolesRows || []).filter(r => !r.hasta || r.hasta >= new Date().toISOString().slice(0, 10)).map(r => r.rol);
 const { data: cfgInact } = await sb.from("config_seguridad").select("valor").eq("clave", "inactividad_min").maybeSingle();
-const { data: asisNivel } = await sb.rpc("nivel_maximo", { p_modulo: "asistencia" });   /* Módulo 03 */   /* Módulo 01: 0 sin acceso · 1 lectura · 2 operación · 3 admin · 4 superusuario */
+const { data: asisNivel } = await sb.rpc("nivel_maximo", { p_modulo: "asistencia" });
+const { data: docNivel } = await sb.rpc("nivel_maximo", { p_modulo: "documentos" });   /* Módulo 05 */   /* Módulo 03 */   /* Módulo 01: 0 sin acceso · 1 lectura · 2 operación · 3 admin · 4 superusuario */
 login.hidden = true;
 const rol = perfil.rol;
 const ROL_TXT = { superusuario: "Superusuario", direccion: "Directivo(a)", admin_sede: "Administración de sede", administrativo: "Administrativo", psicologo: "Psicólogo(a)" };
@@ -298,6 +299,7 @@ const cemepi = {
   orgNivel: orgNivel || 0,
   misRoles, inactividadMin: Number(cfgInact?.valor) || 30,
   asisNivel: asisNivel || 0,
+  docNivel: docNivel || 0,
   async permisosTodos(){ const { data, error } = await sb.from("permisos").select("user_id,permiso,otorgado_en"); if (error) fallo(error); return data || []; },
   async otorgarPermiso(id, permiso, activo){ const { error } = await sb.rpc("otorgar_permiso", { p_id: id, p_permiso: permiso, p_activo: !!activo }); if (error) fallo(error); },
   async cambiarModalidad(id, m){ const { error } = await sb.rpc("cambiar_modalidad", { p_id: id, p_modalidad: m }); if (error) fallo(error); },
@@ -356,6 +358,45 @@ const cemepi = {
     const { error } = p.id ? await sb.from("politicas_asistencia").update(row).eq("id", p.id) : await sb.from("politicas_asistencia").insert(row); if (error) fallo(error); },
   async resumenAsistencia(desde, hasta, sede){ const { data, error } = await sb.rpc("resumen_asistencia", { p_desde: desde, p_hasta: hasta, p_sede: sede || null }); if (error) fallo(error); return data || []; },
   async validarCorte(ent, desde, hasta){ const { error } = await sb.rpc("validar_corte", { p_entidad: ent, p_desde: desde, p_hasta: hasta }); if (error) fallo(error); },
+  /* ---------- Módulo 05 · Documentos y firmas (Fase E1) ---------- */
+  async docsDatos(){
+    const r = await Promise.all([
+      sb.from("docs").select("*").order("creado_en", { ascending: false }),
+      sb.from("doc_versiones").select("*").order("version", { ascending: false }),
+      sb.from("doc_tipos").select("*").order("orden"),
+      sb.from("doc_categorias").select("*").order("orden"),
+      sb.from("sedes").select("id,nombre,clave").order("nombre"),
+      sb.from("sede_entidad").select("sede_id,entidad_id,hasta").is("hasta", null),
+      sb.from("entidades_fiscales").select("id,nombre_corto,principal"),
+      sb.from("colaboradores").select("id,nombre,sede_principal_id,perfil_id,estatus").order("nombre"),
+      sb.rpc("mi_colaborador")]);
+    for (const x of r) if (x.error) fallo(x.error);
+    const [d, v, t, c, s, se, e, co, yo] = r.map(x => x.data);
+    return { docs: d || [], versiones: v || [], tipos: t || [], categorias: c || [], sedes: s || [], sedeEnt: se || [], entidades: e || [], colaboradores: co || [], yo: yo || null };
+  },
+  async crearDoc(o){ const { data, error } = await sb.rpc("crear_doc", { p_tipo: o.tipo, p_nombre: o.nombre, p_sede: o.sede || null, p_entidad: o.entidad || null,
+      p_colaborador: o.colaborador || null, p_vence: o.vence || null, p_etiquetas: o.etiquetas || [], p_confidencialidad: o.confidencialidad || null, p_area: null }); if (error) fallo(error); return data; },
+  async actualizarDoc(id, o){ const { error } = await sb.rpc("actualizar_doc", { p_doc: id, p_nombre: o.nombre, p_vence: o.vence || null, p_etiquetas: o.etiquetas || [], p_area: null }); if (error) fallo(error); },
+  /* Sube una versión: calcula la huella SHA-256 en el dispositivo, guarda el archivo en el depósito privado y la registra */
+  async subirVersionDoc(id, file, motivo){
+    const tipos = ["application/pdf","application/vnd.openxmlformats-officedocument.wordprocessingml.document","image/png","image/jpeg"];
+    if (!tipos.includes(file.type)) fallo({ message: "Solo PDF, Word (.docx), PNG o JPG." });
+    if (file.size > 20 * 1024 * 1024) fallo({ message: "El archivo pesa más de 20 MB." });
+    const buf = await file.arrayBuffer(), h = [...new Uint8Array(await crypto.subtle.digest("SHA-256", buf))].map(b => b.toString(16).padStart(2, "0")).join("");
+    const limpio = file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9._-]+/g, "-").slice(-80);
+    const ruta = `${id}/${Date.now()}-${limpio}`;
+    const up = await sb.storage.from("documentos-institucionales").upload(ruta, file, { contentType: file.type, upsert: false }); if (up.error) fallo(up.error);
+    const { data, error } = await sb.rpc("agregar_version_doc", { p_doc: id, p_archivo: ruta, p_nombre_archivo: file.name, p_mime: file.type, p_tamano: file.size, p_sha256: h, p_motivo: motivo });
+    if (error) fallo(error); return { version: data, sha256: h }; },
+  async urlDoc(id, version){ const { data: ruta, error } = await sb.rpc("registrar_descarga_doc", { p_doc: id, p_version: version }); if (error) fallo(error);
+    const u = await sb.storage.from("documentos-institucionales").createSignedUrl(ruta, 120); if (u.error) fallo(u.error); return u.data.signedUrl; },
+  async huellaDoc(ruta){ const { data, error } = await sb.storage.from("documentos-institucionales").download(ruta); if (error) fallo(error);
+    return [...new Uint8Array(await crypto.subtle.digest("SHA-256", await data.arrayBuffer()))].map(b => b.toString(16).padStart(2, "0")).join(""); },
+  async emitirDoc(id){ const { data, error } = await sb.rpc("emitir_doc", { p_doc: id }); if (error) fallo(error); return data; },
+  async verificarDoc(id){ const { error } = await sb.rpc("verificar_doc", { p_doc: id }); if (error) fallo(error); },
+  async archivarDoc(id, motivo){ const { error } = await sb.rpc("archivar_doc", { p_doc: id, p_motivo: motivo }); if (error) fallo(error); },
+  async eliminarBorradorDoc(id){ const { error } = await sb.rpc("eliminar_borrador_doc", { p_doc: id }); if (error) fallo(error); },
+  async expedienteDocs(col){ const { data, error } = await sb.rpc("expediente_docs", { p_colaborador: col }); if (error) fallo(error); return data || []; },
   async guardarConfigAsistencia(clave, valor){ const { error } = await sb.rpc("guardar_config_asistencia", { p_clave: clave, p_valor: valor }); if (error) fallo(error); },
   /* ---------- Módulo 02 · Usuarios, perfiles y permisos ---------- */
   async segDatos(){
