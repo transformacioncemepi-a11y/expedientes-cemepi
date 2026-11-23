@@ -240,7 +240,8 @@ const { data: rolesRows } = await sb.from("usuario_roles").select("rol,hasta").e
 const misRoles = (rolesRows || []).filter(r => !r.hasta || r.hasta >= new Date().toISOString().slice(0, 10)).map(r => r.rol);
 const { data: cfgInact } = await sb.from("config_seguridad").select("valor").eq("clave", "inactividad_min").maybeSingle();
 const { data: asisNivel } = await sb.rpc("nivel_maximo", { p_modulo: "asistencia" });
-const { data: docNivel } = await sb.rpc("nivel_maximo", { p_modulo: "documentos" });   /* Módulo 05 */   /* Módulo 03 */   /* Módulo 01: 0 sin acceso · 1 lectura · 2 operación · 3 admin · 4 superusuario */
+const { data: docNivel } = await sb.rpc("nivel_maximo", { p_modulo: "documentos" });   /* Módulo 05 */
+const { data: rhNivel } = await sb.rpc("nivel_maximo", { p_modulo: "recursos_humanos" });   /* Incorporación */   /* Módulo 03 */   /* Módulo 01: 0 sin acceso · 1 lectura · 2 operación · 3 admin · 4 superusuario */
 login.hidden = true;
 const rol = perfil.rol;
 const ROL_TXT = { superusuario: "Superusuario", direccion: "Directivo(a)", admin_sede: "Administración de sede", administrativo: "Administrativo", psicologo: "Psicólogo(a)" };
@@ -300,6 +301,7 @@ const cemepi = {
   misRoles, inactividadMin: Number(cfgInact?.valor) || 30,
   asisNivel: asisNivel || 0,
   docNivel: docNivel || 0,
+  rhNivel: rhNivel || 0,
   async permisosTodos(){ const { data, error } = await sb.from("permisos").select("user_id,permiso,otorgado_en"); if (error) fallo(error); return data || []; },
   async otorgarPermiso(id, permiso, activo){ const { error } = await sb.rpc("otorgar_permiso", { p_id: id, p_permiso: permiso, p_activo: !!activo }); if (error) fallo(error); },
   async cambiarModalidad(id, m){ const { error } = await sb.rpc("cambiar_modalidad", { p_id: id, p_modalidad: m }); if (error) fallo(error); },
@@ -414,6 +416,29 @@ const cemepi = {
   async firmarContrato(id, parte, contrasena){ const { data, error } = await sb.rpc("firmar_contrato", { p_id: id, p_parte: parte, p_acepto: true, p_contrasena: contrasena, p_agente: navigator.userAgent.slice(0, 200) }); if (error) fallo(error); return data; },
   async contratoHuella(id){ const { data, error } = await sb.rpc("contrato_huella", { p_id: id }); if (error) fallo(error); return data; },
   async contratoFirmas(id){ const { data, error } = await sb.from("contrato_firmas").select("parte,tipo,fecha,sha256,metodo").eq("contrato_id", id).eq("tipo", "FIRMADA").order("fecha"); if (error) fallo(error); return data || []; },
+  /* ---------- Incorporación de colaboradores (90 días) ---------- */
+  async incDatos(){
+    const r = await Promise.all([
+      sb.from("incorporaciones").select("*").order("inicio", { ascending: false }),
+      sb.from("inc_tareas").select("*").order("orden"),
+      sb.from("inc_evaluaciones").select("*"),
+      sb.from("inc_plantillas").select("id,clase,nombre,puesto_id,activa"),
+      sb.from("colaboradores").select("id,nombre,sede_principal_id,perfil_id,estatus,fecha_incorporacion").order("nombre"),
+      sb.from("sedes").select("id,nombre"),
+      sb.rpc("mi_colaborador")]);
+    for (const x of r) if (x.error) fallo(x.error);
+    const [i, t, e, p, c, s, yo] = r.map(x => x.data);
+    return { incs: i || [], tareas: t || [], evals: e || [], plantillas: p || [], colaboradores: c || [], sedes: s || [], yo: yo || null };
+  },
+  async incAutomaticas(id){ const { data, error } = await sb.rpc("inc_automaticas", { p_inc: id }); if (error) fallo(error); return data || []; },
+  async crearIncorporacion(col, inicio, jefe, acomp){ const { data, error } = await sb.rpc("crear_incorporacion", { p_col: col, p_inicio: inicio || null, p_jefe: jefe || null, p_acompanante: acomp || null }); if (error) fallo(error); return data; },
+  async marcarTareaInc(id, hecha, nota){ const { error } = await sb.rpc("marcar_tarea_inc", { p_tarea: id, p_hecha: hecha, p_nota: nota || null }); if (error) fallo(error); },
+  async validarTareaInc(id){ const { error } = await sb.rpc("validar_tarea_inc", { p_tarea: id }); if (error) fallo(error); },
+  async guardarEvaluacionInc(inc, corte, evaluador, competencias, puntajes, fortalezas, mejoras, cerrar){ const { error } = await sb.rpc("guardar_evaluacion_inc", { p_inc: inc, p_corte: corte, p_evaluador: evaluador,
+      p_competencias: competencias, p_puntajes: puntajes, p_fortalezas: fortalezas || null, p_mejoras: mejoras || null, p_cerrar: !!cerrar }); if (error) fallo(error); },
+  async recomendarInc(inc, reco, motivo){ const { error } = await sb.rpc("recomendar_incorporacion", { p_inc: inc, p_recomendacion: reco, p_motivo: motivo }); if (error) fallo(error); },
+  async decidirInc(inc, decision, motivo){ const { data, error } = await sb.rpc("decidir_incorporacion", { p_inc: inc, p_decision: decision, p_motivo: motivo }); if (error) fallo(error); return data; },
+  async cerrarInc(inc, estado, motivo){ const { error } = await sb.rpc("cerrar_incorporacion", { p_inc: inc, p_estado: estado, p_motivo: motivo }); if (error) fallo(error); },
   async expedienteDocs(col){ const { data, error } = await sb.rpc("expediente_docs", { p_colaborador: col }); if (error) fallo(error); return data || []; },
   async guardarConfigAsistencia(clave, valor){ const { error } = await sb.rpc("guardar_config_asistencia", { p_clave: clave, p_valor: valor }); if (error) fallo(error); },
   /* ---------- Módulo 02 · Usuarios, perfiles y permisos ---------- */
