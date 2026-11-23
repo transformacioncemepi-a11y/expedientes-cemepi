@@ -1260,6 +1260,8 @@ async function cargarPendientes(){
   if (!S.api || S.pendCargando) return; S.pendCargando=true; const pend=[];
   const intenta = async f => { try{ await f(); }catch(e){ console.warn("pendientes", e); } };
   await Promise.all([
+    intenta(async()=>{ const fs=(await S.api.misFirmasPendientes?.())||[]; const n=fs.filter(f=>f.mi_turno).length;
+      if (n) pend.push({t:`${n} documento${n===1?"":"s"} por firmar`, d:"Revísalo completo y fírmalo con tu contraseña.", act:"documentacion", b:"Firmar"}); }),
     intenta(async()=>{ if (!gestionaCuentas()) return; const us=await S.api.usuarios(); S.usuarios=us;
       const n=us.filter(u=>u.estado==="pendiente" && puedeGestionar(u)).length;
       if (n) pend.push({t:`${n} solicitud${n===1?"":"es"} de cuenta por autorizar`, d:"Revisa nombre y cédula antes de autorizar.", act:"usuarios", b:"Revisar"}); }),
@@ -2392,14 +2394,15 @@ function docDetalleHtml(){ const d=DX().docs.find(x=>x.id===S.dxVer); if (!d){ S
      <dt>Publicado</dt><dd>${d.emitido_en?fmtDate(d.emitido_en):"—"}</dd><dt>Vence</dt><dd>${d.vence?fmtDate(d.vence)+` <span class="pill ${({bad:"estado-suspendido",warn:"estado-pendiente",ok:"estado-activo"})[dxVence(d)]}">${diasHasta(d.vence)<0?"Vencido":diasHasta(d.vence)+" días"}</span>`:"—"}</dd>
      <dt>Verificación</dt><dd>${d.verificado_en?"Verificado el "+fmtFH(d.verificado_en):"Sin verificar"}</dd>${d.etiquetas?.length?`<dt>Etiquetas</dt><dd>${d.etiquetas.map(esc).join(", ")}</dd>`:""}${d.archivado_en?`<dt>Archivado</dt><dd>${fmtFH(d.archivado_en)} · ${esc(d.archivado_motivo||"")}</dd>`:""}</dl>`}</section>
    <section class="note"><div class="note-h"><h3>Acciones</h3></div><div class="actions" style="flex-wrap:wrap">
-     ${g&&["borrador","en_revision"].includes(d.estado)?`<button class="btn primary" type="button" data-act="docEmitir" data-id="${d.id}"${d.version<1?" disabled title=\"Sube el archivo primero\"":""}>Publicar con folio</button>`:""}
+     ${g&&["borrador","en_revision"].includes(d.estado)&&!dxRequiereFirma(d)?`<button class="btn primary" type="button" data-act="docEmitir" data-id="${d.id}"${d.version<1?" disabled title=\"Sube el archivo primero\"":""}>Publicar con folio</button>`:""}
      ${g&&!mio&&d.version>0&&!d.verificado_en&&d.estado!=="archivado"?`<button class="btn" type="button" data-act="docVerificar" data-id="${d.id}">Marcar verificado contra el original</button>`:""}
      ${g&&d.estado!=="archivado"&&d.folio?`<button class="btn" type="button" data-act="docArchivarForm">Archivar</button>`:""}
      ${S.rol==="superusuario"&&d.estado==="borrador"&&!d.folio?`<button class="btn danger" type="button" data-act="docEliminar" data-id="${d.id}">Eliminar borrador</button>`:""}</div>
      ${S.dxArch?`<div class="datos">${fld("daMot","Motivo para archivar *","",{span:3,ph:"Ej. Sustituido por el contrato 2027"})}</div><div class="actions"><button class="btn danger" type="button" data-act="docArchivar" data-id="${d.id}">Archivar</button><button class="btn" type="button" data-act="docCancelar">Cancelar</button></div>`:""}
-     <p class="status" style="margin:0">Publicar asigna el folio CEMEPI-INS-AAAA-NNNNN. Un documento publicado no se elimina: se archiva con un motivo. Las firmas llegan en la siguiente fase.</p></section></div>
+     <p class="status" style="margin:0">${dxRequiereFirma(d)?"Este tipo se publica con firma: recibe el folio CEMEPI-INS-AAAA-NNNNN al firmar todas las personas.":"Publicar asigna el folio CEMEPI-INS-AAAA-NNNNN."} Un documento publicado no se elimina: se archiva con un motivo.</p></section></div>
+  ${dxFirmasHtml(d)}
   <section class="note"><div class="note-h"><h3>Versiones (${vs.length})</h3></div>
-   ${(g||(mio&&t?.carga_propia))&&d.estado!=="archivado"&&!(mio&&!g&&d.verificado_en)?`<div class="datos"><div class="fld" style="grid-column:span 2"><label for="dvArch">Archivo (PDF, Word, PNG o JPG, máx. 20 MB)</label><input id="dvArch" type="file" accept=".pdf,.docx,.png,.jpg,.jpeg,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg"></div>${fld("dvMot","Motivo de la versión *",vs.length?"":"Versión inicial")}</div>
+   ${(g||(mio&&t?.carga_propia))&&!["archivado","pendiente_firma","parcialmente_firmado"].includes(d.estado)&&!(mio&&!g&&d.verificado_en)?`<div class="datos"><div class="fld" style="grid-column:span 2"><label for="dvArch">Archivo (PDF, Word, PNG o JPG, máx. 20 MB)</label><input id="dvArch" type="file" accept=".pdf,.docx,.png,.jpg,.jpeg,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg"></div>${fld("dvMot","Motivo de la versión *",vs.length?"":"Versión inicial")}</div>
      <div class="actions"><button class="btn primary" type="button" data-act="docSubir" data-id="${d.id}">Subir versión ${d.version+1}</button><span class="status">La huella SHA-256 se calcula en tu dispositivo antes de subir el archivo.</span></div>`:""}
    <div class="tbl-wrap"><table><thead><tr><th>Versión</th><th>Archivo</th><th>Huella SHA-256</th><th>Subida</th><th>Motivo</th><th></th></tr></thead><tbody>
    ${vs.map(v=>`<tr><td>${v.version}${v.version===d.version?` <span class="pill estado-activo">Vigente</span>`:""}</td><td>${esc(v.nombre_archivo)}<br><span class="status">${dxTam(v.tamano)}</span></td><td class="mono" style="font-size:11px;word-break:break-all;max-width:240px">${esc(v.sha256)}</td><td>${fmtFH(v.creado_en)}</td><td>${esc(v.motivo)}</td>
@@ -2410,12 +2413,13 @@ function docDetalleHtml(){ const d=DX().docs.find(x=>x.id===S.dxVer); if (!d){ S
 function misDocsInstHtml(){
   if (!S.dx){ if (!S.dxCargando){ S.dxCargando=true; docsCargar().finally(()=>{ S.dxCargando=false; }); } return `<section class="doc-sec"><h3 class="sec-h">Mis documentos institucionales</h3><p class="status">Cargando…</p></section>`; }
   if (S.dx.error) return "";
+  const porFirmar=dxPorFirmarHtml();
   const yo=DX().yo, mios=yo?DX().docs.filter(d=>d.colaborador_id===yo&&d.estado!=="archivado"):[];
-  return `<section class="doc-sec"><h3 class="sec-h">Mis documentos institucionales</h3>
+  return `${porFirmar}<section class="doc-sec"><h3 class="sec-h">Mis documentos institucionales</h3>
     <div class="org-grid"><div><ul class="pend">${mios.map(d=>`<li><b>${esc(d.nombre)}</b> ${dxEstado(d)}<br><span class="status">${esc(d.folio||"Sin folio")}${d.vence?" · vence "+fmtDate(d.vence):""}</span> <button class="btn sm" type="button" data-act="docVer" data-id="${d.id}">Abrir</button></li>`).join("")||`<li class="status">Aún no tienes documentos institucionales (constancias, convenios, acuses).</li>`}</ul></div>
     <div><ul class="pend"><li><b>Mi contrato</b><br><span class="status">Contrato individual de trabajo y su firma.</span> <button class="btn sm" type="button" data-act="contratos">Abrir</button></li>
       <li><b>Reglamento Interior de Trabajo</b><br><span class="status">Lectura y constancia de recepción.</span> <button class="btn sm" type="button" data-act="reglamento">Abrir</button></li></ul></div></div>
-    <p class="status" style="margin:0">Las solicitudes de firma aparecerán aquí cuando se active la siguiente fase.</p></section>`;
+    <p class="status" style="margin:0">Cuando te envíen un documento a firmar aparecerá arriba, en «Por firmar». Para firmar necesitas tu imagen de firma en Mi perfil y tu contraseña.</p></section>`;
 }
 
 /* ---------- Acciones ---------- */
@@ -2430,7 +2434,7 @@ async function docAccion(a,b){
     if (!tipo) return toast("Elige el tipo de documento."); if (nombre.length<3) return toast("Escribe el nombre del documento."); if (!ent) return toast("Elige la sede o la entidad fiscal.");
     try{ const id=await S.api.crearDoc({tipo,nombre,sede,entidad:sede?null:ent,colaborador:v("dnCol"),vence:v("dnVence"),confidencialidad:v("dnConf"),etiquetas:v("dnEtq").split(",").map(x=>x.trim()).filter(Boolean)});
       S.dxNuevo=null; await docsCargar(); S.dxVer=id; render(); toast("Borrador creado. Sube el archivo para continuar."); }catch(e){ err(e); } return; }
-  if (a==="docVer"){ S.view="docs"; S.dxVer=b.dataset.id; S.dxEd=false; S.dxArch=false; render(); if (!S.dx) docsCargar(); return; }
+  if (a==="docVer"){ S.view="docs"; S.dxVer=b.dataset.id; S.dxEd=false; S.dxArch=false; S.dxFirma=null; S.dxRev=null; S.dxRechazo=false; S.dxCancFirma=null; render(); if (!S.dx) docsCargar(); return; }
   if (a==="docCerrar"){ S.dxVer=null; return render(); }
   if (a==="docEditar"){ S.dxEd=true; return render(); }
   if (a==="docGuardarEd"){ try{ await S.api.actualizarDoc(S.dxVer,{nombre:v("deNom"),vence:v("deVence"),etiquetas:v("deEtq").split(",").map(x=>x.trim()).filter(Boolean)}); S.dxEd=false; await recargar("Datos guardados."); }catch(e){ err(e); } return; }
@@ -2450,6 +2454,132 @@ document.addEventListener("change", e=>{ if (S.view!=="docs") return; const t=e.
   if (t.id==="dxC"){ S.dxF.cat=t.value; render(); } if (t.id==="dxS"){ S.dxF.sede=t.value; render(); } if (t.id==="dxE"){ S.dxF.estado=t.value; render(); }
   if (t.id==="dxCol"){ S.dxCol=t.value; render(); }
   if (S.dxNuevo&&["dnTipo","dnSede","dnEnt"].includes(t.id)){ S.dxNuevo={tipo:$("#dnTipo").value,nombre:$("#dnNom").value,sede:$("#dnSede").value,ent:$("#dnEnt").value,vence:$("#dnVence").value}; render(); } });
+
+/* ======================= Módulo 05 · Fase E2: firma electrónica simple con evidencia =======================
+   Decisiones del Director (2026-11-22): siempre con contraseña (el MFA queda pendiente); lo que requiere firma no se
+   publica sin ella; la firma va impresa en el archivo; el contrato también se firma con contraseña y evidencia. */
+const FIRMA_EST={pendiente:["Abierta","estado-pendiente"],completada:["Completada","estado-activo"],rechazada:["Rechazada","estado-suspendido"],cancelada:["Cancelada",""],vencida:["Vencida","estado-suspendido"]};
+const FIRMA_AVISO="Firma electrónica simple con evidencia (contraseña, huella SHA-256, aceptación y hora del servidor). No es firma electrónica avanzada (e.firma) ni constancia NOM-151.";
+const dxSols=id=>(DX()?.solicitudes||[]).filter(s=>s.doc_id===id);
+const dxParts=sid=>(DX()?.participantes||[]).filter(p=>p.solicitud_id===sid).sort((a,b)=>a.orden-b.orden);
+const dxNomPerfil=pid=>DX()?.colaboradores.find(c=>c.perfil_id===pid)?.nombre||(DX()?.participantes||[]).find(p=>p.perfil_id===pid&&p.nombre)?.nombre||(pid===S.uid?"Tú":"Persona");
+const dxRequiereFirma=d=>!!dxTipo(d.tipo)?.requiere_firma;
+const dxTurno=(s,p)=>s.estado==="pendiente"&&p.estado==="pendiente"&&(s.modo==="paralela"||dxParts(s.id).filter(x=>x.orden<p.orden).every(x=>x.estado==="firmado"));
+
+function dxFirmasHtml(d){
+  const sols=dxSols(d.id), abierta=sols.find(s=>s.estado==="pendiente"), g=dxPuedeGestionar(), F=S.dxFirma;
+  const miPart=abierta&&dxParts(abierta.id).find(p=>p.perfil_id===S.uid), miTurno=miPart&&dxTurno(abierta,miPart);
+  const puedeEnviar=g&&!abierta&&d.version>0&&["borrador","en_revision","vigente","rechazado"].includes(d.estado)&&dxRequiereFirma(d);
+  const gente=(DX().colaboradores||[]).filter(c=>c.perfil_id&&c.estatus!=="baja");
+  return `<section class="note"><div class="note-h"><h3>Firmas</h3>${puedeEnviar&&!F?`<button class="btn sm primary" type="button" data-act="docFirmaForm">Enviar a firma</button>`:""}</div>
+   ${!dxRequiereFirma(d)?`<p class="status" style="margin:0">Este tipo de documento solo se resguarda: no se firma electrónicamente.</p>`:""}
+   ${dxRequiereFirma(d)&&!d.folio&&!abierta?`<p class="status" style="margin:0">Este documento solo se publica con firma: recibe su folio cuando firman todas las personas.</p>`:""}
+   ${F?`<div class="datos">${fld("dfModo","Orden *","secuencial",{opts:[["secuencial","Secuencial (uno después de otro)"],["paralela","Paralela (todos a la vez)"]]})}${fld("dfLim","Fecha límite *",new Date(Date.now()+7*864e5).toISOString().slice(0,10),{type:"date"})}${fld("dfMsg","Mensaje para quien firma","",{span:2,max:500})}</div>
+     <fieldset style="border:0;padding:0;margin:0"><legend class="status">Firmantes en el orden en que los marques (máx. 10). Cada quien necesita su imagen de firma en Mi perfil.</legend>
+     <div style="display:flex;flex-wrap:wrap;gap:6px 14px">${gente.map(c=>{ const i=F.sel.indexOf(c.perfil_id); return `<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-dffirm="${c.perfil_id}"${i>=0?" checked":""}>${i>=0?`<b>${i+1}.</b> `:""}${esc(c.nombre)}</label>`; }).join("")||`<span class="status">No hay colaboradores con cuenta que puedas elegir.</span>`}</div></fieldset>
+     ${F.sel.length?`<div class="datos">${F.sel.map((pid,i)=>fld("dfPap"+i,`Papel de ${esc(dxNomPerfil(pid))}`,F.pap[pid]||(i===F.sel.length-1&&F.sel.length>1?"Representante legal":"Firmante"))).join("")}</div>`:""}
+     <div class="actions"><button class="btn primary" type="button" data-act="docFirmaEnviar" data-id="${d.id}">Enviar a firma</button><button class="btn" type="button" data-act="docFirmaCancelarForm">Cancelar</button></div>`:""}
+   ${miTurno?dxPanelFirmar(d,abierta):""}
+   ${sols.map(s=>`<div style="border-top:1px solid var(--line);padding-top:8px;display:flex;flex-direction:column;gap:6px">
+     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="pill ${FIRMA_EST[s.estado][1]}">${FIRMA_EST[s.estado][0]}</span><span class="status">Versión ${s.version} · ${s.modo==="secuencial"?"secuencial":"paralela"} · límite ${fmtDate(s.limite)} · enviada ${fmtFH(s.creado_en)}</span></div>
+     ${s.mensaje?`<p class="status" style="margin:0">“${esc(s.mensaje)}”</p>`:""}
+     <ul class="pend">${dxParts(s.id).map(p=>`<li><b>${p.orden}. ${esc(p.nombre||dxNomPerfil(p.perfil_id))}</b> · ${esc(p.papel)} — ${p.estado==="firmado"?`<span class="pill estado-activo">Firmó</span> <span class="status">${fmtFH(p.firmado_en)} · con contraseña</span>`:p.estado==="rechazado"?`<span class="pill estado-suspendido">Rechazó</span> <span class="status">${esc(p.motivo_rechazo||"")}</span>`:s.estado==="pendiente"?(dxTurno(s,p)?`<span class="pill estado-pendiente">Su turno</span>`:`<span class="pill">En espera</span>`):`<span class="pill">Sin firmar</span>`}</li>`).join("")}</ul>
+     ${s.estado==="pendiente"&&(g||s.creado_por===S.uid)?(S.dxCancFirma===s.id?`<div class="datos">${fld("dcMot","Motivo para cancelar *","",{span:3})}</div><div class="actions"><button class="btn danger" type="button" data-act="docFirmaCancelar" data-id="${s.id}">Cancelar la solicitud</button><button class="btn" type="button" data-act="docFirmaCancelarForm">Volver</button></div>`:`<div><button class="btn sm" type="button" data-act="docFirmaCancelarPreg" data-id="${s.id}">Cancelar solicitud</button></div>`):""}</div>`).join("")}
+   ${d.estado==="firmado"||(dxRequiereFirma(d)&&d.version>0)?`<div class="actions"><button class="btn${d.estado==="firmado"?" primary":""}" type="button" data-act="docPdfFirma" data-id="${d.id}">${d.estado==="firmado"?"Descargar firmado (PDF)":"Descargar borrador (PDF)"}</button><span class="status">${d.estado==="firmado"?"Con la firma impresa y su evidencia.":"Marcado «BORRADOR · Sin firma» en cada página."}</span></div>`:""}
+   <p class="status" style="margin:0">${FIRMA_AVISO}</p></section>`;
+}
+function dxPanelFirmar(d,s){ const R=S.dxRev?.sol===s.id?S.dxRev:null, mia=dxParts(s.id).find(p=>p.perfil_id===S.uid);
+  return `<div class="banner" style="flex-direction:column;align-items:flex-start;gap:10px"><b>Te toca firmar como “${esc(mia.papel)}”.</b>
+    <span>1. Abre y revisa el documento completo. La app comprueba que es exactamente el archivo que se envió a firma.</span>
+    <div class="actions"><button class="btn" type="button" data-act="docRevisar" data-sol="${s.id}" data-id="${d.id}" data-v="${s.version}">${R?"Volver a abrir el documento":"Abrir y revisar el documento"}</button>
+      ${R?(R.ok?`<span class="pill estado-activo">Archivo verificado</span>`:`<span class="pill estado-suspendido">El archivo no coincide: no se puede firmar</span>`):""}</div>
+    ${R&&R.ok?`<span>2. Escribe tu contraseña y acepta.</span><div class="datos" style="width:100%">${fld("dfPass","Tu contraseña de la app *","",{type:"password"})}</div>
+      <label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="dfAcepto"> Leí el documento completo y acepto firmarlo electrónicamente. Mi firma de Mi perfil se imprimirá en él.</label>
+      <div class="actions"><button class="btn primary" type="button" data-act="docFirmar" data-sol="${s.id}">Firmar</button>${S.dxRechazo?"":`<button class="btn" type="button" data-act="docRechazoForm">Rechazar</button>`}</div>`:""}
+    ${S.dxRechazo?`<div class="datos" style="width:100%">${fld("drMot","Motivo del rechazo *","",{span:3,ph:"Qué hay que corregir"})}</div><div class="actions"><button class="btn danger" type="button" data-act="docRechazar" data-sol="${s.id}">Rechazar la firma</button><button class="btn" type="button" data-act="docRechazoForm">Volver</button></div>`:""}
+    <span class="status">Tu contraseña la verifica el servidor y no se guarda. Tras 5 intentos fallidos hay que esperar 15 minutos.</span></div>`; }
+
+/* Por firmar (Mis documentos e Inicio) */
+function dxPorFirmarHtml(){ const ls=DX()?.misFirmas||[]; if (!ls.length) return "";
+  return `<section class="doc-sec"><h3 class="sec-h">Por firmar (${ls.length})</h3><ul class="pend">${ls.map(f=>`<li><b>${esc(f.nombre)}</b> ${f.mi_turno?`<span class="pill estado-pendiente">Tu turno</span>`:`<span class="pill">En espera de otra firma</span>`}<br><span class="status">Fecha límite ${fmtDate(f.limite)} (${diasHasta(f.limite)} días) · como “${esc(f.papel)}”${f.mensaje?" · "+esc(f.mensaje):""}</span> ${f.mi_turno?`<button class="btn sm primary" type="button" data-act="docVer" data-id="${f.doc_id}">Revisar y firmar</button>`:""}</li>`).join("")}</ul></section>`; }
+
+/* ---------- PDF con la firma impresa (o marcado como borrador) ---------- */
+async function dxPdfFirma(d){
+  if (!(await libLista("pdf"))){ toast("No se pudo preparar el PDF. Revisa tu conexión."); return; }
+  const {PDFDocument, StandardFonts, rgb, degrees}=PDFLib, v=dxVers(d.id).find(x=>x.version===d.version); if (!v){ toast("No hay archivo."); return; }
+  const {blob, sha256}=await S.api.archivoDoc(d.id, d.version);
+  if (sha256!==v.sha256){ toast("Atención: el archivo guardado NO coincide con su huella. No se generó el PDF."); return; }
+  const firmado=d.estado==="firmado", esPdf=v.mime==="application/pdf";
+  const pdf=esPdf?await PDFDocument.load(await blob.arrayBuffer(),{ignoreEncryption:true}):await PDFDocument.create();
+  const font=await pdf.embedFont(StandardFonts.Helvetica), bold=await pdf.embedFont(StandardFonts.HelveticaBold), gris=rgb(.33,.41,.54), azul=rgb(.02,.38,.74);
+  if (!firmado){ for (const pg of pdf.getPages()){ const {width:W,height:H}=pg.getSize(); pg.drawText("BORRADOR · Sin firma",{x:W*0.16,y:H*0.42,size:46,font:bold,color:rgb(.75,.1,.1),opacity:.22,rotate:degrees(35)});
+      pg.drawText("BORRADOR · Sin firma · No válido para entregar",{x:24,y:H-18,size:9,font:bold,color:rgb(.7,.1,.1)}); }
+    if (!esPdf){ const pg=pdf.addPage([612,792]); pg.drawText(limpiarPdf("BORRADOR · Sin firma"),{x:54,y:720,size:20,font:bold,color:rgb(.7,.1,.1)}); pg.drawText(limpiarPdf(`El archivo original (${v.nombre_archivo}) no es PDF: descárgalo aparte.`),{x:54,y:690,size:11,font}); }
+  } else {
+    const s=dxSols(d.id).find(x=>x.estado==="completada"&&x.version===d.version), ps=s?dxParts(s.id).filter(p=>p.estado==="firmado"):[];
+    const W=612,H=792,M=54,CW=W-2*M; let pg=pdf.addPage([W,H]), y=H-M;
+    const linea=(t,o={})=>{ const sz=o.size||10, f=o.bold?bold:font; for (const l of envolver(limpiarPdf(t),f,sz,CW)){ if (y<M+120){ pg=pdf.addPage([W,H]); y=H-M; } pg.drawText(l,{x:M,y,size:sz,font:f,color:o.color||rgb(0,0,0)}); y-=sz*1.35; } };
+    linea("CONSTANCIA DE FIRMA ELECTRÓNICA",{size:15,bold:1,color:azul}); y-=4;
+    linea("Centro Mexicano de Plenitud Humana, S.C. (CEMEPI)",{size:10,bold:1}); linea(CEMEPI_CONTACTO,{size:8,color:gris}); y-=8;
+    linea(`Documento: ${d.nombre}`,{bold:1}); linea(`Folio: ${d.folio||"—"} · Versión ${d.version} · Archivo: ${v.nombre_archivo}`); linea(`Huella SHA-256 del archivo firmado: ${v.sha256}`,{size:8});
+    if (!esPdf) linea("El archivo firmado no es PDF; esta constancia lo identifica por su huella. Consérvalos juntos.",{size:9,color:gris});
+    y-=10;
+    for (const p of ps){ if (y<M+170){ pg=pdf.addPage([W,H]); y=H-M; }
+      if (p.firma_img){ try{ const img=p.firma_img.startsWith("data:image/jp")?await pdf.embedJpg(p.firma_img):await pdf.embedPng(p.firma_img); const r=img.height/img.width; let w=170,h=w*r; if (h>70){ h=70; w=h/r; }
+          pg.drawImage(img,{x:M+(220-w)/2,y:y-h,width:w,height:h}); }catch(e){ console.warn("firma",e); } }
+      y-=74; pg.drawLine({start:{x:M,y},end:{x:M+220,y},thickness:.6,color:gris}); y-=12;
+      linea(`${p.nombre||dxNomPerfil(p.perfil_id)}${p.cedula?" · Cédula "+p.cedula:""}`,{bold:1}); linea(`${p.papel} · Firmó el ${fmtFH(p.firmado_en)} (hora del servidor) con su contraseña`,{size:9});
+      linea(`Huella revisada: ${p.sha256_presentado||"—"}`,{size:7,color:gris}); y-=12; }
+    y-=4; linea(FIRMA_AVISO,{size:8,color:gris}); linea("La autenticidad se comprueba recalculando la huella SHA-256 del archivo y comparándola con la registrada en la app de CEMEPI.",{size:8,color:gris});
+    const nl=envolver(limpiarPdf(NOTA_ACLARATORIA),font,7,CW); let yy=16+(nl.length-1)*8.6; for (const l of nl){ pg.drawText(l,{x:M,y:yy,size:7,font,color:gris}); yy-=8.6; }
+  }
+  const bytes=await pdf.save(), dl=await window.claude?.use?.("downloads");
+  await dl.save({filename:`${slug(d.nombre)}-${firmado?"firmado":"BORRADOR"}.pdf`, data:new Blob([bytes],{type:"application/pdf"})});
+  toast(firmado?"PDF firmado descargado.":"Borrador descargado (sin firma).");
+}
+
+/* ---------- Acciones de firma ---------- */
+const FIRMA_ACC=new Set(["docFirmaForm","docFirmaEnviar","docFirmaCancelarForm","docFirmaCancelarPreg","docFirmaCancelar","docRevisar","docFirmar","docRechazoForm","docRechazar","docPdfFirma"]);
+async function firmaAccion(a,b){
+  const v=id=>($("#"+id)?.value??"").trim(), err=e=>toast(/row-level|permission/i.test(e?.message||"")?"No tienes autorización para esa acción.":(e?.message||"No se pudo completar."));
+  if (a==="docFirmaForm"){ S.dxFirma={sel:[],pap:{}}; return render(); }
+  if (a==="docFirmaCancelarForm"){ S.dxFirma=null; S.dxCancFirma=null; S.dxRechazo=false; return render(); }
+  if (a==="docFirmaEnviar"){ const F=S.dxFirma; F.sel.forEach((pid,i)=>{ F.pap[pid]=v("dfPap"+i)||"Firmante"; });
+    if (!F.sel.length) return toast("Marca al menos a una persona que firme."); if (F.sel.length>10) return toast("Máximo 10 firmantes.");
+    try{ await S.api.enviarAFirma(b.dataset.id,{modo:v("dfModo"),limite:v("dfLim"),firmantes:F.sel,papeles:F.sel.map(p=>F.pap[p]),mensaje:v("dfMsg")}); S.dxFirma=null; toast("Enviado a firma. Cada persona lo verá en Mis documentos."); await docsCargar(); }catch(e){ err(e); } return; }
+  if (a==="docFirmaCancelarPreg"){ S.dxCancFirma=b.dataset.id; return render(); }
+  if (a==="docFirmaCancelar"){ const m=v("dcMot"); if (m.length<10) return toast("Escribe el motivo (10 caracteres o más).");
+    try{ await S.api.cancelarFirma(b.dataset.id,m); S.dxCancFirma=null; toast("Solicitud cancelada."); await docsCargar(); }catch(e){ err(e); } return; }
+  if (a==="docRevisar"){ const s=(DX().solicitudes||[]).find(x=>x.id===b.dataset.sol), w=window.open("","_blank"); b.disabled=true;
+    try{ const r=await S.api.archivoDoc(b.dataset.id,+b.dataset.v); S.dxRev={sol:s.id,sha:r.sha256,ok:r.sha256===s.sha256}; const url=URL.createObjectURL(r.blob); if (w) w.location.href=url; else window.open(url,"_blank"); render(); }
+    catch(e){ if (w) w.close(); b.disabled=false; err(e); } return; }
+  if (a==="docRechazoForm"){ S.dxRechazo=!S.dxRechazo; return render(); }
+  if (a==="docRechazar"){ const m=v("drMot"); if (m.length<10) return toast("Explica el motivo (10 caracteres o más).");
+    try{ await S.api.rechazarFirma(b.dataset.sol,m); S.dxRechazo=false; S.dxRev=null; toast("Rechazaste la firma. Quien la envió verá el motivo."); await docsCargar(); }catch(e){ err(e); } return; }
+  if (a==="docFirmar"){ const pass=$("#dfPass")?.value||""; if (!pass) return toast("Escribe tu contraseña."); if (!$("#dfAcepto")?.checked) return toast("Marca que aceptas firmar el documento.");
+    if (!S.perfil?.firma) return toast("Primero guarda la imagen de tu firma en Mi perfil.");
+    b.disabled=true; try{ const r=await S.api.firmarDocumento(b.dataset.sol,S.dxRev.sha,true,pass);
+      if (r==="identidad"){ b.disabled=false; $("#dfPass").value=""; return toast("La contraseña no es correcta. No se firmó."); }
+      if (r==="vencida"){ toast("La fecha límite ya pasó: la solicitud venció."); }
+      else toast(r==="completada"?"Firmaste. El documento quedó firmado por todos y recibió su folio.":"Firmaste. Sigue la siguiente persona.");
+      S.dxRev=null; await docsCargar(); }catch(e){ b.disabled=false; err(e); } return; }
+  if (a==="docPdfFirma"){ b.disabled=true; try{ await dxPdfFirma(DX().docs.find(x=>x.id===b.dataset.id)); }catch(e){ err(e); } b.disabled=false; return; }
+}
+document.addEventListener("change", e=>{ const t=e.target; if (!t.dataset?.dffirm||!S.dxFirma) return; const F=S.dxFirma, pid=t.dataset.dffirm;
+  document.querySelectorAll('[id^="dfPap"]').forEach((el,i)=>{ if (F.sel[i]) F.pap[F.sel[i]]=el.value; });
+  F.sel=t.checked?[...F.sel.filter(x=>x!==pid),pid]:F.sel.filter(x=>x!==pid); render(); });
+
+/* ---------- Contrato: firma con contraseña (diálogo) ---------- */
+function pedirContrasena(titulo, detalle){ return new Promise(ok=>{ const dlg=document.createElement("dialog"); dlg.className="dlg-firma";
+  dlg.innerHTML=`<form method="dialog" style="display:flex;flex-direction:column;gap:12px;min-width:min(420px,86vw)"><h3 style="margin:0">${esc(titulo)}</h3><p class="status" style="margin:0">${detalle}</p>
+    <div class="fld"><label for="dlgPass">Tu contraseña de la app</label><input id="dlgPass" type="password" autocomplete="current-password" required></div>
+    <label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="dlgAcepto"> Leí el contrato completo y acepto firmarlo electrónicamente. Mi firma de Mi perfil se imprimirá en él.</label>
+    <p class="status" style="margin:0">${FIRMA_AVISO} La contraseña la verifica el servidor y no se guarda.</p>
+    <div class="actions"><button class="btn primary" value="ok" type="submit">Firmar</button><button class="btn" value="no" type="button" data-cerrar>Cancelar</button></div></form>`;
+  document.body.appendChild(dlg); const fin=r=>{ dlg.close(); dlg.remove(); ok(r); };
+  dlg.querySelector("[data-cerrar]").onclick=()=>fin(null); dlg.addEventListener("cancel",()=>fin(null));
+  dlg.querySelector("form").onsubmit=e=>{ e.preventDefault(); const p=dlg.querySelector("#dlgPass").value; if (!dlg.querySelector("#dlgAcepto").checked){ toast("Marca que aceptas firmar."); return; } if (!p) return; fin(p); };
+  dlg.showModal(); setTimeout(()=>dlg.querySelector("#dlgPass").focus(),30); }); }
 
 const ASIS_TZ="America/Mexico_City";
 const asisHoy=()=>new Intl.DateTimeFormat("en-CA",{timeZone:ASIS_TZ}).format(new Date());
@@ -3090,6 +3220,9 @@ function contratosHtml(){
     </tbody></table></div></div>`;
 }
 /* Word del contrato con ambas firmas (si existen) */
+/* Evidencia de la firma del contrato para el Word (fecha y huella del contenido) */
+function ctrEvTxt(tit,f){ const ev=(S.ctrEvid||[]).filter(x=>x.parte===(tit.includes("CEMEPI")?"cemepi":"trabajador")).pop();
+  return ev?`Firmado con contraseña el ${fmtFH(ev.fecha)} · huella ${ev.sha256.slice(0,16)}…`:`Firma registrada en la app: ${fmtFH(f)}`; }
 function ctrWordXml(c){
   const v=ctrValores(c), d=c.datos||{}, bs=(d.beneficiarios||[]).filter(b=>b.nombre), ext=[];
   const img=(data, w, h, rid, id)=>{ if (!data) return ""; ext.push({rid, file:rid+".png", b64:data.split(",")[1]||""}); const r=(h||1)/(w||1); let cx=1737360, cy=Math.round(cx*r); if (cy>685800){ cy=685800; cx=Math.round(cy/r); } return P(imgXml(rid,cx,cy,id,"Firma"),{jc:"center"}); };
@@ -3100,7 +3233,7 @@ function ctrWordXml(c){
   const cuerpo=(pl?.cuerpo||[]).map((p,i)=>{
     if (p==="{{TESTIGOS}}") return P("",{before:500})+`<w:tbl><w:tblPr><w:tblW w:w="9900" w:type="dxa"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid><w:gridCol w:w="4950"/><w:gridCol w:w="4950"/></w:tblGrid><w:tr>${[1,2].map(()=>celda(4950,P(R("__________________________________"),{jc:"center"})+P(R("TESTIGO",{b:1}),{jc:"center"}))).join("")}</w:tr></w:tbl>`;
     if (p==="{{BENEFICIARIOS}}") return tblB(filaB("NOMBRE","EDAD","PARENTESCO O RELACIÓN","%",1)+(bs.length?bs:[{},{},{}]).map(b=>filaB((b.nombre||"").toUpperCase(),b.edad||"",b.parentesco||"",b.pct||"")).join(""))+P("",{after:120});
-    if (p==="{{FIRMAS}}"){ const lado=(tit,data,w,h,rid,id,nom,car,f)=>P(R(tit,{b:1}),{jc:"center",after:120})+(data?img(data,w,h,rid,id):P("",{before:700}))+P(R("__________________________________"),{jc:"center"})+P(R(nom,{b:1}),{jc:"center"})+(car?P(R(car,{sz:18}),{jc:"center"}):"")+(f?P(R(`Firma registrada en la app: ${fmtFH(f)}`,{sz:14,color:"55688A"}),{jc:"center"}):"");
+    if (p==="{{FIRMAS}}"){ const lado=(tit,data,w,h,rid,id,nom,car,f)=>P(R(tit,{b:1}),{jc:"center",after:120})+(data?img(data,w,h,rid,id):P("",{before:700}))+P(R("__________________________________"),{jc:"center"})+P(R(nom,{b:1}),{jc:"center"})+(car?P(R(car,{sz:18}),{jc:"center"}):"")+(f?P(R(ctrEvTxt(tit,f),{sz:14,color:"55688A"}),{jc:"center"}):"");
       return P("",{before:300})+`<w:tbl><w:tblPr><w:tblW w:w="9900" w:type="dxa"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid><w:gridCol w:w="4950"/><w:gridCol w:w="4950"/></w:tblGrid><w:tr>${celda(4950,lado("POR “CEMEPI”",c.firma_cemepi,c.firma_cemepi_w,c.firma_cemepi_h,"rIdFirmaC",11,FIRMA_REP.nombre,FIRMA_REP.cargo,c.firma_cemepi_en))}${celda(4950,lado(parte,c.firma_trabajador,c.firma_trabajador_w,c.firma_trabajador_h,"rIdFirmaP",12,v.NOMBRE,"",c.firma_trabajador_en))}</w:tr></w:tbl>`; }
     const t=ctrSust(p,v);
     if (ctrEncabezado(p)) return P(R(t,{b:1,sz:20}),{jc:"both",after:200});
@@ -3205,7 +3338,7 @@ function documentacionHtml(){
   return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">${cab(todos?"Documentación":"Mis documentos")}
     <p class="status" style="margin:0">Sube en PDF tu identificación, CURP, comprobante de domicilio, constancia de situación fiscal, cédula y título profesional, constancias de cursos, diplomados y certificaciones. ${ES_SEDE()&&!tengo("contratos")?"Como administración de sede ves la documentación de los psicólogos de tu sede y puedes verificarla contra los originales.":todos?"Como Dirección o recursos humanos ves la documentación de todo el personal y puedes verificarla contra los originales.":"Solo tú, la Dirección y recursos humanos los ven."}</p>
     ${ES_DIR()?`<p class="banner" style="margin:0;display:block"><b>Respaldo:</b> los respaldos automáticos de Supabase guardan la base de datos, pero <b>no los PDF</b>. Pulsa <b>Descargar respaldo (ZIP)</b> al menos una vez al mes y guárdalo en un disco o carpeta segura de CEMEPI (contiene datos personales del personal). Cada descarga queda en la bitácora.</p>`:""}
-    ${S.rol==="superusuario"?"":misDocsInstHtml()+docpPersonaHtml(S.uid)}${general}${ES_DIR()?papeleraHtml():""}</div>`;
+    ${S.rol==="superusuario"?(S.dx&&!S.dx.error?dxPorFirmarHtml():(misDocsInstHtml(),"")):misDocsInstHtml()+docpPersonaHtml(S.uid)}${general}${ES_DIR()?papeleraHtml():""}</div>`;
 }
 function papeleraHtml(){
   const ps=S.docpPapelera||[], nom=id=>{ const u=(S.usuarios||[]).find(x=>x.id===id); return u?(u.nombre||u.email):"(cuenta eliminada)"; };
@@ -3275,6 +3408,9 @@ const GUIAS = [
   {t:"Responder solicitudes de acceso", si:()=>S.rol==="superusuario", pasos:["Entra a Configuración → Usuarios y permisos → Solicitudes de acceso.","Pulsa Responder: puedes aprobar (eligiendo nivel y fecha de fin), pedir más información o rechazar.","Las revisiones automáticas aparecen cuando un colaborador pasa a Baja en Organización: abre su cuenta y decide si la desactivas."]},
   {t:"Pedir un acceso que no tengo", si:()=>true, pasos:["Entra a Configuración → Usuarios y permisos → Solicitudes de acceso.","Pulsa + Nueva solicitud, elige la sede, el módulo y el nivel, y explica para qué lo necesitas.","El Superusuario la revisa. Nada cambia hasta que la apruebe; verás la respuesta en la misma pantalla."]},
   {t:"Consultar la organización", si:()=>(S.api?.orgNivel||0)>=1, pasos:["Entra a Organización → Resumen para ver sedes, personas, vacantes y alertas de las sedes que tienes autorizadas.","En Organigrama elige la vista (línea de reporte, área, sede, supervisión clínica o coordinación) y pulsa a una persona para ver su ficha.","En Supervisión registra a quién reporta cada persona; en Vacantes, quién ocupa cada plaza."]},
+  {t:"Firmar un documento", si:()=>!!S.rol, pasos:["Antes de tu primera firma, guarda la imagen de tu firma en Mi perfil (se imprime en el documento).","Entra a Mis documentos → Por firmar y pulsa Revisar y firmar.","Pulsa Abrir y revisar el documento y léelo completo. La app comprueba que es exactamente el archivo que se envió a firma.","Escribe tu contraseña de la app, marca que aceptas y pulsa Firmar. Si algo está mal, pulsa Rechazar y explica qué corregir."]},
+  {t:"Firmar mi contrato", si:()=>tieneContrato()||S.rol==="superusuario", pasos:["Cuando la Dirección registre tu fecha de alta y salario, entra a Mi contrato y pulsa Firmar mi contrato.","Lee el contrato, escribe tu contraseña, marca que aceptas y pulsa Firmar.","Se guarda la huella del contenido: si después cambia un dato, la firma se anula y se vuelve a firmar."]},
+  {t:"Enviar un documento a firma", si:()=>dxPuedeGestionar(), pasos:["Abre el documento en Documentos y firmas (ya con su archivo) y pulsa Enviar a firma.","Marca a las personas en el orden en que deben firmar, escribe su papel (por ejemplo Representante legal), elige si firman en orden o a la vez y la fecha límite.","Cuando firman todas, el documento queda Firmado, recibe su folio y puedes Descargar firmado (PDF) con las firmas impresas y su evidencia.","Mientras está en firma no se cambia el archivo. Si hay que corregirlo, cancela la solicitud con un motivo, sube una versión nueva y vuelve a enviarlo."]},
   {t:"Agregar un documento a la biblioteca", si:()=>dxPuedeGestionar(), pasos:["Entra a Administración → Documentos y firmas y pulsa + Nuevo documento.","Elige el tipo, escribe el nombre y elige la sede (la entidad fiscal se toma de la sede) o, si es un documento de la entidad, la entidad fiscal. Si es de una persona, elígela para que quede en su expediente.","Pulsa Crear borrador y sube el archivo (PDF, Word, PNG o JPG, máx. 20 MB). La app calcula su huella digital antes de subirlo.","Pulsa Publicar con folio. Un documento publicado no se elimina: si deja de valer, se archiva con un motivo."]},
   {t:"Corregir un documento sin perder el anterior", si:()=>dxPuedeGestionar(), pasos:["Abre el documento en Documentos y firmas.","En Versiones elige el archivo nuevo, escribe el motivo y pulsa Subir versión.","La versión anterior se conserva con su huella; la nueva queda como vigente."]},
   {t:"Comprobar que un archivo no se alteró", si:()=>dxPuedeGestionar(), pasos:["Abre el documento y, en Versiones, pulsa Verificar integridad.","La app vuelve a calcular la huella del archivo guardado y la compara con la registrada al subirlo."]},
@@ -3490,6 +3626,10 @@ MANUALES.direccion.caps.push({t:"Documentos y firmas", p:[
   "Para agregar uno: + Nuevo documento → tipo, nombre, sede o entidad y, si es de una persona, la persona → Crear borrador → subir el archivo → Publicar con folio. La entidad fiscal se toma de la sede: un documento de Bosques de Santa Fe nunca queda con los datos de CEMEPI, S.C.",
   "Cada versión guarda su huella digital y no se modifica. Para corregir, sube una versión nueva. Para retirar un documento publicado, archívalo con un motivo. Ver un documento no da permiso de descargarlo; cada descarga queda registrada.",
   "Los documentos sensibles (fiscales) requieren el permiso de información sensible. Las firmas electrónicas llegan en la siguiente fase."]});
+for (const k of Object.keys(MANUALES)) MANUALES[k].caps.push({t:"Firma electrónica", p:[
+  "Los documentos que emite CEMEPI (políticas, circulares, oficios, acuses, constancias laborales, convenios y el contrato individual) solo valen con firma. Se firman en la app con tu contraseña; el código de verificación (MFA) no se usa por ahora.",
+  "Antes de firmar guarda la imagen de tu firma en Mi perfil: se imprime en el documento. Al firmar se guarda la evidencia: quién, cuándo (hora del servidor), la huella del archivo revisado y el dispositivo.",
+  "Es una firma electrónica simple con evidencia. No es la e.firma del SAT ni una constancia NOM-151."]});
 MANUALES.admin_sede.caps.push({t:"Documentos de tu sede", p:[
   "En Documentos y firmas ves y agregas los documentos de tu sede (por ejemplo, licencias o avisos de protección civil) y los de las personas de tu sede. Puedes marcar como verificado un documento comparándolo con el original, salvo los tuyos."]});
 MANUALES.admin_sede.caps.push({t:"Asistencia de tu sede", p:[
@@ -4081,6 +4221,7 @@ document.addEventListener("click", async ev => {
   /* Usuarios, sedes y tiempo de uso */
   if (a==="usuarios"){ S.view="usuarios"; S.usrEdit=null; S.usuarios=null; render(); return cargarAdmin("usuarios"); }
   if (ORG_ACCIONES.has(a)) return orgAccion(a, b);   /* Módulo 01 · Organización */
+  if (FIRMA_ACC.has(a)) return firmaAccion(a, b);   /* Módulo 05 · firmas */
   if (DOC_ACC.has(a)) return docAccion(a, b);   /* Módulo 05 · Documentos y firmas */
   if (ASIS_ACC.has(a)) return asisAccion(a, b);   /* Módulo 03 · Asistencia y jornadas */
   if (SEG_ACC.has(a)) return segAccion(a, b);   /* Módulo 02 · Usuarios y permisos */
@@ -4114,15 +4255,17 @@ document.addEventListener("click", async ev => {
     if ((c.firma_trabajador||c.firma_cemepi) && (f!==c.fecha_alta || sal!==(c.salario==null?null:Number(c.salario)) || rfcE!==c.rfc_empleador || razon!==c.razon_social || regp!==c.registro_patronal) && !arm(b,"alta","Guardar y anular firmas")) return; armed=null;
     try{ const n=await S.api.guardarContrato(c.id,{fecha_alta:f, salario:sal, rfc_empleador:rfcE, razon_social:razon, registro_patronal:regp}); S.ctrs=S.ctrs.map(x=>x.id===n.id?n:x); toast("Datos de la Dirección guardados."); }catch(e){ toast(e?.message||"No se pudo guardar la fecha."); } return render(); }
   if (a==="firmarCtr" || a==="firmarCemepi"){ const c=S.ctrs.find(x=>a==="firmarCtr"?x.user_id===S.uid:x.id===S.ctrSel);
-    if(!arm(b,"firma"+a,"¿Firmar? Confirma")) return; armed=null;
-    const f=S.perfil.firma, w=S.perfil.firmaW||null, h=S.perfil.firmaH||null;
-    const cambios = a==="firmarCtr" ? {firma_trabajador:f, firma_trabajador_w:w, firma_trabajador_h:h} : {firma_cemepi:f, firma_cemepi_w:w, firma_cemepi_h:h};
-    try{ const n=await S.api.guardarContrato(c.id,cambios); S.ctrs=S.ctrs.map(x=>x.id===n.id?n:x); toast("Firma registrada."); }catch(e){ toast(e?.message||"No se pudo firmar."); } return render(); }
+    let huella=""; try{ huella=await S.api.contratoHuella(c.id); }catch{}
+    const pass=await pedirContrasena(a==="firmarCtr"?"Firmar mi contrato":"Firmar por CEMEPI", `Huella del contenido: <span class="mono" style="word-break:break-all">${esc(huella)}</span>. Si el contrato cambia, la firma se anula.`);
+    if (!pass) return;
+    try{ const r=await S.api.firmarContrato(c.id, a==="firmarCtr"?"trabajador":"cemepi", pass);
+      if (r==="identidad"){ toast("La contraseña no es correcta. No se firmó."); return; }
+      S.ctrs=await S.api.contratos(); toast("Firma registrada con su evidencia."); }catch(e){ toast(e?.message||"No se pudo firmar."); } return render(); }
   if (a==="retirarCtr"){ const c=S.ctrs.find(x=>x.user_id===S.uid); if(!arm(b,"retirar","¿Retirar tu firma?")) return; armed=null;
     try{ const n=await S.api.guardarContrato(c.id,{firma_trabajador:null}); S.ctrs=S.ctrs.map(x=>x.id===n.id?n:x); toast("Firma retirada."); }catch(e){ toast(e?.message||"No se pudo retirar la firma."); } return render(); }
   if (a==="reabrirCtr"){ const c=S.ctrs.find(x=>x.id===S.ctrSel); if(!arm(b,"reabrir","¿Anular ambas firmas?")) return; armed=null;
     try{ const n=await S.api.guardarContrato(c.id,{firma_cemepi:null, firma_trabajador:null}); S.ctrs=S.ctrs.map(x=>x.id===n.id?n:x); toast("Contrato reabierto: las firmas se anularon."); }catch(e){ toast(e?.message||"No se pudo reabrir."); } return render(); }
-  if (a==="wordCtr"){ const c=S.ctrs.find(x=>S.ctrSel?x.id===S.ctrSel:x.user_id===S.uid); const {xml, ext}=ctrWordXml(c);
+  if (a==="wordCtr"){ const c=S.ctrs.find(x=>S.ctrSel?x.id===S.ctrSel:x.user_id===S.uid); try{ S.ctrEvid=await S.api.contratoFirmas(c.id); }catch{ S.ctrEvid=[]; } const {xml, ext}=ctrWordXml(c);
     if (!(await libLista("zip"))){ toast("No se pudo preparar el Word. Recarga la página."); return; }
     const dl=await window.claude?.use?.("downloads");
     try{ const blob=await docxBlob("Contrato individual", xml, ext, "Documento", true); /* Los contratos laborales no llevan la nota aclaratoria (decisión del Director, 2026-11-20) */ await dl.save({filename:`Contrato-${slug(ctrNombre(c.datos||{})||"profesionista")}.docx`, data:blob}); toast("Contrato descargado. Contiene datos personales: resguárdalo y no lo envíes por mensajería."); }
@@ -4683,6 +4826,7 @@ ul.pend.avisos li{border-left-color:var(--accent,#0560BD)}
 .cal-d{border:1px solid var(--line);border-radius:8px;min-height:70px;padding:4px;display:flex;flex-direction:column;gap:2px;font-size:11px;min-width:0}.cal-d.hoy{outline:2px solid var(--accent,#0560bd)}
 .cal-ev{border-radius:4px;padding:1px 3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:var(--sunk)}.cal-ev.t{background:#e3eefb;color:#0b3d73}.cal-ev.v{background:#e3f4e8;color:#1d5a2f}.cal-ev.i{background:#f3e6f7;color:#5b2a6e}.cal-ev.p{background:#fdf1d8;color:#6b4b00}.cal-ev.c{color:var(--muted);background:none}
 @media (max-width:560px){.cal-d{min-height:54px}.cal-ev{font-size:9px}}
+.dlg-firma{border:1px solid var(--line);border-radius:14px;padding:20px;background:var(--surface);color:var(--fg);max-width:min(520px,92vw)}.dlg-firma::backdrop{background:rgba(10,20,40,.45)}
 .org-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
 .dl-org{display:grid;grid-template-columns:minmax(110px,170px) minmax(0,1fr);gap:6px 14px;margin:0;font-size:14px}.dl-org dt{color:var(--muted)}.dl-org dd{margin:0;min-width:0;overflow-wrap:anywhere}
 @media (max-width:560px){.dl-org{grid-template-columns:1fr}.dl-org dd{margin-bottom:6px}}

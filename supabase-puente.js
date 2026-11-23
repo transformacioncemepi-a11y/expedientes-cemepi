@@ -369,10 +369,14 @@ const cemepi = {
       sb.from("sede_entidad").select("sede_id,entidad_id,hasta").is("hasta", null),
       sb.from("entidades_fiscales").select("id,nombre_corto,principal"),
       sb.from("colaboradores").select("id,nombre,sede_principal_id,perfil_id,estatus").order("nombre"),
-      sb.rpc("mi_colaborador")]);
+      sb.rpc("mi_colaborador"),
+      sb.from("firma_solicitudes").select("*").order("creado_en", { ascending: false }),
+      sb.from("firma_participantes").select("*").order("orden"),
+      sb.rpc("mis_firmas_pendientes")]);
     for (const x of r) if (x.error) fallo(x.error);
-    const [d, v, t, c, s, se, e, co, yo] = r.map(x => x.data);
-    return { docs: d || [], versiones: v || [], tipos: t || [], categorias: c || [], sedes: s || [], sedeEnt: se || [], entidades: e || [], colaboradores: co || [], yo: yo || null };
+    const [d, v, t, c, s, se, e, co, yo, fs, fp, mp] = r.map(x => x.data);
+    return { docs: d || [], versiones: v || [], tipos: t || [], categorias: c || [], sedes: s || [], sedeEnt: se || [], entidades: e || [], colaboradores: co || [], yo: yo || null,
+             solicitudes: fs || [], participantes: fp || [], misFirmas: mp || [] };
   },
   async crearDoc(o){ const { data, error } = await sb.rpc("crear_doc", { p_tipo: o.tipo, p_nombre: o.nombre, p_sede: o.sede || null, p_entidad: o.entidad || null,
       p_colaborador: o.colaborador || null, p_vence: o.vence || null, p_etiquetas: o.etiquetas || [], p_confidencialidad: o.confidencialidad || null, p_area: null }); if (error) fallo(error); return data; },
@@ -396,6 +400,20 @@ const cemepi = {
   async verificarDoc(id){ const { error } = await sb.rpc("verificar_doc", { p_doc: id }); if (error) fallo(error); },
   async archivarDoc(id, motivo){ const { error } = await sb.rpc("archivar_doc", { p_doc: id, p_motivo: motivo }); if (error) fallo(error); },
   async eliminarBorradorDoc(id){ const { error } = await sb.rpc("eliminar_borrador_doc", { p_doc: id }); if (error) fallo(error); },
+  /* Archivo de una versión (registra la descarga) para revisarlo, firmarlo o imprimir la firma */
+  async archivoDoc(id, version){ const { data: ruta, error } = await sb.rpc("registrar_descarga_doc", { p_doc: id, p_version: version }); if (error) fallo(error);
+    const { data, error: e2 } = await sb.storage.from("documentos-institucionales").download(ruta); if (e2) fallo(e2);
+    const sha = [...new Uint8Array(await crypto.subtle.digest("SHA-256", await data.arrayBuffer()))].map(b => b.toString(16).padStart(2, "0")).join("");
+    return { blob: data, sha256: sha }; },
+  async enviarAFirma(id, o){ const { data, error } = await sb.rpc("enviar_a_firma", { p_doc: id, p_modo: o.modo, p_limite: o.limite, p_firmantes: o.firmantes, p_papeles: o.papeles, p_mensaje: o.mensaje || null }); if (error) fallo(error); return data; },
+  async firmarDocumento(sol, sha256, acepto, contrasena){ const { data, error } = await sb.rpc("firmar_documento", { p_sol: sol, p_sha256: sha256, p_acepto: acepto, p_contrasena: contrasena, p_agente: navigator.userAgent.slice(0, 200) }); if (error) fallo(error); return data; },
+  async rechazarFirma(sol, motivo){ const { error } = await sb.rpc("rechazar_firma", { p_sol: sol, p_motivo: motivo }); if (error) fallo(error); },
+  async cancelarFirma(sol, motivo){ const { error } = await sb.rpc("cancelar_firma", { p_sol: sol, p_motivo: motivo }); if (error) fallo(error); },
+  async cerrarFirmasVencidas(){ const { data } = await sb.rpc("cerrar_firmas_vencidas"); return data || 0; },
+  async misFirmasPendientes(){ const { data, error } = await sb.rpc("mis_firmas_pendientes"); if (error) fallo(error); return data || []; },
+  async firmarContrato(id, parte, contrasena){ const { data, error } = await sb.rpc("firmar_contrato", { p_id: id, p_parte: parte, p_acepto: true, p_contrasena: contrasena, p_agente: navigator.userAgent.slice(0, 200) }); if (error) fallo(error); return data; },
+  async contratoHuella(id){ const { data, error } = await sb.rpc("contrato_huella", { p_id: id }); if (error) fallo(error); return data; },
+  async contratoFirmas(id){ const { data, error } = await sb.from("contrato_firmas").select("parte,tipo,fecha,sha256,metodo").eq("contrato_id", id).eq("tipo", "FIRMADA").order("fecha"); if (error) fallo(error); return data || []; },
   async expedienteDocs(col){ const { data, error } = await sb.rpc("expediente_docs", { p_colaborador: col }); if (error) fallo(error); return data || []; },
   async guardarConfigAsistencia(clave, valor){ const { error } = await sb.rpc("guardar_config_asistencia", { p_clave: clave, p_valor: valor }); if (error) fallo(error); },
   /* ---------- Módulo 02 · Usuarios, perfiles y permisos ---------- */
