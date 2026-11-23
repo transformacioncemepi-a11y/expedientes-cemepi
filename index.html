@@ -1229,8 +1229,25 @@ function marcarNav(){
   const p=S.pacientes?.get?.(S.sel);
   $("#topTitulo").textContent = v==="exp" && p ? `Expediente ${p.ficha?.nombre||""} · ${p.folio||""}` : (VISTA_TXT[v]||"Inicio");
 }
+/* ---------- Protección de lo que se está escribiendo ----------
+   S.editado se enciende al escribir en un formulario de la vista actual (no en buscadores ni filtros)
+   y se apaga al redibujar la vista (guardar, cancelar o cambiar de pantalla). */
+const CAMPO_EDIT = 'textarea, select, input:not([type=search]):not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=file])';
+document.addEventListener("input", e=>{ const t=e.target;
+  if (!t.closest?.("#detail") || t.closest(".filtros, [role=search], .tabs") || t.matches("[data-fq]") || !t.matches(CAMPO_EDIT)) return;
+  if (t.tagName==="SELECT" && !t.closest("form, .card, .panel, .dlg, fieldset")) return;
+  S.editado=true; }, true);
+const hayCambios = () => !!(S.editado || S.dirty || (S.gen?.contenido && !S.gen.guardado));
+window.cemepiHayCambios = hayCambios;
+window.addEventListener("beforeunload", e=>{ if (window.cemepiSaliendo || !hayCambios()) return; e.preventDefault(); e.returnValue=""; });
+/* Al cambiar de pantalla con el menú, la ruta o el título, pregunta antes de perder lo escrito. */
+document.addEventListener("click", e=>{
+  const b=e.target.closest?.(".nav-i, .crumbs button, .ttl, #gres [data-act], #gres button");
+  if (!b || !hayCambios() || b.closest(".dlg-firma")) return;
+  if (confirm("Tienes cambios sin guardar en esta pantalla.\n\n¿Salir sin guardarlos?")) { S.editado=false; S.dirty=false; if (S.gen) S.gen.guardado=true; return; }
+  e.preventDefault(); e.stopImmediatePropagation(); }, true);
 function render(){
-  const d=$("#detail"); S.dirty=false; S.stale=false; marcarNav(); document.body.classList.remove("menu-abierto");
+  const d=$("#detail"); S.dirty=false; S.stale=false; S.editado=false; marcarNav(); document.body.classList.remove("menu-abierto");
   const p=S.pacientes.get(S.sel);
   $("#app").classList.toggle("open", !!p || ["perfil","terapeutas","usuarios","sedes","entidades","areas","puestos","vacantes","colaboradores","supervision","organigrama","seguridad","orgresumen","indicadores","uso","reglamento","contratos","permisos","documentacion","ayuda","tablero","miasis","asistencia","docs","incorporacion","miinc"].includes(S.view));
   if (S.view==="perfil"){ d.innerHTML=perfilHtml(); activarPad(); return; }
@@ -4450,11 +4467,11 @@ function watch(){
   if (!S.db || !S.sel) return;
   S.unsubN = S.db.collection("notas").where("pacienteId","==",S.sel).onSnapshot(snap=>{
     S.notas = snap.docs.map(d=>({id:d.id,...d.data()}));
-    if (S.dirty || S.gen) markStale(); else render();
+    if (S.dirty || S.editado || S.gen) markStale(); else render();
   }, e=>console.warn("notas",e));
   S.unsubD = S.db.collection("documentos").where("pacienteId","==",S.sel).onSnapshot(snap=>{
     S.docs = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.creado||0)-(a.creado||0));
-    if (S.gen) return; if (S.dirty) markStale(); else render();
+    if (S.gen) return; if (S.dirty || S.editado) markStale(); else render();
   }, e=>console.warn("documentos",e));
 }
 function markStale(){ const b=$("#staleBox"); if(!b||S.stale||S.gen) return; S.stale=true;
@@ -5021,15 +5038,16 @@ render();
     S.terapeutas=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}]));
     renderList();
     if (S.view==="terapeutas" && !S.terEdit) render();
-    else if (S.sel && !S.dirty && !S.gen) render();
+    else if (S.sel && !S.dirty && !S.editado && !S.gen) render();
   }, e=>console.warn("terapeutas", e));
   db.collection("pacientes").onSnapshot(snap=>{
     if (!snap.metadata.fromCache){ S.loaded=true; clearTimeout(timer); } else if (snap.size) S.loaded=true;
     S.pacientes=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}]));
     renderList();
     if (S.sel && !S.pacientes.has(S.sel)){ S.sel=null; S.view="inicio"; watch(); render(); return; }
-    if (S.sel){ if (S.dirty || S.gen) markStale(); else render(); }
-    else if (S.view!=="perfil" && !(S.view==="terapeutas" && S.terEdit)) render();
+    if (S.sel){ if (S.dirty || S.editado || S.gen) markStale(); else render(); }
+    /* Los expedientes solo se muestran en Inicio y Terapeutas: las demás vistas (formularios de los módulos) no se redibujan. */
+    else if ((S.view==="inicio" || (S.view==="terapeutas" && !S.terEdit)) && !S.editado) render();
   }, e=>{ clearTimeout(timer); S.loaded=true; $("#list").innerHTML=`<div class="empty-list">No tienes acceso a los expedientes con este enlace.</div>`; });
 })();
 })();

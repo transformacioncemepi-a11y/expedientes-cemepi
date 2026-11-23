@@ -94,8 +94,12 @@ function consulta(col, filtro){
   return {
     where: (campo, _op, valor) => consulta(col, { campo, valor }),
     get: ejecutar,
-    onSnapshot(next, onErr){ let vivo = true;
-      const f = () => ejecutar().then(s => vivo && next(s)).catch(e => vivo && onErr && onErr(e));
+    onSnapshot(next, onErr){ let vivo = true, previo = null;
+      /* Solo avisa a la pantalla si los datos cambiaron: la consulta periódica (cada minuto y al volver a la
+         ventana) no debe redibujar la vista ni borrar lo que la persona está escribiendo. */
+      const f = () => ejecutar().then(s => { if (!vivo) return;
+        const huella = JSON.stringify(s.docs.map(d => [d.id, d.data()]));
+        if (huella === previo) return; previo = huella; next(s); }).catch(e => vivo && onErr && onErr(e));
       if (!subs.has(m.tabla)) subs.set(m.tabla, new Set()); subs.get(m.tabla).add(f); f();
       return () => { vivo = false; subs.get(m.tabla).delete(f); }; },
     doc: id => refDoc(col, id || crypto.randomUUID()),
@@ -247,7 +251,7 @@ const rol = perfil.rol;
 const ROL_TXT = { superusuario: "Superusuario", direccion: "Directivo(a)", admin_sede: "Administración de sede", administrativo: "Administrativo", psicologo: "Psicólogo(a)" };
 document.body.dataset.rol = rol;
 $("#sesionInfo").textContent = `${usuario.email} · ${ROL_TXT[rol] || rol}${perfil.sede ? " · " + perfil.sede : ""}`;
-document.addEventListener("click", ev => { if (ev.target.closest('[data-act="salir"]')) sb.auth.signOut().then(() => location.reload()); });
+document.addEventListener("click", ev => { if (ev.target.closest('[data-act="salir"]')) sb.auth.signOut().then(() => { window.cemepiSaliendo = true; location.reload(); }); });
 
 /* ---------- Tiempo activo de uso (solo lo consulta el superusuario) ----------
    Cuenta minutos con la app visible y con actividad en los últimos 5 minutos. */
@@ -275,7 +279,7 @@ let ultimaActividad = Date.now(), ultimoEnvio = Date.now(), acumulado = 0;
       dlg.addEventListener("click", ev => {
         const a = ev.target.closest("[data-inact]")?.dataset.inact;
         if (a === "seguir") { ultimaActividad = Date.now(); ocultar(); }
-        if (a === "salir") sb.auth.signOut().then(() => location.reload());
+        if (a === "salir") sb.auth.signOut().then(() => { window.cemepiSaliendo = true; location.reload(); });
       });
       document.body.appendChild(dlg);
     }
@@ -284,7 +288,7 @@ let ultimaActividad = Date.now(), ultimoEnvio = Date.now(), acumulado = 0;
   setInterval(() => {
     if (cerrando) return;
     const inactivo = Date.now() - ultimaActividad;
-    if (inactivo >= limite) { cerrando = true; sb.auth.signOut().then(() => location.reload()); return; }
+    if (inactivo >= limite) { cerrando = true; sb.auth.signOut().then(() => { window.cemepiSaliendo = true; location.reload(); }); return; }
     if (inactivo >= limite - AVISO) {
       mostrar();
       const s = Math.max(0, Math.ceil((limite - inactivo) / 1000));
@@ -546,7 +550,7 @@ const cemepi = {
   async mfaAlta(nombre){ const { data, error } = await sb.auth.mfa.enroll({ factorType: "totp", friendlyName: nombre }); if (error) fallo(error); return { id: data.id, qr: data.totp.qr_code, clave: data.totp.secret }; },
   async mfaConfirmar(id, codigo){ const { error } = await sb.auth.mfa.challengeAndVerify({ factorId: id, code: codigo }); if (error) fallo(error); },
   async mfaQuitar(id){ const { error } = await sb.auth.mfa.unenroll({ factorId: id }); if (error) fallo(error); },
-  async cerrarSesion(){ await sb.auth.signOut(); location.reload(); },
+  async cerrarSesion(){ await sb.auth.signOut(); window.cemepiSaliendo = true; location.reload(); },
   /* ---------- Módulo 01 · Organización (catálogos). Todo pasa por RLS y el servicio de permisos de la base ---------- */
   async orgCatalogos(){
     const q = await Promise.all([
