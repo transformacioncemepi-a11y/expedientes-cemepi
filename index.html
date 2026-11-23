@@ -1265,12 +1265,15 @@ async function cargarPendientes(){
   const intenta = async f => { try{ await f(); }catch(e){ console.warn("pendientes", e); } };
   await Promise.all([
     intenta(async()=>{ const x=await S.api.incDatos?.(); if (!x) return; const yo=x.yo, hoy=asisHoy();
-      for (const i of x.incs.filter(i=>["en_curso","acompanamiento_extendido"].includes(i.estado)&&i.clase!=="psicologo_comision")){
+      for (const i of x.incs.filter(i=>["en_proceso","revision_adicional"].includes(i.estado)&&i.clase!=="psicologo_comision"&&i.inicio)){
         const dia=Math.round((new Date(hoy+"T12:00")-new Date(i.inicio+"T12:00"))/864e5), ev=x.evals.filter(e=>e.inc_id===i.id&&e.cerrada);
-        for (const c of [30,60,90]){ if (dia<c-10) continue;
-          if (i.colaborador_id===yo&&!ev.some(e=>e.corte===c&&e.evaluador==="persona")){ pend.push({t:`Tu autoevaluación del día ${c}`, d:"Forma parte de tu incorporación.", act:"miinc", b:"Abrir"}); break; }
-          if ((i.jefe_id===yo||i.acompanante_id===yo)&&i.colaborador_id!==yo&&!ev.some(e=>e.corte===c&&e.evaluador==="jefe")){ const n=x.colaboradores.find(k=>k.id===i.colaborador_id)?.nombre||"";
-            pend.push({t:`Evaluación del día ${c} de ${n}`, d:"Incorporación de tu equipo.", act:"incorporacion", b:"Evaluar"}); break; } } } }),
+        const evalua=x.participantes.some(p=>p.inc_id===i.id&&p.colaborador_id===yo&&["responsable","supervisor"].includes(p.papel))&&i.colaborador_id!==yo;
+        for (const c of [30,60,90]){ const k=Math.round(c*i.duracion/90); if (dia<k-10) continue;
+          if (i.colaborador_id===yo&&!ev.some(e=>e.corte===c&&e.evaluador==="persona")){ pend.push({t:`Tu autoevaluación del día ${k}`, d:"Forma parte de tu incorporación.", act:"miinc", b:"Abrir"}); break; }
+          if (evalua&&!ev.some(e=>e.corte===c&&e.evaluador==="jefe")){ const n=x.colaboradores.find(q=>q.id===i.colaborador_id)?.nombre||"";
+            pend.push({t:`Evaluación del día ${k} de ${n}`, d:"Incorporación que acompañas.", act:"incorporacion", b:"Evaluar"}); break; } } }
+      const venc=x.reuniones.filter(r=>!r.cumplido&&r.compromiso_para&&r.compromiso_para<hoy&&x.incs.some(i=>i.id===r.inc_id&&i.colaborador_id===yo));
+      if (venc.length) pend.push({t:`${venc.length} compromiso${venc.length===1?"":"s"} de tu incorporación por cumplir`, d:"Revísalos con tu mentor(a).", act:"miinc", b:"Ver"}); }),
     intenta(async()=>{ const fs=(await S.api.misFirmasPendientes?.())||[]; const n=fs.filter(f=>f.mi_turno).length;
       if (n) pend.push({t:`${n} documento${n===1?"":"s"} por firmar`, d:"Revísalo completo y fírmalo con tu contraseña.", act:"documentacion", b:"Firmar"}); }),
     intenta(async()=>{ if (!gestionaCuentas()) return; const us=await S.api.usuarios(); S.usuarios=us;
@@ -1779,8 +1782,8 @@ function vacantesHtml(){
 }
 
 /* ---------- Etapa 5: Colaboradores, Supervisión y Organigrama ---------- */
-const COL_ESTATUS={activo:"Activo",por_validar:"Por validar",vacaciones:"Vacaciones",incapacidad:"Incapacidad",baja:"Baja"};
-const COL_PILL={activo:"estado-activo",por_validar:"estado-pendiente",vacaciones:"",incapacidad:"estado-pendiente",baja:"estado-suspendido"};
+const COL_ESTATUS={activo:"Activo",en_proceso_contratacion:"En proceso de contratación",por_validar:"Por validar",vacaciones:"Vacaciones",incapacidad:"Incapacidad",baja:"Baja"};
+const COL_PILL={activo:"estado-activo",en_proceso_contratacion:"estado-pendiente",por_validar:"estado-pendiente",vacaciones:"",incapacidad:"estado-pendiente",baja:"estado-suspendido"};
 const REL_TIPOS={administrativa:"Línea de reporte (administrativa)",supervision_clinica:"Supervisión clínica",coordinacion:"Coordinación entre áreas",responsable_sede:"Responsable de sede",responsable_area:"Responsable de área",delegacion:"Delegación",sustitucion:"Sustitución temporal"};
 const REL_CORTO={administrativa:"Reporta a",supervision_clinica:"Supervisión clínica",coordinacion:"Coordinación",responsable_sede:"Responsable de sede",responsable_area:"Responsable de área",delegacion:"Delegación",sustitucion:"Sustitución"};
 const vigente = x => !x.hasta || x.hasta >= today();
@@ -2592,176 +2595,281 @@ function pedirContrasena(titulo, detalle){ return new Promise(ok=>{ const dlg=do
   dlg.querySelector("form").onsubmit=e=>{ e.preventDefault(); const p=dlg.querySelector("#dlgPass").value; if (!dlg.querySelector("#dlgAcepto").checked){ toast("Marca que aceptas firmar."); return; } if (!p) return; fin(p); };
   dlg.showModal(); setTimeout(()=>dlg.querySelector("#dlgPass").focus(),30); }); }
 
-/* ======================= Incorporación de colaboradores (90 días) — diseño aprobado 2026-11-22 =======================
-   Acompaña, capacita y evalúa; no define la situación jurídica (LFT 39-A a 39-E). El jefe propone; RR. HH. o la Dirección deciden.
-   Independientes: solo acompañamiento. La asistencia no interviene. */
-const INC_COMP={administrativo:["Atención y trato al consultante","Agenda, cobro y registro en la app","Confidencialidad y datos personales","Trabajo en equipo y comunicación","Seguimiento de tareas"],
-  psicologo_nomina:["Encuadre y alianza terapéutica","Registro clínico (NOM-004, solo iniciales)","Ética y confidencialidad","Uso de la supervisión clínica","Trabajo en equipo y comunicación"]};
-const INC_ESC=["","En desarrollo","Básico","Competente","Sobresaliente"];
-const INC_EST={en_curso:["En curso","estado-pendiente"],en_revision:["En revisión de RR. HH.","estado-pendiente"],confirmada:["Confirmada","estado-activo"],acompanamiento_extendido:["Acompañamiento extendido","estado-pendiente"],
-  no_continua:["No continúa","estado-suspendido"],cancelada:["Cancelada",""],concluida:["Concluida","estado-activo"]};
-const INC_CAT={induccion:"Inducción",lectura:"Lectura",capacitacion:"Capacitación",practica:"Práctica acompañada",reunion:"Reunión o supervisión",evaluacion:"Evaluación",auto:"Se marca sola"};
+/* ======================= Incorporación v2 · personas en proceso de contratación (plan aprobado 2026-11-22) =======================
+   Acompaña, capacita y evalúa. La IA y el sistema nunca deciden; capacitar no da permisos; la asistencia solo es contexto. */
+const INC_EST={seleccionado:["Seleccionado","estado-pendiente"],preingreso:["Preingreso","estado-pendiente"],en_proceso:["En proceso de contratación","estado-pendiente"],en_revision:["En revisión","estado-pendiente"],
+  revision_adicional:["Revisión adicional","estado-pendiente"],confirmada:["Incorporación confirmada","estado-activo"],sin_continuidad:["Concluido sin continuidad","estado-suspendido"],suspendido:["Suspendido",""],cancelada:["Cancelado",""]};
+const INC_ETAPA={induccion:"Inducción",formacion:"Formación supervisada",valoracion:"Valoración"};
+const INC_AEST={pendiente:["Pendiente",""],en_curso:["En curso","estado-pendiente"],completada:["Completada","estado-activo"],refuerzo:["Requiere refuerzo","estado-pendiente"],cancelada:["Cancelada",""]};
+const INC_PAPEL={responsable:"Responsable de incorporación",capacitador:"Capacitador(a)",mentor:"Mentor(a)",supervisor:"Supervisor(a)"};
 const INC_CLASE={administrativo:"Administrativo(a)",psicologo_nomina:"Psicólogo(a) base",psicologo_comision:"Psicólogo(a) independiente · acompañamiento"};
-const INC_RECO={confirmar:"Confirmar",extender:"Extender acompañamiento",no_continuar:"No continuar"};
-const INC_ACC=new Set(["incorporacion","miinc","incVer","incCerrar","incNueva","incCrear","incCancelarForm","incTarea","incValidar","incEval","incPunt","incGuardarEval","incReco","incDecidir","incCerrarForm","incCerrarInc","incCarta"]);
+const INC_RECO={confirmar:"Confirmar",extender:"Revisión adicional",no_continuar:"No continuar"};
+const INC_ACTIVOS=["en_proceso","en_revision","revision_adicional"];
+const INC_ACC=new Set(["incorporacion","miinc","incVer","incCerrar","incNueva","incCrear","incCancelarForm","incTab","incPreingreso","incIniciar","incPapel","incFicha","incGuardarFicha",
+  "incActForm","incGuardarAct","incAvance","incAvanceForm","incEval","incPunt","incGuardarEval","incReuForm","incGuardarReu","incCumplir","incReco","incDecidir","incCancelarProc","incCarta","incPlanPdf"]);
 const IX=()=>S.ix;
 const ixCol=id=>IX()?.colaboradores.find(c=>c.id===id);
 const ixSede=id=>IX()?.sedes.find(s=>s.id===id)?.nombre||"";
-const ixActiva=i=>["en_curso","en_revision","acompanamiento_extendido"].includes(i.estado);
-const ixDia=i=>Math.max(0,Math.min(90,-diasHasta(i.inicio)));
+const ixEnt=sid=>{ const e=IX()?.sedeEnt.find(x=>x.sede_id===sid)?.entidad_id; return IX()?.entidades.find(x=>x.id===e)?.nombre_corto||""; };
+const ixActiva=i=>INC_ACTIVOS.includes(i.estado);
+const ixAbierta=i=>["seleccionado","preingreso",...INC_ACTIVOS].includes(i.estado);
+const ixDia=i=>i.inicio?Math.max(0,Math.min(i.duracion,-diasHasta(i.inicio))):0;
+const ixEtapa=i=>!ixActiva(i)||!i.inicio?null:ixDia(i)<30?"induccion":ixDia(i)<60?"formacion":"valoracion";
 const ixTareas=id=>(IX()?.tareas||[]).filter(t=>t.inc_id===id).sort((a,b)=>a.orden-b.orden);
 const ixEvals=id=>(IX()?.evals||[]).filter(e=>e.inc_id===id);
-const ixAuto=(i,t)=>t.auto?!!S.ixAuto?.[i.id]?.[t.auto]:t.estado!=="pendiente";
-const ixAvance=i=>{ const ts=ixTareas(i.id); return ts.length?Math.round(100*ts.filter(t=>ixAuto(i,t)).length/ts.length):0; };
-const ixProximo=i=>i.clase==="psicologo_comision"?null:[30,60,90].find(c=>!ixEvals(i.id).some(e=>e.corte===c&&e.evaluador==="jefe"&&e.cerrada));
+const ixPart=(id,papel)=>(IX()?.participantes||[]).find(p=>p.inc_id===id&&p.papel===papel);
+const ixPapeles=i=>(IX()?.participantes||[]).filter(p=>p.inc_id===i.id&&p.colaborador_id===IX()?.yo&&i.colaborador_id!==IX()?.yo).map(p=>p.papel);
 const ixGestiono=i=>(S.rol==="superusuario"||(S.api?.rhNivel||0)>=2)&&i.colaborador_id!==IX()?.yo;
-const ixSoyJefe=i=>!!IX()?.yo&&(i.jefe_id===IX().yo||i.acompanante_id===IX().yo)&&i.colaborador_id!==IX().yo;
+const ixEvalua=i=>ixPapeles(i).some(p=>["responsable","supervisor"].includes(p))||ixGestiono(i);
+const ixEditaPlan=i=>ixPapeles(i).some(p=>["responsable","capacitador"].includes(p))||ixGestiono(i);
+const ixAcompana=i=>ixPapeles(i).length>0||ixGestiono(i);
 const ixEsMia=i=>i.colaborador_id===IX()?.yo;
-const ixVeTablero=()=>S.rol==="superusuario"||(S.api?.rhNivel||0)>=1||(IX()?.incs||[]).some(i=>ixSoyJefe(i));
+const ixHecha=(i,t)=>t.auto?!!S.ixAuto?.[i.id]?.[t.auto]:t.estado==="completada";
+const ixAvance=i=>{ const ts=ixTareas(i.id).filter(t=>t.estado!=="cancelada"); return ts.length?Math.round(100*ts.filter(t=>ixHecha(i,t)).length/ts.length):0; };
+const ixCorteDia=(i,c)=>Math.round(c*i.duracion/90);
+const ixProximo=i=>i.clase==="psicologo_comision"?null:[30,60,90].find(c=>!ixEvals(i.id).some(e=>e.corte===c&&e.evaluador==="jefe"&&e.cerrada));
+const ixAtrasadas=i=>ixTareas(i.id).filter(t=>!t.auto&&!["completada","cancelada"].includes(t.estado)&&t.fecha_programada&&diasHasta(t.fecha_programada)<-7);
+const ixVeTablero=()=>S.rol==="superusuario"||(S.api?.rhNivel||0)>=1||(IX()?.incs||[]).some(i=>ixPapeles(i).length);
+const ixCriterios=(i,c)=>[...(IX()?.criterios||[]).filter(x=>x.corte===c).map(x=>x.criterio),...(IX()?.rutas||[]).filter(r=>r.clase===i.clase).map(r=>r.area)];
+const ixEscala=n=>(IX()?.escala||[]).find(e=>e.nivel===n)?.etiqueta||String(n);
 function ixAlertas(i){ const a=[], d=ixDia(i), pc=ixProximo(i);
-  if (ixActiva(i)&&pc&&d>=pc-5) a.push(`Evaluación del día ${pc} ${d>pc?"vencida":"por vencer"}`);
-  ixTareas(i.id).filter(t=>t.auto&&S.ixAuto?.[i.id]&&!ixAuto(i,t)&&t.semana*7<d).forEach(t=>a.push(t.titulo+": pendiente"));
-  if (ixActiva(i)&&d>=80&&!i.recomendacion&&i.clase!=="psicologo_comision") a.push("Falta la recomendación del jefe directo");
+  if (ixActiva(i)&&pc&&d>=ixCorteDia(i,pc)-5) a.push(`Evaluación del día ${pc} ${d>ixCorteDia(i,pc)?"vencida":"por vencer"}`);
+  if (ixAtrasadas(i).length) a.push(`${ixAtrasadas(i).length} actividad(es) atrasada(s)`);
+  ixTareas(i.id).filter(t=>t.auto&&S.ixAuto?.[i.id]&&!ixHecha(i,t)&&t.fecha_programada&&diasHasta(t.fecha_programada)<0).forEach(t=>a.push(t.titulo+": pendiente"));
+  (IX()?.reuniones||[]).filter(r=>r.inc_id===i.id&&!r.cumplido&&r.compromiso_para&&diasHasta(r.compromiso_para)<0).forEach(r=>a.push("Compromiso vencido: "+r.compromiso));
+  if (ixActiva(i)&&i.estado!=="en_revision"&&d>=ixCorteDia(i,90)-10&&i.clase!=="psicologo_comision"&&!i.recomendacion) a.push("Falta la recomendación del responsable");
+  if (i.estado==="revision_adicional"&&i.fecha_revision&&diasHasta(i.fecha_revision)<=7) a.push(`Revisión adicional el ${fmtDate(i.fecha_revision)}`);
   return a; }
 async function incCargar(){ try{ S.ix=await S.api.incDatos(); }catch(e){ S.ix={error:e?.message||"No se pudo cargar."}; }
-  const mi=(S.ix?.incs||[]).find(i=>ixEsMia(i)&&ixActiva(i)); $("#miincBtn")&&($("#miincBtn").hidden=!mi); $("#incBtn")&&($("#incBtn").hidden=!(S.ix&&!S.ix.error&&ixVeTablero()));
+  const mi=(S.ix?.incs||[]).find(i=>ixEsMia(i)&&ixAbierta(i)); if ($("#miincBtn")) $("#miincBtn").hidden=!mi; if ($("#incBtn")) $("#incBtn").hidden=!(S.ix&&!S.ix.error&&ixVeTablero());
   if (["incorporacion","miinc"].includes(S.view)) render(); }
-async function incAutos(i){ if (S.ixAuto?.[i.id]!==undefined) return; S.ixAuto=S.ixAuto||{}; S.ixAuto[i.id]={};
-  try{ const r=await S.api.incAutomaticas(i.id); S.ixAuto[i.id]=Object.fromEntries(r.map(x=>[x.auto,x.cumplida])); }catch{ S.ixAuto[i.id]={}; } render(); }
+async function incAutos(i){ if (!i||S.ixAuto?.[i.id]!==undefined) return; S.ixAuto=S.ixAuto||{}; S.ixAuto[i.id]={};
+  try{ const r=await S.api.incAutomaticas(i.id); S.ixAuto[i.id]=Object.fromEntries(r.map(x=>[x.auto,x.cumplida])); }catch{ S.ixAuto[i.id]={}; } if (["incorporacion","miinc"].includes(S.view)) render(); }
 const incPag=(t,acc,cuerpo,padre)=>`<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px"><div class="phead">${migas(padre)}<h1>${t}</h1><span style="display:flex;gap:8px;flex-wrap:wrap">${acc||""}</span></div>${cuerpo}</div>`;
-const incBar=p=>`<div style="display:flex;gap:8px;align-items:center;min-width:120px"><div style="flex:1;height:10px;background:var(--sunk);border-radius:99px;overflow:hidden"><i style="display:block;height:100%;width:${p}%;background:var(--accent,#0560bd)"></i></div><span class="mono">${p}%</span></div>`;
+const incBar=p=>`<div style="display:flex;gap:8px;align-items:center;min-width:110px"><div style="flex:1;height:10px;background:var(--sunk);border-radius:99px;overflow:hidden"><i style="display:block;height:100%;width:${p}%;background:var(--accent,#0560bd)"></i></div><span class="mono">${p}%</span></div>`;
+const incPill=([t,c])=>`<span class="pill ${c}">${t}</span>`;
 
-/* ---------- Tablero ---------- */
+/* ---------- Tablero general ---------- */
 function incorporacionHtml(){
   if (!S.ix) return incPag("Incorporación","",`<p class="status">Cargando…</p>`);
   if (S.ix.error) return incPag("Incorporación","",`<div class="banner bad">No se pudo cargar: ${esc(S.ix.error)}</div>`);
   if (S.ixSel) return incDetalleHtml(IX().incs.find(i=>i.id===S.ixSel));
-  const v=IX().incs.filter(i=>!ixEsMia(i)), act=v.filter(ixActiva), gestor=S.rol==="superusuario"||(S.api?.rhNivel||0)>=2;
+  const F=S.ixF||{}, todos=IX().incs.filter(i=>!ixEsMia(i)), gestor=S.rol==="superusuario"||(S.api?.rhNivel||0)>=2;
+  const v=todos.filter(i=>{ const c=ixCol(i.colaborador_id); return (!F.sede||c?.sede_principal_id===F.sede)&&(!F.estado||i.estado===F.estado)&&(!F.resp||ixPart(i.id,"responsable")?.colaborador_id===F.resp)&&(!F.ent||ixEnt(c?.sede_principal_id)===F.ent); });
   v.filter(ixActiva).forEach(i=>{ if (S.ixAuto?.[i.id]===undefined) incAutos(i); });
-  const kp=(t,n,h)=>`<div class="kpi"><span>${t}</span><b>${n}</b>${h?`<small class="status">${h}</small>`:""}</div>`;
-  return incPag("Incorporación",gestor&&!S.ixNueva?`<button class="btn primary" type="button" data-act="incNueva">+ Iniciar incorporación</button>`:"",
-   `<p class="status" style="margin:0">Primeros 90 días de cada persona: plan, evaluaciones a los días 30, 60 y 90 y decisión. Acompaña y evalúa; no define la situación laboral. La asistencia no interviene.</p>
+  const act=v.filter(ixActiva), kp=(t,n,h)=>`<div class="kpi"><span>${t}</span><b>${n}</b>${h?`<small class="status">${h}</small>`:""}</div>`;
+  const sel=(id,ph,ops,val)=>`<select id="${id}" aria-label="${ph}"><option value="">${ph}</option>${ops.map(([k,t])=>`<option value="${esc(k)}"${val===k?" selected":""}>${esc(t)}</option>`).join("")}</select>`;
+  return incPag("Incorporación",gestor&&!S.ixNueva?`<button class="btn primary" type="button" data-act="incNueva">+ Iniciar proceso</button>`:"",
+   `<p class="status" style="margin:0">Personas en proceso de contratación: su ruta de capacitación, su acompañamiento y sus evaluaciones a los días 30, 60 y 90. Nunca se comparan personas entre sí.</p>
     ${S.ixNueva?incForm():""}
-    <div class="kpis">${kp("En incorporación",act.length)}${kp("Evaluaciones por vencer",act.filter(i=>ixAlertas(i).some(a=>a.startsWith("Evaluación"))).length,"próximos 5 días")}${kp("Por decidir",v.filter(i=>i.estado==="en_revision").length,"con recomendación")}${kp("Confirmadas",v.filter(i=>i.estado==="confirmada").length)}</div>
-    <div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Sede</th><th>Día</th><th>Avance del plan</th><th>Próximo corte</th><th>Estado</th><th>Alertas</th><th></th></tr></thead><tbody>
-    ${v.map(i=>{ const c=ixCol(i.colaborador_id), pc=ixProximo(i), al=ixAlertas(i); return `<tr><td><b class="sens">${esc(c?.nombre||"")}</b><br><span class="status">${INC_CLASE[i.clase]}</span></td><td>${esc(ixSede(c?.sede_principal_id))}</td><td>${ixActiva(i)?ixDia(i)+" de 90":"—"}</td><td>${incBar(ixAvance(i))}</td>
-      <td>${pc&&ixActiva(i)?`Día ${pc} · ${fmtDate(asisMas(i.inicio,pc))}`:i.clase==="psicologo_comision"?"Acompañamiento":"—"}</td><td><span class="pill ${INC_EST[i.estado][1]}">${INC_EST[i.estado][0]}</span></td>
-      <td>${ixActiva(i)?(al.length?`<span class="pill estado-pendiente">${al.length} alerta${al.length>1?"s":""}</span>`:`<span class="pill estado-activo">Al día</span>`):""}</td><td><button class="btn sm" type="button" data-act="incVer" data-id="${i.id}">Abrir</button></td></tr>`; }).join("")||`<tr><td colspan="8" class="status">${gestor?"Aún no hay incorporaciones. Inicia la primera con + Iniciar incorporación.":"No tienes personas en incorporación a tu cargo."}</td></tr>`}</tbody></table></div>
-    <p class="status" style="margin:0">${S.rol==="superusuario"?"Ves todas las incorporaciones.":(S.api?.rhNivel||0)>=1?"Ves las de las sedes que tienes autorizadas (Bosques de Santa Fe solo con autorización individual).":"Ves a las personas que te reportan o que acompañas."}</p>`,null); }
-function incForm(){ const activos=new Set(IX().incs.filter(ixActiva).map(i=>i.colaborador_id)), cs=IX().colaboradores.filter(c=>c.estatus!=="baja"&&c.perfil_id&&c.id!==IX().yo&&!activos.has(c.id));
-  return `<section class="note"><div class="note-h"><h3>Iniciar incorporación</h3></div><form class="datos" onsubmit="return false">
-    ${fld("inCol","Persona *","",{opts:[["","— Selecciona —"],...cs.map(c=>[c.id,`${c.nombre} · ${ixSede(c.sede_principal_id)}`])],span:2})}
-    ${fld("inIni","Fecha de inicio","",{type:"date",hint:"Si la dejas vacía se toma la fecha de incorporación del colaborador o la de hoy."})}
-    ${fld("inAcomp","Acompañante (supervisión clínica o mentor)","",{opts:[["","— Ninguno —"],...IX().colaboradores.filter(c=>c.estatus!=="baja").map(c=>[c.id,c.nombre])]})}</form>
-    <p class="status" style="margin:0">El plan se arma con la plantilla de su tipo (administrativo, psicólogo base o independiente) y el jefe directo se toma de su línea de reporte en Organización → Supervisión.</p>
+    <div class="filtros">${sel("ixFS","Todas las sedes",[...new Set(todos.map(i=>ixCol(i.colaborador_id)?.sede_principal_id).filter(Boolean))].map(s=>[s,ixSede(s)]),F.sede)}
+     ${sel("ixFN","Todas las entidades",[...new Set(todos.map(i=>ixEnt(ixCol(i.colaborador_id)?.sede_principal_id)).filter(Boolean))].map(e=>[e,e]),F.ent)}
+     ${sel("ixFE","Todos los estados",Object.entries(INC_EST).map(([k,[t]])=>[k,t]),F.estado)}
+     ${sel("ixFR","Todos los responsables",[...new Set(todos.map(i=>ixPart(i.id,"responsable")?.colaborador_id).filter(Boolean))].map(c=>[c,ixCol(c)?.nombre||""]),F.resp)}</div>
+    <div class="kpis">${kp("En proceso de contratación",act.length)}${kp("Administrativos en capacitación",act.filter(i=>i.clase==="administrativo").length)}${kp("Psicólogos en capacitación",act.filter(i=>i.clase!=="administrativo").length)}
+     ${kp("En preingreso",v.filter(i=>["seleccionado","preingreso"].includes(i.estado)).length)}${kp("Evaluaciones pendientes",act.filter(i=>ixAlertas(i).some(a=>a.startsWith("Evaluación"))).length,"próximos 5 días")}
+     ${kp("Actividades completadas",v.reduce((t,i)=>t+ixTareas(i.id).filter(x=>x.estado==="completada").length,0))}${kp("Actividades atrasadas",act.reduce((t,i)=>t+ixAtrasadas(i).length,0))}
+     ${kp("Documentos pendientes",act.filter(i=>S.ixAuto?.[i.id]&&S.ixAuto[i.id].docs===false).length,"personas con documentación incompleta")}${kp("Por concluir",act.filter(i=>i.inicio&&i.duracion-ixDia(i)<=15).length,"15 días o menos")}
+     ${kp("Confirmadas",v.filter(i=>i.estado==="confirmada").length)}${kp("Sin continuidad",v.filter(i=>i.estado==="sin_continuidad").length)}${kp("Por etapa",["induccion","formacion","valoracion"].map(e=>act.filter(i=>ixEtapa(i)===e).length).join(" · "),"Inducción · Formación · Valoración")}</div>
+    <div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Sede · entidad</th><th>Estado y etapa</th><th>Día</th><th>Avance</th><th>Responsable</th><th>Alertas</th><th></th></tr></thead><tbody>
+    ${v.map(i=>{ const c=ixCol(i.colaborador_id), al=ixActiva(i)?ixAlertas(i):[]; return `<tr><td><b class="sens">${esc(c?.nombre||"")}</b><br><span class="status">${INC_CLASE[i.clase]}</span></td><td>${esc(ixSede(c?.sede_principal_id))}<br><span class="status">${esc(ixEnt(c?.sede_principal_id))}</span></td>
+      <td>${incPill(INC_EST[i.estado])}${ixEtapa(i)?`<br><span class="status">${INC_ETAPA[ixEtapa(i)]}</span>`:""}</td><td>${ixActiva(i)?ixDia(i)+" de "+i.duracion:"—"}</td><td>${incBar(ixAvance(i))}</td><td>${esc(ixCol(ixPart(i.id,"responsable")?.colaborador_id)?.nombre||"—")}</td>
+      <td>${ixActiva(i)?(al.length?`<span class="pill estado-pendiente">${al.length} por atender</span>`:`<span class="pill estado-activo">Al día</span>`):""}</td><td><button class="btn sm" type="button" data-act="incVer" data-id="${i.id}">Abrir</button></td></tr>`; }).join("")||`<tr><td colspan="8" class="status">${gestor?"Aún no hay procesos. Inicia el primero con + Iniciar proceso.":"No acompañas a ninguna persona en proceso."}</td></tr>`}</tbody></table></div>
+    <p class="status" style="margin:0">${S.rol==="superusuario"?"Ves todos los procesos.":(S.api?.rhNivel||0)>=1?"Ves los de las sedes que tienes autorizadas.":"Ves los procesos en los que tienes un papel."}</p>`,null); }
+function incForm(){ const abiertos=new Set(IX().incs.filter(ixAbierta).map(i=>i.colaborador_id)), cs=IX().colaboradores.filter(c=>c.estatus!=="baja"&&c.id!==IX().yo&&!abiertos.has(c.id));
+  const gente=[["","— Por asignar —"],...IX().colaboradores.filter(c=>c.estatus!=="baja"&&c.perfil_id).map(c=>[c.id,c.nombre])];
+  return `<section class="note"><div class="note-h"><h3>Iniciar proceso</h3></div><form class="datos" onsubmit="return false">
+    ${fld("inCol","Persona *","",{opts:[["","— Selecciona —"],...cs.map(c=>[c.id,`${c.nombre} · ${ixSede(c.sede_principal_id)}${c.perfil_id?"":" · sin cuenta"}`])],span:2})}
+    ${fld("inEst","Empieza en","en_proceso",{opts:[["en_proceso","En proceso de contratación (ya tiene cuenta)"],["preingreso","Preingreso (documentos y cuenta pendientes)"],["seleccionado","Seleccionado"]]})}
+    ${fld("inClase","Tipo (si aún no tiene cuenta)","",{opts:[["","Se toma de su cuenta"],...Object.entries(INC_CLASE)]})}
+    ${fld("inIni","Inicio del proceso","",{type:"date"})}${fld("inAct","Inicio real de actividades","",{type:"date"})}${fld("inDur","Duración (días)","90",{type:"number",hint:"De 30 a 180."})}
+    ${fld("inResp","Responsable de incorporación","",{opts:gente,hint:"Vacío = su jefe directo (Organización → Supervisión)."})}${fld("inCap","Capacitador(a)","",{opts:gente})}${fld("inMen","Mentor(a)","",{opts:gente})}${fld("inSup","Supervisor(a)","",{opts:gente,hint:"En psicólogos, su supervisión clínica."})}</form>
+    <p class="status" style="margin:0">El plan se arma solo con la ruta de su tipo de puesto y después se puede personalizar.</p>
     <div class="actions"><button class="btn primary" type="button" data-act="incCrear">Iniciar</button><button class="btn" type="button" data-act="incCancelarForm">Cancelar</button></div></section>`; }
 
-/* ---------- Detalle (también es "Mi incorporación") ---------- */
+/* ---------- Ficha individual ---------- */
 function incDetalleHtml(i){ if (!i){ S.ixSel=null; return incorporacionHtml(); } incAutos(i);
-  const c=ixCol(i.colaborador_id), mia=ixEsMia(i), jefe=ixSoyJefe(i), gest=ixGestiono(i), d=ixDia(i), indep=i.clase==="psicologo_comision", act=ixActiva(i);
-  const ts=ixTareas(i.id), sem=[...new Set(ts.map(t=>t.semana))].sort((a,b)=>a-b), evs=ixEvals(i.id), pc=ixProximo(i);
-  const padre=mia&&S.view==="miinc"?null:["Incorporación","incCerrar"];
-  return incPag(mia&&S.view==="miinc"?"Mi incorporación":esc(c?.nombre||""),`<span class="pill ${INC_EST[i.estado][1]}">${indep&&i.estado==="en_curso"?"Acompañamiento":INC_EST[i.estado][0]}</span>`,`
-  <div class="org-grid"><section class="note"><div class="note-h"><h3>Resumen</h3></div>
-    ${act?`<div style="display:flex;gap:10px;align-items:center"><div style="flex:1">${incBar(Math.round(d/90*100))}</div><span>Día ${d} de 90</span></div>`:""}
-    <dl class="dl-org"><dt>Tipo</dt><dd>${INC_CLASE[i.clase]}</dd><dt>Inicio · fin</dt><dd>${fmtDate(i.inicio)} · ${fmtDate(i.fin)}</dd><dt>Jefe directo</dt><dd>${esc(ixCol(i.jefe_id)?.nombre||"Sin línea de reporte")}</dd>
-     <dt>Acompañante</dt><dd>${esc(ixCol(i.acompanante_id)?.nombre||"—")}</dd><dt>Avance del plan</dt><dd>${incBar(ixAvance(i))}</dd>
-     ${i.recomendacion?`<dt>Recomendación</dt><dd>${INC_RECO[i.recomendacion]} · ${esc(i.recomendacion_motivo||"")}</dd>`:""}${i.decidido_en?`<dt>Decisión</dt><dd>${INC_EST[i.estado][0]} · ${esc(i.decision_motivo||"")} (${fmtFH(i.decidido_en)})</dd>`:""}</dl>
-    ${act&&(jefe||gest)&&ixAlertas(i).length?`<ul class="pend">${ixAlertas(i).map(a=>`<li><span class="pill estado-pendiente">Atender</span> ${esc(a)}</li>`).join("")}</ul>`:""}</section>
-   <section class="note"><div class="note-h"><h3>${indep?"Acompañamiento":"Evaluaciones"}</h3></div>
-    ${indep?`<p class="status" style="margin:0">Como profesional independiente recibe inducción, políticas y supervisión clínica, sin evaluaciones laborales ni confirmación.</p>`:
-     `<div style="display:flex;gap:8px;flex-wrap:wrap">${[30,60,90].map(k=>{ const j=evs.find(e=>e.corte===k&&e.evaluador==="jefe"), p=evs.find(e=>e.corte===k&&e.evaluador==="persona"), abre=act&&d>=k-10;
-       const prom=e=>e?(e.puntajes.reduce((x,y)=>x+y,0)/e.puntajes.length).toFixed(1):"";
-       return `<div style="border:1px solid var(--line);border-radius:10px;padding:8px 12px;min-width:150px;display:flex;flex-direction:column;gap:4px"><b>Día ${k}</b><span class="status">${fmtDate(asisMas(i.inicio,k))}</span>
-        <span class="status">Jefe: ${j?.cerrada?"✓ "+prom(j)+" de 4":j?"borrador":"pendiente"}</span><span class="status">Autoevaluación: ${p?.cerrada?"✓":p?"borrador":"pendiente"}</span>
-        ${abre&&(jefe||gest)&&!j?.cerrada?`<button class="btn sm primary" type="button" data-act="incEval" data-id="${i.id}" data-c="${k}" data-e="jefe">Evaluar</button>`:""}
-        ${abre&&mia&&!p?.cerrada?`<button class="btn sm primary" type="button" data-act="incEval" data-id="${i.id}" data-c="${k}" data-e="persona">Autoevaluarme</button>`:""}
-        ${j?.cerrada&&(mia||jefe||gest)?`<details><summary class="status" style="cursor:pointer">Ver</summary><ul class="pend">${j.competencias.map((x,n)=>`<li>${esc(x)}: <b>${j.puntajes[n]}</b> ${INC_ESC[j.puntajes[n]]}</li>`).join("")}</ul>${j.fortalezas?`<p class="status">Fortalezas: ${esc(j.fortalezas)}</p>`:""}${j.mejoras?`<p class="status">Mejoras y acuerdos: ${esc(j.mejoras)}</p>`:""}</details>`:""}</div>`; }).join("")}</div>
-      ${!act?"":`<p class="status" style="margin:0">Cada evaluación se abre 10 días antes de su corte. Al cerrarla queda fija y la persona la ve.</p>`}`}</section></div>
-  ${S.ixEval&&S.ixEval.id===i.id?incEvalForm(i):""}
-  ${!indep?incDecisionHtml(i,jefe,gest):""}
-  ${act&&gest?(S.ixCerrar?`<section class="note"><div class="datos">${fld("icMot","Motivo *","",{span:2})}${fld("icEst","Cerrar como","cancelada",{opts:[["cancelada","Cancelada"],["concluida","Concluida (acompañamiento terminado)"]]})}</div><div class="actions"><button class="btn danger" type="button" data-act="incCerrarInc" data-id="${i.id}">Cerrar la incorporación</button><button class="btn" type="button" data-act="incCerrarForm">Volver</button></div></section>`:`<div><button class="btn sm" type="button" data-act="incCerrarForm">Cancelar o concluir esta incorporación</button></div>`):""}
-  <section class="note"><div class="note-h"><h3>Plan de 90 días</h3><span class="status">Las tareas “Se marca sola” se completan con datos de la app (cuenta, contrato, documentación, Reglamento).</span></div>
-   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px">${sem.map(s=>`<div style="border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px"><b class="status" style="text-transform:uppercase;letter-spacing:.05em">Semana ${s}</b>
-     ${ts.filter(t=>t.semana===s).map(t=>{ const ok=ixAuto(i,t); return `<div style="display:flex;gap:8px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap"><label style="display:flex;gap:8px;align-items:flex-start;min-width:0"><input type="checkbox" data-inctarea="${t.id}"${ok?" checked":""}${t.auto||!act||!(mia||jefe||gest)||(t.estado==="validada"&&mia&&!jefe&&!gest)?" disabled":""}><span>${esc(t.titulo)}<br><span class="status">${INC_CAT[t.categoria]}${t.estado==="validada"?" · validada":""}</span></span></label>
-      ${t.auto?`<span class="pill ${ok?"estado-activo":"estado-pendiente"}">${ok?"✓":"Pendiente"}</span>`:t.estado==="hecha"&&(jefe||gest)&&act?`<button class="btn sm" type="button" data-act="incValidar" data-id="${t.id}">Validar</button>`:""}</div>`; }).join("")}</div>`).join("")}</div></section>
-  ${i.doc_confirmacion?`<section class="note"><div class="note-h"><h3>Carta de confirmación</h3></div><p style="margin:0">Se creó en Documentos y firmas. Solo vale cuando la firman la persona y la Dirección con su contraseña.</p>
-    <div class="actions">${gest?`<button class="btn primary" type="button" data-act="incCarta" data-id="${i.id}">Generar la carta (PDF) y adjuntarla</button>`:""}<button class="btn" type="button" data-act="docVer" data-id="${i.doc_confirmacion}">Abrir en Documentos y firmas</button></div></section>`:""}`,padre); }
-function incEvalForm(i){ const E=S.ixEval, comp=INC_COMP[i.clase]||INC_COMP.administrativo;
-  return `<section class="note"><div class="note-h"><h3>Evaluación del día ${E.corte} · ${E.evaluador==="jefe"?"jefe directo":"autoevaluación"}</h3></div>
-   <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:center">${comp.map((x,k)=>`<span>${esc(x)}</span><span style="display:flex;gap:4px" role="group" aria-label="${esc(x)}">${[1,2,3,4].map(n=>`<button class="btn sm${E.punt[k]===n?" primary":""}" type="button" data-act="incPunt" data-k="${k}" data-n="${n}" aria-pressed="${E.punt[k]===n}" title="${INC_ESC[n]}">${n}</button>`).join("")}</span>`).join("")}</div>
-   <p class="status" style="margin:0">1 En desarrollo · 2 Básico · 3 Competente · 4 Sobresaliente. Describe conductas observables; sin diagnósticos ni juicios personales.</p>
-   <div class="datos">${fld("ieF","Fortalezas",E.fort||"",{area:1,span:3,rows:2})}${fld("ieM","Áreas de mejora y acuerdos",E.mej||"",{area:1,span:3,rows:2})}</div>
-   <div class="actions"><button class="btn primary" type="button" data-act="incGuardarEval" data-cerrar="1">Cerrar evaluación</button><button class="btn" type="button" data-act="incGuardarEval" data-cerrar="0">Guardar borrador</button><button class="btn" type="button" data-act="incCancelarForm">Cancelar</button></div>
-   <p class="status" style="margin:0">Comentarios confidenciales: los ven la persona (al cerrarse), su jefe directo, su acompañante, RR. HH. y la Dirección.</p></section>`; }
-function incDecisionHtml(i,jefe,gest){ const ev90=ixEvals(i.id).some(e=>e.corte===90&&e.evaluador==="jefe"&&e.cerrada), act=ixActiva(i);
-  if (!act&&!i.recomendacion) return "";
-  return `<section class="note"><div class="note-h"><h3>Recomendación y decisión</h3></div>
-   ${!i.recomendacion&&act&&jefe&&i.estado!=="en_revision"?(ev90?`<div class="datos">${fld("irMot","Motivo de la recomendación *","",{span:3})}</div><div class="actions">${Object.entries(INC_RECO).map(([k,t])=>`<button class="btn${k==="confirmar"?" primary":""}" type="button" data-act="incReco" data-id="${i.id}" data-r="${k}">${t}</button>`).join("")}</div>`:`<p class="status" style="margin:0">Podrás recomendar cuando cierres la evaluación del día 90.</p>`):""}
-   ${i.estado==="en_revision"&&gest?`<p style="margin:0">Recomendación del jefe directo: <b>${INC_RECO[i.recomendacion]}</b> — ${esc(i.recomendacion_motivo||"")}</p><div class="datos">${fld("idMot","Motivo de la decisión *","",{span:3,hint:"“No continúa” exige 20 caracteres o más y revisión con asesoría laboral antes de comunicarlo."})}</div>
-     <div class="actions"><button class="btn primary" type="button" data-act="incDecidir" data-id="${i.id}" data-d="confirmada">Confirmar incorporación</button><button class="btn" type="button" data-act="incDecidir" data-id="${i.id}" data-d="acompanamiento_extendido">Extender 30 días</button><button class="btn danger" type="button" data-act="incDecidir" data-id="${i.id}" data-d="no_continua">No continúa</button></div>`:""}
-   ${i.estado==="en_revision"&&!gest?`<p class="status" style="margin:0">Recomendación enviada (${INC_RECO[i.recomendacion]}). Decide RR. HH. o la Dirección.</p>`:""}
-   ${!jefe&&!gest&&act&&i.estado!=="en_revision"?`<p class="status" style="margin:0">Al cerrar la evaluación del día 90, tu jefe directo recomienda y RR. HH. o la Dirección deciden.</p>`:""}</section>`; }
-function miIncHtml(){ if (!S.ix) return incPag("Mi incorporación","",`<p class="status">Cargando…</p>`); if (S.ix.error) return incPag("Mi incorporación","",`<div class="banner bad">${esc(S.ix.error)}</div>`);
-  const i=IX().incs.find(x=>ixEsMia(x)&&ixActiva(x))||IX().incs.find(ixEsMia); if (!i) return incPag("Mi incorporación","",`<p class="status">No tienes una incorporación en curso.</p>`); return incDetalleHtml(i); }
+  const c=ixCol(i.colaborador_id), mia=ixEsMia(i), gest=ixGestiono(i), d=ixDia(i), act=ixActiva(i), pre=["seleccionado","preingreso"].includes(i.estado);
+  const padre=mia&&S.view==="miinc"?null:["Incorporación","incCerrar"], tabs=[["plan","Plan de capacitación"],["eval",i.clase==="psicologo_comision"?"Acompañamiento clínico":"Evaluaciones"],["reu","Reuniones"],["docs","Documentos"],["asis","Asistencia"],["hist","Historial"]];
+  if (!tabs.some(t=>t[0]===S.ixTab)) S.ixTab="plan";
+  const tl=act&&i.inicio?`<div style="position:relative;height:56px;margin:4px 0">${[["Inducción",0,"var(--info-soft,#e6f0fb)"],["Formación supervisada",33.3,"var(--warn-soft)"],["Valoración",66.6,"var(--ok-soft,#e3f4e8)"]].map(([t,l,col])=>`<span style="position:absolute;left:${l}%;top:0;font-size:11px;font-weight:700">${t}</span><div style="position:absolute;left:${l}%;width:33.4%;top:18px;height:14px;background:${col};border-radius:4px"></div>`).join("")}
+     <div style="position:absolute;left:calc(${Math.min(100,d/i.duracion*100)}% - 1px);top:12px;width:3px;height:28px;background:var(--accent,#0560bd);border-radius:2px" title="Hoy"></div>
+     ${[30,60,90].map(k=>`<span style="position:absolute;left:${Math.min(98,ixCorteDia(i,k)/i.duracion*100)}%;top:36px;font-size:11px;transform:translateX(-50%);white-space:nowrap" class="status">Día ${ixCorteDia(i,k)}${ixEvals(i.id).some(e=>e.corte===k&&e.evaluador==="jefe"&&e.cerrada)?" ✓":""}</span>`).join("")}</div>`:"";
+  return incPag(mia&&S.view==="miinc"?"Mi incorporación":esc(c?.nombre||""),"",`
+  <section class="note"><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">${incPill(INC_EST[i.estado])}${ixEtapa(i)?`<span class="pill">Etapa: ${INC_ETAPA[ixEtapa(i)]}</span>`:""}<span class="status">Avance ${ixAvance(i)}%${i.inicio?` · proceso ${fmtDate(i.inicio)} a ${fmtDate(i.fin)} (${i.duracion} días)`:""}${i.inicio_actividades?` · inicio real de actividades ${fmtDate(i.inicio_actividades)}`:""}</span></div>
+   ${tl}
+   <dl class="dl-org"><dt>Tipo</dt><dd>${INC_CLASE[i.clase]}</dd><dt>Sede · entidad</dt><dd>${esc(ixSede(c?.sede_principal_id))} · ${esc(ixEnt(c?.sede_principal_id))}</dd>
+    ${Object.entries(INC_PAPEL).map(([k,t])=>`<dt>${t}</dt><dd>${gest&&ixAbierta(i)?`<select data-incpapel="${k}" aria-label="${t}"><option value="">— Por asignar —</option>${IX().colaboradores.filter(x=>x.estatus!=="baja"&&x.perfil_id&&x.id!==i.colaborador_id).map(x=>`<option value="${x.id}"${ixPart(i.id,k)?.colaborador_id===x.id?" selected":""}>${esc(x.nombre)}</option>`).join("")}</select>`:esc(ixCol(ixPart(i.id,k)?.colaborador_id)?.nombre||"Por asignar")}</dd>`).join("")}
+    ${i.fecha_revision?`<dt>Revisión adicional</dt><dd>${fmtDate(i.fecha_revision)}</dd>`:""}${i.observaciones?`<dt>Observaciones</dt><dd>${esc(i.observaciones)}</dd>`:""}${i.resultado?`<dt>Resultado</dt><dd>${esc(i.resultado)}</dd>`:""}</dl>
+   ${gest&&ixAbierta(i)?(S.ixFicha?`<div class="datos">${fld("ifDur","Duración (días)",i.duracion,{type:"number"})}${fld("ifAct","Inicio real de actividades",i.inicio_actividades||"",{type:"date"})}${fld("ifObs","Observaciones",i.observaciones||"",{area:1,span:3,rows:2})}</div><div class="actions"><button class="btn primary" type="button" data-act="incGuardarFicha" data-id="${i.id}">Guardar</button><button class="btn" type="button" data-act="incFicha">Cancelar</button></div>`:`<div><button class="btn sm" type="button" data-act="incFicha">Editar ficha</button></div>`):""}
+   ${act&&(ixAcompana(i))&&ixAlertas(i).length?`<ul class="pend">${ixAlertas(i).map(a=>`<li><span class="pill estado-pendiente">Atender</span> ${esc(a)}</li>`).join("")}</ul>`:""}</section>
+  ${pre?`<section class="note"><div class="note-h"><h3>${i.estado==="seleccionado"?"Persona seleccionada":"Preingreso"}</h3></div>
+    <p style="margin:0">${mia?"¡Bienvenida a CEMEPI! Antes de empezar se preparan tu cuenta, tus documentos y tu acuerdo de confidencialidad.":"Antes de iniciar: cuenta de la app (invitación en Usuarios y permisos), documentos y acuerdo de confidencialidad firmados."}</p>
+    ${gest?`<div class="actions">${i.estado==="seleccionado"?`<button class="btn" type="button" data-act="incPreingreso" data-id="${i.id}">Pasar a preingreso</button>`:""}<button class="btn primary" type="button" data-act="incIniciar" data-id="${i.id}">Iniciar proceso de contratación</button></div>`:""}</section>`:""}
+  ${!pre?`<div class="tabs" role="tablist">${tabs.map(([k,t])=>`<button class="tab" role="tab" type="button" data-act="incTab" data-t="${k}" aria-selected="${S.ixTab===k}">${t}</button>`).join("")}</div>
+  ${({plan:incPlanHtml,eval:incEvalHtml,reu:incReuHtml,docs:incDocsHtml,asis:incAsisHtml,hist:incHistHtml})[S.ixTab](i)}`:""}
+  ${incCierreHtml(i)}
+  ${gest&&ixAbierta(i)?(S.ixCanc?`<section class="note"><div class="datos">${fld("icMot","Motivo para cancelar *","",{span:3})}</div><div class="actions"><button class="btn danger" type="button" data-act="incCancelarProc" data-id="${i.id}">Cancelar el proceso</button><button class="btn" type="button" data-act="incCancelarForm">Volver</button></div></section>`:`<div><button class="btn sm" type="button" data-act="incCancelarForm" data-abrir="1">Cancelar este proceso</button></div>`):""}`,padre); }
+function incPlanHtml(i){ const ts=ixTareas(i.id), areas=[...new Set(ts.map(t=>t.area||"Actividades"))], mia=ixEsMia(i), edita=ixEditaPlan(i)&&ixActiva(i), acomp=ixAcompana(i)&&!mia, A=S.ixActForm;
+  const gente=[["","— Sin asignar —"],...IX().colaboradores.filter(x=>x.estatus!=="baja"&&x.perfil_id&&x.id!==i.colaborador_id).map(x=>[x.id,x.nombre])];
+  return `<div class="actions">${edita&&!A?`<button class="btn sm" type="button" data-act="incActForm">+ Agregar actividad</button>`:""}${mia&&!acomp?`<span class="status">Marca “Avancé” y escribe tu evidencia; tu capacitador(a) la completa.</span>`:""}<span class="status">Completar la capacitación no da acceso a caja, cobros, información sensible ni a la atención clínica: esos permisos se autorizan aparte.</span></div>
+   ${A?`<section class="note"><div class="note-h"><h3>${A.id?"Editar actividad":"Nueva actividad"}</h3></div><form class="datos" onsubmit="return false">${fld("iaNom","Nombre *",A.titulo||"",{span:2})}${fld("iaArea","Área",A.area||"",{opts:[["","Actividades adicionales"],...areas.filter(a=>a!=="Requisitos").map(a=>[a,a])]})}
+     ${fld("iaDesc","Descripción",A.descripcion||"",{area:1,span:3,rows:2})}${fld("iaComp","Competencia relacionada",A.competencia||"")}${fld("iaResp","Responsable",A.responsable_id||"",{opts:gente})}${fld("iaFecha","Fecha programada",A.fecha_programada||"",{type:"date"})}</form>
+     <div class="actions"><button class="btn primary" type="button" data-act="incGuardarAct" data-id="${i.id}">Guardar</button><button class="btn" type="button" data-act="incCancelarForm">Cancelar</button></div></section>`:""}
+   ${S.ixAv?`<section class="note"><div class="note-h"><h3>${INC_AEST[S.ixAv.estado][0]}: ${esc(ts.find(t=>t.id===S.ixAv.id)?.titulo||"")}</h3></div><div class="datos">${fld("ivEvid","Evidencia",ts.find(t=>t.id===S.ixAv.id)?.evidencia||"",{area:1,span:3,rows:2,ph:"Qué hiciste o qué se observó"})}
+     ${acomp?fld("ivRes","Resultado",ts.find(t=>t.id===S.ixAv.id)?.resultado||"",{span:3})+fld("ivRetro","Retroalimentación",ts.find(t=>t.id===S.ixAv.id)?.retroalimentacion||"",{area:1,span:3,rows:2}):""}</div>
+     <div class="actions"><button class="btn primary" type="button" data-act="incAvance" data-id="${S.ixAv.id}" data-e="${S.ixAv.estado}">Guardar</button><button class="btn" type="button" data-act="incCancelarForm">Cancelar</button></div></section>`:""}
+   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px">${areas.map(a=>{ const xs=ts.filter(t=>(t.area||"Actividades")===a); return `<div style="border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px">
+     <b class="status" style="text-transform:uppercase;letter-spacing:.05em;display:flex;justify-content:space-between"><span>${esc(a)}</span><span>${xs.filter(t=>ixHecha(i,t)).length} de ${xs.filter(t=>t.estado!=="cancelada").length}</span></b>
+     ${xs.map(t=>{ const ok=ixHecha(i,t); return `<div style="display:flex;gap:8px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;border-top:1px dashed var(--line);padding-top:6px"><div style="min-width:0;flex:1"><b>${esc(t.titulo)}</b>
+       <br><span class="status">${t.fecha_programada?fmtDate(t.fecha_programada):""}${t.responsable_id?" · "+esc(ixCol(t.responsable_id)?.nombre||""):""}${t.evidencia?" · evidencia: "+esc(t.evidencia):""}</span>${t.retroalimentacion?`<br><span class="status">Retroalimentación: ${esc(t.retroalimentacion)}</span>`:""}</div>
+       <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">${t.auto?incPill(ok?["✓ Se marcó sola","estado-activo"]:["Pendiente","estado-pendiente"]):incPill(INC_AEST[t.estado])}
+        ${!t.auto&&ixActiva(i)&&mia&&!acomp&&["pendiente","refuerzo"].includes(t.estado)?`<button class="btn sm" type="button" data-act="incAvanceForm" data-id="${t.id}" data-e="en_curso">Avancé</button>`:""}
+        ${!t.auto&&ixActiva(i)&&acomp&&!["completada","cancelada"].includes(t.estado)?`<button class="btn sm" type="button" data-act="incAvanceForm" data-id="${t.id}" data-e="completada">Completar</button>`:""}
+        ${!t.auto&&ixActiva(i)&&acomp&&t.estado==="completada"?`<button class="btn sm" type="button" data-act="incAvanceForm" data-id="${t.id}" data-e="refuerzo">Refuerzo</button>`:""}
+        ${!t.auto&&edita?`<button class="btn sm" type="button" data-act="incActForm" data-id="${t.id}">Editar</button>`:""}${!t.auto&&edita&&t.estado!=="cancelada"&&t.estado!=="completada"?`<button class="btn sm" type="button" data-act="incAvanceForm" data-id="${t.id}" data-e="cancelada">Cancelar</button>`:""}</div></div>`; }).join("")}</div>`; }).join("")||`<p class="status">Sin actividades.</p>`}</div>`; }
+function incEvalHtml(i){ if (i.clase==="psicologo_comision") return `<p class="status">Como profesional independiente recibe inducción, políticas y supervisión clínica, sin evaluaciones ni confirmación.</p>`;
+  const evs=ixEvals(i.id), d=ixDia(i), mia=ixEsMia(i), evalua=ixEvalua(i)&&!mia, prom=e=>e.puntajes.reduce((x,y)=>x+y,0)/e.puntajes.length;
+  return `<div class="org-grid"><section class="note"><div class="note-h"><h3>Cortes</h3></div>${[30,60,90].map(k=>{ const j=evs.find(e=>e.corte===k&&e.evaluador==="jefe"), p=evs.find(e=>e.corte===k&&e.evaluador==="persona"), abre=ixActiva(i)&&d>=ixCorteDia(i,k)-10;
+    return `<div style="border-top:1px dashed var(--line);padding-top:6px;display:flex;flex-direction:column;gap:4px"><b>Día ${ixCorteDia(i,k)}</b><span class="status">${(IX().criterios||[]).filter(x=>x.corte===k).map(x=>x.criterio).join(", ")}</span>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${j?.cerrada?`<span class="pill estado-activo">Responsable ✓</span>`:abre&&evalua?`<button class="btn sm primary" type="button" data-act="incEval" data-id="${i.id}" data-c="${k}" data-e="jefe">${j?"Continuar evaluación":"Evaluar"}</button>`:`<span class="pill">Responsable pendiente</span>`}
+       ${p?.cerrada?`<span class="pill estado-activo">Autoevaluación ✓</span>`:abre&&mia?`<button class="btn sm primary" type="button" data-act="incEval" data-id="${i.id}" data-c="${k}" data-e="persona">${p?"Continuar":"Autoevaluarme"}</button>`:`<span class="pill">Autoevaluación pendiente</span>`}</div>
+      ${j?.cerrada&&(mia||ixAcompana(i))?`<details><summary class="status" style="cursor:pointer">Ver evaluación</summary><ul class="pend">${j.competencias.map((x,n)=>`<li>${esc(x)}: <b>${j.puntajes[n]}</b> ${esc(ixEscala(j.puntajes[n]))}</li>`).join("")}</ul>${j.fortalezas?`<p class="status">Fortalezas: ${esc(j.fortalezas)}</p>`:""}${j.evidencias?`<p class="status">Evidencias: ${esc(j.evidencias)}</p>`:""}${j.plan_mejora?`<p class="status"><b>Plan de mejora:</b> ${esc(j.plan_mejora)}</p>`:""}</details>`:""}</div>`; }).join("")}</section>
+   <section class="note"><div class="note-h"><h3>Avance entre cortes</h3></div><div style="display:flex;gap:14px;align-items:flex-end;height:120px">${[30,60,90].map(k=>{ const e=evs.find(x=>x.corte===k&&x.evaluador==="jefe"&&x.cerrada), v=e?prom(e):0;
+     return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><i style="display:block;width:100%;max-width:46px;height:${v/4*100}px;background:var(--accent,#0560bd);border-radius:6px 6px 0 0;opacity:${e?1:.15}"></i><span class="status">Día ${k}${e?" · "+v.toFixed(1):""}</span></div>`; }).join("")}</div>
+    <p class="status" style="margin:0">Solo para esta persona y quienes la acompañan. El promedio es una referencia: la continuidad nunca se decide con una calificación automática.</p></section></div>
+   ${S.ixEval&&S.ixEval.id===i.id?incEvalForm(i):""}`; }
+function incEvalForm(i){ const E=S.ixEval, cr=E.comp;
+  return `<section class="note"><div class="note-h"><h3>Evaluación del día ${ixCorteDia(i,E.corte)} · ${E.evaluador==="jefe"?"responsable":"autoevaluación"}</h3></div>
+   <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:center">${cr.map((x,k)=>`<span>${esc(x)}</span><span style="display:flex;gap:4px;flex-wrap:wrap" role="group" aria-label="${esc(x)}">${[1,2,3,4].map(n=>`<button class="btn sm${E.punt[k]===n?" primary":""}" type="button" data-act="incPunt" data-k="${k}" data-n="${n}" aria-pressed="${E.punt[k]===n}" title="${esc(ixEscala(n))}">${n}</button>`).join("")}</span>`).join("")}</div>
+   <p class="status" style="margin:0">${[1,2,3,4].map(n=>`${n} ${esc(ixEscala(n))}`).join(" · ")}. Describe conductas observables; sin diagnósticos ni juicios personales.</p>
+   <div class="datos">${fld("ieF","Fortalezas",E.fort||"",{area:1,span:3,rows:2})}${fld("ieEv","Evidencias y observaciones",E.evid||"",{area:1,span:3,rows:2})}${fld("ieM","Áreas de mejora",E.mej||"",{area:1,span:3,rows:2})}${fld("iePl","Plan de mejora y acuerdos",E.plan||"",{area:1,span:3,rows:2})}</div>
+   <div class="actions"><button class="btn primary" type="button" data-act="incGuardarEval" data-cerrar="1">Cerrar evaluación</button><button class="btn" type="button" data-act="incGuardarEval" data-cerrar="0">Guardar avance</button><button class="btn" type="button" data-act="incCancelarForm">Cancelar</button></div>
+   <p class="status" style="margin:0">Al cerrarla queda fija y la persona la ve. Comentarios confidenciales: la persona (al cerrarse), quienes la acompañan, RR. HH. y la Dirección.</p></section>`; }
+function incReuHtml(i){ const rs=(IX().reuniones||[]).filter(r=>r.inc_id===i.id), puede=ixAcompana(i)&&!ixEsMia(i)&&ixActiva(i), mia=ixEsMia(i);
+  return `<div class="actions">${puede&&!S.ixReu?`<button class="btn sm primary" type="button" data-act="incReuForm">+ Registrar reunión</button>`:""}<span class="status">El objetivo es acompañar el aprendizaje, no solo identificar errores.</span></div>
+   ${S.ixReu?`<section class="note"><form class="datos" onsubmit="return false">${fld("irFecha","Fecha",asisHoy(),{type:"date"})}${fld("irAc","Acuerdos","",{area:1,span:3,rows:2})}${fld("irAv","Avances","",{area:1,span:3,rows:2})}${fld("irDi","Dificultades detectadas","",{area:1,span:3,rows:2})}${fld("irRe","Refuerzos programados","",{span:3})}${fld("irCo","Compromiso","",{span:2})}${fld("irPa","Para el",asisMas(asisHoy(),7),{type:"date"})}</form>
+     <div class="actions"><button class="btn primary" type="button" data-act="incGuardarReu" data-id="${i.id}">Guardar</button><button class="btn" type="button" data-act="incCancelarForm">Cancelar</button></div></section>`:""}
+   <ul class="pend">${rs.map(r=>`<li><b>${fmtDate(r.fecha)}</b> · con ${esc(ixCol(r.con_id)?.nombre||"")}${r.acuerdos?`<br><span class="status">Acuerdos: ${esc(r.acuerdos)}</span>`:""}${r.avances?`<br><span class="status">Avances: ${esc(r.avances)}</span>`:""}${r.dificultades?`<br><span class="status">Dificultades: ${esc(r.dificultades)}</span>`:""}${r.refuerzos?`<br><span class="status">Refuerzos: ${esc(r.refuerzos)}</span>`:""}
+     ${r.compromiso?`<br>Compromiso: ${esc(r.compromiso)}${r.compromiso_para?" · para "+fmtDate(r.compromiso_para):""} ${r.cumplido?`<span class="pill estado-activo">Cumplido</span>`:r.compromiso_para&&diasHasta(r.compromiso_para)<0?`<span class="pill estado-pendiente">Vencido</span>`:`<span class="pill">En curso</span>`} ${!r.cumplido&&(mia||ixAcompana(i))?`<button class="btn sm" type="button" data-act="incCumplir" data-id="${r.id}">Cumplido</button>`:""}`:""}</li>`).join("")||`<li class="status">Aún no hay reuniones registradas.</li>`}</ul>`; }
+function incDocsHtml(i){ const c=ixCol(i.colaborador_id), gest=ixGestiono(i);
+  if (!S.dx&&!S.dxCargando){ S.dxCargando=true; docsCargar().finally(()=>{ S.dxCargando=false; render(); }); }
+  const ds=(S.dx&&!S.dx.error)?S.dx.docs.filter(d=>d.colaborador_id===i.colaborador_id):[];
+  return `<div class="actions">${gest&&ixActiva(i)?`<button class="btn sm" type="button" data-act="incPlanPdf" data-id="${i.id}">Generar plan de capacitación (PDF) para firma</button>`:""}</div>
+   <ul class="pend">${ds.map(d=>`<li><b>${esc(d.nombre)}</b> ${dxEstado(d)} <button class="btn sm" type="button" data-act="docVer" data-id="${d.id}">Abrir</button></li>`).join("")||`<li class="status">${S.dx?"Sin documentos institucionales todavía.":"Cargando…"}</li>`}</ul>
+   <p class="status" style="margin:0">Requisitos: ${["cuenta","docs","regl","contrato"].filter(k=>S.ixAuto?.[i.id]?.[k]!==undefined).map(k=>({cuenta:"cuenta",docs:"documentación",regl:"Reglamento",contrato:"contrato"})[k]+(S.ixAuto[i.id][k]?" ✓":" pendiente")).join(" · ")||"—"}. El contrato individual se gestiona en Contratos.</p>`; }
+function incAsisHtml(i){ if (i.clase==="psicologo_comision") return `<p class="status">No aplica: los psicólogos independientes no tienen control de asistencia.</p>`;
+  const k=i.id; if (S.ixAsis?.[k]===undefined){ S.ixAsis=S.ixAsis||{}; S.ixAsis[k]=null; const h=asisHoy(), dsd=asisMas(h,-29);
+    S.api.resumenAsistencia(dsd,h,null).then(r=>{ S.ixAsis[k]=r.find(x=>x.colaborador_id===i.colaborador_id)||{}; },()=>{ S.ixAsis[k]={sinAcceso:true}; }).finally(()=>render()); }
+  const a=S.ixAsis[k];
+  return `<section class="note">${a===null?`<p class="status">Cargando…</p>`:a.sinAcceso?`<p class="status">No tienes acceso a la asistencia de esta persona.</p>`:`<dl class="dl-org"><dt>Últimos 30 días</dt><dd>${a.registrados_min?asisH(a.registrados_min)+" registradas":"Sin registros"}</dd><dt>Días incompletos</dt><dd>${a.dias_incompletos??"—"}</dd><dt>Días con permiso</dt><dd>${a.permisos_dias??"—"}</dd><dt>Incidencias por revisar</dt><dd>${a.incidencias_abiertas??"—"}</dd></dl>`}
+   <p class="status" style="margin:0">Solo como contexto: la asistencia no forma parte de la evaluación de competencias. ${S.asis?.config?.usar_horarios===false?"La puntualidad no aplica mientras no se usen horarios.":""}</p></section>`; }
+function incHistHtml(i){ const hs=(IX().historial||[]).filter(h=>h.inc_id===i.id);
+  return `<div class="timeline">${hs.map(h=>`<div class="tl"><b>${INC_EST[h.estado]?.[0]||esc(h.estado)}</b><span>${fmtFH(h.fecha)}${h.motivo?" · "+esc(h.motivo):""}</span></div>`).join("")||`<p class="status">Sin cambios registrados.</p>`}</div>
+   <p class="status" style="margin:0">El historial no se modifica. Al confirmar se conservan la ficha, los documentos, el historial y la fecha real de inicio.</p>`; }
+function incCierreHtml(i){ if (i.clase==="psicologo_comision"||!ixActiva(i)&&!i.doc_confirmacion) return "";
+  const gest=ixGestiono(i), evalua=ixEvalua(i)&&!ixEsMia(i), ev90=ixEvals(i.id).some(e=>e.corte===90&&e.evaluador==="jefe"&&e.cerrada);
+  if (!gest&&!evalua&&!i.doc_confirmacion&&i.estado!=="en_revision") return "";
+  return `<section class="note"><div class="note-h"><h3>Recomendación y cierre</h3></div>
+   ${ixActiva(i)&&i.estado!=="en_revision"&&evalua?(ev90?`<div class="datos">${fld("irMot","Valoración de los cortes *","",{area:1,span:3,rows:2,hint:"Explica el avance en los tres cortes (20 caracteres o más)."})}</div><div class="actions">${Object.entries(INC_RECO).map(([k,t])=>`<button class="btn${k==="confirmar"?" primary":""}" type="button" data-act="incReco" data-id="${i.id}" data-r="${k}">Recomendar: ${t}</button>`).join("")}</div>`:`<p class="status" style="margin:0">Podrás recomendar al cerrar la evaluación del día ${ixCorteDia(i,90)}.</p>`):""}
+   ${i.estado==="en_revision"?`<p style="margin:0">Recomendación: <b>${INC_RECO[i.recomendacion]||""}</b> — ${esc(i.recomendacion_motivo||"")}</p>`:""}
+   ${gest&&ixActiva(i)?`<div class="datos">${fld("idMot","Motivo de la decisión *","",{area:1,span:3,rows:2})}${fld("idRes","Resultado final (opcional)","",{span:2})}${fld("idRev","Fecha de revisión adicional","",{type:"date"})}</div>
+     <div class="actions">${i.estado==="en_revision"?`<button class="btn primary" type="button" data-act="incDecidir" data-id="${i.id}" data-d="confirmada">Confirmar incorporación</button>`:""}<button class="btn" type="button" data-act="incDecidir" data-id="${i.id}" data-d="revision_adicional">Revisión adicional</button><button class="btn" type="button" data-act="incDecidir" data-id="${i.id}" data-d="suspendido">Suspender</button>${i.estado==="en_revision"?`<button class="btn danger" type="button" data-act="incDecidir" data-id="${i.id}" data-d="sin_continuidad">Concluir sin continuidad</button>`:""}</div>
+     <p class="status" style="margin:0">Confirmar conserva todo, pasa a la persona a Activo y crea su carta de confirmación para firma; después revisa sus permisos en Usuarios y permisos. La revisión adicional fija una fecha de revisión y no cambia plazos ni condiciones de su contrato.</p>`:""}
+   ${i.doc_confirmacion?`<div class="actions">${gest?`<button class="btn primary" type="button" data-act="incCarta" data-id="${i.id}">Generar la carta (PDF) y adjuntarla</button>`:""}<button class="btn" type="button" data-act="docVer" data-id="${i.doc_confirmacion}">Abrir la carta en Documentos y firmas</button></div>`:""}</section>`; }
 
-/* ---------- Carta de confirmación (PDF) ---------- */
-async function incCartaPdf(i){ if (!(await libLista("pdf"))){ toast("No se pudo preparar el PDF."); return; }
-  const {PDFDocument,StandardFonts,rgb}=PDFLib, c=ixCol(i.colaborador_id), pdf=await PDFDocument.create(), pg=pdf.addPage([612,792]);
+/* ---------- Mi incorporación (tablero individual) ---------- */
+function miIncHtml(){ if (!S.ix) return incPag("Mi incorporación","",`<p class="status">Cargando…</p>`); if (S.ix.error) return incPag("Mi incorporación","",`<div class="banner bad">${esc(S.ix.error)}</div>`);
+  const i=IX().incs.find(x=>ixEsMia(x)&&ixAbierta(x))||IX().incs.find(ixEsMia); if (!i) return incPag("Mi incorporación","",`<p class="status">No tienes un proceso de incorporación en curso.</p>`);
+  if (!ixActiva(i)) return incDetalleHtml(i); incAutos(i);
+  const sig=ixTareas(i.id).filter(t=>!t.auto&&!["completada","cancelada"].includes(t.estado)).slice(0,4), pc=ixProximo(i), ret=ixEvals(i.id).filter(e=>e.cerrada&&e.evaluador==="jefe"&&e.plan_mejora), reu=(IX().reuniones||[]).filter(r=>r.inc_id===i.id&&r.compromiso&&!r.cumplido);
+  return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px"><div class="phead">${migas()}<h1>Mi incorporación</h1></div>
+   <p class="status" style="margin:0">Tu ruta de aprendizaje en CEMEPI. Avanzas a tu ritmo con el acompañamiento de tu equipo.</p>
+   <section class="note"><div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center"><div style="flex:1;min-width:220px"><span class="status">Tu etapa</span><br><b style="font-size:20px">${INC_ETAPA[ixEtapa(i)]||""}</b><div style="margin-top:8px">${incBar(ixAvance(i))}</div></div>
+    <div><span class="status">${i.clase==="psicologo_comision"?"Tu supervisión":"Próxima evaluación"}</span><br><b>${i.clase==="psicologo_comision"?esc(ixCol(ixPart(i.id,"supervisor")?.colaborador_id)?.nombre||"Por asignar"):pc?`Día ${ixCorteDia(i,pc)} · ${fmtDate(asisMas(i.inicio,ixCorteDia(i,pc)))}`:"—"}</b></div>
+    <div><span class="status">Tu mentor(a)</span><br><b>${esc(ixCol(ixPart(i.id,"mentor")?.colaborador_id)?.nombre||"Por asignar")}</b></div></div></section>
+   <div class="org-grid"><section class="note"><div class="note-h"><h3>Lo que sigue</h3></div><ul class="pend">${sig.map(t=>`<li><b>${esc(t.titulo)}</b><br><span class="status">${esc(t.area||"")}${t.fecha_programada?" · "+fmtDate(t.fecha_programada):""}</span> ${incPill(INC_AEST[t.estado])}</li>`).join("")||`<li class="status">¡Vas al día con tu ruta!</li>`}</ul></section>
+    <section class="note"><div class="note-h"><h3>Retroalimentación y compromisos</h3></div><ul class="pend">${ret.map(e=>`<li><b>Día ${ixCorteDia(i,e.corte)}:</b> ${esc(e.plan_mejora)}</li>`).join("")}${reu.map(r=>`<li>Compromiso: ${esc(r.compromiso)}${r.compromiso_para?" · para "+fmtDate(r.compromiso_para):""}</li>`).join("")||(ret.length?"":`<li class="status">Aquí verás la retroalimentación de tu responsable y tus compromisos.</li>`)}</ul></section></div>
+   </div>${incDetalleHtml(i).replace(/^<div class="wrap"[^>]*><div class="phead">[\s\S]*?<\/div>/,'<div class="wrap" style="padding-block:0 24px;display:flex;flex-direction:column;gap:16px">')}`; }
+
+/* ---------- PDF (carta y plan) ---------- */
+async function incPdfBase(titulo, cuerpo, firmas){ if (!(await libLista("pdf"))){ toast("No se pudo preparar el PDF."); return null; }
+  const {PDFDocument,StandardFonts,rgb}=PDFLib, pdf=await PDFDocument.create(); let pg=pdf.addPage([612,792]);
   const f=await pdf.embedFont(StandardFonts.Helvetica), b=await pdf.embedFont(StandardFonts.HelveticaBold), M=72, CW=612-2*M, gris=rgb(.33,.41,.54); let y=792-M;
-  /* Texto justificado (política de formato); centrado o a la derecha solo título, lugar y fecha y firmas */
+  const nueva=()=>{ pg=pdf.addPage([612,792]); y=792-M; };
   const lin=(t,o={})=>{ const sz=o.size||11, fo=o.bold?b:f, ls=envolver(limpiarPdf(t),fo,sz,CW), col=o.color||rgb(0,0,0);
-    ls.forEach((l,n)=>{ const w=fo.widthOfTextAtSize(l,sz);
+    ls.forEach((l,n)=>{ if (y<M+40) nueva(); const w=fo.widthOfTextAtSize(l,sz);
       if (o.center||o.right){ pg.drawText(l,{x:o.center?(612-w)/2:612-M-w,y,size:sz,font:fo,color:col}); }
-      else { const ps=l.split(" "); if (n===ls.length-1||ps.length<2){ pg.drawText(l,{x:M,y,size:sz,font:fo,color:col}); }
+      else { const ps=l.split(" "); if (n===ls.length-1||ps.length<2) pg.drawText(l,{x:M,y,size:sz,font:fo,color:col});
         else { const extra=(CW-w)/(ps.length-1), sp=fo.widthOfTextAtSize(" ",sz); let x=M; ps.forEach(p=>{ pg.drawText(p,{x,y,size:sz,font:fo,color:col}); x+=fo.widthOfTextAtSize(p,sz)+sp+extra; }); } }
       y-=sz*1.45; }); };
-  lin("Centro Mexicano de Plenitud Humana, S.C. (CEMEPI)",{bold:1,center:1}); lin(CEMEPI_CONTACTO,{size:8,center:1,color:gris}); y-=18;
-  lin(`Ciudad de México, a ${new Date().toLocaleDateString("es-MX",{day:"numeric",month:"long",year:"numeric"})}`,{right:1}); y-=18;
-  lin("CARTA DE CONFIRMACIÓN DE INCORPORACIÓN",{bold:1,center:1,size:13}); y-=10;
-  lin(`${c?.nombre||""}`,{bold:1}); lin("PRESENTE"); y-=8;
-  lin(`Por este medio, el Centro Mexicano de Plenitud Humana, S.C. (CEMEPI) le comunica que concluyó satisfactoriamente su proceso de incorporación, iniciado el ${fmtDate(i.inicio)} en la sede ${ixSede(c?.sede_principal_id)}, como ${INC_CLASE[i.clase]}.`); y-=6;
-  lin("Durante este periodo se acompañó su formación, se revisaron sus avances en los cortes de los días 30, 60 y 90 y se registraron las recomendaciones correspondientes en su expediente laboral."); y-=6;
-  lin("La presente carta no modifica las condiciones establecidas en su contrato individual de trabajo. Agradecemos su compromiso con el bienestar de las personas que atendemos."); y-=40;
-  lin("Atentamente",{center:1}); y-=50; lin("Romel Monroy Barrón",{bold:1,center:1}); lin("Director General",{center:1}); y-=36; lin(`Recibí: ${c?.nombre||""}`,{center:1});
-  const nl=envolver(limpiarPdf(NOTA_ACLARATORIA),f,7,CW); let yy=24+(nl.length-1)*8.6; for (const l of nl){ pg.drawText(l,{x:M,y:yy,size:7,font:f,color:gris}); yy-=8.6; }
-  const bytes=await pdf.save(); return new File([bytes],`Carta-confirmacion-${slug(c?.nombre||"")}.pdf`,{type:"application/pdf"}); }
+  lin("Centro Mexicano de Plenitud Humana, S.C. (CEMEPI)",{bold:1,center:1}); lin(CEMEPI_CONTACTO,{size:8,center:1,color:gris}); y-=14;
+  lin(`Ciudad de México, a ${new Date().toLocaleDateString("es-MX",{day:"numeric",month:"long",year:"numeric"})}`,{right:1}); y-=14; lin(titulo,{bold:1,center:1,size:13}); y-=8;
+  cuerpo(lin, ()=>{ y-=6; }); y-=34; for (const [n,c] of firmas){ if (y<M+80) nueva(); lin("______________________________",{center:1}); lin(n,{bold:1,center:1}); if (c) lin(c,{center:1}); y-=24; }
+  const nl=envolver(limpiarPdf(NOTA_ACLARATORIA),f,7,CW); for (const p of pdf.getPages()){ let yy=24+(nl.length-1)*8.6; for (const l of nl){ p.drawText(l,{x:M,y:yy,size:7,font:f,color:gris}); yy-=8.6; } }
+  return await pdf.save(); }
+async function incCartaPdf(i){ const c=ixCol(i.colaborador_id);
+  const bytes=await incPdfBase("CARTA DE CONFIRMACIÓN DE INCORPORACIÓN",(lin,sep)=>{ lin(c?.nombre||"",{bold:1}); lin("PRESENTE"); sep();
+    lin(`Por este medio, el Centro Mexicano de Plenitud Humana, S.C. (CEMEPI) le comunica que concluyó satisfactoriamente su proceso de incorporación, iniciado el ${fmtDate(i.inicio)} en la sede ${ixSede(c?.sede_principal_id)}, como ${INC_CLASE[i.clase]}.`); sep();
+    lin(`Su fecha de inicio de actividades con CEMEPI es el ${fmtDate(i.inicio_actividades||i.inicio)}. Durante este periodo se acompañó su formación y se revisaron sus avances en los cortes de los días 30, 60 y 90.`); sep();
+    lin("La presente carta no modifica las condiciones de su contrato individual de trabajo. Agradecemos su compromiso con el bienestar de las personas que atendemos."); },[["Romel Monroy Barrón","Director General"],[c?.nombre||"","Recibí"]]);
+  return bytes?new File([bytes],`Carta-confirmacion-${slug(c?.nombre||"")}.pdf`,{type:"application/pdf"}):null; }
+async function incPlanArchivo(i){ const c=ixCol(i.colaborador_id), ts=ixTareas(i.id).filter(t=>t.estado!=="cancelada"), areas=[...new Set(ts.map(t=>t.area||"Actividades"))];
+  const bytes=await incPdfBase("PLAN DE CAPACITACIÓN",(lin,sep)=>{ lin(`${c?.nombre||""} · ${INC_CLASE[i.clase]} · ${ixSede(c?.sede_principal_id)}`,{bold:1}); lin(`Proceso del ${fmtDate(i.inicio)} al ${fmtDate(i.fin)} (${i.duracion} días). Responsable: ${ixCol(ixPart(i.id,"responsable")?.colaborador_id)?.nombre||"por asignar"}.`); sep();
+    for (const a of areas){ lin(a,{bold:1}); for (const t of ts.filter(x=>(x.area||"Actividades")===a)) lin(`• ${t.titulo}${t.fecha_programada?" — "+fmtDate(t.fecha_programada):""}`); sep(); }
+    lin("Completar este plan no otorga por sí mismo permisos de caja, cobros, información sensible ni de atención clínica; esos permisos se autorizan aparte."); },[[c?.nombre||"","Colaborador(a)"],[ixCol(ixPart(i.id,"responsable")?.colaborador_id)?.nombre||"Responsable de incorporación","Responsable de incorporación"]]);
+  return bytes?new File([bytes],`Plan-capacitacion-${slug(c?.nombre||"")}.pdf`,{type:"application/pdf"}):null; }
 
 /* ---------- Acciones ---------- */
 async function incAccion(a,b){
   const v=id=>($("#"+id)?.value??"").trim(), err=e=>toast(/row-level|permission/i.test(e?.message||"")?"No tienes autorización para esa acción.":(e?.message||"No se pudo completar."));
+  const limpiar=()=>{ S.ixNueva=false; S.ixEval=null; S.ixActForm=null; S.ixAv=null; S.ixReu=false; S.ixCanc=false; S.ixFicha=false; };
   const recargar=async m=>{ if (m) toast(m); S.ixAuto={}; await incCargar(); };
-  if (a==="incorporacion"){ S.view="incorporacion"; S.ixSel=null; S.ixNueva=false; S.ixEval=null; render(); return incCargar(); }
-  if (a==="miinc"){ S.view="miinc"; S.ixSel=null; S.ixEval=null; render(); return incCargar(); }
-  if (a==="incVer"){ S.ixSel=b.dataset.id; S.ixEval=null; S.ixCerrar=false; return render(); }
-  if (a==="incCerrar"){ S.ixSel=null; S.ixEval=null; return render(); }
+  const inc=id=>IX().incs.find(x=>x.id===id);
+  if (a==="incorporacion"){ S.view="incorporacion"; S.ixSel=null; limpiar(); render(); return incCargar(); }
+  if (a==="miinc"){ S.view="miinc"; S.ixSel=null; limpiar(); render(); return incCargar(); }
+  if (a==="incVer"){ S.ixSel=b.dataset.id; S.ixTab="plan"; limpiar(); return render(); }
+  if (a==="incCerrar"){ S.ixSel=null; limpiar(); return render(); }
+  if (a==="incTab"){ S.ixTab=b.dataset.t; S.ixEval=null; S.ixActForm=null; S.ixAv=null; S.ixReu=false; return render(); }
   if (a==="incNueva"){ S.ixNueva=true; return render(); }
-  if (a==="incCancelarForm"){ S.ixNueva=false; S.ixEval=null; return render(); }
-  if (a==="incCrear"){ if (!v("inCol")) return toast("Elige a la persona."); try{ const id=await S.api.crearIncorporacion(v("inCol"),v("inIni"),null,v("inAcomp")); S.ixNueva=false; await recargar("Incorporación iniciada con su plan de 90 días."); S.ixSel=id; render(); }catch(e){ err(e); } return; }
-  if (a==="incValidar"){ try{ await S.api.validarTareaInc(b.dataset.id); await recargar("Tarea validada."); }catch(e){ err(e); } return; }
-  if (a==="incEval"){ const i=IX().incs.find(x=>x.id===b.dataset.id), prev=ixEvals(i.id).find(e=>e.corte===+b.dataset.c&&e.evaluador===b.dataset.e), comp=INC_COMP[i.clase]||INC_COMP.administrativo;
-    S.ixEval={id:i.id,corte:+b.dataset.c,evaluador:b.dataset.e,punt:prev?.puntajes?.slice()||comp.map(()=>0),fort:prev?.fortalezas,mej:prev?.mejoras}; render(); return; }
-  if (a==="incPunt"){ S.ixEval.fort=v("ieF"); S.ixEval.mej=v("ieM"); S.ixEval.punt[+b.dataset.k]=+b.dataset.n; return render(); }
-  if (a==="incGuardarEval"){ const E=S.ixEval, i=IX().incs.find(x=>x.id===E.id), comp=INC_COMP[i.clase]||INC_COMP.administrativo, cerrar=b.dataset.cerrar==="1";
-    if (E.punt.some(x=>!x)) return toast("Califica todas las competencias del 1 al 4.");
+  if (a==="incCancelarForm"){ const abrir=b.dataset.abrir==="1"; limpiar(); S.ixCanc=abrir; return render(); }
+  if (a==="incCrear"){ if (!v("inCol")) return toast("Elige a la persona."); const dur=Number(v("inDur")||90); if (!(dur>=30&&dur<=180)) return toast("La duración va de 30 a 180 días.");
+    try{ const id=await S.api.crearIncorporacion({col:v("inCol"),estado:v("inEst"),clase:v("inClase"),inicio:v("inIni"),inicioAct:v("inAct"),duracion:dur,responsable:v("inResp"),capacitador:v("inCap"),mentor:v("inMen"),supervisor:v("inSup")});
+      limpiar(); await recargar("Proceso iniciado."); S.ixSel=id; render(); }catch(e){ err(e); } return; }
+  if (a==="incPreingreso"){ try{ await S.api.pasarPreingresoInc(b.dataset.id); await recargar("Ahora está en preingreso."); }catch(e){ err(e); } return; }
+  if (a==="incIniciar"){ if (!arm(b,"ii"+b.dataset.id,"¿Iniciar hoy?")) return; armed=null; try{ await S.api.iniciarProcesoInc(b.dataset.id); await recargar("Proceso iniciado: el plan se armó con la ruta del puesto."); }catch(e){ err(e); } return; }
+  if (a==="incFicha"){ S.ixFicha=!S.ixFicha; return render(); }
+  if (a==="incGuardarFicha"){ try{ await S.api.actualizarFichaInc(b.dataset.id,Number(v("ifDur")),v("ifAct"),v("ifObs")); S.ixFicha=false; await recargar("Ficha actualizada."); }catch(e){ err(e); } return; }
+  if (a==="incActForm"){ const t=b.dataset.id?ixTareas(S.ixSel||IX().incs.find(ixEsMia)?.id).find(x=>x.id===b.dataset.id)||(IX().tareas||[]).find(x=>x.id===b.dataset.id):{}; S.ixActForm={...t}; S.ixAv=null; return render(); }
+  if (a==="incGuardarAct"){ if (v("iaNom").length<3) return toast("Escribe el nombre de la actividad.");
+    try{ await S.api.guardarActividadInc(b.dataset.id,S.ixActForm?.id,{nombre:v("iaNom"),area:v("iaArea"),descripcion:v("iaDesc"),competencia:v("iaComp"),responsable:v("iaResp"),fecha:v("iaFecha")}); S.ixActForm=null; await recargar("Actividad guardada."); }catch(e){ err(e); } return; }
+  if (a==="incAvanceForm"){ S.ixAv={id:b.dataset.id,estado:b.dataset.e}; S.ixActForm=null; return render(); }
+  if (a==="incAvance"){ try{ await S.api.avanzarActividadInc(b.dataset.id,b.dataset.e,v("ivEvid"),v("ivRes"),v("ivRetro")); S.ixAv=null;
+      await recargar(({en_curso:"Avance registrado; tu capacitador(a) lo revisa.",completada:"Actividad completada.",refuerzo:"Marcada para refuerzo.",cancelada:"Actividad cancelada."})[b.dataset.e]); }catch(e){ err(e); } return; }
+  if (a==="incEval"){ const i=inc(b.dataset.id), c=+b.dataset.c, prev=ixEvals(i.id).find(e=>e.corte===c&&e.evaluador===b.dataset.e), comp=prev?.competencias||ixCriterios(i,c);
+    S.ixEval={id:i.id,corte:c,evaluador:b.dataset.e,comp,punt:prev?.puntajes?.slice()||comp.map(()=>0),fort:prev?.fortalezas,mej:prev?.mejoras,evid:prev?.evidencias,plan:prev?.plan_mejora}; return render(); }
+  if (a==="incPunt"){ Object.assign(S.ixEval,{fort:v("ieF"),mej:v("ieM"),evid:v("ieEv"),plan:v("iePl")}); S.ixEval.punt[+b.dataset.k]=+b.dataset.n; return render(); }
+  if (a==="incGuardarEval"){ const E=S.ixEval, cerrar=b.dataset.cerrar==="1"; if (E.punt.some(x=>!x)) return toast("Califica todos los criterios del 1 al 4.");
     if (cerrar&&!arm(b,"ie"+E.corte,"¿Cerrar? Ya no se podrá cambiar")) return; armed=null;
-    try{ await S.api.guardarEvaluacionInc(E.id,E.corte,E.evaluador,comp,E.punt,v("ieF"),v("ieM"),cerrar); S.ixEval=null; await recargar(cerrar?"Evaluación cerrada.":"Borrador guardado."); }catch(e){ err(e); } return; }
-  if (a==="incReco"){ const m=v("irMot"); if (m.length<10) return toast("Explica la recomendación (10 caracteres o más).");
+    try{ await S.api.guardarEvaluacionInc(E.id,E.corte,E.evaluador,E.comp,E.punt,{fortalezas:v("ieF"),mejoras:v("ieM"),evidencias:v("ieEv"),plan:v("iePl")},cerrar); S.ixEval=null; await recargar(cerrar?"Evaluación cerrada.":"Avance guardado."); }catch(e){ err(e); } return; }
+  if (a==="incReuForm"){ S.ixReu=true; return render(); }
+  if (a==="incGuardarReu"){ try{ await S.api.registrarReunionInc(b.dataset.id,{fecha:v("irFecha"),acuerdos:v("irAc"),avances:v("irAv"),dificultades:v("irDi"),refuerzos:v("irRe"),compromiso:v("irCo"),para:v("irPa")}); S.ixReu=false; await recargar("Reunión registrada."); }catch(e){ err(e); } return; }
+  if (a==="incCumplir"){ try{ await S.api.cumplirCompromisoInc(b.dataset.id); await recargar("Compromiso cumplido."); }catch(e){ err(e); } return; }
+  if (a==="incReco"){ const m=v("irMot"); if (m.length<20) return toast("Escribe la valoración de los cortes (20 caracteres o más).");
     try{ await S.api.recomendarInc(b.dataset.id,b.dataset.r,m); await recargar("Recomendación enviada a RR. HH."); }catch(e){ err(e); } return; }
-  if (a==="incDecidir"){ const d=b.dataset.d, m=v("idMot"); if (m.length<(d==="no_continua"?20:5)) return toast(d==="no_continua"?"Escribe un motivo documentado (20 caracteres o más).":"Escribe el motivo.");
-    if (!arm(b,"id"+d,d==="confirmada"?"¿Confirmar?":d==="no_continua"?"¿Ya lo revisaste con asesoría?":"¿Extender 30 días?")) return; armed=null;
-    try{ const doc=await S.api.decidirInc(b.dataset.id,d,m); await recargar(d==="confirmada"?"Confirmada. Se creó la carta de confirmación en Documentos y firmas.":d==="no_continua"?"Registrado. Antes de comunicarlo, revisa con asesoría laboral.":"Acompañamiento extendido 30 días.");
-      if (d==="confirmada"&&doc) toast("Pulsa “Generar la carta (PDF) y adjuntarla” y después envíala a firma."); }catch(e){ err(e); } return; }
-  if (a==="incCerrarForm"){ S.ixCerrar=!S.ixCerrar; return render(); }
-  if (a==="incCerrarInc"){ const m=v("icMot"); if (m.length<10) return toast("Escribe el motivo (10 caracteres o más).");
-    try{ await S.api.cerrarInc(b.dataset.id,v("icEst"),m); S.ixCerrar=false; await recargar("Incorporación cerrada."); }catch(e){ err(e); } return; }
-  if (a==="incCarta"){ const i=IX().incs.find(x=>x.id===b.dataset.id); b.disabled=true;
-    try{ const f=await incCartaPdf(i); if (!f) return; await S.api.subirVersionDoc(i.doc_confirmacion,f,"Carta generada desde Incorporación"); toast("Carta adjuntada. Ábrela en Documentos y firmas y envíala a firma (la persona y la Dirección)."); }
-    catch(e){ err(e); } b.disabled=false; return; }
+  if (a==="incDecidir"){ const d=b.dataset.d, m=v("idMot"); if (m.length<(d==="sin_continuidad"?20:5)) return toast(d==="sin_continuidad"?"Escribe un motivo documentado (20 caracteres o más).":"Escribe el motivo.");
+    if (d==="revision_adicional"&&!v("idRev")) return toast("Indica la fecha de la revisión adicional.");
+    if (!arm(b,"id"+d,({confirmada:"¿Confirmar?",sin_continuidad:"¿Concluir sin continuidad?",suspendido:"¿Suspender?",revision_adicional:"¿Programar revisión?"})[d])) return; armed=null;
+    try{ await S.api.decidirInc(b.dataset.id,d,m,v("idRev"),v("idRes")); await recargar(({confirmada:"Incorporación confirmada. Genera la carta y revisa sus permisos en Usuarios y permisos.",revision_adicional:"Revisión adicional programada.",suspendido:"Proceso suspendido. RR. HH. revisa su estatus.",sin_continuidad:"Registrado. RR. HH. revisa su estatus."})[d]); }catch(e){ err(e); } return; }
+  if (a==="incCancelarProc"){ const m=v("icMot"); if (m.length<10) return toast("Escribe el motivo (10 caracteres o más)."); try{ await S.api.cancelarInc(b.dataset.id,m); S.ixCanc=false; await recargar("Proceso cancelado."); }catch(e){ err(e); } return; }
+  if (a==="incCarta"){ const i=inc(b.dataset.id); b.disabled=true; try{ const f=await incCartaPdf(i); if (f){ await S.api.subirVersionDoc(i.doc_confirmacion,f,"Carta generada desde Incorporación"); toast("Carta adjuntada. Ábrela en Documentos y firmas y envíala a firma."); } }catch(e){ err(e); } b.disabled=false; return; }
+  if (a==="incPlanPdf"){ const i=inc(b.dataset.id), c=ixCol(i.colaborador_id); b.disabled=true;
+    try{ const f=await incPlanArchivo(i); if (!f) return; const id=await S.api.crearDoc({tipo:"plan_capacitacion",nombre:"Plan de capacitación · "+(c?.nombre||""),sede:c?.sede_principal_id,colaborador:c?.id});
+      await S.api.subirVersionDoc(id,f,"Plan generado desde Incorporación"); S.dx=null; toast("Plan creado en Documentos y firmas. Ábrelo y envíalo a firma."); render(); }catch(e){ err(e); } b.disabled=false; return; }
 }
-document.addEventListener("change", async e=>{ const t=e.target; if (!t.dataset?.inctarea) return;
-  try{ await S.api.marcarTareaInc(t.dataset.inctarea, t.checked); S.ixAuto={}; await incCargar(); toast(t.checked?"Tarea marcada como hecha.":"Tarea desmarcada."); }
-  catch(err){ t.checked=!t.checked; toast(err?.message||"No se pudo actualizar."); } });
+document.addEventListener("change", async e=>{ const t=e.target;
+  if (t.dataset?.incpapel&&S.ixSel){ try{ await S.api.asignarParticipanteInc(S.ixSel,t.dataset.incpapel,t.value); S.ixAuto={}; await incCargar(); toast("Papel asignado."); }catch(err){ toast(err?.message||"No se pudo asignar."); render(); } return; }
+  if (S.view==="incorporacion"&&["ixFS","ixFN","ixFE","ixFR"].includes(t.id)){ S.ixF=S.ixF||{}; S.ixF[{ixFS:"sede",ixFN:"ent",ixFE:"estado",ixFR:"resp"}[t.id]]=t.value; render(); } });
 
 const ASIS_TZ="America/Mexico_City";
 const asisHoy=()=>new Intl.DateTimeFormat("en-CA",{timeZone:ASIS_TZ}).format(new Date());
@@ -3590,9 +3698,9 @@ const GUIAS = [
   {t:"Responder solicitudes de acceso", si:()=>S.rol==="superusuario", pasos:["Entra a Configuración → Usuarios y permisos → Solicitudes de acceso.","Pulsa Responder: puedes aprobar (eligiendo nivel y fecha de fin), pedir más información o rechazar.","Las revisiones automáticas aparecen cuando un colaborador pasa a Baja en Organización: abre su cuenta y decide si la desactivas."]},
   {t:"Pedir un acceso que no tengo", si:()=>true, pasos:["Entra a Configuración → Usuarios y permisos → Solicitudes de acceso.","Pulsa + Nueva solicitud, elige la sede, el módulo y el nivel, y explica para qué lo necesitas.","El Superusuario la revisa. Nada cambia hasta que la apruebe; verás la respuesta en la misma pantalla."]},
   {t:"Consultar la organización", si:()=>(S.api?.orgNivel||0)>=1, pasos:["Entra a Organización → Resumen para ver sedes, personas, vacantes y alertas de las sedes que tienes autorizadas.","En Organigrama elige la vista (línea de reporte, área, sede, supervisión clínica o coordinación) y pulsa a una persona para ver su ficha.","En Supervisión registra a quién reporta cada persona; en Vacantes, quién ocupa cada plaza."]},
-  {t:"Iniciar la incorporación de una persona nueva", si:()=>S.rol==="superusuario"||(S.api?.rhNivel||0)>=2, pasos:["Antes, en Organización → Supervisión registra a quién reporta (su jefe directo) y, si es psicólogo(a), quién le da supervisión clínica.","Entra a Organización → Incorporación y pulsa + Iniciar incorporación.","Elige a la persona, la fecha de inicio y el acompañante. El plan de 90 días se arma solo con la plantilla de su tipo.","A los días 30, 60 y 90 su jefe la evalúa y ella se autoevalúa. Al final el jefe recomienda y tú decides: confirmar, extender 30 días o no continuar."]},
-  {t:"Evaluar a alguien de mi equipo en incorporación", si:()=>!!S.rol, pasos:["Entra a Organización → Incorporación y abre a la persona (también aparece en Pendientes de Inicio cuando toca).","Cada evaluación se abre 10 días antes de su corte: pulsa Evaluar, califica cada competencia del 1 al 4 y escribe fortalezas y acuerdos.","Pulsa Cerrar evaluación: ya no se puede cambiar y la persona la ve. Después de la del día 90, envía tu recomendación."]},
-  {t:"Mi incorporación", si:()=>!!S.rol, pasos:["Si estás en tus primeros 90 días, entra a Mi trabajo → Mi incorporación.","Marca las tareas que vas completando; tu jefe las valida. Las de cuenta, contrato, documentación y Reglamento se marcan solas.","Cuando se abra cada corte (días 30, 60 y 90) haz tu autoevaluación."]},
+  {t:"Iniciar el proceso de una persona en contratación", si:()=>S.rol==="superusuario"||(S.api?.rhNivel||0)>=2, pasos:["Antes, en Organización → Supervisión registra a quién reporta (su jefe directo) y, si es psicólogo(a), quién le da supervisión clínica.","Entra a Organización → Incorporación y pulsa + Iniciar proceso.","Elige a la persona (si aún no tiene cuenta, déjala en preingreso e indica si es administrativo o psicólogo), las fechas, la duración y a su responsable, capacitador, mentor y supervisor.","El plan se arma con la ruta de su puesto y se puede personalizar. A los días 30, 60 y 90 se evalúa; al final el responsable recomienda y tú decides: confirmar, revisión adicional, suspender o concluir sin continuidad."]},
+  {t:"Acompañar o evaluar a una persona en incorporación", si:()=>!!S.rol, pasos:["Entra a Organización → Incorporación y abre a la persona (también aparece en Pendientes de Inicio cuando toca).","Como capacitador(a) o responsable: completa sus actividades con retroalimentación o márcalas para refuerzo. Como mentor(a): registra reuniones con acuerdos y compromisos.","Como responsable o supervisor(a): cada evaluación se abre 10 días antes de su corte; califica cada criterio del 1 al 4 con evidencias y un plan de mejora, y ciérrala. Después de la del día 90 envía tu recomendación con una valoración escrita."]},
+  {t:"Mi incorporación", si:()=>!!S.rol, pasos:["Si estás en proceso de contratación, entra a Mi trabajo → Mi incorporación: ahí ves tu etapa, tu avance y lo que sigue.","En tu plan pulsa Avancé y escribe tu evidencia; tu capacitador(a) completa la actividad. Los requisitos de cuenta, contrato, documentación y Reglamento se marcan solos.","Cuando se abra cada corte (días 30, 60 y 90) haz tu autoevaluación y revisa tu retroalimentación y tus compromisos."]},
   {t:"Firmar un documento", si:()=>!!S.rol, pasos:["Antes de tu primera firma, guarda la imagen de tu firma en Mi perfil (se imprime en el documento).","Entra a Mis documentos → Por firmar y pulsa Revisar y firmar.","Pulsa Abrir y revisar el documento y léelo completo. La app comprueba que es exactamente el archivo que se envió a firma.","Escribe tu contraseña de la app, marca que aceptas y pulsa Firmar. Si algo está mal, pulsa Rechazar y explica qué corregir."]},
   {t:"Firmar mi contrato", si:()=>tieneContrato()||S.rol==="superusuario", pasos:["Cuando la Dirección registre tu fecha de alta y salario, entra a Mi contrato y pulsa Firmar mi contrato.","Lee el contrato, escribe tu contraseña, marca que aceptas y pulsa Firmar.","Se guarda la huella del contenido: si después cambia un dato, la firma se anula y se vuelve a firmar."]},
   {t:"Enviar un documento a firma", si:()=>dxPuedeGestionar(), pasos:["Abre el documento en Documentos y firmas (ya con su archivo) y pulsa Enviar a firma.","Marca a las personas en el orden en que deben firmar, escribe su papel (por ejemplo Representante legal), elige si firman en orden o a la vez y la fecha límite.","Cuando firman todas, el documento queda Firmado, recibe su folio y puedes Descargar firmado (PDF) con las firmas impresas y su evidencia.","Mientras está en firma no se cambia el archivo. Si hay que corregirlo, cancela la solicitud con un motivo, sube una versión nueva y vuelve a enviarlo."]},
@@ -3811,10 +3919,11 @@ MANUALES.direccion.caps.push({t:"Documentos y firmas", p:[
   "Para agregar uno: + Nuevo documento → tipo, nombre, sede o entidad y, si es de una persona, la persona → Crear borrador → subir el archivo → Publicar con folio. La entidad fiscal se toma de la sede: un documento de Bosques de Santa Fe nunca queda con los datos de CEMEPI, S.C.",
   "Cada versión guarda su huella digital y no se modifica. Para corregir, sube una versión nueva. Para retirar un documento publicado, archívalo con un motivo. Ver un documento no da permiso de descargarlo; cada descarga queda registrada.",
   "Los documentos sensibles (fiscales) requieren el permiso de información sensible. Las firmas electrónicas llegan en la siguiente fase."]});
-for (const k of Object.keys(MANUALES)) MANUALES[k].caps.push({t:"Incorporación (primeros 90 días)", p:[
-  "Cada persona nueva tiene un plan de 90 días con tareas por semana. Las de cuenta activa, contrato firmado, documentación y Reglamento se marcan solas.",
-  "A los días 30, 60 y 90 hay autoevaluación y evaluación del jefe directo, con competencias del 1 al 4. Al cerrarse ya no cambian.",
-  "El jefe directo recomienda y RR. HH. o la Dirección deciden: confirmar (se genera una carta que se firma con contraseña), extender 30 días o no continuar (con motivo y revisión de asesoría laboral). Los psicólogos independientes reciben solo acompañamiento. La asistencia no interviene."]});
+for (const k of Object.keys(MANUALES)) MANUALES[k].caps.push({t:"Incorporación (en proceso de contratación)", p:[
+  "Mientras dura tu proceso apareces como «En proceso de contratación». Tienes una ruta de capacitación por áreas, con fechas, un responsable, un capacitador(a), un mentor(a) y un supervisor(a).",
+  "En Mi trabajo → Mi incorporación ves tu etapa (inducción, formación supervisada o valoración), tu avance, lo que sigue, tu retroalimentación y tus compromisos.",
+  "A los días 30, 60 y 90 te autoevalúas y tu responsable te evalúa con evidencias y un plan de mejora. Al final se confirma tu incorporación, se programa una revisión adicional o se concluye el proceso; ninguna decisión se toma de forma automática.",
+  "Completar tu capacitación no te da por sí mismo permisos de caja, cobros, información sensible ni de atención clínica: esos se autorizan aparte."]});
 for (const k of Object.keys(MANUALES)) MANUALES[k].caps.push({t:"Firma electrónica", p:[
   "Los documentos que emite CEMEPI (políticas, circulares, oficios, acuses, constancias laborales, convenios y el contrato individual) solo valen con firma. Se firman en la app con tu contraseña; el código de verificación (MFA) no se usa por ahora.",
   "Antes de firmar guarda la imagen de tu firma en Mi perfil: se imprime en el documento. Al firmar se guarda la evidencia: quién, cuándo (hora del servidor), la huella del archivo revisado y el dispositivo.",
