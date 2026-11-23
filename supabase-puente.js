@@ -254,8 +254,44 @@ document.addEventListener("click", ev => { if (ev.target.closest('[data-act="sal
 const sesionUso = crypto.randomUUID();
 let ultimaActividad = Date.now(), ultimoEnvio = Date.now(), acumulado = 0;
 ["pointerdown", "keydown", "scroll", "pointermove"].forEach(t => document.addEventListener(t, () => { ultimaActividad = Date.now(); }, { passive: true, capture: true }));
-/* Cierre de sesión por inactividad (minutos definidos por el Superusuario en Configuración de seguridad) */
-setInterval(() => { if (Date.now() - ultimaActividad > (Number(cfgInact?.valor) || 30) * 60000) sb.auth.signOut().then(() => location.reload()); }, 60000);
+/* Cierre de sesión por inactividad (minutos definidos por el Superusuario en Configuración de seguridad).
+   2 minutos antes avisa con «Seguir conectado» para no perder lo que se está editando. */
+{
+  const limite = (Number(cfgInact?.valor) || 30) * 60000, AVISO = 2 * 60000;
+  let dlg = null, cerrando = false;
+  const ocultar = () => { if (dlg?.open) dlg.close(); };
+  const mostrar = () => {
+    if (!dlg) {
+      dlg = document.createElement("dialog");
+      dlg.className = "dlg-firma";
+      dlg.setAttribute("aria-labelledby", "inactTit");
+      dlg.innerHTML = `<h3 id="inactTit" style="margin:0 0 8px">¿Sigues ahí?</h3>
+        <p style="margin:0 0 6px">Por seguridad, tu sesión se cerrará en <b id="inactSeg">2:00</b> si no hay actividad.</p>
+        <p class="hint" style="margin:0 0 14px">Pulsa «Seguir conectado» para continuar con lo que estabas haciendo.</p>
+        <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+          <button class="btn" type="button" data-inact="salir">Cerrar sesión</button>
+          <button class="btn primary" type="button" data-inact="seguir">Seguir conectado</button></div>`;
+      dlg.addEventListener("cancel", ev => { ev.preventDefault(); ultimaActividad = Date.now(); ocultar(); });
+      dlg.addEventListener("click", ev => {
+        const a = ev.target.closest("[data-inact]")?.dataset.inact;
+        if (a === "seguir") { ultimaActividad = Date.now(); ocultar(); }
+        if (a === "salir") sb.auth.signOut().then(() => location.reload());
+      });
+      document.body.appendChild(dlg);
+    }
+    if (!dlg.open) { dlg.showModal(); dlg.querySelector('[data-inact="seguir"]').focus(); }
+  };
+  setInterval(() => {
+    if (cerrando) return;
+    const inactivo = Date.now() - ultimaActividad;
+    if (inactivo >= limite) { cerrando = true; sb.auth.signOut().then(() => location.reload()); return; }
+    if (inactivo >= limite - AVISO) {
+      mostrar();
+      const s = Math.max(0, Math.ceil((limite - inactivo) / 1000));
+      dlg.querySelector("#inactSeg").textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+    } else ocultar();
+  }, 1000);
+}
 setInterval(() => {
   const ahora = Date.now(), dt = Math.round((ahora - ultimoEnvio) / 1000); ultimoEnvio = ahora;
   if (!document.hidden && ahora - ultimaActividad < 5 * 60000) acumulado += Math.min(dt, 60);

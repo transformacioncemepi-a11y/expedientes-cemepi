@@ -1,6 +1,6 @@
 {
-  "name": "Expedientes CEMEPI",
-  "short_name": "CEMEPI",
+  "name": "Tonalli CEMEPI",
+  "short_name": "Tonalli",
   "description": "Expedientes y documentos psicológicos del Centro Mexicano de Plenitud Humana, S.C.",
   "lang": "es-MX",
   "start_url": "./index.html",
