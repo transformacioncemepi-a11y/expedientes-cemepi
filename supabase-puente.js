@@ -271,7 +271,7 @@ let ultimaActividad = Date.now(), ultimoEnvio = Date.now(), acumulado = 0;
       dlg.setAttribute("aria-labelledby", "inactTit");
       dlg.innerHTML = `<h3 id="inactTit" style="margin:0 0 8px">¿Sigues ahí?</h3>
         <p style="margin:0 0 6px">Por seguridad, tu sesión se cerrará en <b id="inactSeg">2:00</b> si no hay actividad.</p>
-        <p class="hint" style="margin:0 0 14px">Pulsa «Seguir conectado» para continuar con lo que estabas haciendo.</p>
+        <p class="hint" style="margin:0 0 14px">Pulsa «Seguir conectado» para continuar. Si se cierra, lo que escribiste queda como borrador y podrás recuperarlo al volver a entrar.</p>
         <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
           <button class="btn" type="button" data-inact="salir">Cerrar sesión</button>
           <button class="btn primary" type="button" data-inact="seguir">Seguir conectado</button></div>`;
@@ -288,7 +288,9 @@ let ultimaActividad = Date.now(), ultimoEnvio = Date.now(), acumulado = 0;
   setInterval(() => {
     if (cerrando) return;
     const inactivo = Date.now() - ultimaActividad;
-    if (inactivo >= limite) { cerrando = true; sb.auth.signOut().then(() => { window.cemepiSaliendo = true; location.reload(); }); return; }
+    if (inactivo >= limite) { cerrando = true;
+      /* Antes de cerrar, guarda el borrador de lo que se estaba escribiendo (se ofrece al volver a entrar) */
+      Promise.resolve(window.cemepiGuardarBorrador?.()).catch(() => {}).finally(() => sb.auth.signOut().then(() => { window.cemepiSaliendo = true; location.reload(); })); return; }
     if (inactivo >= limite - AVISO) {
       mostrar();
       const s = Math.max(0, Math.ceil((limite - inactivo) / 1000));
@@ -673,6 +675,16 @@ const cemepi = {
   async registrarExportacion(expId, finalidad, notas, documentos){ const { data, error } = await sb.rpc("registrar_exportacion_expediente", { p_expediente: expId, p_finalidad: finalidad, p_notas: notas, p_documentos: documentos }); if (error) fallo(error); return data; },
   async tablero(desde, hasta, sede){ const { data, error } = await sb.rpc("tablero_indicadores", { p_desde: desde, p_hasta: hasta, p_sede: sede || null }); if (error) fallo(error); return data || {}; },
   async avisos(){ const { data, error } = await sb.rpc("avisos_inicio"); if (error) fallo(error); return data || {}; },
+  /* Borradores automáticos (migración 037): solo de la propia persona; nunca son un guardado definitivo */
+  async borradores(){
+    const limite = new Date(Date.now() - 30 * 864e5).toISOString();
+    await sb.from("borradores").delete().lt("actualizado_en", limite);
+    const { data, error } = await sb.from("borradores").select("clave,vista,expediente_id,datos,actualizado_en").order("actualizado_en", { ascending: false }).limit(200);
+    if (error) fallo(error); return data || []; },
+  async guardarBorrador(clave, vista, expedienteId, datos){
+    const { data, error } = await sb.from("borradores").upsert({ clave, vista, expediente_id: expedienteId || null, datos }, { onConflict: "user_id,clave" }).select("actualizado_en").single();
+    if (error) fallo(error); return data?.actualizado_en; },
+  async borrarBorrador(clave){ const { error } = await sb.from("borradores").delete().eq("clave", clave); if (error) fallo(error); },
   /* Emisión de documentos: folio propio, bloqueo, anulación y versiones */
   async emitirDocumento(id){ const { data, error } = await sb.rpc("emitir_documento", { p_id: id }); if (error) fallo(error); avisar("documentos"); return data; },
   async anularDocumento(id, motivo){ const { error } = await sb.rpc("anular_documento", { p_id: id, p_motivo: motivo }); if (error) fallo(error); avisar("documentos"); },

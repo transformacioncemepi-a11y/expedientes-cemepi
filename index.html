@@ -293,6 +293,10 @@ td.res{white-space:pre-wrap;min-width:220px}
 .notice{font-size:12px;color:var(--muted);padding:12px 16px 16px max(16px,env(safe-area-inset-left,0px));border-top:1px solid var(--line)}
 .toast{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:9px 14px;border-radius:var(--r);font-size:13px;opacity:0;transform:translateY(6px);transition:.2s;pointer-events:none}
 .toast.on{opacity:1;transform:none}
+#borEstado{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:60;background:var(--surface);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:12.5px;box-shadow:0 2px 8px rgba(10,20,40,.08);max-width:calc(100vw - 32px)}
+#borEstado.err{color:#b42318;border-color:#f1b5ae}
+#borEstado{pointer-events:none;opacity:.96}
+@media (max-width:760px){#borEstado{bottom:auto;left:auto;right:12px;top:calc(62px + env(safe-area-inset-top,0px));font-size:12px;padding:4px 10px}}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 
 @media (max-width:800px){
@@ -1236,7 +1240,10 @@ const CAMPO_EDIT = 'textarea, select, input:not([type=search]):not([type=checkbo
 document.addEventListener("input", e=>{ const t=e.target;
   if (!t.closest?.("#detail") || t.closest(".filtros, [role=search], .tabs") || t.matches("[data-fq]") || !t.matches(CAMPO_EDIT)) return;
   if (t.tagName==="SELECT" && !t.closest("form, .card, .panel, .dlg, fieldset")) return;
-  S.editado=true; }, true);
+  S.editado=true; borProgramar(); }, true);
+document.addEventListener("change", e=>{ const t=e.target;
+  if (!t.closest?.("#detail") || !t.matches("input[type=checkbox], input[type=radio]") || t.closest(".filtros, [role=search], .tabs") || !t.closest("form, .card, .panel, fieldset") || !(t.id||t.name)) return;
+  S.editado=true; borProgramar(); }, true);
 const hayCambios = () => !!(S.editado || S.dirty || (S.gen?.contenido && !S.gen.guardado));
 window.cemepiHayCambios = hayCambios;
 window.addEventListener("beforeunload", e=>{ if (window.cemepiSaliendo || !hayCambios()) return; e.preventDefault(); e.returnValue=""; });
@@ -1244,9 +1251,96 @@ window.addEventListener("beforeunload", e=>{ if (window.cemepiSaliendo || !hayCa
 document.addEventListener("click", e=>{
   const b=e.target.closest?.(".nav-i, .crumbs button, .ttl, #gres [data-act], #gres button");
   if (!b || !hayCambios() || b.closest(".dlg-firma")) return;
-  if (confirm("Tienes cambios sin guardar en esta pantalla.\n\n¿Salir sin guardarlos?")) { S.editado=false; S.dirty=false; if (S.gen) S.gen.guardado=true; return; }
+  if (confirm("Tienes cambios sin guardar en esta pantalla.\n\n¿Salir sin guardarlos?")) { borDescartar(BOR.actual); S.editado=false; S.dirty=false; if (S.gen) S.gen.guardado=true; return; }
   e.preventDefault(); e.stopImmediatePropagation(); }, true);
-function render(){
+/* ---------- Borradores automáticos (migración 037) ----------
+   Mientras se escribe, guarda cada pocos segundos un borrador en la base de datos (solo lo ve quien lo escribe;
+   si está ligado a un expediente, solo mientras conserve el acceso clínico). Nunca en el navegador.
+   Un borrador NO es guardar, emitir, firmar, enviar ni aprobar. Se borra al guardar, cancelar o descartar;
+   sobrevive a recargas, cierres de ventana, fallas de conexión y al cierre de sesión por inactividad. */
+const BOR = { lista:new Map(), cargado:false, actual:null, timer:null, reintento:null, sesion:new Set(), ofrecido:new Set() };
+const borFmt = t => { try{ return new Date(t).toLocaleString("es-MX",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}); }catch{ return ""; } };
+function borCampos(){
+  return [...document.querySelectorAll("#detail textarea, #detail select, #detail input")].filter(el=>{
+    if (!(el.id||el.name) || el.disabled || el.readOnly || el.matches("[data-fq], [data-noborrador]")) return false;
+    if (["search","password","hidden","file","button","submit","reset","image"].includes((el.type||"").toLowerCase())) return false;
+    return !el.closest(".filtros, [role=search], .tabs, .crumbs, #borBanner, #borInicio");
+  });
+}
+const borK = el => el.id ? "#"+el.id : "@"+el.name;
+async function borHuella(txt){ const b=await crypto.subtle.digest("SHA-256", new TextEncoder().encode(txt)); return [...new Uint8Array(b)].slice(0,20).map(x=>x.toString(16).padStart(2,"0")).join(""); }
+function borContexto(){ const cs=borCampos(); if (!cs.length) return null;
+  const ks=[...new Set(cs.map(borK))].sort(), sel=S.sel&&S.view==="exp"?S.sel:"";
+  return { cs, base:`${S.view}|${sel}|${sel?S.tab:""}|${ks.join(",")}`, sel }; }
+function borEstado(txt, err){ let e=$("#borEstado");
+  if (!e){ e=document.createElement("div"); e.id="borEstado"; e.setAttribute("role","status"); e.setAttribute("aria-live","polite"); document.body.appendChild(e); }
+  e.textContent=txt||""; e.hidden=!txt; e.classList.toggle("err", !!err); }
+async function borGuardar(){
+  clearTimeout(BOR.timer); BOR.timer=null;
+  if (!S.api?.guardarBorrador || !S.editado) return;
+  const c=borContexto(); if (!c) return;
+  const campos={}; let algo=false;
+  for (const el of c.cs){ const k=borK(el), t=(el.type||"").toLowerCase();
+    if (t==="radio"){ if (el.checked) campos[k]=el.value; else if (!(k in campos)) campos[k]=null; continue; }
+    if (t==="checkbox"){ campos[k]=!!el.checked; continue; }
+    campos[k]=el.value; if (el.value && el.tagName!=="SELECT") algo=true; }
+  if (!algo) return;
+  const clave=await borHuella(c.base), titulo=[($("#topTitulo")?.textContent||"").trim(), ($("#detail h1")?.textContent||"").trim()].filter((x,i,a)=>x&&a.indexOf(x)===i).join(" · ").slice(0,120);
+  const datos={ campos, view:S.view, sel:c.sel, tab:c.sel?S.tab:"", titulo };
+  borEstado("Guardando borrador…");
+  try{ const t=await S.api.guardarBorrador(clave, `${S.view}${c.sel?" · "+S.tab:""}`.slice(0,160), c.sel||null, datos);
+    BOR.actual=clave; BOR.sesion.add(clave); BOR.lista.set(clave,{clave,datos,actualizado_en:t||new Date().toISOString()});
+    clearTimeout(BOR.reintento); borEstado(`Borrador guardado · ${new Date().toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"})}`); }
+  catch(e){ console.warn("borrador", e); borEstado("No se pudo guardar el borrador. Se volverá a intentar; no cierres esta ventana.", true);
+    clearTimeout(BOR.reintento); BOR.reintento=setTimeout(()=>{ if (S.editado) borGuardar(); }, 15000); }
+}
+window.cemepiGuardarBorrador = () => S.editado ? borGuardar() : Promise.resolve();
+function borProgramar(){ clearTimeout(BOR.timer); BOR.timer=setTimeout(borGuardar, 2500); borEstado("Cambios sin guardar"); }
+document.addEventListener("visibilitychange", ()=>{ if (document.hidden && S.editado) borGuardar(); });
+function borDescartar(clave){ if (!clave) return; BOR.lista.delete(clave); BOR.sesion.delete(clave); if (BOR.actual===clave) BOR.actual=null;
+  S.api?.borrarBorrador?.(clave).catch(e=>console.warn("borrador", e)); }
+async function borCargar(){ if (BOR.cargado || !S.api?.borradores) return; BOR.cargado=true;
+  try{ (await S.api.borradores()).forEach(b=>BOR.lista.set(b.clave,b)); }catch(e){ console.warn("borradores", e); }
+  borDespues(); }
+/* Al redibujar: si se estaba escribiendo, la vista se guardó, se canceló o se descartó → el borrador ya no hace falta */
+function borAntes(){ clearTimeout(BOR.timer); BOR.timer=null; if (S.editado && BOR.actual) borDescartar(BOR.actual); BOR.actual=null; borEstado(""); }
+async function borDespues(){
+  if (!BOR.cargado){ if (S.api) borCargar(); return; }
+  if (S.view==="inicio" && !S.sel) return borInicio();
+  const c=borContexto(); if (!c) return; const clave=await borHuella(c.base), b=BOR.lista.get(clave);
+  if (!b || BOR.sesion.has(clave) || $("#borBanner")) return;
+  if (borContexto()?.base!==c.base) return;   /* la vista cambió mientras se calculaba */
+  const div=document.createElement("div"); div.id="borBanner"; div.className="banner"; div.setAttribute("role","status");
+  div.innerHTML=`<b>Tienes un borrador sin guardar</b> de esta pantalla (${esc(borFmt(b.actualizado_en))}). <button class="btn sm primary" type="button" data-bor="recuperar">Recuperar</button> <button class="btn sm" type="button" data-bor="descartar">Descartar</button>`;
+  div.dataset.clave=clave;
+  const ph=$("#detail .phead"); ph ? ph.insertAdjacentElement("afterend", div) : $("#detail").prepend(div);
+}
+function borInicio(){
+  const xs=[...BOR.lista.values()].filter(b=>!BOR.sesion.has(b.clave)); $("#borInicio")?.remove(); if (!xs.length) return;
+  const box=document.createElement("section"); box.id="borInicio"; box.className="card"; box.style.margin="0 0 14px";
+  box.innerHTML=`<h3 style="margin:0 0 6px">Borradores sin terminar</h3><p class="hint" style="margin:0 0 8px">Se guardaron solos mientras escribías. Abre la pantalla, vuelve a abrir el mismo formulario y pulsa <b>Recuperar</b>. Se borran solos a los 30 días.</p>
+    <div class="list-plain">${xs.slice(0,10).map(b=>`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 0;border-top:1px solid var(--line)">
+      <span style="flex:1;min-width:180px"><b class="sens">${esc(b.datos?.titulo||"Formulario")}</b><br><small class="hint">${esc(borFmt(b.actualizado_en))}</small></span>
+      <button class="btn sm" type="button" data-bor="ir" data-clave="${esc(b.clave)}">Abrir</button><button class="btn sm" type="button" data-bor="descartar" data-clave="${esc(b.clave)}">Descartar</button></div>`).join("")}</div>`;
+  const ph=$("#detail .phead"); ph ? ph.insertAdjacentElement("afterend", box) : $("#detail").prepend(box);
+}
+document.addEventListener("click", e=>{ const b=e.target.closest?.("[data-bor]"); if (!b) return;
+  const clave=b.dataset.clave||b.closest("#borBanner")?.dataset.clave, x=BOR.lista.get(clave);
+  if (b.dataset.bor==="descartar"){ if (!arm(b,"bord"+clave,"¿Descartar el borrador?")) return; armed=null; borDescartar(clave); b.closest("#borBanner")?.remove(); if (S.view==="inicio") borInicio(); toast("Borrador descartado"); return; }
+  if (b.dataset.bor==="ir" && x){ const d=x.datos||{};
+    if (d.sel){ if (!S.pacientes.has(d.sel)){ toast("Ya no tienes acceso a ese expediente."); return; } select(d.sel); S.tab=d.tab||"notas"; render(); }
+    else { S.sel=null; S.view=d.view||"inicio"; render(); } return; }
+  if (b.dataset.bor==="recuperar" && x){
+    const camposDom=borCampos(), porK=new Map(); camposDom.forEach(el=>{ const k=borK(el); porK.set(k,[...(porK.get(k)||[]),el]); });
+    const tocados=[];
+    for (const [k,v] of Object.entries(x.datos?.campos||{})){ for (const el of porK.get(k)||[]){ const t=(el.type||"").toLowerCase();
+      if (t==="radio") el.checked = el.value===v; else if (t==="checkbox") el.checked=!!v; else el.value = v??""; tocados.push(el); } }
+    for (const el of tocados){ if (!el.isConnected) break; el.dispatchEvent(new Event("input",{bubbles:true})); if (el.tagName==="SELECT"||["checkbox","radio"].includes(el.type)) el.dispatchEvent(new Event("change",{bubbles:true})); }
+    BOR.actual=clave; BOR.sesion.add(clave); S.editado=true; $("#borBanner")?.remove();
+    toast("Borrador recuperado. Revísalo y guarda cuando esté listo."); borProgramar(); }
+});
+function render(){ borAntes(); renderVista(); borDespues(); }
+function renderVista(){
   const d=$("#detail"); S.dirty=false; S.stale=false; S.editado=false; marcarNav(); document.body.classList.remove("menu-abierto");
   const p=S.pacientes.get(S.sel);
   $("#app").classList.toggle("open", !!p || ["perfil","terapeutas","usuarios","sedes","entidades","areas","puestos","vacantes","colaboradores","supervision","organigrama","seguridad","orgresumen","indicadores","uso","reglamento","contratos","permisos","documentacion","ayuda","tablero","miasis","asistencia","docs","incorporacion","miinc"].includes(S.view));
