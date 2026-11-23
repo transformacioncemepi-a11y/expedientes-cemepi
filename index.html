@@ -2545,7 +2545,7 @@ async function dxPdfFirma(d){
       linea(`${p.nombre||dxNomPerfil(p.perfil_id)}${p.cedula?" · Cédula "+p.cedula:""}`,{bold:1}); linea(`${p.papel} · Firmó el ${fmtFH(p.firmado_en)} (hora del servidor) con su contraseña`,{size:9});
       linea(`Huella revisada: ${p.sha256_presentado||"—"}`,{size:7,color:gris}); y-=12; }
     y-=4; linea(FIRMA_AVISO,{size:8,color:gris}); linea("La autenticidad se comprueba recalculando la huella SHA-256 del archivo y comparándola con la registrada en la app de CEMEPI.",{size:8,color:gris});
-    const nl=envolver(limpiarPdf(NOTA_ACLARATORIA),font,7,CW); let yy=16+(nl.length-1)*8.6; for (const l of nl){ pg.drawText(l,{x:M,y:yy,size:7,font,color:gris}); yy-=8.6; }
+    /* La nota aclaratoria va solo en los documentos del expediente (decisión del Director, 2026-11-22) */
   }
   const bytes=await pdf.save(), dl=await window.claude?.use?.("downloads");
   await dl.save({filename:`${slug(d.nombre)}-${firmado?"firmado":"BORRADOR"}.pdf`, data:new Blob([bytes],{type:"application/pdf"})});
@@ -2806,7 +2806,7 @@ async function incPdfBase(titulo, cuerpo, firmas){ if (!(await libLista("pdf")))
   lin("Centro Mexicano de Plenitud Humana, S.C. (CEMEPI)",{bold:1,center:1}); lin(CEMEPI_CONTACTO,{size:8,center:1,color:gris}); y-=14;
   lin(`Ciudad de México, a ${new Date().toLocaleDateString("es-MX",{day:"numeric",month:"long",year:"numeric"})}`,{right:1}); y-=14; lin(titulo,{bold:1,center:1,size:13}); y-=8;
   cuerpo(lin, ()=>{ y-=6; }); y-=34; for (const [n,c] of firmas){ if (y<M+80) nueva(); lin("______________________________",{center:1}); lin(n,{bold:1,center:1}); if (c) lin(c,{center:1}); y-=24; }
-  const nl=envolver(limpiarPdf(NOTA_ACLARATORIA),f,7,CW); for (const p of pdf.getPages()){ let yy=24+(nl.length-1)*8.6; for (const l of nl){ p.drawText(l,{x:M,y:yy,size:7,font:f,color:gris}); yy-=8.6; } }
+  /* Sin nota aclaratoria: solo va en los documentos del expediente (decisión del Director, 2026-11-22) */
   return await pdf.save(); }
 async function incCartaPdf(i){ const c=ixCol(i.colaborador_id);
   const bytes=await incPdfBase("CARTA DE CONFIRMACIÓN DE INCORPORACIÓN",(lin,sep)=>{ lin(c?.nombre||"",{bold:1}); lin("PRESENTE"); sep();
@@ -3949,7 +3949,7 @@ function manualHtml(k){
     ${M.caps.map((c,i)=>`<details class="guia"${i===0?" open":""}><summary>${i+1}. ${esc(c.t)}</summary><ol>${c.p.map(x=>`<li>${esc(x)}</li>`).join("")}</ol></details>`).join("")}
     ${ver?`<span class="status">Como Dirección puedes ver y descargar el manual de cada rol para capacitar al personal.</span>`:""}</section>`;
 }
-/* Word del manual: mismo formato institucional (Arial 11, justificado, nota aclaratoria al pie) */
+/* Word del manual: mismo formato institucional (Arial 11, justificado); sin nota aclaratoria (solo va en documentos del expediente) */
 async function manualWord(mk){
   const M=MANUALES[mk]; if (!M) return;
   if (!(await libLista("zip"))){ toast("No se pudo preparar el archivo de Word. Recarga la página."); return; }
@@ -3960,7 +3960,7 @@ async function manualWord(mk){
     + M.caps.map((c,i)=>P(R(`${i+1}. ${c.t}`,{b:1,sz:22,color:"0560BD"}),{before:220,after:80,keep:1})
         + c.p.map((x,j)=>P(R(`${i+1}.${j+1}  ${x}`),{after:100})).join("")).join("")
     + P(R(`Plataforma: ${location.origin}${location.pathname}  ·  Dudas: Ayuda dentro de la app o la Dirección de CEMEPI.`,{color:"55688A"}),{before:280});
-  try{ const blob = await docxBlob("Nov. 2026", xml, [], "Versión"); await dl.save({filename:`Instructivo-${slug(M.n)}-CEMEPI.docx`, data:blob}); toast("Instructivo descargado."); }
+  try{ const blob = await docxBlob("Nov. 2026", xml, [], "Versión", true);   /* Sin nota aclaratoria: solo va en documentos del expediente (decisión del Director, 2026-11-22) */ await dl.save({filename:`Instructivo-${slug(M.n)}-CEMEPI.docx`, data:blob}); toast("Instructivo descargado."); }
   catch(e){ if (e?.code!=="declined") toast("No se pudo descargar el instructivo."); }
 }
 function ayudaHtml(){
