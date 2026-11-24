@@ -34,6 +34,23 @@ const err = e => {
   const permiso = c === "42501" || /row-level security|permission/i.test(m);
   return { code: (permiso || c.startsWith("23")) ? "invalid_argument" : "unavailable", message: m };
 };
+/* ---------- Edición simultánea (migración 038): número de versión de edición por registro ----------
+   Se recuerda la versión con la que se abrió cada registro. Mientras la persona edita, no se actualiza
+   con las consultas periódicas, para que al guardar la base detecte si otra persona guardó antes. */
+const VER = new Map(), VER_TABLAS = new Set(["expedientes","documentos","terapeutas","contratos","colaboradores","sedes","entidades_fiscales","areas","puestos","posiciones"]);
+const verAnotar = (tabla, rows) => { if (!VER_TABLAS.has(tabla)) return rows;
+  const congelado = !!window.cemepiCongelarVersiones?.();
+  for (const r of rows || []) if (r?.id && r.version_edicion != null){ const k = tabla + ":" + r.id; if (!(congelado && VER.has(k))) VER.set(k, r.version_edicion); }
+  return rows; };
+const CONFLICTO_MSG = "Otra persona guardó cambios en este registro mientras lo editabas. Para no borrar su trabajo, tus cambios NO se guardaron.";
+const esConflicto = e => /CONFLICTO_EDICION/.test(e?.message || "");
+function conflicto(){ window.dispatchEvent(new CustomEvent("cemepi:conflicto")); throw { code: "conflicto", message: CONFLICTO_MSG }; }
+async function actualizarV(tabla, id, row, crudo){
+  const v = VER.get(tabla + ":" + id), r = v != null ? { ...row, version_edicion: v } : row;
+  const { data, error } = await sb.from(tabla).update(r).eq("id", id).select("*");
+  if (error){ if (esConflicto(error)) conflicto(); if (crudo) throw error; fallo(error); }
+  if (data?.[0]?.version_edicion != null) VER.set(tabla + ":" + id, data[0].version_edicion);
+  return data || []; }
 const fecha = v => v ? v : null;
 const ms = t => t ? Date.parse(t) : 0;
 
@@ -78,19 +95,20 @@ function refDoc(col, id){
   return { id, path: `${col}/${id}`,
     async set(d){ const { error } = await sb.from(m.tabla).upsert({ id, ...m.to(d) }); if (error) throw err(error); avisar(m.tabla); },
     async update(d){ const row = m.to(d);
-      if (Object.keys(row).length){ const { data, error } = await sb.from(m.tabla).update(row).eq("id", id).select("id");
-        if (error) throw err(error); if (!data?.length) throw { code: "invalid_argument", message: "Sin permiso para modificar este registro." }; }
+      if (Object.keys(row).length){ let data;
+        try{ data = await actualizarV(m.tabla, id, row, true); }catch(e){ if (e?.code === "conflicto") throw e; throw err(e); }
+        if (!data?.length) throw { code: "invalid_argument", message: "Sin permiso para modificar este registro." }; }
       avisar(m.tabla); },
     async delete(){ const { data, error } = await sb.from(m.tabla).delete().eq("id", id).select("id");
       if (error) throw err(error); if (!data?.length) throw { code: "invalid_argument", message: "Sin permiso para eliminar este registro." }; avisar(m.tabla); },
-    async get(){ const { data, error } = await sb.from(m.tabla).select("*").eq("id", id).maybeSingle(); if (error) throw err(error);
+    async get(){ const { data, error } = await sb.from(m.tabla).select("*").eq("id", id).maybeSingle(); if (error) throw err(error); if (data) verAnotar(m.tabla, [data]);
       return { id, exists: !!data, data: () => data ? m.from(data) : undefined, metadata: { fromCache: false } }; } };
 }
 function consulta(col, filtro){
   const m = MAP[col]; if (!m) throw new TypeError(`Colección desconocida: ${col}`);
   const ejecutar = async () => { let q = sb.from(m.tabla).select("*");
     if (filtro) q = q.eq(m.campo[filtro.campo] || filtro.campo, filtro.valor);
-    const { data, error } = await q.limit(5000); if (error) throw err(error); return snap(data || [], m); };
+    const { data, error } = await q.limit(5000); if (error) throw err(error); return snap(verAnotar(m.tabla, data || []), m); };
   return {
     where: (campo, _op, valor) => consulta(col, { campo, valor }),
     get: ejecutar,
@@ -350,7 +368,7 @@ const cemepi = {
   async sedes(todas){ let q = sb.from("sedes").select("*").order("nombre"); if (!todas) q = q.eq("activa", true);
     const { data, error } = await q; if (error) fallo(error); return data || []; },
   async guardarSede(s){ const row = { nombre: s.nombre.trim(), clave: s.clave.trim().toUpperCase(), activa: s.activa !== false };
-    const { error } = s.id ? await sb.from("sedes").update(row).eq("id", s.id) : await sb.from("sedes").insert(row); if (error) fallo(error); },
+    if (s.id){ await actualizarV("sedes", s.id, row); return; } const { error } = await sb.from("sedes").insert(row); if (error) fallo(error); },
   /* ---------- Módulo 03 · Asistencia y jornadas (todo se valida en la base: RLS + funciones) ---------- */
   async asisDatos(desde, hasta){
     const q = await Promise.all([
@@ -564,11 +582,12 @@ const cemepi = {
       sb.from("puestos").select("*").order("codigo"),
       sb.from("posiciones").select("*").order("created_at"),
       sb.rpc("sedes_autorizadas", { p_modulo: "organizacion" }),
-      sb.from("colaboradores").select("id,nombre,perfil_id,sede_principal_id,tipo_funcion,perfil_profesional,fecha_incorporacion,estatus").order("nombre"),
+      sb.from("colaboradores").select("id,nombre,perfil_id,sede_principal_id,tipo_funcion,perfil_profesional,fecha_incorporacion,estatus,version_edicion").order("nombre"),
       sb.from("asignaciones").select("id,colaborador_id,posicion_id,sede_id,principal,desde,hasta"),
       sb.from("relaciones").select("*").order("desde", { ascending: false })]);
     for (const r of q) if (r.error) fallo(r.error);
     const [sd, se, en, ed, ar, pu, po, au, co, asg, rel] = q.map(r => r.data || []);
+    verAnotar("sedes", sd); verAnotar("entidades_fiscales", en); verAnotar("areas", ar); verAnotar("puestos", pu); verAnotar("posiciones", po); verAnotar("colaboradores", co);
     const aut = au.map(x => typeof x === "string" ? x : x.sedes_autorizadas);
     const niveles = {};
     await Promise.all(aut.map(async id => { const { data } = await sb.rpc("nivel_acceso", { p_modulo: "organizacion", p_sede: id }); niveles[id] = data || 0; }));
@@ -576,7 +595,7 @@ const cemepi = {
   async guardarColaborador(c){
     const row = { estatus: c.estatus, fecha_incorporacion: c.fecha_incorporacion || null, perfil_profesional: c.perfil_profesional || null, tipo_funcion: c.tipo_funcion || null };
     if (c.sede_principal_id) row.sede_principal_id = c.sede_principal_id;
-    const { error } = await sb.from("colaboradores").update(row).eq("id", c.id); if (error) fallo(error); },
+    await actualizarV("colaboradores", c.id, row); },
   async guardarRelacion(r){
     const row = { tipo: r.tipo, de_id: r.de_id, a_id: r.a_id, tema: r.tema || null, desde: r.desde || undefined, hasta: r.hasta || null, motivo: r.motivo || null };
     const { error } = await sb.from("relaciones").insert(row); if (error) fallo(error); },
@@ -590,7 +609,7 @@ const cemepi = {
     if (s.clave != null) row.clave = s.clave.trim().toUpperCase();
     if (s.activa != null) row.activa = s.activa !== false;
     let id = s.id;
-    if (id){ const { error } = await sb.from("sedes").update(row).eq("id", id); if (error) fallo(error); }
+    if (id){ await actualizarV("sedes", id, row); }
     else { const { data, error } = await sb.from("sedes").insert(row).select("id").single(); if (error) fallo(error); id = data.id; }
     if (s.entidad_id && s.entidadCambio){ const { error } = await sb.rpc("cambiar_entidad_sede", { p_sede: id, p_entidad: s.entidad_id, p_motivo: s.motivo || "Asignación de entidad fiscal" }); if (error) fallo(error); }
     return id; },
@@ -598,7 +617,7 @@ const cemepi = {
     const row = { nombre_corto: e.nombre_corto.trim(), tipo_persona: e.tipo_persona || null, estatus: e.estatus || "por_validar",
       vigente_desde: e.vigente_desde || null, vigente_hasta: e.vigente_hasta || null, representante_legal: e.representante_legal || null };
     let id = e.id;
-    if (id){ const { error } = await sb.from("entidades_fiscales").update(row).eq("id", id); if (error) fallo(error); }
+    if (id){ await actualizarV("entidades_fiscales", id, row); }
     else { const { data, error } = await sb.from("entidades_fiscales").insert(row).select("id").single(); if (error) fallo(error); id = data.id; }
     const d = { entidad_id: id, razon_social: e.razon_social || null, rfc: e.rfc ? e.rfc.trim().toUpperCase() : null,
       regimen_fiscal: e.regimen_fiscal || null, domicilio_fiscal: e.domicilio_fiscal || null, updated_at: new Date().toISOString() };
@@ -606,15 +625,15 @@ const cemepi = {
     return id; },
   async guardarArea(a){
     const row = { nombre: a.nombre.trim(), proposito: a.proposito || null, funciones: a.funciones || null, estatus: a.estatus || "propuesta", responsable_id: a.responsable_id || null };
-    const { error } = a.id ? await sb.from("areas").update(row).eq("id", a.id) : await sb.from("areas").insert(row); if (error) fallo(error); },
+    if (a.id){ await actualizarV("areas", a.id, row); return; } const { error } = await sb.from("areas").insert(row); if (error) fallo(error); },
   async guardarPuesto(p){
     const campos = ["proposito","responsabilidades","actividades_diarias","actividades_semanales","competencias","formacion","indicadores","limites_autoridad","herramientas","capacitacion"];
     const row = { codigo: p.codigo.trim().toUpperCase(), nombre: p.nombre.trim(), area_id: p.area_id || null, estatus: p.estatus || "propuesta" };
     campos.forEach(k => { row[k] = p[k] || null; });
-    const { error } = p.id ? await sb.from("puestos").update(row).eq("id", p.id) : await sb.from("puestos").insert(row); if (error) fallo(error); },
+    if (p.id){ await actualizarV("puestos", p.id, row); return; } const { error } = await sb.from("puestos").insert(row); if (error) fallo(error); },
   async guardarPosicion(p){
     const row = { puesto_id: p.puesto_id, sede_id: p.sede_id, estado: p.estado || "vacante", prioridad: p.prioridad || null, abierta_en: p.abierta_en || null };
-    if (p.id){ const { error } = await sb.from("posiciones").update(row).eq("id", p.id); if (error) fallo(error); return p.id; }
+    if (p.id){ await actualizarV("posiciones", p.id, row); return p.id; }
     const { data, error } = await sb.from("posiciones").insert(row).select("id").single(); if (error) fallo(error); return data.id; },
   async usuarios(){ const { data, error } = await sb.from("perfiles").select("id,email,nombre,cedula,telefono,sede,rol,rol_solicitado,modalidad,estado,created_at,autorizado_en").order("created_at", { ascending: false });
     if (error) fallo(error); return data || []; },
@@ -632,9 +651,9 @@ const cemepi = {
   /* Plantillas vigentes que la persona puede ver (la de su rol; la Dirección ve ambas), por tipo */
   async plantillasContrato(){ const { data, error } = await sb.from("contrato_plantilla").select("id,nombre,version,tipo,parte,orden_nombre,cuerpo").eq("vigente", true).order("creado", { ascending: false });
     if (error) fallo(error); const m = {}; for (const r of data || []) if (!m[r.tipo]) m[r.tipo] = r; return m; },
-  async contratos(){ const { data, error } = await sb.from("contratos").select("*"); if (error) fallo(error); return data || []; },
+  async contratos(){ const { data, error } = await sb.from("contratos").select("*"); if (error) fallo(error); return verAnotar("contratos", data || []); },
   async crearContrato(datos){ const { data, error } = await sb.from("contratos").insert({ datos }).select().single(); if (error) fallo(error); return data; },
-  async guardarContrato(id, cambios){ const { data, error } = await sb.from("contratos").update(cambios).eq("id", id).select().single(); if (error) fallo(error); return data; },
+  async guardarContrato(id, cambios){ const rows = await actualizarV("contratos", id, cambios); if (!rows.length) fallo({ message: "Sin permiso para modificar este contrato." }); return rows[0]; },
   async portalExpediente(expId){
     const [a, r] = await Promise.all([
       sb.from("accesos_consultante").select("expediente_id,creado_en,vence,revocado,intentos_fallidos,bloqueado_hasta,accesos,ultimo_acceso").eq("expediente_id", expId).maybeSingle(),

@@ -1246,6 +1246,25 @@ document.addEventListener("change", e=>{ const t=e.target;
   S.editado=true; borProgramar(); }, true);
 const hayCambios = () => !!(S.editado || S.dirty || (S.gen?.contenido && !S.gen.guardado));
 window.cemepiHayCambios = hayCambios;
+/* Edición simultánea (migración 038): mientras hay un formulario con cambios o un documento abierto,
+   el puente no actualiza la versión recordada del registro. */
+window.cemepiCongelarVersiones = () => hayCambios() || !!S.gen;
+window.addEventListener("cemepi:conflicto", ()=>{
+  BOR.conflicto=true; if (S.editado || S.dirty || S.gen) { S.editado=true; borGuardar(); }   /* guarda lo escrito como borrador antes de cualquier redibujo */
+  let dlg=$("#dlgConflicto");
+  if (!dlg){ dlg=document.createElement("dialog"); dlg.id="dlgConflicto"; dlg.className="dlg-firma"; dlg.setAttribute("aria-labelledby","cfTit");
+    dlg.innerHTML=`<h3 id="cfTit" style="margin:0 0 8px">Otra persona guardó cambios</h3>
+      <p style="margin:0 0 8px">Mientras editabas, otra persona guardó cambios en este mismo registro. Para no borrar su trabajo, <b>tus cambios no se guardaron</b>.</p>
+      <p class="hint" style="margin:0 0 14px">Lo que escribiste quedó como <b>borrador</b>. Pulsa «Ver la versión actual»: la pantalla se recarga con lo que guardó la otra persona; vuelve a abrir el mismo formulario y usa «Recuperar» para revisar y volver a aplicar tus cambios.</p>
+      <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+        <button class="btn" type="button" data-cf="quedar">Quedarme aquí</button>
+        <button class="btn primary" type="button" data-cf="recargar">Ver la versión actual</button></div>`;
+    dlg.addEventListener("click", async ev=>{ const a=ev.target.closest("[data-cf]")?.dataset.cf; if (!a) return;
+      if (a==="quedar"){ dlg.close(); BOR.conflicto=false; return; }
+      try{ await window.cemepiGuardarBorrador(); }catch{} window.cemepiSaliendo=true; location.reload(); });
+    document.body.appendChild(dlg); }
+  if (!dlg.open) dlg.showModal();
+});
 window.addEventListener("beforeunload", e=>{ if (window.cemepiSaliendo || !hayCambios()) return; e.preventDefault(); e.returnValue=""; });
 /* Al cambiar de pantalla con el menú, la ruta o el título, pregunta antes de perder lo escrito. */
 document.addEventListener("click", e=>{
@@ -1303,7 +1322,7 @@ async function borCargar(){ if (BOR.cargado || !S.api?.borradores) return; BOR.c
   try{ (await S.api.borradores()).forEach(b=>BOR.lista.set(b.clave,b)); }catch(e){ console.warn("borradores", e); }
   borDespues(); }
 /* Al redibujar: si se estaba escribiendo, la vista se guardó, se canceló o se descartó → el borrador ya no hace falta */
-function borAntes(){ clearTimeout(BOR.timer); BOR.timer=null; if (S.editado && BOR.actual) borDescartar(BOR.actual); BOR.actual=null; borEstado(""); }
+function borAntes(){ clearTimeout(BOR.timer); BOR.timer=null; if (S.editado && BOR.actual && !BOR.conflicto) borDescartar(BOR.actual); BOR.conflicto=false; BOR.actual=null; borEstado(""); }
 async function borDespues(){
   if (!BOR.cargado){ if (S.api) borCargar(); return; }
   if (S.view==="inicio" && !S.sel) return borInicio();
