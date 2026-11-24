@@ -25,7 +25,7 @@ const sb = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { persistS
 
 /* ---------- Avisos de cambio: cada vista se vuelve a consultar al guardar ---------- */
 const subs = new Map();
-const avisar = tabla => (subs.get(tabla) || new Set()).forEach(f => f());
+const avisar = tabla => (subs.get(tabla) || new Set()).forEach(f => f(true));   /* tras guardar: consulta completa, sin esperar la huella */
 window.addEventListener("focus", () => subs.forEach(s => s.forEach(f => f())));
 setInterval(() => { if (!document.hidden) subs.forEach(s => s.forEach(f => f())); }, 60000);
 
@@ -112,12 +112,22 @@ function consulta(col, filtro){
   return {
     where: (campo, _op, valor) => consulta(col, { campo, valor }),
     get: ejecutar,
-    onSnapshot(next, onErr){ let vivo = true, previo = null;
+    onSnapshot(next, onErr){ let vivo = true, previo = null, huellaPrev = null;
+      /* Actualización ligera (migración 041): antes de descargar todo, pide una huella corta de la tabla
+         (md5 + conteo de lo que la persona puede ver). Si no cambió, no descarga nada. Si la función
+         no existe o falla, descarga como antes. */
+      const huella = async () => { const { data, error } = await sb.rpc("huella_tabla", { p_tabla: m.tabla,
+          p_campo: filtro ? (m.campo[filtro.campo] || filtro.campo) : null, p_valor: filtro ? filtro.valor : null });
+        return error ? null : data; };
       /* Solo avisa a la pantalla si los datos cambiaron: la consulta periódica (cada minuto y al volver a la
          ventana) no debe redibujar la vista ni borrar lo que la persona está escribiendo. */
-      const f = () => ejecutar().then(s => { if (!vivo) return;
-        const huella = JSON.stringify(s.docs.map(d => [d.id, d.data()]));
-        if (huella === previo) return; previo = huella; next(s); }).catch(e => vivo && onErr && onErr(e));
+      const f = async (forzar) => { let h = null;
+        if (huellaPrev !== null || !forzar) h = await huella().catch(() => null);
+        if (!forzar && h && h === huellaPrev) return;
+        if (h) huellaPrev = h;
+        return ejecutar().then(s => { if (!vivo) return;
+        const firma = JSON.stringify(s.docs.map(d => [d.id, d.data()]));
+        if (firma === previo) return; previo = firma; next(s); }).catch(e => vivo && onErr && onErr(e)); };
       if (!subs.has(m.tabla)) subs.set(m.tabla, new Set()); subs.get(m.tabla).add(f); f();
       return () => { vivo = false; subs.get(m.tabla).delete(f); }; },
     doc: id => refDoc(col, id || crypto.randomUUID()),
