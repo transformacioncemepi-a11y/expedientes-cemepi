@@ -1588,11 +1588,12 @@ function terapeutasHtml(){
   const form = ed ? `<form id="frmTer" class="note">
       <div class="note-h"><h3>${ed.id?"Editar terapeuta":"Agregar terapeuta"}</h3></div>
       <div class="datos">
-        <div class="fld" style="grid-column:1/-1"><label for="tr-nombre">Nombre completo *</label><input id="tr-nombre" data-k="nombre" type="text" value="${esc(ed.nombre||"")}" placeholder="Psic. Nombre Apellido Apellido"></div>
-        <div class="fld"><label for="tr-cedula">Cédula profesional</label><input id="tr-cedula" data-k="cedula" type="text" value="${esc(ed.cedula||"")}"></div>
-        <div class="fld"><label for="tr-sede">Sede</label><select id="tr-sede" data-k="sede">${ES_SEDE()?"":`<option value="">Sin sede</option>`}${sedesAsignables().map(s=>`<option value="${s}"${s===ed.sede?" selected":""}>${s} (${SEDE_COD[s]})</option>`).join("")}</select></div>
+        ${ed.uid?`<p class="hint" style="grid-column:1/-1;margin:0">Esta persona tiene cuenta: su <b>nombre, cédula y sede</b> se toman de su cuenta y se cambian en <b>Usuarios y permisos → Altas y datos de cuentas</b>. Aquí solo puedes cambiar la cuenta enlazada.</p>`:""}
+        <div class="fld" style="grid-column:1/-1"><label for="tr-nombre">Nombre completo *</label><input id="tr-nombre" data-k="nombre" type="text" value="${esc(ed.nombre||"")}" placeholder="Psic. Nombre Apellido Apellido"${ed.uid?" disabled":""}></div>
+        <div class="fld"><label for="tr-cedula">Cédula profesional</label><input id="tr-cedula" data-k="cedula" type="text" value="${esc(ed.cedula||"")}"${ed.uid?" disabled":""}></div>
+        <div class="fld"><label for="tr-sede">Sede</label><select id="tr-sede" data-k="sede"${ed.uid?" disabled":""}>${ES_SEDE()?"":`<option value="">Sin sede</option>`}${sedesAsignables().map(s=>`<option value="${s}"${s===ed.sede?" selected":""}>${s} (${SEDE_COD[s]})</option>`).join("")}</select></div>
         <div class="fld" style="grid-column:1/-1"><label for="tr-uid">Cuenta de acceso a la app</label><select id="tr-uid" data-k="uid"><option value="">Sin cuenta (no usa la app)</option>${cuentasLibres.map(([id,c])=>`<option value="${esc(id)}"${id===ed.uid?" selected":""}>${esc(c.email||id)}</option>`).join("")}</select>
-          <small class="hint">Al vincular su cuenta, el terapeuta verá solo los expedientes que tenga asignados. Las cuentas se crean en Supabase → Authentication → Users.</small></div>
+          <small class="hint">Al vincular su cuenta, el terapeuta verá solo los expedientes que tenga asignados, conserva los que ya tiene y su nombre, cédula y sede pasan a tomarse de su cuenta.</small></div>
       </div>
       <div class="actions"><button class="btn primary" type="button" data-act="saveTer">Guardar terapeuta</button><button class="btn" type="button" data-act="cancelTer">Cancelar</button></div>
     </form>` : "";
@@ -4795,8 +4796,10 @@ document.addEventListener("click", async ev => {
   if (a==="editTer"){ const t=S.terapeutas.get(b.dataset.id); if(!t) return; S.terEdit={...t}; render(); return; }
   if (a==="cancelTer"){ S.terEdit=null; return render(); }
   if (a==="saveTer"){
-    const v={}; document.querySelectorAll("#frmTer [data-k]").forEach(el=>v[el.dataset.k]=el.value.trim());
-    if (v.nombre.length<5){ toast("Escribe el nombre completo del terapeuta."); $("#tr-nombre").focus(); return; }
+    const v={}; document.querySelectorAll("#frmTer [data-k]").forEach(el=>{ if (!el.disabled) v[el.dataset.k]=el.value.trim(); });
+    if (!("nombre" in v)) v.nombre=S.terEdit.nombre||"";   /* con cuenta: el nombre viene de la cuenta */
+    if (S.terEdit.uid){ delete v.nombre; delete v.cedula; delete v.sede; }
+    if (!S.terEdit.uid && (v.nombre||"").length<5){ toast("Escribe el nombre completo del terapeuta."); $("#tr-nombre").focus(); return; }
     try{ if (S.terEdit.id) await S.db.doc("terapeutas/"+S.terEdit.id).update({...v, actualizado:Date.now()});
          else await S.db.collection("terapeutas").add({uid:"", ...v, creado:Date.now(), creadoPor:S.uid||""});
          S.terEdit=null; toast("Terapeuta guardado"); render(); }
