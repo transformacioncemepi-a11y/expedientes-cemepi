@@ -293,6 +293,7 @@ td.res{white-space:pre-wrap;min-width:220px}
 .notice{font-size:12px;color:var(--muted);padding:12px 16px 16px max(16px,env(safe-area-inset-left,0px));border-top:1px solid var(--line)}
 .toast{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:9px 14px;border-radius:var(--r);font-size:13px;opacity:0;transform:translateY(6px);transition:.2s;pointer-events:none}
 .toast.on{opacity:1;transform:none}
+.rev-lista{display:grid;gap:10px}.rev-i{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface)}.rev-t{line-height:1.45}.rev-a{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}.rev-a input{flex:1;min-width:200px}
 #borEstado{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:60;background:var(--surface);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:12.5px;box-shadow:0 2px 8px rgba(10,20,40,.08);max-width:calc(100vw - 32px)}
 #borEstado.err{color:#b42318;border-color:#f1b5ae}
 #borEstado{pointer-events:none;opacity:.96}
@@ -1238,7 +1239,7 @@ function marcarNav(){
    y se apaga al redibujar la vista (guardar, cancelar o cambiar de pantalla). */
 const CAMPO_EDIT = 'textarea, select, input:not([type=search]):not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=file])';
 document.addEventListener("input", e=>{ const t=e.target;
-  if (!t.closest?.("#detail") || t.closest(".filtros, [role=search], .tabs") || t.matches("[data-fq]") || !t.matches(CAMPO_EDIT)) return;
+  if (!t.closest?.("#detail") || t.closest(".filtros, [role=search], .tabs") || t.matches("[data-fq], [data-noborrador]") || !t.matches(CAMPO_EDIT)) return;
   if (t.tagName==="SELECT" && !t.closest("form, .card, .panel, .dlg, fieldset")) return;
   S.editado=true; borProgramar(); }, true);
 document.addEventListener("change", e=>{ const t=e.target;
@@ -1404,6 +1405,8 @@ async function cargarPendientes(){
             pend.push({t:`Evaluación del día ${k} de ${n}`, d:"Incorporación que acompañas.", act:"incorporacion", b:"Evaluar"}); break; } } }
       const venc=x.reuniones.filter(r=>!r.cumplido&&r.compromiso_para&&r.compromiso_para<hoy&&x.incs.some(i=>i.id===r.inc_id&&i.colaborador_id===yo));
       if (venc.length) pend.push({t:`${venc.length} compromiso${venc.length===1?"":"s"} de tu incorporación por cumplir`, d:"Revísalos con tu mentor(a).", act:"miinc", b:"Ver"}); }),
+    intenta(async()=>{ const rv=(await S.api.revisionesPendientes?.())||[]; if (!rv.length) return;
+      pend.push({t:`${rv.length} aviso${rv.length===1?"":"s"} por cambio de sede o de puesto`, d:"Revisa permisos o capacitación. Nada cambia automáticamente.", act:"colaboradores", b:"Revisar"}); }),
     intenta(async()=>{ const fs=(await S.api.misFirmasPendientes?.())||[]; const n=fs.filter(f=>f.mi_turno).length;
       if (n) pend.push({t:`${n} documento${n===1?"":"s"} por firmar`, d:"Revísalo completo y fírmalo con tu contraseña.", act:"documentacion", b:"Firmar"}); }),
     intenta(async()=>{ if (!gestionaCuentas()) return; const us=await S.api.usuarios(); S.usuarios=us;
@@ -1943,10 +1946,38 @@ function colaboradoresHtml(){
       <td><button class="btn sm" type="button" data-act="verCol" data-id="${c.id}">Ver</button></td></tr>`; }).join("");
   return orgPagina("Colaboradores","Directorio laboral de la red: puesto, sede, a quién reporta y quién supervisa. No contiene expedientes clínicos de consultantes ni datos como CURP, NSS o salario (esos viven en Contratos y Documentación).",
     orgEditaCatalogo()&&sinFicha.length&&!S.orgEdit?`<button class="btn primary" type="button" data-act="agregarCol">+ Agregar desde una cuenta</button>`:"",
-    `${agregar}${ver?fichaColHtml(ver):""}${barraFiltros("colaboradores",{ph:"Buscar persona o puesto",sedes:orgSedesVis().map(s=>s.nombre),estados:Object.values(COL_ESTATUS)})}
+    `${agregar}${ver?fichaColHtml(ver)+revHistHtml(ver):""}${revPendHtml()}${barraFiltros("colaboradores",{ph:"Buscar persona o puesto",sedes:orgSedesVis().map(s=>s.nombre),estados:Object.values(COL_ESTATUS)})}
     <div class="tbl-wrap"><table><thead><tr><th>Colaborador</th><th>Puesto</th><th>Área</th><th>Sede</th><th>Reporta a</th><th>Supervisión clínica</th><th>Estatus</th><th></th></tr></thead><tbody>
     ${filas||`<tr><td colspan="8" class="status">Aún no hay personas en el directorio de tus sedes.</td></tr>`}</tbody></table></div>`);
 }
+/* ---------- Avisos por cambio de sede o de puesto (migración 039) ----------
+   Una persona revisa; nada cambia solo. Atienden: Superusuario y Directivos (sus sedes); capacitación también RR. HH. de la sede. */
+const REV_TIPO={permisos_sede:"Revisar sus permisos: cambió de sede", permisos_puesto:"Revisar sus permisos: cambió de puesto", capacitacion_puesto:"Capacitación del nuevo puesto"};
+const REV_AYUDA={permisos_sede:"Revisa en Usuarios y permisos si sus accesos por sede siguen siendo los correctos (dar o quitar accesos lo hace el Superusuario).", permisos_puesto:"Revisa en Usuarios y permisos si sus accesos corresponden al nuevo puesto (dar o quitar accesos lo hace el Superusuario).", capacitacion_puesto:"Define la capacitación que necesita para el nuevo puesto (por ejemplo, en Incorporación o con su responsable)."};
+const revDeA = r => { const d=r.detalle||{}; return [d.de||"—", d.a||"—"].map(esc).join(" → ") + (d.sede&&r.tipo!=="permisos_sede"?` · ${esc(d.sede)}`:""); };
+function revPendHtml(){
+  const xs=(S.org?.revisiones||[]).filter(r=>r.estado==="pendiente"); if (!xs.length) return "";
+  return `<section class="note" style="margin:0 0 14px"><div class="note-h"><h3>Avisos por cambio de sede o de puesto (${xs.length})</h3></div>
+    <p class="hint" style="margin:0 0 8px">Se crean solos cuando alguien cambia de sede principal o recibe un puesto distinto. <b>Nada cambia automáticamente:</b> revisa, haz lo que corresponda y márcalo como atendido. Para descartarlo escribe el motivo.</p>
+    <div class="rev-lista">${xs.map(r=>`<div class="rev-i">
+      <div class="rev-t"><b>${orgNomCol(r.colaborador_id)}</b> · ${esc(REV_TIPO[r.tipo]||r.tipo)}<br><span>${revDeA(r)} · desde ${fmtDate(String(r.creado_en).slice(0,10))}</span><br><span class="status">${esc(REV_AYUDA[r.tipo]||"")}</span></div>
+      <div class="rev-a"><input id="rvN-${r.id}" data-noborrador maxlength="300" placeholder="Nota (obligatoria para descartar)" aria-label="Nota del aviso">
+        <button class="btn sm primary" type="button" data-rev="atendida" data-id="${r.id}">Atendido</button><button class="btn sm" type="button" data-rev="descartada" data-id="${r.id}">Descartar</button></div></div>`).join("")}</div></section>`;
+}
+function revHistHtml(c){
+  const xs=(S.org?.revisiones||[]).filter(r=>r.colaborador_id===c.id); if (!xs.length) return "";
+  const EST={pendiente:"Pendiente", atendida:"Atendido", descartada:"Descartado"};
+  return `<section class="note" style="margin:0 0 14px"><div class="note-h"><h3>Historial de cambios de sede y puesto</h3></div><ul class="pend">
+    ${xs.map(r=>`<li><b>${esc(REV_TIPO[r.tipo]||r.tipo)}</b> · ${revDeA(r)}<br><span class="status">${fmtDate(String(r.creado_en).slice(0,10))} · ${EST[r.estado]||r.estado}${r.nota?` · ${esc(r.nota)}`:""}</span></li>`).join("")}</ul></section>`;
+}
+document.addEventListener("click", async e=>{ const b=e.target.closest?.("[data-rev]"); if (!b) return;
+  const id=b.dataset.id, est=b.dataset.rev, nota=($("#rvN-"+id)?.value||"").trim();
+  if (est==="descartada" && nota.length<10){ toast("Para descartar, escribe el motivo en la nota (10 caracteres o más)."); $("#rvN-"+id)?.focus(); return; }
+  if (est==="descartada" && !arm(b,"rv"+id,"¿Descartar?")) return; armed=null;
+  b.disabled=true;
+  try{ await S.api.atenderRevision(id, est, nota); toast(est==="atendida"?"Aviso marcado como atendido.":"Aviso descartado."); S.org=null; render(); cargarOrg(); cargarPendientes(); }
+  catch(err){ b.disabled=false; toast(err?.message||"No se pudo actualizar el aviso."); }
+});
 function fichaColHtml(c){
   const ed=S.orgEdit?.tipo==="col"&&S.orgEdit.id===c.id, puede=orgPuedeEditarCol(c);
   const hist=(S.org.asignaciones||[]).filter(a=>a.colaborador_id===c.id).sort((a,b)=>String(b.desde).localeCompare(String(a.desde)));

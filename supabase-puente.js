@@ -591,7 +591,11 @@ const cemepi = {
     const aut = au.map(x => typeof x === "string" ? x : x.sedes_autorizadas);
     const niveles = {};
     await Promise.all(aut.map(async id => { const { data } = await sb.rpc("nivel_acceso", { p_modulo: "organizacion", p_sede: id }); niveles[id] = data || 0; }));
-    return { sedes: sd, sedeEnt: se, entidades: en, datosFiscales: ed, areas: ar, puestos: pu, posiciones: po, autorizadas: aut, niveles, colaboradores: co, asignaciones: asg, relaciones: rel }; },
+    /* Avisos por cambio de sede o puesto (migración 039): cada quien recibe solo los que le tocan */
+    const { data: rv } = await sb.from("revisiones").select("*").order("creado_en", { ascending: false }).limit(500);
+    return { sedes: sd, sedeEnt: se, entidades: en, datosFiscales: ed, areas: ar, puestos: pu, posiciones: po, autorizadas: aut, niveles, colaboradores: co, asignaciones: asg, relaciones: rel, revisiones: rv || [] }; },
+  async revisionesPendientes(){ const { data, error } = await sb.from("revisiones").select("id,tipo").eq("estado", "pendiente"); if (error) return []; return data || []; },
+  async atenderRevision(id, estado, nota){ const { error } = await sb.rpc("atender_revision", { p_id: id, p_estado: estado, p_nota: nota || null }); if (error) fallo(error); },
   async guardarColaborador(c){
     const row = { estatus: c.estatus, fecha_incorporacion: c.fecha_incorporacion || null, perfil_profesional: c.perfil_profesional || null, tipo_funcion: c.tipo_funcion || null };
     if (c.sede_principal_id) row.sede_principal_id = c.sede_principal_id;
