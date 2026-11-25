@@ -5697,7 +5697,7 @@ const RAI_ACC=new Set(["raices","raiTab","raiBuscar"]);
    ==================================================================================== */
 const ACU_ACC=new Set(["misacuerdos","acuerdos","acuTab","acuEtapa","acuMarcar","acuReflex","acuLeer","acuLeido","acuDuda","acuAceptar","acuWord","acuIA",
   "acuSinc","acuVer","acuVerCerrar","acuGenerar","acuGenerarOk","acuTrans","acuRecordar","acuVincular","acuVEstado","acuVEditar","acuVGuardar","acuAnexoNuevo",
-  "acuAnexoGuardar","acuAnexoAprobar","acuContGuardar","acuRetro","acuCampana","acuBuscar","acuCancelar"]);
+  "acuAnexoGuardar","acuAnexoAprobar","acuContGuardar","acuRetro","acuCampana","acuBuscar","acuCancelar","acuPdf","acuDemo","acuDemoCerrar","acuDemoDoc","acuVNueva"]);
 const ACU_EST={generado:["Generado","estado-pendiente"],disponible_lectura:["Disponible para lectura","estado-pendiente"],pendiente_aclaraciones:["Pendiente de aclaraciones","estado-pendiente"],
   pendiente_firma_psicologo:["Pendiente de firma del psicólogo","estado-pendiente"],pendiente_firma_cemepi:["Pendiente de firma de CEMEPI","estado-pendiente"],firmado:["Firmado por ambas partes","estado-activo"],
   vigente:["Vigente","estado-activo"],sustituido:["Sustituido por un nuevo acuerdo",""],concluido:["Concluido",""],cancelado:["Cancelado","estado-suspendido"],archivado:["Archivado",""]};
@@ -5722,9 +5722,7 @@ async function acuCargar(){
 }
 /* Texto del acuerdo (el mismo que se firmó y cuya huella se guardó) */
 function acuTextoHtml(t){
-  return (t||"").split(/\n\n+/).map(b=>{ const i=b.indexOf("\n"), h=i>0?b.slice(0,i):"", r=i>0?b.slice(i+1):b;
-    const esT=h&&h.length<=110&&!/[.:]$/.test(h);
-    return esT?`<h3 style="margin:14px 0 4px">${esc(h)}</h3><p style="margin:0;text-align:justify">${esc(r)}</p>`:`<p style="margin:8px 0 0;text-align:justify">${esc(b)}</p>`; }).join("");
+  return acuBloques(t).map(({h,r})=>(h?`<h3 style="margin:14px 0 4px">${esc(h)}</h3>`:"")+(r?r.split("\n").map(l=>`<p style="margin:${h?0:8}px 0 0;text-align:justify">${esc(l)}</p>`).join(""):"")).join("");
 }
 function acuVersionTexto(v){ return (v?.contenido?.secciones||[]).map(x=>(x.titulo?x.titulo+"\n":"")+(x.texto||"")).join("\n\n"); }
 /* ---------- Mi espacio: Mis acuerdos y compromisos ---------- */
@@ -5765,7 +5763,7 @@ function misAcuHtml(){
 function acuMiDocHtml(x){
   const a=ACU(), v=acuVer(x.plantilla_version_id), ev=a.eventos.filter(e=>e.acuerdo_id===x.id), leer=S.acuLeer===x.id;
   return `<section class="card"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><div><b>${esc(x.folio||"")}</b> · versión ${v?.version||"?"} ${catPill(ACU_EST,x.estado)}</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" type="button" data-act="acuWord" data-id="${x.id}">Descargar (Word)</button>${!leer?`<button class="btn sm primary" type="button" data-act="acuLeer" data-id="${x.id}">Leer el documento completo</button>`:""}</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" type="button" data-act="acuWord" data-id="${x.id}">Descargar (Word)</button><button class="btn sm" type="button" data-act="acuPdf" data-id="${x.id}">Descargar (PDF)</button>${!leer?`<button class="btn sm primary" type="button" data-act="acuLeer" data-id="${x.id}">Leer el documento completo</button>`:""}</div></div>
     ${leer?`<div id="acuDoc" tabindex="0" style="max-height:60vh;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin-top:10px" aria-label="Documento completo">${acuTextoHtml(x.texto)}<p class="status" style="margin:14px 0 0">Huella SHA-256 del texto: <code>${esc(x.sha256)}</code></p></div>
       <p class="status" style="margin:6px 0 0">Al llegar al final se habilita el registro de lectura completa.</p>
       <div class="actions" style="justify-content:flex-start"><button class="btn sm" type="button" data-act="acuLeido" data-id="${x.id}" id="acuLeidoBtn" ${x.lectura_completa_en?"":"disabled"}>${x.lectura_completa_en?"Lectura registrada":"Registré la lectura completa"}</button></div>`:""}
@@ -5818,7 +5816,7 @@ function acuPersonasHtml(){
         ${x.estado==="firmado"?b("vigente","Marcar como vigente"):""}${x.estado==="vigente"?b("concluido","Concluir"):""}
         ${["generado","disponible_lectura","pendiente_aclaraciones","pendiente_firma_psicologo","pendiente_firma_cemepi"].includes(x.estado)?b("cancelado","Cancelar"):""}
         ${["sustituido","concluido","cancelado"].includes(x.estado)?b("archivado","Archivar"):""}
-        <button class="btn sm" type="button" data-act="acuWord" data-id="${x.id}">Descargar (Word)</button>
+        <button class="btn sm" type="button" data-act="acuWord" data-id="${x.id}">Descargar (Word)</button><button class="btn sm" type="button" data-act="acuPdf" data-id="${x.id}">Descargar (PDF)</button>
         ${["pendiente_firma_psicologo","pendiente_firma_cemepi"].includes(x.estado)?`<button class="btn sm" type="button" data-act="acuSinc" data-id="${x.id}">Sincronizar firmas</button>`:""}</div>
       ${x.estado==="pendiente_firma_psicologo"&&!x.doc_id?`<p style="margin:8px 0 0"><b>Preparar la firma:</b> descarga el documento, conviértelo a PDF y súbelo en Documentos y firmas como «Convenio de servicios profesionales» de esta persona; envíalo a firma secuencial (psicólogo independiente y representante autorizado). Después vincúlalo aquí:</p>
         <div class="filtros" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">${fld("acuDoc","Documento del Módulo 05","",{opts:[["","Elige"],...docs.map(d=>[d.id,(d.folio||"sin folio")+" · "+d.nombre+" · "+d.estado])]})}<button class="btn sm primary" type="button" data-act="acuVincular" data-id="${x.id}">Vincular</button></div>`:""}
@@ -5843,11 +5841,17 @@ function acuPlantillaHtml(){
     ${(ed.contenido.secciones||[]).map((x,i)=>`<div class="fld" style="margin-top:8px"><label for="vs_t${i}">Sección ${i+1}</label><input id="vs_t${i}" value="${esc(x.titulo||"")}"><textarea id="vs_x${i}" rows="${Math.min(12,Math.max(3,Math.ceil((x.texto||"").length/110)))}">${esc(x.texto||"")}</textarea></div>`).join("")}
     ${fld("vs_res","Resumen de cambios",ed.resumen_cambios||"",{area:1,rows:2,span:3})}
     <div class="actions"><button class="btn primary" type="button" data-act="acuVGuardar" data-id="${ed.id}">Guardar borrador</button></div></section>`;
-  return `<section class="card">${flujo}</section>${vs.map(v=>{ const bt=(e,t,p)=>`<button class="btn sm${p?" primary":""}" type="button" data-act="acuVEstado" data-id="${v.id}" data-e="${e}">${t}</button>`;
+  const demo=S.acuDemo&&vs.find(v=>v.id===S.acuDemo);
+  const demoHtml=demo?`<section class="note" id="acuDemoBox"><div class="note-h"><h3>Vista previa con datos ficticios · versión ${demo.version}</h3><button class="btn sm" type="button" data-act="acuDemoCerrar">Cerrar</button></div>
+    <div class="banner">EJEMPLO CON DATOS FICTICIOS — SIN VALIDEZ. No se guarda en el sistema ni se envía a nadie. Muestra cómo se personaliza la Carta con los datos de una persona.</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0"><button class="btn sm" type="button" data-act="acuDemoDoc" data-id="${demo.id}" data-f="docx">Descargar ejemplo (Word)</button><button class="btn sm primary" type="button" data-act="acuDemoDoc" data-id="${demo.id}" data-f="pdf">Descargar ejemplo (PDF)</button></div>
+    <div style="max-height:65vh;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:12px 16px">${acuTextoHtml(acuDemoTexto(demo.id))}</div>
+    <p class="status" style="margin:8px 0 0">Firmas: en un documento real, primero firma el psicólogo independiente y después el representante autorizado, en Documentos y firmas, con contraseña, huella SHA-256 del archivo y evidencia.</p></section>`:"";
+  return `${demoHtml}<section class="card">${flujo}</section>${vs.map(v=>{ const bt=(e,t,p)=>`<button class="btn sm${p?" primary":""}" type="button" data-act="acuVEstado" data-id="${v.id}" data-e="${e}">${t}</button>`;
     return `<section class="card"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><div><b>Versión ${v.version}</b> ${catPill(ACU_VEST,v.estado)}<br><span class="status">${esc(v.resumen_cambios||"")}</span></div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">${a.configuro&&v.estado==="borrador"?`<button class="btn sm" type="button" data-act="acuVEditar" data-id="${v.id}">Editar</button>`+bt("en_revision_juridica","Enviar a revisión jurídica",1):""}
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" type="button" data-act="acuDemo" data-id="${v.id}">Vista previa con datos ficticios</button>${a.configuro&&v.estado==="borrador"?`<button class="btn sm" type="button" data-act="acuVEditar" data-id="${v.id}">Editar</button>`+bt("en_revision_juridica","Enviar a revisión jurídica",1):""}
         ${a.apruebo&&v.estado==="en_revision_juridica"?bt("pendiente_aprobacion","Registrar revisión jurídica",1):""}${a.apruebo&&v.estado==="pendiente_aprobacion"?bt("aprobada","Aprobar plantilla",1):""}
-        ${a.configuro&&["en_revision_juridica","pendiente_aprobacion"].includes(v.estado)?bt("borrador","Devolver a borrador"):""}${a.apruebo&&v.estado==="aprobada"?bt("retirada","Retirar"):""}</div></div>
+        ${a.configuro&&["en_revision_juridica","pendiente_aprobacion"].includes(v.estado)?bt("borrador","Devolver a borrador"):""}${a.apruebo&&v.estado==="aprobada"?bt("retirada","Retirar"):""}${a.configuro&&v.estado==="aprobada"&&!vs.some(x=>["borrador","en_revision_juridica","pendiente_aprobacion"].includes(x.estado))?`<button class="btn sm" type="button" data-act="acuVNueva" data-id="${v.id}">Crear nueva versión (borrador)</button>`:""}</div></div>
       <p class="status" style="margin:6px 0 0">Fuente: ${esc(v.fuente?.archivo||"—")}${v.fuente?.sha256?` · SHA-256 ${esc(v.fuente.sha256.slice(0,16))}…`:""}${v.revision_juridica?` · Revisión jurídica: ${esc(v.revision_juridica.asesor)} — ${esc(v.revision_juridica.nota)}`:""}${v.nota_estado?` · ${esc(v.nota_estado)}`:""}</p>
       ${v.fuente?.nota?`<p class="status" style="margin:4px 0 0">${esc(v.fuente.nota)}</p>`:""}
       <details><summary>Ver contenido (${(v.contenido.secciones||[]).length} secciones)</summary><div style="max-height:50vh;overflow:auto">${acuTextoHtml(acuVersionTexto(v))}</div></details></section>`; }).join("")}`;
@@ -5885,21 +5889,75 @@ function acuCampanasHtml(){
       :`<p class="status" style="margin:8px 0 0"><b>Se necesita una plantilla aprobada para crear una campaña.</b></p>`):""}</section>
     ${a.campanas.map(c=>`<section class="card"><b>${esc(c.nombre)}</b> · ${esc(c.estado)} · ${fechaTxt(c.creado_en)}<p style="margin:4px 0 0">${esc(c.mensaje||"")}</p><p class="status" style="margin:4px 0 0">${a.acuerdos.filter(x=>x.campana_id===c.id).length} acuerdos generados en esta campaña.</p></section>`).join("")}`;
 }
-async function acuWord(id){
-  const a=ACU(), x=a.acuerdos.find(y=>y.id===id); if (!x) return;
-  if (!(await libLista("zip"))){ toast("No se pudo preparar el archivo de Word. Recarga la página."); return; }
-  const dl=await window.claude?.use?.("downloads"); if (!dl){ toast("La descarga no está disponible en esta vista."); return; }
-  const v=acuVer(x.plantilla_version_id), borrador=v&&v.estado!=="aprobada"&&v.estado!=="sustituida";
-  const bloques=(x.texto||"").split(/\n\n+/);
-  const xml=(borrador?P(R("BORRADOR — PLANTILLA NO APROBADA. SIN VALIDEZ PARA FIRMA.",{b:1,color:"C0392B"}),{jc:"center",after:120}):"")
-    + bloques.map((b,i)=>{ const k=b.indexOf("\n"), h=k>0?b.slice(0,k):"", r=k>0?b.slice(k+1):b, esT=h&&h.length<=110&&!/[.:]$/.test(h);
-      if (i===0&&esT) return P(R(h,{b:1,color:"0560BD"}),{jc:"center",after:60})+P(R(r),{jc:"center",after:160});
-      return esT?P(R(h,{b:1}),{before:160,after:60,keep:1})+r.split("\n").map(l=>P(R(l),{after:60})).join(""):b.split("\n").map(l=>P(R(l),{after:60})).join(""); }).join("")
-    + P(R(`Folio ${x.folio} · Huella SHA-256 del texto: ${x.sha256}`,{color:"55688A",sz:16}),{before:240});
-  try{ const blob=await docxBlob(x.folio, xml, [], "Carta", false); /* lleva la nota aclaratoria por la regla «si no corresponde, incluirla y señalarlo»; decide la Dirección */
-    await dl.save({filename:`Carta-Compromiso-${x.folio}${borrador?"-BORRADOR":""}.docx`, data:blob}); }
-  catch(e){ if (e?.code!=="declined") toast("No se pudo descargar."); }
+/* Render en el navegador idéntico a acu_render() de la base: «título\ntexto» por sección, separadas por línea en blanco */
+function acuRender(contenido, vars){
+  return (contenido?.secciones||[]).map(sc=>{ let x=sc.texto||""; for (const [k,v] of Object.entries(vars)) x=x.split("{{"+k+"}}").join(v??`[Dato pendiente de recabar: ${k}]`);
+    return (sc.titulo?sc.titulo+"\n":"")+x; }).join("\n\n").trim();
 }
+const ACU_FICTICIO={nombre_completo:"María Ejemplo Ficticia",id_colaborador:"00000000-ficticio",cedula:"0000000 (ficticia)",especialidad:"Psicoterapia individual (ficticia)",
+  sede_principal:"Sede de ejemplo",sedes_adicionales:"Ninguna",entidad:"Entidad de ejemplo",representante:"Representante de ejemplo",fecha_inicio:"01/01/2027",
+  fecha_emision:new Date().toLocaleDateString("es-MX"),lugar:"Ciudad de México",modalidad:"Prestación de servicios profesionales independientes",
+  acuerdo_economico:"Anexo de ejemplo v1",folio:"EJEMPLO-FICTICIO",version:""};
+/* Bloques del texto: «título\ntexto»; un renglón solo, corto, sin «:» ni punto final y con espacios es un título de sección sin texto propio */
+const acuEsTitulo=h=>!!h&&h.length<=110&&!/[.:]$/.test(h)&&!h.includes(":")&&/\s/.test(h);
+const acuBloques=t=>(t||"").split(/\n\n+/).map((b,i)=>{ const k=b.indexOf("\n");
+  if (k<0) return acuEsTitulo(b)?{i,h:b,r:""}:{i,h:"",r:b};
+  const h=b.slice(0,k), r=b.slice(k+1), esT=!!h&&h.length<=110&&!/[.:]$/.test(h); return {i,h:esT?h:"",r:esT?r:b}; });
+async function acuArchivo(fmt, texto, folio, sha, marca){
+  const dl=await window.claude?.use?.("downloads"); if (!dl){ toast("La descarga no está disponible en esta vista."); return; }
+  const nom=`Carta-Compromiso-${folio}${marca&&!marca.startsWith("EJEMPLO")?"-BORRADOR":""}`;
+  try{
+    if (fmt==="docx"){
+      if (!(await libLista("zip"))){ toast("No se pudo preparar el archivo de Word. Recarga la página."); return; }
+      const xml=(marca?P(R(marca,{b:1,color:"C0392B"}),{jc:"center",after:120}):"")
+        + acuBloques(texto).map(({i,h,r})=>{ if (i===0&&h) return P(R(h,{b:1,color:"0560BD"}),{jc:"center",after:60})+P(R(r),{jc:"center",after:160});
+          return (h?P(R(h,{b:1}),{before:160,after:60,keep:1}):"")+(r?r.split("\n").map(l=>P(R(l),{after:60})).join(""):""); }).join("")
+        + P(R(`Folio ${folio}${sha?" · Huella SHA-256 del texto: "+sha:""}`,{color:"55688A",sz:16}),{before:240});
+      const blob=await docxBlob(folio, xml, [], "Carta", false); /* lleva la nota aclaratoria por la regla «si no corresponde, incluirla y señalarlo»; decide la Dirección */
+      await dl.save({filename:nom+".docx", data:blob});
+    } else {
+      await libCargar("pdf");
+      const {PDFDocument, StandardFonts, rgb}=PDFLib;
+      const pdf=await PDFDocument.create(); pdf.setTitle("Carta Compromiso para el Psicólogo Independiente"); pdf.setAuthor("CEMEPI · Centro Mexicano de Plenitud Humana, S.C."); pdf.setLanguage("es-MX");
+      const font=await pdf.embedFont(StandardFonts.Helvetica), bold=await pdf.embedFont(StandardFonts.HelveticaBold);
+      const W=612,H=792,M=54,CW=W-2*M,FS=11,LH=13.8, azul=rgb(0.02,0.376,0.741), tinta=rgb(0.06,0.14,0.25), gris=rgb(0.33,0.41,0.54), rojo=rgb(0.776,0.157,0.157);
+      const nota=envolver(NOTA_ACLARATORIA, font, 7, CW), pieH=nota.length*8.6, BASE=26+pieH+18; let page,y;
+      const nueva=()=>{ page=pdf.addPage([W,H]); y=H-M; }, espacio=h=>{ if (y-h<BASE) nueva(); };
+      const centro=(t,sz,f,col)=>{ for (const l of envolver(limpiarPdf(t), f, sz, CW)){ espacio(sz+4); y-=sz+4; page.drawText(l,{x:(W-f.widthOfTextAtSize(l,sz))/2, y, size:sz, font:f, color:col}); } };
+      const parrafo=(texto,o={})=>{ const fo=o.b?bold:font, sz=o.size||FS, lh=o.lh||LH;
+        for (const par of limpiarPdf(texto).split("\n")){ if (!par.trim()){ y-=lh*0.5; continue; }
+          const pal=par.split(/ +/).filter(Boolean), lineas=[]; let act=[];
+          for (const w of pal){ if (fo.widthOfTextAtSize([...act,w].join(" "),sz)<=CW||!act.length) act.push(w); else { lineas.push(act); act=[w]; } }
+          if (act.length) lineas.push(act);
+          lineas.forEach((ws,k)=>{ espacio(lh); y-=lh; if (k===lineas.length-1||ws.length<2){ page.drawText(ws.join(" "),{x:M,y,size:sz,font:fo,color:o.color||tinta}); return; }
+            const an=ws.map(w=>fo.widthOfTextAtSize(w,sz)), gap=(CW-an.reduce((a,b)=>a+b,0))/(ws.length-1); let xx=M; ws.forEach((w,q)=>{ page.drawText(w,{x:xx,y,size:sz,font:fo,color:o.color||tinta}); xx+=an[q]+gap; }); });
+          y-=4; } };
+      nueva();
+      y-=4; page.drawText("Centro Mexicano de Plenitud Humana, S.C.",{x:M,y,size:13,font:bold,color:azul});
+      page.drawText("Folio",{x:W-M-font.widthOfTextAtSize("Folio",8),y:y+10,size:8,font,color:gris});
+      const fl=limpiarPdf(folio); page.drawText(fl,{x:W-M-bold.widthOfTextAtSize(fl,10),y:y-4,size:10,font:bold,color:tinta});
+      y-=16; pdfContacto(page, font, y, W, M, gris); y-=8; page.drawLine({start:{x:M,y},end:{x:W-M,y},thickness:1.5,color:azul});
+      if (marca){ y-=6; centro(marca, 10, bold, rojo); }
+      for (const {i,h,r} of acuBloques(texto)){
+        if (i===0&&h){ y-=10; centro(h, 13, bold, azul); centro(r, 10, font, gris); y-=4; continue; }
+        if (h){ espacio(LH*3); y-=LH+4; page.drawText(limpiarPdf(h),{x:M,y,size:FS,font:bold,color:azul}); y-=2; }
+        if (r) parrafo(r);
+      }
+      y-=6; parrafo(`Folio ${folio}${sha?" · Huella SHA-256 del texto: "+sha:""}`, {size:8, color:gris});
+      parrafo("Las firmas electrónicas de ambas partes, con su evidencia (fecha y hora, huella del archivo y método), se registran en el Módulo de Documentos y firmas de Tonalli CEMEPI.", {size:8, color:gris});
+      const total=pdf.getPageCount();
+      pdf.getPages().forEach((pg,k)=>{ nota.forEach((l,q)=>pg.drawText(l,{x:M,y:26+(nota.length-1-q)*8.6,size:7,font,color:gris}));
+        const t=limpiarPdf(`Folio ${folio} · Página ${k+1} de ${total}`); pg.drawText(t,{x:W-M-font.widthOfTextAtSize(t,7),y:26+pieH+4,size:7,font,color:gris}); });
+      await dl.save({filename:nom+".pdf", data:await pdf.save()});
+    }
+  }catch(e){ if (e?.code!=="declined"){ console.warn(e); toast("No se pudo generar el archivo."); } }
+}
+async function acuDescargar(id, fmt){
+  const x=ACU()?.acuerdos.find(y=>y.id===id); if (!x) return;
+  const v=acuVer(x.plantilla_version_id), borrador=v&&!["aprobada","sustituida"].includes(v.estado);
+  return acuArchivo(fmt, x.texto, x.folio, x.sha256, borrador?"BORRADOR — PLANTILLA NO APROBADA. SIN VALIDEZ PARA FIRMA.":"");
+}
+function acuDemoTexto(vid){ const v=acuVer(vid); return v?acuRender(v.contenido, {...ACU_FICTICIO, version:`carta_psi_independiente v${v.version}`}):""; }
 async function acuAccion(a,b){
   const id=b?.dataset?.id, rpc=(fn,args)=>S.api.acuRpc(fn,args), d=ACU();
   try{
@@ -5915,7 +5973,11 @@ async function acuAccion(a,b){
       await rpc("acu_transicion",{p_id:id,p_estado:"pendiente_aclaraciones",p_motivo:m}); toast("Tu duda quedó registrada."); return acuCargar(); }
     if (a==="acuAceptar"){ await rpc("acu_aceptar",{p_id:id,p_consiento_electronico:!!$("#acuC1_"+id)?.checked,p_acepto:!!$("#acuC2_"+id)?.checked}); toast("Aceptación registrada. Continúa con la firma."); return acuCargar(); }
     if (a==="acuSinc"){ const e=await rpc("acu_sincronizar",{p_id:id}); toast("Estado: "+(ACU_EST[e]?.[0]||e)); return acuCargar(); }
-    if (a==="acuWord") return acuWord(id);
+    if (a==="acuWord") return acuDescargar(id,"docx");
+    if (a==="acuPdf") return acuDescargar(id,"pdf");
+    if (a==="acuDemo"){ S.acuDemo=id; render(); $("#acuDemoBox")?.scrollIntoView({block:"start"}); return; }
+    if (a==="acuDemoCerrar"){ S.acuDemo=null; return render(); }
+    if (a==="acuDemoDoc") return acuArchivo(b.dataset.f, acuDemoTexto(id), "EJEMPLO-FICTICIO", "", "EJEMPLO CON DATOS FICTICIOS — SIN VALIDEZ. NO SE GUARDA EN EL SISTEMA.");
     if (a==="acuIA"){ const pl=acuPl(), mio=d.acuerdos.find(x=>x.colaborador_id===d.yo&&x.publicado_en), v=mio?acuVer(mio.plantilla_version_id):d.versiones.find(x=>x.estado==="aprobada");
       if (!v) return toast("Todavía no hay una versión aprobada de la Carta para consultar.");
       return copiar(`Explícame la «${pl?.nombre}», versión ${v.version}. Responde siempre indicando que consultas la versión ${v.version}. Puedes explicar apartados, relacionarlos con los fundamentos culturales, dar ejemplos y señalar posibles contradicciones. No modifiques acuerdos, no determines incumplimientos, no impongas sanciones ni des resoluciones jurídicas vinculantes. No te daré datos personales ni clínicos.\n\nTexto de la plantilla:\n${acuVersionTexto(v)}`); }
@@ -5931,6 +5993,8 @@ async function acuAccion(a,b){
     if (a==="acuRecordar"){ await rpc("acu_recordar",{p_id:id}); toast("Recordatorio enviado dentro de la app."); return acuCargar(); }
     if (a==="acuVincular"){ const doc=catVal("acuDoc"); if (!doc) return toast("Elige el documento."); await rpc("acu_vincular_doc",{p_id:id,p_doc:doc}); toast("Documento vinculado."); return acuCargar(); }
     if (a==="acuVEditar"){ S.acuEdit=id; return render(); }
+    if (a==="acuVNueva"){ const v=acuVer(id); if (!confirm(`Se creará un borrador de la versión ${v.version+1} con el mismo contenido de la versión ${v.version}. La versión aprobada y los documentos ya generados o firmados no cambian. ¿Continuar?`)) return;
+      const nid=await rpc("acu_guardar_version",{p_plantilla:"carta_psi_independiente",p_contenido:v.contenido,p_fuente:v.fuente||null,p_resumen:`Nueva versión basada en la v${v.version}.`}); S.acuEdit=nid; toast("Borrador creado."); return acuCargar(); }
     if (a==="acuVGuardar"){ const v=acuVer(id), sec=(v.contenido.secciones||[]).map((x,i)=>({...x,titulo:catVal("vs_t"+i),texto:$("#vs_x"+i)?.value||""}));
       await rpc("acu_guardar_version",{p_plantilla:"carta_psi_independiente",p_contenido:{...v.contenido,secciones:sec},p_fuente:null,p_resumen:catVal("vs_res")||null}); S.acuEdit=null; toast("Borrador guardado."); return acuCargar(); }
     if (a==="acuVEstado"){ const e=b.dataset.e; let nota=null, ases=null;
