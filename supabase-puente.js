@@ -726,6 +726,13 @@ const cemepi = {
     if (b.error) fallo(b.error); if (a.error) fallo(a.error);
     return { brechas: b.data || [], ali: a.data || {}, reg: r.data || [] }; },
   async catRpc(fn, args){ const { data, error } = await sb.rpc(fn, args); if (error) fallo(error); return data; },
+  /* Diccionario vivo (migraciones 052/053). Si las tablas aún no existen, devuelve vacío y la app sigue igual. */
+  async lexicoDatos(){
+    const [l, a] = await Promise.all([sb.from("lexico").select("*").order("palabra"), sb.from("lexico_aplicaciones").select("*").order("vista")]);
+    if (l.error || a.error) return { palabras: [], aplicaciones: [], disponible: false };
+    return { palabras: l.data || [], aplicaciones: a.data || [], disponible: true }; },
+  async lexicoHistorial(id){ const { data } = await sb.from("lexico_historial").select("*").eq("lexico_id", id).order("version", { ascending: false }); return data || []; },
+  async lexRpc(fn, args){ const { data, error } = await sb.rpc(fn, args); if (error) fallo(error); return data; },
   async declararCompetencia(tipo, valor, detalle, doc){ const { data, error } = await sb.rpc("declarar_competencia", { p_tipo: tipo, p_valor: valor, p_detalle: detalle || null, p_documento: doc || null }); if (error) fallo(error); return data; },
   async editarCompetencia(id, valor, detalle, doc, actualizado){ const { error } = await sb.rpc("editar_competencia", { p_id: id, p_valor: valor, p_detalle: detalle || null, p_documento: doc || null, p_actualizado: actualizado || null });
     if (error){ if (/CONFLICTO_EDICION/.test(error.message || "")) throw { message: "La competencia cambió en otra ventana. Vuelve a abrirla para ver la versión actual." }; fallo(error); } },
