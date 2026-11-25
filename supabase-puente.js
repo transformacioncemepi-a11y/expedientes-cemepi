@@ -719,7 +719,11 @@ const cemepi = {
     const d = q.map(r => r.data);
     return { dic: d[0] || [], perfiles: d[1] || [], versiones: d[2] || [], pcomps: d[3] || [], puestos: d[4] || [], areas: d[5] || [],
       resumen: d[6] || {}, cp: d[7] || [], cols: d[8] || [], rel: d[9] || [], asg: d[10] || [], pos: d[11] || [], cargas: d[12] || [],
-      edito: !!d[13], valido: !!d[14], yo: d[15] || null, acciones: d[16] || [], sedes: d[17] || [], grafo: await this.grafoDatos() }; },
+      edito: !!d[13], valido: !!d[14], yo: d[15] || null, acciones: d[16] || [], sedes: d[17] || [], grafo: await this.grafoDatos(), sel: await this.selDatos() }; },
+  /* Banco de selección (migraciones 056/057): preguntas y casos ficticios. Sin datos de candidatos. Si no existe, devuelve vacío. */
+  async selDatos(){
+    const [p, c] = await Promise.all([sb.from("sel_preguntas").select("*").order("id"), sb.from("sel_casos").select("*").order("id")]);
+    return { preguntas: p.error ? [] : (p.data || []), casos: c.error ? [] : (c.data || []), ok: !p.error }; },
   /* Grafo de conocimiento y valores (migraciones 054/055). Si aún no existen las tablas, devuelve vacío. Se pagina de 1000 en 1000. */
   async grafoDatos(){
     const todo = async (t, orden) => { const out = []; for (let i = 0; i < 20; i++) {
