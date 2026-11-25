@@ -357,6 +357,8 @@ body.ctx-mi .nav-g.ges{display:none}
 .tour{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--accent-soft);border-radius:var(--r);padding:12px 14px}
 .ndot{position:absolute;top:7px;right:8px;width:9px;height:9px;border-radius:9px;background:var(--danger,#c0392b);border:2px solid var(--surface)}
 #dlgNotif .body{max-height:60vh;overflow:auto}
+.vac-cob{display:flex;gap:4px;flex-wrap:wrap}.vac-d{border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-size:12px;text-align:center;min-width:64px}.vac-d b{display:block}
+.vac-d.n0{background:var(--ok-soft)}.vac-d.n1{background:var(--warn-soft)}.vac-d.n2{background:var(--danger-soft,#f9e1de)}
 .tour .tx{flex:1;min-width:220px}.tour-d{display:flex;gap:4px;margin:4px 0}.tour-d i{width:20px;height:5px;border-radius:9px;background:var(--line)}.tour-d i.on{background:var(--accent)}
 </style>
 
@@ -3380,7 +3382,7 @@ const ASIS_DIAS=["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 const asisFechaTxt=f=>`${ASIS_DIAS[asisDow(f)]} ${fmtDate(f)}`;
 const asisH=m=>{ m=Math.round(m||0); const s=m<0?"−":""; m=Math.abs(m); return `${s}${Math.floor(m/60)} h ${String(m%60).padStart(2,"0")} min`; };
 const asisMin=t=>{ const [h,m]=String(t).split(":").map(Number); return h*60+m; };
-const ASIS_SOL={correccion_entrada:"Corrección de entrada",correccion_salida:"Corrección de salida",permiso_con_goce:"Permiso con goce",permiso_sin_goce:"Permiso sin goce",vacaciones:"Vacaciones",incapacidad:"Incapacidad",cambio_horario:"Cambio de horario",cambio_sede:"Cambio de sede",justificacion:"Justificación",salida_anticipada:"Salida anticipada",otra:"Otra"};
+const ASIS_SOL={correccion_entrada:"Corrección de entrada",correccion_salida:"Corrección de salida",permiso_personal:"Permiso personal",revision_medica:"Revisión médica",emergencia_familiar:"Emergencia familiar",permiso_con_goce:"Permiso con goce de sueldo",permiso_sin_goce:"Permiso sin goce de sueldo",vacaciones:"Vacaciones",incapacidad:"Incapacidad",cambio_horario:"Cambio de horario",cambio_sede:"Cambio de sede",justificacion:"Justificación",salida_anticipada:"Salida anticipada",otra:"Otra"};
 const ASIS_SOL_EST={borrador:["Borrador",""],enviada:["Enviada","estado-pendiente"],en_revision:["En revisión","estado-pendiente"],aprobada:["Aprobada","estado-activo"],rechazada:["Rechazada","estado-suspendido"],cancelada:["Cancelada",""]};
 const ASIS_INC={retardo:"Retardo",ausencia:"Ausencia",entrada_no_registrada:"Entrada no registrada",salida_no_registrada:"Salida no registrada",registro_duplicado:"Registro duplicado",error_tecnico:"Error técnico",cambio_turno:"Cambio de turno",permiso:"Permiso",vacaciones:"Vacaciones",incapacidad:"Incapacidad",salida_anticipada_autorizada:"Salida anticipada autorizada",jornada_extraordinaria:"Jornada extraordinaria",otra:"Otra"};
 const ASIS_INC_EST={detectada:["Detectada (por revisar)","estado-pendiente"],confirmada:["Confirmada","estado-activo"],justificada:["Justificada","estado-activo"],descartada:["Descartada",""]};
@@ -3444,8 +3446,8 @@ function miAsistenciaHtml(){
   const dias=[...Array(7)].map((_,i)=>asisMas(hoy,-i));
   const misSol=a.solicitudes.filter(x=>x.colaborador_id===yo).slice(0,10), misInc=a.incidencias.filter(x=>x.colaborador_id===yo).slice(0,10);
   const formSol = S.asisForm==="sol" ? `<section class="note"><div class="note-h"><h3>Pedir corrección, permiso o cambio</h3></div><form class="datos" onsubmit="return false">
-      ${fld("slTipo","Tipo *","correccion_entrada",{opts:Object.entries(ASIS_SOL),span:2})}${fld("slFecha","Fecha *",hoy,{type:"date"})}${fld("slFin","Hasta (si es más de un día)","",{type:"date"})}${fld("slHora","Hora correcta (en correcciones)","",{type:"time"})}
-      ${fld("slDet","Detalle *","",{area:1,span:3,rows:2,ph:"Explica brevemente. En incapacidades no escribas el diagnóstico."})}</form>
+      ${fld("slTipo","Tipo *",S.asisSlTipo||"correccion_entrada",{opts:asisTiposActivos(),span:2})}${fld("slFecha","Fecha *",hoy,{type:"date"})}${fld("slFin","Hasta (si es más de un día)","",{type:"date"})}${fld("slHora","Hora correcta (en correcciones)","",{type:"time"})}
+      ${fld("slDet","Detalle *","",{area:1,span:3,rows:2,ph:"Explica brevemente. En incapacidades no escribas el diagnóstico."})}</form><div id="slExtra"></div>
       <p class="status" style="margin:0">La revisa tu jefe directo; nada cambia hasta que se apruebe.</p>
       <div class="actions"><button class="btn primary" type="button" data-act="asisEnviarSol">Enviar</button><button class="btn" type="button" data-act="asisCancelar">Cancelar</button></div></section>` : "";
   return asisPag("Mi asistencia",`Registra tu entrada y salida, consulta ${asisConHor()?"tu horario y ":""}tu historial, y pide correcciones. La hora la pone el servidor, no tu dispositivo.`,
@@ -3467,19 +3469,85 @@ function miAsistenciaHtml(){
     <section class="note"><div class="note-h"><h3>Últimos 7 días</h3></div><div class="tbl-wrap"><table><thead><tr><th>Día</th><th>Entrada</th><th>Salida</th><th>Horas</th><th>Estado</th></tr></thead><tbody>
       ${dias.map(f=>{ const s=asisEstadoDia(yo,f), x=asisMarcasDia(yo,f), e=x.find(m=>m.tipo==="entrada"), o=[...x].reverse().find(m=>m.tipo==="salida"); const mn=e&&o&&o.momento>e.momento?(new Date(o.momento)-new Date(e.momento))/60000:0;
         return `<tr><td>${asisFechaTxt(f)}</td><td>${e?asisHora(e.momento):"—"}</td><td>${o?asisHora(o.momento):"—"}</td><td>${mn?asisH(mn):"—"}</td><td><span class="pill ${s.c}">${esc(s.t)}</span></td></tr>`; }).join("")}</tbody></table></div></section>
-    <div class="org-grid"><section class="note"><div class="note-h"><h3>Mis solicitudes</h3></div><ul class="pend">${misSol.map(x=>`<li><b>${ASIS_SOL[x.tipo]}</b> · ${asisFechaTxt(x.fecha)} <span class="pill ${ASIS_SOL_EST[x.estado][1]}">${ASIS_SOL_EST[x.estado][0]}</span><br><span class="status">${esc(x.detalle)}${x.respuesta?" · Respuesta: "+esc(x.respuesta):""}</span>${["borrador","enviada"].includes(x.estado)?` <button class="btn sm" type="button" data-act="asisCancelarSol" data-id="${x.id}">Cancelar</button>`:""}</li>`).join("")||`<li class="status">Sin solicitudes.</li>`}</ul></section>
+    ${misVacHtml()}
+    <div class="org-grid"><section class="note"><div class="note-h"><h3>Mis solicitudes</h3></div><ul class="pend">${misSol.map(x=>`<li><b>${ASIS_SOL[x.tipo]}</b> · ${asisFechaTxt(x.fecha)} <span class="pill ${ASIS_SOL_EST[x.estado][1]}">${ASIS_SOL_EST[x.estado][0]}</span><br><span class="status">${esc(x.detalle)}${x.respuesta?" · Respuesta: "+esc(x.respuesta):""}</span>${evidDe(x.id).length?" "+evidBtn(x.id):""}${["borrador","enviada"].includes(x.estado)?` <button class="btn sm" type="button" data-act="asisCancelarSol" data-id="${x.id}">Cancelar</button>`:""}</li>`).join("")||`<li class="status">Sin solicitudes.</li>`}</ul></section>
       <section class="note"><div class="note-h"><h3>Mis incidencias</h3></div><ul class="pend">${misInc.map(x=>`<li><b>${ASIS_INC[x.tipo]}</b> · ${asisFechaTxt(x.fecha)} <span class="pill ${ASIS_INC_EST[x.estado][1]}">${ASIS_INC_EST[x.estado][0]}</span>${x.resolucion?`<br><span class="status">${esc(x.resolucion)}</span>`:""}</li>`).join("")||`<li class="status">Sin incidencias.</li>`}</ul>
         <p class="status" style="margin:0">Una incidencia detectada no es una falta: se revisa contigo. Si tienes cómo justificarla, envía una solicitud de “Justificación”.</p></section></div>
     ${actividadesHtml}`);
 }
 
+/* ---------- Módulo 06 · P3 Vacaciones y permisos (2026-11-24) ----------
+   Saldo: lo registra RR. HH. (confirmado). Usados y en trámite son ESTIMADOS (días laborables configurados).
+   Cobertura: el colaborador ve solo el nivel de demanda de su sede; los nombres, quien opera asistencia. */
+const VAC_PERM=new Set(["permiso_personal","revision_medica","emergencia_familiar","permiso_con_goce","permiso_sin_goce","incapacidad","justificacion","salida_anticipada"]);
+const asisTiposActivos=()=>{ const t=A()?.config?.tipos_solicitud; return Object.entries(ASIS_SOL).filter(([k])=>!Array.isArray(t)||t.includes(k)); };
+const vacNum=x=>x===null||x===undefined?"—":String(Number(x)).replace(/\.0$/,"");
+async function vacMiCargar(){ if (S.miSaldoCargando||!S.api?.saldoVacaciones) return; S.miSaldoCargando=true;
+  try{ const [sd,ev]=await Promise.all([S.api.saldoVacaciones(), S.api.evidencias()]); S.miSaldo=sd||{}; S.evid=ev; }catch(e){ S.miSaldo={error:true}; }
+  S.miSaldoCargando=false; if (S.view==="miasis") render(); }
+function misVacHtml(){
+  const a=A(); if (!a?.yo) return "";
+  if (S.miSaldo===undefined){ setTimeout(vacMiCargar,0); return ""; }
+  const s=S.miSaldo||{}, hoy=asisHoy(), prox=a.solicitudes.filter(x=>x.colaborador_id===a.yo&&x.tipo==="vacaciones"&&["aprobada","enviada","en_revision"].includes(x.estado)&&(x.fecha_fin||x.fecha)>=hoy);
+  return `<section class="note"><div class="note-h"><h3>Mis vacaciones ${s.periodo?`<span class="status">${esc(s.periodo)}</span>`:""}</h3>${S.asisForm==="sol"?"":`<button class="btn sm" type="button" data-act="asisFormSol" data-t="vacaciones">Solicitar vacaciones</button>`}</div>
+    ${s.error?`<p class="status" style="margin:0">No se pudo consultar tu saldo.</p>`:s.confirmados==null
+      ?`<p class="banner" style="margin:0 0 6px">Tu saldo todavía no está registrado. RR. HH. lo confirmará; mientras tanto puedes solicitar tus fechas y se revisarán los días que te corresponden. Estar en proceso de contratación no te quita derechos.</p>`
+      :`<div class="kpis"><div class="kpi"><span>Confirmados por RR. HH.</span><b>${vacNum(s.confirmados)}</b><small class="status">al ${fechaTxt(s.fecha_corte)}</small></div><div class="kpi"><span>Usados</span><b>${vacNum(s.usados)}</b></div><div class="kpi"><span>En trámite</span><b>${vacNum(s.en_tramite)}</b></div><div class="kpi"><span>Disponibles</span><b>${vacNum(s.disponibles)}</b></div></div>
+       <p class="status" style="margin:4px 0 0">Usados y en trámite son un estimado (días laborables). Si algo no coincide, <button class="btn sm" type="button" data-act="solTipo" data-t="aclaracion_pago">pide una aclaración</button>.</p>`}
+    ${prox.length?`<ul class="pend" style="margin-top:8px">${prox.map(x=>`<li><b>${asisFechaTxt(x.fecha)}${x.fecha_fin?" a "+fmtDate(x.fecha_fin):""}</b> <span class="pill ${ASIS_SOL_EST[x.estado][1]}">${ASIS_SOL_EST[x.estado][0]}</span></li>`).join("")}</ul>`:""}</section>`;
+}
+/* Extras del formulario según el tipo: saldo y demanda de la sede (vacaciones) o constancia (permisos) */
+async function slExtraPintar(){
+  const box=$("#slExtra"); if (!box) return; const tipo=$("#slTipo")?.value, d=$("#slFecha")?.value, h=$("#slFin")?.value||d;
+  if (tipo==="vacaciones"){
+    const s=S.miSaldo||{}; let cob="";
+    if (d&&h&&h>=d&&(new Date(h)-new Date(d))/864e5<=62){ try{ const c=await S.api.coberturaSede(d,h,null);
+      cob=c.length?`<p style="margin:8px 0 4px"><b>Demanda en tu sede esos días</b> <span class="status">(sin nombres de otras personas)</span></p><div class="vac-cob">${c.map(x=>{ const aus=x.aprobadas+x.en_tramite, r=x.personas?aus/x.personas:0, n=r>=.5?["Muy alta","n2"]:r>=.25?["Alta","n1"]:["Normal","n0"];
+        return `<span class="vac-d ${n[1]}"><b>${fechaTxt(x.dia).slice(0,5)}</b>${n[0]}</span>`; }).join("")}</div><p class="status" style="margin:4px 0 0">«Alta» no significa que se rechace: tu jefe lo revisa contigo y, si hace falta, te propone otras fechas. Nada se rechaza por temporada de forma automática.</p>`:""; }catch{} }
+    box.innerHTML=`${s.confirmados!=null?`<p class="status" style="margin:8px 0 0">Te quedan <b>${vacNum(s.disponibles)}</b> días disponibles (estimado). Estas fechas suman ${await S.api.vacDiasEstimados?.(d,h)??"—"} días laborables.</p>`:`<p class="status" style="margin:8px 0 0">Tu saldo aún no está registrado; RR. HH. revisará los días que te corresponden.</p>`}${cob}`;
+  } else if (VAC_PERM.has(tipo)){
+    box.innerHTML=`<div class="fld" style="margin-top:8px"><label for="slEvid">Constancia (opcional)</label><input id="slEvid" type="file" accept="application/pdf,image/png,image/jpeg" data-noborrador>
+      <span class="status">Si es médica, basta una constancia de atención. <b>No escribas ni adjuntes diagnósticos.</b> Solo la verán RR. HH. y tú (tu jefe directo no). PDF o imagen, hasta 5 MB.</span></div>
+      ${tipo==="revision_medica"?`<p class="status" style="margin:4px 0 0">Una revisión médica es un permiso: no se convierte en incapacidad. Si después hay incapacidad, envía otra solicitud.</p>`:""}`;
+  } else box.innerHTML="";
+}
+document.addEventListener("change", e=>{ if (["slTipo","slFecha","slFin"].includes(e.target?.id)) slExtraPintar(); });
+const evidDe=id=>(S.evid||[]).filter(x=>x.solicitud_id===id);
+const evidBtn=id=>evidDe(id).map(x=>`<button class="btn sm" type="button" data-act="asisEvidVer" data-a="${esc(x.archivo)}">Ver constancia</button>`).join(" ");
+/* Gestión: cobertura por sede y saldos (pestaña de Asistencia y jornadas) */
+async function vacGCargar(sede, desde){
+  S.vacG={sede, desde, cargando:true}; render();
+  try{ const hasta=asisMas(desde,30); const [cob,sal,ev]=await Promise.all([sede?S.api.coberturaSede(desde,hasta,sede):Promise.resolve([]), S.api.vacSaldos(), S.api.evidencias()]);
+    S.vacG={sede, desde, cob, sal}; S.evid=ev; }catch(e){ S.vacG={sede, desde, error:e?.message||"No se pudo cargar."}; }
+  if (S.view==="asistencia") render();
+}
+function asisVacaciones(){
+  const F=S.asisF||{}, sedes=A().sedes.filter(s=>A().personas.some(p=>p.sede_id===s.id)), sede=F.sede||sedes[0]?.id, desde=S.vacDesde||asisHoy();
+  if (!S.vacG||S.vacG.sede!==sede||S.vacG.desde!==desde){ if (!S.vacG?.cargando) setTimeout(()=>vacGCargar(sede,desde),0); return `${asisFiltros(false)}<p class="status">Cargando…</p>`; }
+  if (S.vacG.cargando) return `${asisFiltros(false)}<p class="status">Cargando…</p>`;
+  if (S.vacG.error) return `${asisFiltros(false)}<div class="banner">${esc(S.vacG.error)}</div>`;
+  const rh=S.rol==="superusuario"||(S.api?.rhNivel||0)>=2, per=new Date().getFullYear()+"", g=asisGente().filter(p=>p.aplica&&(!sede||p.sede_id===sede));
+  const cob=S.vacG.cob||[];
+  return `${asisFiltros(false)}<div class="filtros"><label class="status" for="vacDesde">Desde</label><input id="vacDesde" type="date" value="${desde}" data-noborrador> <span class="status">31 días</span></div>
+    <section class="note"><div class="note-h"><h3>Cobertura de ${esc(sedes.find(s=>s.id===sede)?.nombre||"la sede")}</h3></div>
+    <p class="status" style="margin:0 0 6px">Personas con control de asistencia frente a ausencias aprobadas y en trámite (vacaciones y permisos). Sirve para acordar fechas, sobre todo en diciembre; no rechaza nada en automático. Las personas solo ven «Normal / Alta / Muy alta», nunca nombres.</p>
+    <div class="tbl-wrap"><table><thead><tr><th>Día</th><th>Personas</th><th>Aprobadas</th><th>En trámite</th><th>Quiénes</th></tr></thead><tbody>${cob.map(x=>{ const aus=x.aprobadas+x.en_tramite, r=x.personas?aus/x.personas:0;
+      return `<tr><td>${asisFechaTxt(x.dia)}</td><td>${x.personas}</td><td>${x.aprobadas||""}</td><td>${x.en_tramite||""}</td><td>${aus?`<span class="pill ${r>=.5?"estado-suspendido":r>=.25?"estado-pendiente":""}">${esc((x.nombres||[]).join(", "))}</span>`:""}</td></tr>`; }).join("")||`<tr><td colspan="5" class="status">Sin datos.</td></tr>`}</tbody></table></div></section>
+    <section class="note"><div class="note-h"><h3>Saldos de vacaciones ${per}</h3></div>
+    <p class="status" style="margin:0 0 6px">${rh?"Registra los días confirmados de cada persona. Nada se calcula solo; usados y en trámite se estiman con sus solicitudes. Tu propio saldo lo registra otra persona.":"Solo RR. HH. registra saldos."}</p>
+    <div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Confirmados</th><th>Corte</th><th>Nota</th>${rh?"<th></th>":""}</tr></thead><tbody>${g.map(p=>{ const s=(S.vacG.sal||[]).find(x=>x.colaborador_id===p.colaborador_id&&x.periodo===per);
+      return `<tr><td>${esc(asisNom(p.colaborador_id))}</td><td>${s?vacNum(s.dias):'<span class="status">Sin registrar</span>'}</td><td>${s?fechaTxt(s.fecha_corte):""}</td><td>${esc(s?.nota||"")}</td>${rh?`<td>${p.colaborador_id===A().yo?'<span class="status">Lo registra otra persona</span>':S.vacEd===p.colaborador_id
+        ?`<input id="vsDias" type="number" min="0" max="90" step="0.5" value="${s?vacNum(s.dias):""}" style="width:70px" aria-label="Días"> <input id="vsNota" type="text" maxlength="300" placeholder="Nota (opcional)" value="${esc(s?.nota||"")}" aria-label="Nota"> <button class="btn sm primary" type="button" data-act="vacGuardar" data-id="${p.colaborador_id}">Guardar</button> <button class="btn sm" type="button" data-act="vacEd" data-id="">Cancelar</button>`
+        :`<button class="btn sm" type="button" data-act="vacEd" data-id="${p.colaborador_id}">${s?"Cambiar":"Registrar"}</button>`}</td>`:""}</tr>`; }).join("")||`<tr><td colspan="5" class="status">Sin personas con control en esta sede.</td></tr>`}</tbody></table></div></section>`;
+}
+document.addEventListener("change", e=>{ if (e.target?.id==="vacDesde"&&e.target.value){ S.vacDesde=e.target.value; render(); } });
 /* ---------- Asistencia y jornadas (supervisión) ---------- */
-const ASIS_TABS=[["resumen","Resumen"],["registros","Entradas y salidas"],["horarios","Horarios y turnos"],["calendario","Calendario laboral"],["incidencias","Incidencias"],["solicitudes","Permisos y solicitudes"],["actividades","Actividades complementarias"],["cumplimiento","Cumplimiento de jornada"],["reportes","Reportes y corte"],["qr","QR de sede"],["config","Configuración"]];
+const ASIS_TABS=[["resumen","Resumen"],["registros","Entradas y salidas"],["horarios","Horarios y turnos"],["calendario","Calendario laboral"],["incidencias","Incidencias"],["solicitudes","Permisos y solicitudes"],["vacaciones","Vacaciones y cobertura"],["actividades","Actividades complementarias"],["cumplimiento","Cumplimiento de jornada"],["reportes","Reportes y corte"],["qr","QR de sede"],["config","Configuración"]];
 function asistenciaHtml(){
   if (!S.asis) return asisEspera("Asistencia y jornadas"); if (S.asis.error) return asisErr("Asistencia y jornadas");
   const tabs=ASIS_TABS.filter(([k])=>k!=="config"||S.rol==="superusuario").filter(([k])=>asisConHor()||!["horarios","calendario","cumplimiento"].includes(k)).filter(([k])=>k!=="qr"||S.rol==="superusuario"||S.rol==="admin_sede"||(S.api?.asisNivel||0)>=2);
   if (!tabs.some(t=>t[0]===S.asisTab)) S.asisTab="resumen";
-  const f={resumen:asisResumen,registros:asisRegistros,horarios:asisHorarios,calendario:asisCalendario,incidencias:asisIncidencias,solicitudes:asisSolicitudes,actividades:asisActividades,cumplimiento:asisCumplimiento,reportes:asisReportes,qr:asisQr,config:asisConfig}[S.asisTab];
+  const f={resumen:asisResumen,registros:asisRegistros,horarios:asisHorarios,calendario:asisCalendario,incidencias:asisIncidencias,solicitudes:asisSolicitudes,vacaciones:asisVacaciones,actividades:asisActividades,cumplimiento:asisCumplimiento,reportes:asisReportes,qr:asisQr,config:asisConfig}[S.asisTab];
   if (S.asisTab!=="qr") asisQrParar();
   return asisPag("Asistencia y jornadas","Información de las personas que puedes ver. Las diferencias de horario son incidencias por revisar: nunca faltas, sanciones ni descuentos automáticos.","",
     `${asisActivo()?"":asisApagado()}<div class="tabs" role="tablist">${tabs.map(([k,t])=>`<button class="tab" role="tab" type="button" data-act="asisTab" data-t="${k}" aria-selected="${S.asisTab===k}">${t}</button>`).join("")}</div>${f()}`);
@@ -3558,7 +3626,7 @@ function asisSolicitudes(){ const ids=new Set(asisGente().map(p=>p.colaborador_i
   return `${r?`<section class="note"><div class="note-h"><h3>${ASIS_SOL[r.tipo]} · ${esc(asisNom(r.colaborador_id))}</h3></div><p style="margin:0">${esc(r.detalle)}${r.hora_propuesta?` · Hora propuesta: ${String(r.hora_propuesta).slice(0,5)}`:""}</p><div class="datos">${fld("rsAsis","Respuesta para la persona","",{span:3})}</div>
       <div class="actions"><button class="btn primary" type="button" data-act="asisResSol" data-d="aprobada">Aprobar</button><button class="btn" type="button" data-act="asisResSol" data-d="en_revision">Marcar en revisión</button><button class="btn danger" type="button" data-act="asisResSol" data-d="rechazada">Rechazar</button><button class="btn" type="button" data-act="asisCancelar">Cancelar</button></div></section>`:""}
     <div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Solicitud</th><th>Fecha</th><th>Detalle</th><th>Estado</th><th></th></tr></thead><tbody>
-    ${ls.map(s=>`<tr><td>${esc(asisNom(s.colaborador_id))}</td><td>${ASIS_SOL[s.tipo]}</td><td>${asisFechaTxt(s.fecha)}${s.fecha_fin?" a "+fmtDate(s.fecha_fin):""}</td><td>${esc(s.detalle)}${s.respuesta?`<br><span class="status">Respuesta: ${esc(s.respuesta)}</span>`:""}</td><td><span class="pill ${ASIS_SOL_EST[s.estado][1]}">${ASIS_SOL_EST[s.estado][0]}</span></td>
+    ${ls.map(s=>`<tr><td>${esc(asisNom(s.colaborador_id))}</td><td>${ASIS_SOL[s.tipo]}</td><td>${asisFechaTxt(s.fecha)}${s.fecha_fin?" a "+fmtDate(s.fecha_fin):""}</td><td>${esc(s.detalle)}${s.respuesta?`<br><span class="status">Respuesta: ${esc(s.respuesta)}</span>`:""}${evidDe(s.id).length?`<br>${evidBtn(s.id)}`:""}</td><td><span class="pill ${ASIS_SOL_EST[s.estado][1]}">${ASIS_SOL_EST[s.estado][0]}</span></td>
       <td>${["enviada","en_revision"].includes(s.estado)?(s.colaborador_id===A().yo?`<span class="status">No puedes resolver lo tuyo</span>`:`<button class="btn sm primary" type="button" data-act="asisResSolForm" data-id="${s.id}">Revisar</button>`):""}</td></tr>`).join("")||`<tr><td colspan="6" class="status">Sin solicitudes.</td></tr>`}</tbody></table></div>
     <p class="status" style="margin:0">Aprueba el jefe directo vigente (línea de reporte en Organización) o quien administra la asistencia de la sede. Nadie aprueba sus propias solicitudes. Una corrección aprobada crea un ajuste; un permiso, vacaciones o incapacidad aprobados quedan como incidencia confirmada.</p>`; }
 function asisActividades(){ const ids=new Set(asisGente().map(p=>p.colaborador_id)), cat=k=>A().categorias.find(c=>c.clave===k)?.nombre||k;
@@ -3625,7 +3693,7 @@ function asisConfig(){ const c=A().config, ap=c.aplica||{}, met=c.metodos||{};
       <p class="status" style="margin:0">Una salida autorizada nunca se convierte en falta, y los cambios no se aplican hacia atrás sobre registros ya autorizados.</p></section>`; }
 
 /* ---------- Acciones ---------- */
-const ASIS_ACC=new Set(["miasis","asistencia","asisTab","asisCancelar","asisMarcar","asisFormSol","asisEnviarSol","asisCancelarSol","asisFormAct","asisGuardarAct","asisBorrarAct","asisNuevoHor","asisEditHor","asisGuardarHor","asisFormAsig","asisGuardarAsig","asisTermAsig","asisFormJor","asisGuardarJor","asisDetectar","asisResIncForm","asisResInc","asisResSolForm","asisResSol","asisValAct","asisCorte","asisActivar","asisTol","asisFormPol","asisGuardarPol"]);
+const ASIS_ACC=new Set(["asisEvidVer","vacEd","vacGuardar","miasis","asistencia","asisTab","asisCancelar","asisMarcar","asisFormSol","asisEnviarSol","asisCancelarSol","asisFormAct","asisGuardarAct","asisBorrarAct","asisNuevoHor","asisEditHor","asisGuardarHor","asisFormAsig","asisGuardarAsig","asisTermAsig","asisFormJor","asisGuardarJor","asisDetectar","asisResIncForm","asisResInc","asisResSolForm","asisResSol","asisValAct","asisCorte","asisActivar","asisTol","asisFormPol","asisGuardarPol"]);
 function asisErrTxt(e){ const m=e?.message||""; if (/row-level|permission/i.test(m)){ S.api.registrarDenegado?.("Asistencia: "+(S.asisTab||S.view)); return "No tienes autorización para esa acción."; } return m||"No se pudo completar."; }
 async function asisAccion(a,b){
   const v=id=>($("#"+id)?.value??"").trim(), hecho=async(fn,ok)=>{ try{ await fn(); S.asisForm=null; S.asisHorEd=null; S.asisResInc=null; S.asisResSol=null; toast(ok); await asisCargar(S.asisRango?.desde,S.asisRango?.hasta); }catch(e){ toast(asisErrTxt(e)); } };
@@ -3636,10 +3704,16 @@ async function asisAccion(a,b){
   if (a==="asisMarcar"){ const t=b.dataset.t, qr=S.qrPend; b.disabled=true;
     try{ await S.api.registrarMarca(t, qr?"qr":"app", $("#asMod")?.value||"presencial", qr); S.qrPend=null; toast(`${t==="entrada"?"Entrada":"Salida"} registrada con la hora del servidor.`); await asisCargar(); }
     catch(e){ b.disabled=false; toast(asisErrTxt(e)); } return; }
-  if (a==="asisFormSol"){ S.asisForm="sol"; render(); setTimeout(()=>$("#slDet")?.focus(),30); return; }
+  if (a==="asisFormSol"){ S.asisForm="sol"; S.asisSlTipo=b?.dataset?.t||null; render(); setTimeout(()=>{ slExtraPintar(); $("#slDet")?.focus(); },30); return; }
   if (a==="asisEnviarSol"){ const tipo=v("slTipo"), det=v("slDet"); if (det.length<5) return toast("Escribe el detalle (5 caracteres o más).");
     if (/^correccion/.test(tipo)&&!v("slHora")) return toast("Escribe la hora correcta.");
-    return hecho(()=>S.api.crearSolicitudAsis({colaborador_id:A().yo, tipo, fecha:v("slFecha"), fecha_fin:v("slFin"), hora_propuesta:v("slHora"), detalle:det}),"Solicitud enviada. Nada cambia hasta que se apruebe."); }
+    const ev=$("#slEvid")?.files?.[0]; S.miSaldo=undefined; S.asisSlTipo=null;
+    return hecho(async()=>{ const id=await S.api.crearSolicitudAsis({colaborador_id:A().yo, tipo, fecha:v("slFecha"), fecha_fin:v("slFin"), hora_propuesta:v("slHora"), detalle:det});
+      if (ev&&id){ try{ await S.api.subirEvidencia(id,ev); }catch(e){ setTimeout(()=>toast("La solicitud se envió, pero la constancia no se pudo subir: "+(e?.message||"")),1200); } } },"Solicitud enviada. Nada cambia hasta que se apruebe."); }
+  if (a==="asisEvidVer"){ try{ window.open(await S.api.urlEvidencia(b.dataset.a),"_blank","noopener"); }catch(e){ toast(asisErrTxt(e)); } return; }
+  if (a==="vacEd"){ S.vacEd=b.dataset.id||null; return render(); }
+  if (a==="vacGuardar"){ const dd=Number(v("vsDias")); if (!(dd>=0&&dd<=90)) return toast("Los días van de 0 a 90.");
+    try{ await S.api.registrarSaldoVacaciones(b.dataset.id,String(new Date().getFullYear()),dd,asisHoy(),v("vsNota")); S.vacEd=null; S.vacG=null; toast("Saldo registrado. Quedó en la bitácora."); return render(); }catch(e){ return toast(asisErrTxt(e)); } }
   if (a==="asisCancelarSol") return hecho(()=>S.api.cancelarSolicitudAsis(b.dataset.id),"Solicitud cancelada.");
   if (a==="asisFormAct"){ S.asisForm="act"; return render(); }
   if (a==="asisGuardarAct"){ const m=Number(v("acMin")); if (!(m>=1&&m<=600)) return toast("La duración va de 1 a 600 minutos.");
@@ -4199,6 +4273,8 @@ const GUIAS = [
   {t:"Consultar la organización", si:()=>(S.api?.orgNivel||0)>=1, pasos:["Entra a Administración → Resumen para ver sedes, personas, vacantes y alertas de las sedes que tienes autorizadas.","En Organigrama elige la vista (línea de reporte, área, sede, supervisión clínica o coordinación) y pulsa a una persona para ver su ficha.","En Supervisión registra a quién reporta cada persona; en Vacantes, quién ocupa cada plaza."]},
   {t:"Iniciar el proceso de una persona en contratación", si:()=>S.rol==="superusuario"||(S.api?.rhNivel||0)>=2, pasos:["Antes, en Personas → Supervisión registra a quién reporta (su jefe directo) y, si es psicólogo(a), quién le da supervisión clínica.","Entra a Personas → Incorporación y pulsa + Iniciar proceso.","Elige a la persona (si aún no tiene cuenta, déjala en preingreso e indica si es administrativo o psicólogo), las fechas, la duración y a su responsable, capacitador, mentor y supervisor.","El plan se arma con la ruta de su puesto y se puede personalizar. A los días 30, 60 y 90 se evalúa; al final el responsable recomienda y tú decides: confirmar, revisión adicional, suspender o concluir sin continuidad."]},
   {t:"Acompañar o evaluar a una persona en incorporación", si:()=>!!S.rol, pasos:["Entra a Personas → Incorporación y abre a la persona (también aparece en Pendientes de Inicio cuando toca).","Como capacitador(a) o responsable: completa sus actividades con retroalimentación o márcalas para refuerzo. Como mentor(a): registra reuniones con acuerdos y compromisos.","Como responsable o supervisor(a): cada evaluación se abre 10 días antes de su corte; califica cada criterio del 1 al 4 con evidencias y un plan de mejora, y ciérrala. Después de la del día 90 envía tu recomendación con una valoración escrita."]},
+  {t:"Solicitar vacaciones o un permiso", si:()=>!!S.rol, pasos:["Entra a Mi espacio → Mi asistencia. En «Mis vacaciones» ves los días confirmados por RR. HH., los usados, los que están en trámite y los disponibles (usados y en trámite son un estimado).","Pulsa «Solicitar vacaciones» o «Pedir corrección o permiso» y elige el tipo: permiso personal, revisión médica, emergencia familiar, con o sin goce de sueldo, incapacidad, entre otros.","En vacaciones verás la demanda de tu sede esos días (Normal, Alta o Muy alta), sin nombres de otras personas. «Alta» no significa que se rechace: tu jefe lo revisa contigo.","En permisos puedes adjuntar una constancia (PDF o imagen). No escribas ni adjuntes diagnósticos: solo la ven RR. HH. y tú.","Tu jefe directo la resuelve. Aparece también en Mis solicitudes."]},
+  {t:"Saldos de vacaciones y cobertura (RR. HH.)", si:()=>!!S.rol && (S.rol==="superusuario"||(S.api?.rhNivel||0)>=2||(S.api?.asisNivel||0)>=1), pasos:["Entra a Personas → Asistencia y jornadas → «Vacaciones y cobertura».","Elige la sede y la fecha de inicio: ves 31 días con las personas con control y quiénes estarán ausentes (aprobado o en trámite).","RR. HH. registra el saldo confirmado de cada persona con «Registrar». Nada se calcula solo; tu propio saldo lo registra otra persona.","Las constancias de los permisos aparecen como «Ver constancia» en «Permisos y solicitudes», solo para RR. HH."]},
   {t:"Hacer una solicitud", si:()=>!!S.rol, pasos:["Entra a Mi espacio → Mis solicitudes y pulsa «+ Nueva solicitud».","Elige el tipo: corregir tus datos, constancia, aclaración de pago, necesito apoyo, propuesta o problema con la app. Vacaciones, permisos y correcciones de asistencia se piden en Mi asistencia y aparecen en la misma lista.","Escribe con calma: lo que escribes se guarda como borrador. Puedes «Guardar como borrador» y enviarla después.","Pulsa «Revisar antes de enviar» y luego «Enviar solicitud»: recibes un folio CEMEPI-SOL.","En la lista ves quién la tiene y su estado. Si te piden información, respóndela ahí mismo. Mientras no se resuelva, puedes cancelarla.","La campana de arriba te avisa cuando hay respuesta. No llegan avisos por correo ni mensajes."]},
   {t:"Resolver solicitudes del equipo", si:()=>!!S.rol && ["superusuario","direccion","admin_sede"].includes(S.rol), pasos:["Entra a Personas → Bandeja de solicitudes: ves solo las que te toca resolver ahora (de quien te reporta o de tus sedes). Nunca las tuyas.","Pulsa «Revisar»: ves el detalle, el recorrido y el historial.","Puedes tomarla en revisión, pedir información, no aprobarla (explicando el motivo) o aprobarla. Si tiene otro paso, pasa a la siguiente persona.","Una corrección de nombre o cédula aprobada se aplica sola a la cuenta, a las firmas y a los directorios; solo la aprueba quien administra esa cuenta.","El Superusuario define en «Tipos de solicitud» quién revisa cada tipo, el plazo y si está activo. Cada cambio queda en la bitácora."]},
   {t:"Mi información y Mi espacio", si:()=>!!S.rol, pasos:["Entra a Mi espacio → Mi información: ahí ves tu perfil, tu puesto, tus sedes, a quién reportas y tu equipo.","Cada dato dice quién puede cambiarlo: «Lo editas tú» (teléfono y firma, en Mi cuenta → Mi perfil), «Por solicitud» (nombre y cédula), «Lo administra RR. HH.» (puesto, sede, fecha de incorporación) e «Histórico».","Si algo no es correcto, pulsa «Pedir corrección»: se abre una solicitud que revisa RR. HH. Al aprobarse, tu nombre o tu cédula se corrigen solos en tu cuenta, tus firmas y los directorios.","Si administras personas, arriba verás «Mi espacio | Gestión»: Mi espacio muestra solo lo tuyo y Gestión todo lo que administras. Cambiar de espacio no te da ni te quita permisos.","El recorrido de bienvenida se puede pausar con «Más tarde» y volver a ver desde Mi información."]},

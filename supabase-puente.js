@@ -408,8 +408,8 @@ const cemepi = {
       categorias: ca, politicas: po, cortes: co, personas: re, sedes: sd, sedeEnt: sx, entidades: en }; },
   async registrarMarca(tipo, metodo, modalidad, qr){ const { data, error } = await sb.rpc("registrar_marca", { p_tipo: tipo, p_metodo: metodo, p_modalidad: modalidad || "presencial", p_qr: qr || null, p_agente: navigator.userAgent.slice(0, 200) }); if (error) fallo(error); return data; },
   async qrSede(sede){ const { data, error } = await sb.rpc("qr_sede", { p_sede: sede }); if (error) fallo(error); return (data || [])[0]; },
-  async crearSolicitudAsis(s){ const { error } = await sb.from("asistencia_solicitudes").insert({ colaborador_id: s.colaborador_id, tipo: s.tipo, fecha: s.fecha, fecha_fin: s.fecha_fin || null,
-      hora_propuesta: s.hora_propuesta || null, detalle: s.detalle, estado: "enviada" }); if (error) fallo(error); },
+  async crearSolicitudAsis(s){ const { data, error } = await sb.from("asistencia_solicitudes").insert({ colaborador_id: s.colaborador_id, tipo: s.tipo, fecha: s.fecha, fecha_fin: s.fecha_fin || null,
+      hora_propuesta: s.hora_propuesta || null, detalle: s.detalle, estado: "enviada" }).select("id").single(); if (error) fallo(error); return data?.id; },
   async cancelarSolicitudAsis(id){ const { error } = await sb.from("asistencia_solicitudes").update({ estado: "cancelada" }).eq("id", id); if (error) fallo(error); },
   async resolverSolicitudAsis(id, d, r){ const { error } = await sb.rpc("resolver_solicitud_asistencia", { p_id: id, p_decision: d, p_respuesta: r || null }); if (error) fallo(error); },
   async resolverIncidencia(id, e, r){ const { error } = await sb.rpc("resolver_incidencia", { p_id: id, p_estado: e, p_resolucion: r }); if (error) fallo(error); },
@@ -630,6 +630,21 @@ const cemepi = {
   async guardarTipoSolicitud(clave, cambios){ const { error } = await sb.from("sol_tipos").update(cambios).eq("clave", clave); if (error) fallo(error); },
   async notificaciones(){ const { data, error } = await sb.from("notificaciones").select("*").order("creado", { ascending: false }).limit(40); if (error) return []; return data || []; },
   async marcarLeidas(ids){ if (!ids?.length) return; const { error } = await sb.from("notificaciones").update({ leida: true }).in("id", ids); if (error) fallo(error); },
+  /* Vacaciones y permisos (Módulo 06 · P3) */
+  async saldoVacaciones(col, periodo){ const { data, error } = await sb.rpc("saldo_vacaciones", { p_col: col || null, p_periodo: periodo || null }); if (error) fallo(error); return data; },
+  async vacDiasEstimados(d, h){ const { data, error } = await sb.rpc("vac_dias_estimados", { p_desde: d, p_hasta: h }); if (error) return null; return data; },
+  async vacSaldos(){ const { data, error } = await sb.from("vac_saldos").select("*"); if (error) return []; return data || []; },
+  async registrarSaldoVacaciones(col, periodo, dias, corte, nota){ const { error } = await sb.rpc("registrar_saldo_vacaciones", { p_col: col, p_periodo: periodo, p_dias: dias, p_fecha_corte: corte || null, p_nota: nota || null }); if (error) fallo(error); },
+  async coberturaSede(desde, hasta, sede){ const { data, error } = await sb.rpc("cobertura_sede", { p_desde: desde, p_hasta: hasta, p_sede: sede || null }); if (error) fallo(error); return data || []; },
+  async evidencias(){ const { data, error } = await sb.from("asis_evidencias").select("*"); if (error) return []; return data || []; },
+  async subirEvidencia(solId, file){
+    if (!/^(application\/pdf|image\/(png|jpeg))$/.test(file.type)) throw { message: "Solo PDF, PNG o JPG." };
+    if (file.size > 5 * 1024 * 1024) throw { message: "El archivo pesa más de 5 MB." };
+    const ext = file.type === "application/pdf" ? "pdf" : file.type === "image/png" ? "png" : "jpg";
+    const ruta = `${usuario.id}/${solId}-${Date.now()}.${ext}`;
+    const up = await sb.storage.from("evidencias-asistencia").upload(ruta, file, { contentType: file.type, upsert: false }); if (up.error) fallo(up.error);
+    const { error } = await sb.from("asis_evidencias").insert({ solicitud_id: solId, archivo: ruta, nombre: (file.name || "").slice(0, 120) }); if (error) fallo(error); },
+  async urlEvidencia(archivo){ const { data, error } = await sb.storage.from("evidencias-asistencia").createSignedUrl(archivo, 120); if (error) fallo(error); return data.signedUrl; },
   async revisionesPendientes(){ const { data, error } = await sb.from("revisiones").select("id,tipo").eq("estado", "pendiente"); if (error) return []; return data || []; },
   async atenderRevision(id, estado, nota){ const { error } = await sb.rpc("atender_revision", { p_id: id, p_estado: estado, p_nota: nota || null }); if (error) fallo(error); },
   async guardarColaborador(c){
