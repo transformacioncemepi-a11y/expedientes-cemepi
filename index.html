@@ -5697,7 +5697,7 @@ const RAI_ACC=new Set(["raices","raiTab","raiBuscar"]);
    ==================================================================================== */
 const ACU_ACC=new Set(["misacuerdos","acuerdos","acuTab","acuEtapa","acuMarcar","acuReflex","acuLeer","acuLeido","acuDuda","acuAceptar","acuWord","acuIA",
   "acuSinc","acuVer","acuVerCerrar","acuGenerar","acuGenerarOk","acuTrans","acuRecordar","acuVincular","acuVEstado","acuVEditar","acuVGuardar","acuAnexoNuevo",
-  "acuAnexoGuardar","acuAnexoAprobar","acuContGuardar","acuRetro","acuCampana","acuBuscar","acuCancelar","acuPdf","acuDemo","acuDemoCerrar","acuDemoDoc","acuVNueva"]);
+  "acuAnexoGuardar","acuAnexoAprobar","acuContGuardar","acuRetro","acuCampana","acuBuscar","acuCancelar","acuPdf","acuDemo","acuDemoCerrar","acuDemoDoc","acuVNueva","acuPlCambiar"]);
 const ACU_EST={generado:["Generado","estado-pendiente"],disponible_lectura:["Disponible para lectura","estado-pendiente"],pendiente_aclaraciones:["Pendiente de aclaraciones","estado-pendiente"],
   pendiente_firma_psicologo:["Pendiente de firma del psicólogo","estado-pendiente"],pendiente_firma_cemepi:["Pendiente de firma de CEMEPI","estado-pendiente"],firmado:["Firmado por ambas partes","estado-activo"],
   vigente:["Vigente","estado-activo"],sustituido:["Sustituido por un nuevo acuerdo",""],concluido:["Concluido",""],cancelado:["Cancelado","estado-suspendido"],archivado:["Archivado",""]};
@@ -5708,7 +5708,11 @@ const ACU_ANEXO={comisiones:"Comisiones por tipo de servicio",modalidades:"Modal
   procedimientos:"Procedimientos administrativos",pago:"Condiciones de pago",becas:"Programas de becas y convenios",otros:"Otros acuerdos específicos"};
 const ACU_AVISO="La denominación de este documento no determina por sí misma la naturaleza jurídica de la relación, que corresponde a las condiciones reales de prestación de servicios.";
 const ACU=()=>S.acu;
-const acuPl=()=>ACU()?.plantillas.find(p=>p.clave==="carta_psi_independiente");
+const ACU_CARTA="carta_psi_independiente";   /* la formación previa (etapas 1–5) es de la Carta Compromiso */
+const acuCarta=()=>ACU()?.plantillas.find(p=>p.clave===ACU_CARTA);
+/* Plantilla seleccionada en el panel (motor contractual reutilizable: una pantalla para todas las plantillas) */
+const acuPl=()=>{ const ps=ACU()?.plantillas||[]; return ps.find(p=>p.clave===S.acuPlCl)||ps.find(p=>p.clave===ACU_CARTA)||ps[0]; };
+const acuPlDe=v=>ACU()?.plantillas.find(p=>p.id===v?.plantilla_id);
 const acuVer=id=>ACU()?.versiones.find(v=>v.id===id);
 const acuCol=id=>ACU()?.cols.find(c=>c.id===id);
 const acuPer=id=>ACU()?.perfiles.find(p=>p.id===id);
@@ -5731,7 +5735,7 @@ function misAcuHtml(){
   const env=x=>`<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:12px">${cab}${x}</div>`;
   if (!a) return env(`<p class="status">Cargando…</p>`);
   if (!a.ok) return env(`<section class="card"><p class="status" style="margin:0">Esta sección estará disponible cuando se apliquen las migraciones 058–059.</p></section>`);
-  const pl=acuPl(), mios=a.acuerdos.filter(x=>x.colaborador_id===a.yo), av=new Set(a.avance.filter(x=>x.colaborador_id===a.yo).map(x=>x.etapa));
+  const pl=acuCarta(), mios=a.acuerdos.filter(x=>x.colaborador_id===a.yo), av=new Set(a.avance.filter(x=>x.colaborador_id===a.yo).map(x=>x.etapa));
   const sig=[1,2,3,4,5].find(e=>!av.has(e))||6, et=S.acuEtapa||sig;
   const prog=`<div class="tabs" role="tablist" aria-label="Etapas">${ACU_ETAPAS.map((n,i)=>`<button class="tab" role="tab" type="button" data-act="acuEtapa" data-t="${i+1}" aria-selected="${et===i+1}">${av.has(i+1)||(i===5&&mios.some(x=>["firmado","vigente"].includes(x.estado)))?"✓ ":""}${i+1}. ${esc(n)}</button>`).join("")}</div>`;
   const intro=`<section class="card"><h2 style="margin:0">${esc(pl?.nombre||"CARTA COMPROMISO PARA EL PSICÓLOGO INDEPENDIENTE")}</h2><p class="status" style="margin:4px 0 0">${esc(pl?.subtitulo||"")}</p>
@@ -5784,26 +5788,30 @@ function acuPanelHtml(){
   if (!a.ok) return env(`<section class="card"><p class="status" style="margin:0">Disponible cuando se apliquen las migraciones 058–059.</p></section>`);
   const t=S.acuTab||"personas", tabs=[["personas","Psicólogos independientes"],["plantilla","Plantilla y versiones"],["anexos","Anexos"],["contenidos","Formación previa"],["reflexiones","Reflexiones"],["campanas","Campañas"]];
   const pl=acuPl(), ap=a.versiones.find(v=>v.plantilla_id===pl?.id&&v.estado==="aprobada");
-  const aviso=`<p class="status" style="margin:0;max-width:90ch"><b>${esc(pl?.nombre||"")}</b> · ${esc(pl?.subtitulo||"")} Categoría: contratos y acuerdos de prestación de servicios profesionales independientes (no es un contrato laboral). ${ap?`Plantilla aprobada: v${ap.version}.`:`<b>La plantilla todavía no está aprobada: no se publica ni se firma ningún documento.</b>`} No hay sanciones ni suspensiones automáticas.</p>`;
+  const sel=a.plantillas.length>1?`<div class="filtros" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">${fld("acuPlSel","Plantilla",pl?.clave||"",{opts:a.plantillas.map(p=>[p.clave,p.nombre])})}<button class="btn sm" type="button" data-act="acuPlCambiar">Ver</button></div>`:"";
+  const aviso=sel+`<p class="status" style="margin:0;max-width:90ch"><b>${esc(pl?.nombre||"")}</b> · ${esc(pl?.subtitulo||"")} Categoría: contratos y acuerdos de prestación de servicios profesionales independientes (no es un contrato laboral). ${ap?`Plantilla aprobada: v${ap.version}.`:`<b>La plantilla todavía no está aprobada: no se publica ni se firma ningún documento.</b>`} No hay sanciones ni suspensiones automáticas.</p>`;
   const tb=`<div class="tabs" role="tablist">${tabs.map(([k,x])=>`<button class="tab" role="tab" type="button" data-act="acuTab" data-t="${k}" aria-selected="${t===k}">${x}</button>`).join("")}</div>`;
   const f={personas:acuPersonasHtml,plantilla:acuPlantillaHtml,anexos:acuAnexosHtml,contenidos:acuContenidosHtml,reflexiones:acuReflexionesHtml,campanas:acuCampanasHtml}[t]||acuPersonasHtml;
   return env(`${aviso}${tb}${f()}`);
 }
 function acuPersonasHtml(){
   const a=ACU(), pl=acuPl(), q=norm(S.acuQ||""), fe=S.acuFe||"", fs=S.acuFs||"";
-  const psis=a.cols.filter(c=>{ const p=acuPer(c.perfil_id); return c.estatus!=="baja"&&p?.rol==="psicologo"; });
-  const filas=psis.map(c=>{ const p=acuPer(c.perfil_id), ac=a.acuerdos.filter(x=>x.colaborador_id===c.id), ult=ac[0], av=a.avance.filter(x=>x.colaborador_id===c.id).length;
+  const vIds=new Set(a.versiones.filter(v=>v.plantilla_id===pl?.id).map(v=>v.id)), deEsta=a.acuerdos.filter(x=>vIds.has(x.plantilla_version_id));
+  const compat=p=>pl?.modalidad==="cualquiera"||p?.modalidad===pl?.modalidad;
+  /* Plantillas para independientes (comisión): psicólogos; otras plantillas: todo el personal activo */
+  const psis=a.cols.filter(c=>{ const p=acuPer(c.perfil_id); return c.estatus!=="baja"&&(pl?.modalidad==="comision"?p?.rol==="psicologo":!!p); });
+  const filas=psis.map(c=>{ const p=acuPer(c.perfil_id), ac=deEsta.filter(x=>x.colaborador_id===c.id), ult=ac[0], av=a.avance.filter(x=>x.colaborador_id===c.id).length;
     return {c,p,ult,av,n:ac.length}; }).filter(r=>(!q||norm(r.c.nombre).includes(q))&&(!fe||(r.ult?.estado||"sin")===fe)&&(!fs||r.c.sede_principal_id===fs));
-  const cnt=k=>a.acuerdos.filter(x=>x.estado===k).length;
-  const kp=`<div class="kpis">${[["Independientes registrados",psis.filter(c=>acuPer(c.perfil_id)?.modalidad==="comision").length],["Por leer",cnt("disponible_lectura")],["Con aclaraciones",cnt("pendiente_aclaraciones")],["Pendientes de firma",cnt("pendiente_firma_psicologo")+cnt("pendiente_firma_cemepi")],["Vigentes",cnt("vigente")]].map(([n,v])=>`<div class="kpi"><span>${n}</span><b>${v}</b></div>`).join("")}</div>
-    <p class="status" style="margin:4px 0 0">Por entidad jurídica: ${a.entidades.map(e=>`${esc(e.nombre_corto)} ${a.acuerdos.filter(x=>x.entidad_id===e.id&&x.estado==="vigente").length} vigentes`).join(" · ")}</p>`;
+  const cnt=k=>deEsta.filter(x=>x.estado===k).length;
+  const kp=`<div class="kpis">${[[pl?.modalidad==="comision"?"Independientes registrados":"Personas compatibles",psis.filter(c=>compat(acuPer(c.perfil_id))).length],["Por leer",cnt("disponible_lectura")],["Con aclaraciones",cnt("pendiente_aclaraciones")],["Pendientes de firma",cnt("pendiente_firma_psicologo")+cnt("pendiente_firma_cemepi")],["Vigentes",cnt("vigente")]].map(([n,v])=>`<div class="kpi"><span>${n}</span><b>${v}</b></div>`).join("")}</div>
+    <p class="status" style="margin:4px 0 0">Por entidad jurídica: ${a.entidades.map(e=>`${esc(e.nombre_corto)} ${deEsta.filter(x=>x.entidad_id===e.id&&x.estado==="vigente").length} vigentes`).join(" · ")}</p>`;
   const gen=S.acuGen?(()=>{ const c=acuCol(S.acuGen), p=acuPer(c?.perfil_id), vs=a.versiones.filter(v=>v.plantilla_id===pl?.id&&!["retirada","sustituida"].includes(v.estado)), anx=a.anexos.filter(x=>x.estado==="aprobado");
-    return `<section class="note"><div class="note-h"><h3>Generar Carta para ${esc(c?.nombre||"")}</h3><button class="btn sm" type="button" data-act="acuCancelar">Cancelar</button></div>
-      <p style="margin:0">Modalidad registrada: <b>${esc(p?.modalidad==="comision"?"Profesional independiente (comisión)":p?.modalidad==="nomina"?"Nómina":"Sin definir")}</b>. ${p?.modalidad==="comision"?"":"<b>No se puede generar: la persona no está registrada como independiente.</b>"}</p>
+    return `<section class="note"><div class="note-h"><h3>Generar «${esc(pl?.nombre||"")}» para ${esc(c?.nombre||"")}</h3><button class="btn sm" type="button" data-act="acuCancelar">Cancelar</button></div>
+      <p style="margin:0">Modalidad registrada: <b>${esc(p?.modalidad==="comision"?"Profesional independiente (comisión)":p?.modalidad==="nomina"?"Nómina":"Sin definir")}</b>. ${pl?.modalidad==="cualquiera"||p?.modalidad===pl?.modalidad?"":"<b>No se puede generar: su modalidad no corresponde a esta plantilla.</b>"}</p>
       <form class="datos" onsubmit="return false">${fld("agVer","Versión de la plantilla",(vs.find(v=>v.estado==="aprobada")||vs[0])?.id||"",{opts:vs.map(v=>[v.id,`v${v.version} · ${ACU_VEST[v.estado][0]}`])})}
         ${fld("agLugar","Lugar de celebración *","",{max:120,ph:"Ciudad de México"})}
         <div class="fld" style="grid-column:span 3"><label>Anexos aprobados que se relacionan</label>${anx.length?anx.map(x=>`<label style="display:flex;gap:6px"><input type="checkbox" class="agAnx" value="${x.id}"> ${esc(x.nombre)} v${x.version} (${esc(ACU_ANEXO[x.tipo])})</label>`).join(""):`<span class="status">No hay anexos aprobados: «Referencia al acuerdo económico vigente» quedará como dato faltante.</span>`}</div></form>
-      <label style="display:flex;gap:6px;align-items:flex-start;margin-top:6px"><input type="checkbox" id="agMod"> Verifiqué que la modalidad real de colaboración de esta persona corresponde a la prestación de servicios profesionales independientes (no se clasifica automáticamente).</label>
+      <label style="display:flex;gap:6px;align-items:flex-start;margin-top:6px"><input type="checkbox" id="agMod"> Verifiqué que la modalidad real de colaboración de esta persona corresponde a esta plantilla (no se clasifica automáticamente).</label>
       <p class="status" style="margin:6px 0 0">Los datos se toman del perfil y de Organización; lo que falte queda marcado y no se inventa. Sin plantilla aprobada, el documento se genera pero no se publica a la persona.</p>
       <div class="actions"><button class="btn primary" type="button" data-act="acuGenerarOk">Generar</button></div></section>`; })():"";
   const ver=S.acuVer?(()=>{ const x=a.acuerdos.find(y=>y.id===S.acuVer); if (!x) return ""; const ev=a.eventos.filter(e=>e.acuerdo_id===x.id), docs=a.docs.filter(d=>d.colaborador_id===x.colaborador_id);
@@ -5827,11 +5835,11 @@ function acuPersonasHtml(){
       <div class="fld"><label for="acuQ">Buscar</label><input id="acuQ" type="search" value="${esc(S.acuQ||"")}" placeholder="Nombre"></div>
       ${fld("acuFe","Estado",fe,{opts:[["","Todos"],["sin","Sin acuerdo"],...Object.entries(ACU_EST).map(([k,[n]])=>[k,n])]})}${fld("acuFs","Sede",fs,{opts:[["","Todas"],...a.sedes.map(x=>[x.id,x.nombre])]})}
       <button class="btn sm" type="button" data-act="acuBuscar">Filtrar</button></div>
-    <p class="status" style="margin:8px 0 0">Se listan todas las personas con rol de psicólogo para que verifiques su modalidad: solo quienes están registrados como independientes pueden recibir la Carta.</p>
+    <p class="status" style="margin:8px 0 0">${pl?.modalidad==="comision"?"Se listan todas las personas con rol de psicólogo para que verifiques su modalidad: solo quienes están registrados como independientes pueden recibir este documento.":"Se lista el personal activo; solo se genera para quienes tienen una modalidad compatible con esta plantilla, verificada por una persona."}</p>
     <div class="tbl-wrap" style="margin-top:8px"><table class="tbl"><thead><tr><th>Persona</th><th>Modalidad</th><th>Sede</th><th>Formación previa</th><th>Último acuerdo</th><th></th></tr></thead><tbody>
     ${filas.map(r=>`<tr><td class="sens">${esc(r.c.nombre)}</td><td>${esc(r.p?.modalidad==="comision"?"Independiente":r.p?.modalidad==="nomina"?"Nómina":"Sin definir")}</td><td>${esc(a.sedes.find(x=>x.id===r.c.sede_principal_id)?.nombre||"—")}</td>
       <td>${r.av}/5</td><td>${r.ult?`${esc(r.ult.folio)} ${catPill(ACU_EST,r.ult.estado)}`:"—"}</td>
-      <td style="white-space:nowrap">${r.ult?`<button class="btn sm" type="button" data-act="acuVer" data-id="${r.ult.id}">Abrir</button> `:""}${r.p?.modalidad==="comision"?`<button class="btn sm" type="button" data-act="acuGenerar" data-id="${r.c.id}">Generar</button>`:""}</td></tr>`).join("")||`<tr><td colspan="6">Sin resultados.</td></tr>`}</tbody></table></div></section>`;
+      <td style="white-space:nowrap">${r.ult?`<button class="btn sm" type="button" data-act="acuVer" data-id="${r.ult.id}">Abrir</button> `:""}${compat(r.p)?`<button class="btn sm" type="button" data-act="acuGenerar" data-id="${r.c.id}">Generar</button>`:""}</td></tr>`).join("")||`<tr><td colspan="6">Sin resultados.</td></tr>`}</tbody></table></div></section>`;
 }
 function acuPlantillaHtml(){
   const a=ACU(), pl=acuPl(), vs=a.versiones.filter(v=>v.plantilla_id===pl?.id).sort((x,y)=>y.version-x.version), ed=S.acuEdit&&vs.find(v=>v.id===S.acuEdit);
@@ -5957,15 +5965,16 @@ async function acuDescargar(id, fmt){
   const v=acuVer(x.plantilla_version_id), borrador=v&&!["aprobada","sustituida"].includes(v.estado);
   return acuArchivo(fmt, x.texto, x.folio, x.sha256, borrador?"BORRADOR — PLANTILLA NO APROBADA. SIN VALIDEZ PARA FIRMA.":"");
 }
-function acuDemoTexto(vid){ const v=acuVer(vid); return v?acuRender(v.contenido, {...ACU_FICTICIO, version:`carta_psi_independiente v${v.version}`}):""; }
+function acuDemoTexto(vid){ const v=acuVer(vid); return v?acuRender(v.contenido, {...ACU_FICTICIO, version:`${acuPlDe(v)?.clave||""} v${v.version}`}):""; }
 async function acuAccion(a,b){
   const id=b?.dataset?.id, rpc=(fn,args)=>S.api.acuRpc(fn,args), d=ACU();
   try{
     if (a==="misacuerdos"){ S.view="misacuerdos"; render(); return acuCargar(); }
     if (a==="acuerdos"){ S.view="acuerdos"; render(); return acuCargar(); }
+    if (a==="acuPlCambiar"){ S.acuPlCl=catVal("acuPlSel"); S.acuVer=null; S.acuGen=null; S.acuEdit=null; S.acuDemo=null; return render(); }
     if (a==="acuTab"){ S.acuTab=b.dataset.t; S.acuVer=null; S.acuGen=null; S.acuEdit=null; S.acuAnx=null; return render(); }
     if (a==="acuEtapa"){ S.acuEtapa=+b.dataset.t; return render(); }
-    if (a==="acuMarcar"){ await rpc("acu_marcar_etapa",{p_plantilla:"carta_psi_independiente",p_etapa:+b.dataset.t}); S.acuEtapa=Math.min(+b.dataset.t+1,6); toast("Etapa completada."); return acuCargar(); }
+    if (a==="acuMarcar"){ await rpc("acu_marcar_etapa",{p_plantilla:ACU_CARTA,p_etapa:+b.dataset.t}); S.acuEtapa=Math.min(+b.dataset.t+1,6); toast("Etapa completada."); return acuCargar(); }
     if (a==="acuReflex"){ const t=catVal("rf_"+id); await rpc("acu_reflexionar",{p_caso:id,p_respuesta:t}); toast("Reflexión guardada."); return acuCargar(); }
     if (a==="acuLeer"){ S.acuLeer=id; render(); const dv=$("#acuDoc"), bt=$("#acuLeidoBtn"); if (dv&&bt){ const chk=()=>{ if (dv.scrollTop+dv.clientHeight>=dv.scrollHeight-24) bt.disabled=false; }; dv.addEventListener("scroll",chk); chk(); } return; }
     if (a==="acuLeido"){ await rpc("acu_lectura",{p_id:id}); toast("Lectura completa registrada."); return acuCargar(); }
@@ -5978,7 +5987,7 @@ async function acuAccion(a,b){
     if (a==="acuDemo"){ S.acuDemo=id; render(); $("#acuDemoBox")?.scrollIntoView({block:"start"}); return; }
     if (a==="acuDemoCerrar"){ S.acuDemo=null; return render(); }
     if (a==="acuDemoDoc") return acuArchivo(b.dataset.f, acuDemoTexto(id), "EJEMPLO-FICTICIO", "", "EJEMPLO CON DATOS FICTICIOS — SIN VALIDEZ. NO SE GUARDA EN EL SISTEMA.");
-    if (a==="acuIA"){ const pl=acuPl(), mio=d.acuerdos.find(x=>x.colaborador_id===d.yo&&x.publicado_en), v=mio?acuVer(mio.plantilla_version_id):d.versiones.find(x=>x.estado==="aprobada");
+    if (a==="acuIA"){ const mio=d.acuerdos.find(x=>x.colaborador_id===d.yo&&x.publicado_en), v=mio?acuVer(mio.plantilla_version_id):d.versiones.find(x=>x.estado==="aprobada"&&x.plantilla_id===acuCarta()?.id), pl=acuPlDe(v);
       if (!v) return toast("Todavía no hay una versión aprobada de la Carta para consultar.");
       return copiar(`Explícame la «${pl?.nombre}», versión ${v.version}. Responde siempre indicando que consultas la versión ${v.version}. Puedes explicar apartados, relacionarlos con los fundamentos culturales, dar ejemplos y señalar posibles contradicciones. No modifiques acuerdos, no determines incumplimientos, no impongas sanciones ni des resoluciones jurídicas vinculantes. No te daré datos personales ni clínicos.\n\nTexto de la plantilla:\n${acuVersionTexto(v)}`); }
     if (a==="acuBuscar"){ S.acuQ=catVal("acuQ"); S.acuFe=catVal("acuFe"); S.acuFs=catVal("acuFs"); return render(); }
@@ -5994,9 +6003,9 @@ async function acuAccion(a,b){
     if (a==="acuVincular"){ const doc=catVal("acuDoc"); if (!doc) return toast("Elige el documento."); await rpc("acu_vincular_doc",{p_id:id,p_doc:doc}); toast("Documento vinculado."); return acuCargar(); }
     if (a==="acuVEditar"){ S.acuEdit=id; return render(); }
     if (a==="acuVNueva"){ const v=acuVer(id); if (!confirm(`Se creará un borrador de la versión ${v.version+1} con el mismo contenido de la versión ${v.version}. La versión aprobada y los documentos ya generados o firmados no cambian. ¿Continuar?`)) return;
-      const nid=await rpc("acu_guardar_version",{p_plantilla:"carta_psi_independiente",p_contenido:v.contenido,p_fuente:v.fuente||null,p_resumen:`Nueva versión basada en la v${v.version}.`}); S.acuEdit=nid; toast("Borrador creado."); return acuCargar(); }
+      const nid=await rpc("acu_guardar_version",{p_plantilla:acuPl().clave,p_contenido:v.contenido,p_fuente:v.fuente||null,p_resumen:`Nueva versión basada en la v${v.version}.`}); S.acuEdit=nid; toast("Borrador creado."); return acuCargar(); }
     if (a==="acuVGuardar"){ const v=acuVer(id), sec=(v.contenido.secciones||[]).map((x,i)=>({...x,titulo:catVal("vs_t"+i),texto:$("#vs_x"+i)?.value||""}));
-      await rpc("acu_guardar_version",{p_plantilla:"carta_psi_independiente",p_contenido:{...v.contenido,secciones:sec},p_fuente:null,p_resumen:catVal("vs_res")||null}); S.acuEdit=null; toast("Borrador guardado."); return acuCargar(); }
+      await rpc("acu_guardar_version",{p_plantilla:acuPl().clave,p_contenido:{...v.contenido,secciones:sec},p_fuente:null,p_resumen:catVal("vs_res")||null}); S.acuEdit=null; toast("Borrador guardado."); return acuCargar(); }
     if (a==="acuVEstado"){ const e=b.dataset.e; let nota=null, ases=null;
       if (e==="pendiente_aprobacion"){ ases=prompt("¿Quién realizó la revisión jurídica? (asesor o despacho)"); if (!ases) return; nota=prompt("Conclusión de la revisión jurídica (10 caracteres o más):"); if (!nota) return; }
       if (["borrador","retirada"].includes(e)){ nota=prompt("Motivo (10 caracteres o más):"); if (!nota) return; }
@@ -6006,7 +6015,7 @@ async function acuAccion(a,b){
     if (a==="acuAnexoGuardar"){ await rpc("acu_guardar_anexo",{p:{clave:catVal("anClave"),tipo:catVal("anTipo"),nombre:catVal("anNombre"),entidad_id:catVal("anEnt")||"",vigente_desde:catVal("anDesde"),vigente_hasta:catVal("anHasta"),contenido:{texto:$("#anTexto")?.value||""}}});
       S.acuAnx=null; toast("Anexo guardado como borrador."); return acuCargar(); }
     if (a==="acuAnexoAprobar"){ if (!confirm("¿Aprobar este anexo? No modifica acuerdos ya firmados.")) return; await rpc("acu_aprobar_anexo",{p_id:id}); toast("Anexo aprobado."); return acuCargar(); }
-    if (a==="acuContGuardar"){ const c=d.contenidos.find(x=>x.id===id); await rpc("acu_guardar_contenido",{p_plantilla:"carta_psi_independiente",p_etapa:c.etapa,p_orden:c.orden,p_titulo:catVal("ct_t_"+id),p_cuerpo:$("#ct_c_"+id)?.value||""}); toast("Contenido guardado."); return acuCargar(); }
+    if (a==="acuContGuardar"){ const c=d.contenidos.find(x=>x.id===id); await rpc("acu_guardar_contenido",{p_plantilla:ACU_CARTA,p_etapa:c.etapa,p_orden:c.orden,p_titulo:catVal("ct_t_"+id),p_cuerpo:$("#ct_c_"+id)?.value||""}); toast("Contenido guardado."); return acuCargar(); }
     if (a==="acuRetro"){ await rpc("acu_retroalimentar",{p_id:id,p_texto:$("#rt_"+id)?.value||""}); toast("Retroalimentación enviada."); return acuCargar(); }
     if (a==="acuCampana"){ await rpc("acu_crear_campana",{p_nombre:catVal("cpNom"),p_version:catVal("cpVer"),p_mensaje:$("#cpMsg")?.value||""}); toast("Campaña creada. Genera la Carta de cada persona desde «Psicólogos independientes»."); return acuCargar(); }
   }catch(e){ toast(e?.message||"No se pudo completar la acción."); }
