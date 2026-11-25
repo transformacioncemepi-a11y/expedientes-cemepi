@@ -505,8 +505,14 @@ const cemepi = {
       sb.rpc("mi_colaborador")]);
     for (const x of r) if (x.error) fallo(x.error);
     const [i, t, e, pa, re, hi, ru, cr, es, c, s, se, en, yo] = r.map(x => x.data);
+    /* Módulo 07 · plantillas versionadas (si la migración 047 aún no está, se omiten) */
+    const [mo, ma, co, er, rt, ap] = await Promise.all([sb.from("inc_modelos").select("*").order("clave").order("version"), sb.from("inc_modelo_acts").select("*").order("orden"),
+      sb.from("inc_competencias").select("*").order("orden"), sb.from("inc_eval_resultados").select("*"), sb.from("inc_retro").select("*"), sb.from("inc_apoyos").select("*").order("creado")]);
+    const ex = await sb.from("inc_experiencia").select("id,inc_id,corte,creado");
     return { incs: i || [], tareas: t || [], evals: e || [], participantes: pa || [], reuniones: re || [], historial: hi || [], rutas: ru || [], criterios: cr || [],
-             escala: es || [], colaboradores: c || [], sedes: s || [], sedeEnt: se || [], entidades: en || [], yo: yo || null };
+             escala: es || [], colaboradores: c || [], sedes: s || [], sedeEnt: se || [], entidades: en || [], yo: yo || null,
+             modelos: mo.error ? [] : (mo.data || []), modeloActs: ma.error ? [] : (ma.data || []),
+             competencias: co.error ? null : (co.data || []), evalRes: er.error ? [] : (er.data || []), retro: rt.error ? [] : (rt.data || []), apoyos: ap.error ? [] : (ap.data || []), experiencia: ex.error ? null : (ex.data || []) };
   },
   async incAutomaticas(id){ const { data, error } = await sb.rpc("inc_automaticas", { p_inc: id }); if (error) fallo(error); return data || []; },
   async crearIncorporacion(o){ const { data, error } = await sb.rpc("crear_incorporacion", { p_col: o.col, p_estado: o.estado || "en_proceso", p_inicio: o.inicio || null,
@@ -518,8 +524,36 @@ const cemepi = {
   async actualizarFichaInc(id, duracion, inicioAct, obs){ const { error } = await sb.rpc("actualizar_ficha_inc", { p_inc: id, p_duracion: duracion, p_inicio_actividades: inicioAct || null, p_observaciones: obs || null }); if (error) fallo(error); },
   async guardarActividadInc(id, tarea, o){ const { data, error } = await sb.rpc("guardar_actividad_inc", { p_inc: id, p_tarea: tarea || null, p_area: o.area || null, p_nombre: o.nombre,
       p_descripcion: o.descripcion || null, p_competencia: o.competencia || null, p_responsable: o.responsable || null, p_fecha: o.fecha || null }); if (error) fallo(error); return data; },
-  async avanzarActividadInc(tarea, estado, evidencia, resultado, retro){ const { error } = await sb.rpc("avanzar_actividad_inc", { p_tarea: tarea, p_estado: estado, p_evidencia: evidencia || null,
-      p_resultado: resultado || null, p_retro: retro || null }); if (error) fallo(error); },
+  async avanzarActividadInc(tarea, estado, evidencia, resultado, retro, demostrada){ const q = { p_tarea: tarea, p_estado: estado, p_evidencia: evidencia || null,
+      p_resultado: resultado || null, p_retro: retro || null }; if (demostrada !== undefined && demostrada !== null) q.p_demostrada = !!demostrada;
+    const { error } = await sb.rpc("avanzar_actividad_inc", q); if (error) fallo(error); },
+  /* Módulo 07 · O1 */
+  async crearIncV3(o){ const { data, error } = await sb.rpc("crear_incorporacion_v3", { p_col: o.col, p_modelo: o.modelo, p_estado: o.modo, p_prevista: o.prevista || null,
+      p_inicio: o.inicio || null, p_inicio_actividades: o.inicioAct || null, p_objetivos: o.objetivos || null, p_responsable: o.responsable || null, p_capacitador: o.capacitador || null,
+      p_mentor: o.mentor || null, p_supervisor: o.supervisor || null, p_clase: o.clase || null }); if (error) fallo(error); return data; },
+  async incCoincidencias(texto){ const { data, error } = await sb.rpc("inc_coincidencias", { p_texto: texto }); if (error) fallo(error); return data || []; },
+  async reprogramarActividadInc(tarea, fecha, motivo){ const { error } = await sb.rpc("reprogramar_actividad_inc", { p_tarea: tarea, p_fecha: fecha, p_motivo: motivo }); if (error) fallo(error); },
+  async reconstruirActividadInc(tarea, fecha, nota){ const { error } = await sb.rpc("reconstruir_actividad_inc", { p_tarea: tarea, p_fecha: fecha, p_nota: nota }); if (error) fallo(error); },
+  async pausarInc(inc, motivo){ const { error } = await sb.rpc("pausar_inc", { p_inc: inc, p_motivo: motivo }); if (error) fallo(error); },
+  async reanudarInc(inc, motivo){ const { error } = await sb.rpc("reanudar_inc", { p_inc: inc, p_motivo: motivo || null }); if (error) fallo(error); },
+  async recalcularFechasInc(inc, nueva, aplicar, motivo){ const { data, error } = await sb.rpc("recalcular_fechas_inc", { p_inc: inc, p_nueva: nueva, p_aplicar: !!aplicar, p_motivo: motivo || null }); if (error) fallo(error); return data || []; },
+  async guardarModeloInc(m){ const { data, error } = await sb.rpc("guardar_modelo_inc", { p_id: m.id || null, p_clave: m.clave, p_nombre: m.nombre, p_descripcion: m.descripcion || null,
+      p_base: m.base, p_duracion: m.duracion || 90, p_puestos: m.puestos || [], p_sedes: m.sedes || [], p_acts: m.acts || null }); if (error) fallo(error); return data; },
+  async publicarModeloInc(id){ const { error } = await sb.rpc("publicar_modelo_inc", { p_id: id }); if (error) fallo(error); },
+  async copiarModeloInc(id, clave, nombre){ const { data, error } = await sb.rpc("copiar_modelo_inc", { p_id: id, p_nueva_clave: clave || null, p_nombre: nombre || null }); if (error) fallo(error); return data; },
+  async guardarEvaluacionV3(o){ const { data, error } = await sb.rpc("guardar_evaluacion_v3", { p_inc: o.inc, p_tipo: o.tipo, p_corte: o.corte ?? null, p_evaluador: o.evaluador,
+      p_resultados: o.resultados || [], p_reflexion: o.reflexion || null, p_fortalezas: o.fortalezas || null, p_necesidades: o.necesidades || null, p_acuerdos: o.acuerdos || null,
+      p_proxima: o.proxima || null, p_motivo: o.motivo || null, p_cerrar: !!o.cerrar, p_eval: o.evalId || null }); if (error) fallo(error); return data; },
+  async incGenerarAvisos(){ const { data, error } = await sb.rpc("inc_generar_avisos"); if (error) fallo(error); return data; },
+  async vincularDocActividadInc(tarea, doc){ const { error } = await sb.rpc("vincular_doc_actividad_inc", { p_tarea: tarea, p_doc: doc || null }); if (error) fallo(error); },
+  async guardarExperienciaInc(inc, corte, resp, comentario){ const { error } = await sb.rpc("guardar_experiencia_inc", { p_inc: inc, p_corte: corte, p_respuestas: resp, p_comentario: comentario || null }); if (error) fallo(error); },
+  async incExperienciaResumen(){ const { data, error } = await sb.rpc("inc_experiencia_resumen"); if (error) return []; return data || []; },
+  async guardarRetroInc(inc, tipo, texto, vis, prox){ const { data, error } = await sb.rpc("guardar_retro_inc", { p_inc: inc, p_tipo: tipo, p_texto: texto, p_visibilidad: vis || "compartida", p_proxima: prox || null }); if (error) fallo(error); return data; },
+  async responderRetroInc(id, texto){ const { error } = await sb.rpc("responder_retro_inc", { p_retro: id, p_respuesta: texto }); if (error) fallo(error); },
+  async guardarApoyoInc(inc, id, datos){ const { data, error } = await sb.rpc("guardar_apoyo_inc", { p_inc: inc, p_id: id || null, p_datos: datos }); if (error) fallo(error); return data; },
+  async guardarCompetenciaInc(c){ const { data, error } = await sb.rpc("guardar_competencia_inc", { p_id: c.id || null, p_base: c.base, p_nombre: c.nombre, p_descripcion: c.descripcion || null,
+      p_indicadores: c.indicadores || [], p_activa: c.activa ?? true, p_validada: c.validada ?? null }); if (error) fallo(error); return data; },
+  async estadoModeloInc(id, accion){ const { error } = await sb.rpc("estado_modelo_inc", { p_id: id, p_accion: accion }); if (error) fallo(error); },
   async guardarEvaluacionInc(inc, corte, evaluador, competencias, puntajes, o, cerrar){ const { error } = await sb.rpc("guardar_evaluacion_inc", { p_inc: inc, p_corte: corte, p_evaluador: evaluador,
       p_competencias: competencias, p_puntajes: puntajes, p_fortalezas: o.fortalezas || null, p_mejoras: o.mejoras || null, p_evidencias: o.evidencias || null, p_plan_mejora: o.plan || null, p_cerrar: !!cerrar });
     if (error) fallo(error); },
