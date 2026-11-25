@@ -344,6 +344,20 @@ td.res{white-space:pre-wrap;min-width:220px}
 @media (prefers-reduced-motion:reduce){.dot{animation:none}}
 .adv{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
 .hidden-ia .ia-only{display:none}
+/* Módulo 06 · Mi espacio */
+.ctx{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px;background:var(--bg);flex:none}
+.ctx button{border:0;background:none;border-radius:999px;padding:4px 12px;font-weight:700;font-size:13px;color:var(--muted);cursor:pointer;white-space:nowrap}
+.ctx button[aria-pressed="true"]{background:var(--accent);color:#fff}
+body.ctx-mi .nav-g.ges{display:none}
+.mi-fila{display:grid;grid-template-columns:minmax(140px,220px) minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.mi-fila:first-child{border-top:0}.mi-fila .v{min-width:0;overflow-wrap:anywhere}.mi-fila .k{color:var(--muted);font-weight:600}
+.mi-fila .a{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+@media (max-width:640px){.mi-fila{grid-template-columns:minmax(0,1fr) auto}.mi-fila .k{grid-column:1/-1;font-size:12.5px}.ctx button{padding:4px 9px;font-size:12px}}
+.lvl1{background:var(--ok-soft);color:var(--ok)}.lvl2{background:var(--accent-soft);color:var(--accent)}.lvl3{background:var(--warn-soft);color:var(--warn)}.lvl4{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.tour{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--accent-soft);border-radius:var(--r);padding:12px 14px}
+.ndot{position:absolute;top:7px;right:8px;width:9px;height:9px;border-radius:9px;background:var(--danger,#c0392b);border:2px solid var(--surface)}
+#dlgNotif .body{max-height:60vh;overflow:auto}
+.tour .tx{flex:1;min-width:220px}.tour-d{display:flex;gap:4px;margin:4px 0}.tour-d i{width:20px;height:5px;border-radius:9px;background:var(--line)}.tour-d i.on{background:var(--accent)}
 </style>
 
 <div class="shell">
@@ -357,7 +371,8 @@ td.res{white-space:pre-wrap;min-width:220px}
   <nav class="nav-g" aria-label="Atención"><span class="nav-l">Atención</span>
     <button class="nav-i" id="terBtn" type="button" data-act="terapeutas"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/></svg><span>Terapeutas</span></button>
     <button class="nav-i" id="newBtn" type="button" data-act="new"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v6M9 15h6"/></svg><span>Nuevo expediente</span></button></nav>
-  <nav class="nav-g" aria-label="Personas"><span class="nav-l">Personas</span>
+  <nav class="nav-g ges" aria-label="Personas"><span class="nav-l">Personas</span>
+    <button class="nav-i" id="bsolBtn" type="button" data-act="bandejaSol" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h4l2 3h4l2-3h4M5 5h14l2 8v6H3v-6z"/><path d="M9 9l2 2 4-4"/></svg><span>Bandeja de solicitudes</span></button>
     <button class="nav-i" id="colBtn" type="button" data-act="colaboradores" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/></svg><span>Colaboradores</span></button>
     <button class="nav-i" id="ogBtn" type="button" data-act="organigrama" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-4h12v4"/></svg><span>Organigrama</span></button>
     <button class="nav-i" id="supBtn" type="button" data-act="supervision" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="6" r="3"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M12 9v3M12 12l-6 4M12 12l6 4"/></svg><span>Supervisión</span></button>
@@ -368,15 +383,17 @@ td.res{white-space:pre-wrap;min-width:220px}
     <button class="nav-i" id="ctrBtn" type="button" data-act="contratos" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17c3-4 5 2 8-2s2-7 5-7 1 7 5 5"/><path d="M3 21h18"/></svg><span>Contratos</span></button>
     <button class="nav-i" id="docpBtn" type="button" data-act="documentacion" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg><span>Documentación</span></button>
     <button class="nav-i" id="regBtn" type="button" data-act="reglamento"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5z"/><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/></svg><span>Reglamento</span></button></nav>
-  <nav class="nav-g" aria-label="Mi trabajo"><span class="nav-l">Mi trabajo</span>
+  <nav class="nav-g" aria-label="Mi espacio"><span class="nav-l">Mi espacio</span>
+    <button class="nav-i" id="miinfBtn" type="button" data-act="miinfo" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/><path d="M17 4h4M19 2v4"/></svg><span>Mi información</span></button>
+    <button class="nav-i" id="misolBtn" type="button" data-act="misol" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h4l2 3h4l2-3h4M5 5h14l2 8v6H3v-6z"/></svg><span>Mis solicitudes</span></button>
     <button class="nav-i" id="masBtn" type="button" data-act="miasis" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg><span>Mi asistencia</span></button>
     <button class="nav-i" id="miincBtn" type="button" data-act="miinc" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg><span>Mi incorporación</span></button></nav>
-  <nav class="nav-g" aria-label="Administración"><span class="nav-l">Administración</span>
+  <nav class="nav-g ges" aria-label="Administración"><span class="nav-l">Administración</span>
     <button class="nav-i" id="tabBtn" type="button" data-act="tablero" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg><span>Tablero</span></button>
     <button class="nav-i" id="resBtn" type="button" data-act="orgresumen" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg><span>Resumen de la organización</span></button>
     <button class="nav-i" id="indBtn" type="button" data-act="indicadores" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg><span>Indicadores</span></button>
     <button class="nav-i" id="usoBtn" type="button" data-act="uso" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span>Tiempo de uso</span></button></nav>
-  <nav class="nav-g" aria-label="Configuración"><span class="nav-l">Configuración</span>
+  <nav class="nav-g ges" aria-label="Configuración"><span class="nav-l">Configuración</span>
     <button class="nav-i" id="sedBtn" type="button" data-act="sedes" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg><span>Estructura</span></button>
     <button class="nav-i" id="segBtn" type="button" data-act="seguridad" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg><span>Usuarios y permisos</span></button>
     <button class="nav-i" id="entBtn" type="button" data-act="entidades" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V5l4-2 4 2 4-2 4 2v16l-4-2-4 2-4-2z"/><path d="M8 9h8M8 13h8M8 17h4"/></svg><span>Entidades fiscales</span></button>
@@ -396,6 +413,7 @@ td.res{white-space:pre-wrap;min-width:220px}
 <header class="topbar">
   <button class="ibtn burger" id="burger" type="button" aria-label="Abrir menú" aria-controls="side"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
   <b class="top-t" id="topTitulo">Inicio</b>
+  <div class="ctx" id="ctxBox" role="group" aria-label="Cambiar de espacio" hidden><button type="button" data-act="ctx" data-c="mi" aria-pressed="false">Mi espacio</button><button type="button" data-act="ctx" data-c="ges" aria-pressed="true">Gestión</button></div>
   <div class="gsearch" id="gsearch">
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
     <label class="sr" for="gq">Buscar en la plataforma</label>
@@ -406,10 +424,13 @@ td.res{white-space:pre-wrap;min-width:220px}
   <button class="ibtn gsearch-m" id="gsearchM" type="button" aria-label="Buscar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
   <span class="spacer"></span>
   <button class="ibtn" id="btnPrivado" type="button" aria-pressed="false" title="Modo privado: ocultar datos sensibles en pantalla" aria-label="Modo privado"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+  <button class="ibtn" id="notifBtn" type="button" data-act="notif" aria-label="Notificaciones" hidden style="position:relative"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="ndot" hidden></span></button>
   <span class="rol-chip" id="rolChip" hidden></span>
   <span class="sesion" id="sesionInfo" hidden></span>
   <button class="avatar" id="avatarBtn" type="button" data-act="perfil" title="Mi perfil" aria-label="Mi perfil"></button>
 </header>
+<dialog class="dlg-firma" id="dlgNotif" aria-labelledby="ntT"><h3 id="ntT" style="margin:0 0 8px">Notificaciones</h3><div class="body"></div>
+  <div class="actions"><button class="btn" type="button" data-act="notifLeidas">Marcar todas como leídas</button><button class="btn" type="button" data-act="notifCerrar">Cerrar</button></div></dialog>
 <div class="app" id="app">
   <aside class="roster">
     <div class="tools">
@@ -1142,20 +1163,20 @@ function renderList(){
   el.innerHTML=grupos.map(s=>{ const g=arr.filter(p=>(p.ficha?.sede||"")===s); if(!g.length) return "";
     return `<div class="grupo"><span>${esc(s||"Sin sede")}</span><b>${g.length}</b></div>${porTerapeuta(g)}`; }).join("");
 }
-const VISTA_TXT={inicio:"Inicio",exp:"Expediente",perfil:"Mi perfil",terapeutas:"Terapeutas",usuarios:"Usuarios y permisos",seguridad:"Usuarios y permisos",orgresumen:"Resumen organizacional",indicadores:"Indicadores",organigrama:"Organigrama",colaboradores:"Colaboradores",supervision:"Supervisión",sedes:"Sedes",entidades:"Entidades fiscales",areas:"Áreas",puestos:"Puestos y funciones",vacantes:"Vacantes",uso:"Tiempo de uso",tablero:"Tablero",miasis:"Mi asistencia",asistencia:"Asistencia y jornadas",docs:"Documentos y firmas",incorporacion:"Incorporación",miinc:"Mi incorporación",
+const VISTA_TXT={inicio:"Inicio",exp:"Expediente",perfil:"Mi perfil",terapeutas:"Terapeutas",usuarios:"Usuarios y permisos",seguridad:"Usuarios y permisos",orgresumen:"Resumen organizacional",indicadores:"Indicadores",organigrama:"Organigrama",colaboradores:"Colaboradores",supervision:"Supervisión",sedes:"Sedes",entidades:"Entidades fiscales",areas:"Áreas",puestos:"Puestos y funciones",vacantes:"Vacantes",uso:"Tiempo de uso",tablero:"Tablero",miasis:"Mi asistencia",asistencia:"Asistencia y jornadas",docs:"Documentos y firmas",incorporacion:"Incorporación",miinc:"Mi incorporación",miinfo:"Mi información",misol:"Mis solicitudes",bandejaSol:"Bandeja de solicitudes",
   reglamento:"Reglamento",contratos:"Contratos",permisos:"Usuarios y permisos",documentacion:"Documentación",ayuda:"Ayuda"};
 /* Estructura de la organización: un solo botón con pestañas (2026-11-22) */
 const ESTR_VISTAS=[["sedes","Sedes"],["entidades","Entidades fiscales"],["areas","Áreas"],["puestos","Puestos y funciones"],["vacantes","Vacantes"]];
-const VISTA_BTN={inicio:"iniBtn",terapeutas:"terBtn",contratos:"ctrBtn",documentacion:"docpBtn",reglamento:"regBtn",usuarios:"segBtn",permisos:"segBtn",seguridad:"segBtn",orgresumen:"resBtn",indicadores:"indBtn",organigrama:"ogBtn",colaboradores:"colBtn",supervision:"supBtn",sedes:"sedBtn",entidades:"sedBtn",areas:"sedBtn",puestos:"sedBtn",vacantes:"sedBtn",uso:"usoBtn",tablero:"tabBtn",miasis:"masBtn",asistencia:"asjBtn",docs:"docsBtn",incorporacion:"incBtn",miinc:"miincBtn",ayuda:"ayudaBtn",perfil:"perfilBtn"};
+const VISTA_BTN={inicio:"iniBtn",terapeutas:"terBtn",contratos:"ctrBtn",documentacion:"docpBtn",reglamento:"regBtn",usuarios:"segBtn",permisos:"segBtn",seguridad:"segBtn",orgresumen:"resBtn",indicadores:"indBtn",organigrama:"ogBtn",colaboradores:"colBtn",supervision:"supBtn",sedes:"sedBtn",entidades:"sedBtn",areas:"sedBtn",puestos:"sedBtn",vacantes:"sedBtn",uso:"usoBtn",tablero:"tabBtn",miasis:"masBtn",asistencia:"asjBtn",docs:"docsBtn",incorporacion:"incBtn",miinc:"miincBtn",miinfo:"miinfBtn",misol:"misolBtn",bandejaSol:"bsolBtn",ayuda:"ayudaBtn",perfil:"perfilBtn"};
 const GRUPO_VISTA={exp:"Atención",terapeutas:"Atención",colaboradores:"Personas",organigrama:"Personas",supervision:"Personas",incorporacion:"Personas",asistencia:"Personas",
-  docs:"Documentos",contratos:"Documentos",documentacion:"Documentos",reglamento:"Documentos",miasis:"Mi trabajo",miinc:"Mi trabajo",
+  docs:"Documentos",contratos:"Documentos",documentacion:"Documentos",reglamento:"Documentos",miasis:"Mi espacio",miinc:"Mi espacio",miinfo:"Mi espacio",misol:"Mi espacio",bandejaSol:"Personas",
   tablero:"Administración",orgresumen:"Administración",indicadores:"Administración",uso:"Administración",
   sedes:"Configuración",entidades:"Configuración",areas:"Configuración",puestos:"Configuración",vacantes:"Configuración",seguridad:"Configuración",usuarios:"Configuración",permisos:"Configuración",
   ayuda:"Mi cuenta",perfil:"Mi cuenta"};
 /* Ruta de navegación: Inicio / grupo / [vista padre]. El título de la página va en el h1. */
 function migas(padre){
   const v = S.sel && S.view==="exp" ? "exp" : S.view, it=[`<button type="button" data-act="back">Inicio</button>`];
-  const grupo = (v==="docs" && !dxPuedeGestionar()) || (v==="contratos" && !veTodosContratos()) || (v==="documentacion" && !veDocsTodos()) || (v==="reglamento" && $("#regBtn")?.closest(".nav-g")?.getAttribute("aria-label")==="Mi trabajo") ? "Mi trabajo" : GRUPO_VISTA[v];
+  const grupo = (v==="docs" && !dxPuedeGestionar()) || (v==="contratos" && !veTodosContratos()) || (v==="documentacion" && !veDocsTodos()) || (v==="reglamento" && $("#regBtn")?.closest(".nav-g")?.getAttribute("aria-label")==="Mi espacio") ? "Mi espacio" : GRUPO_VISTA[v];
   if (grupo) it.push(`<span>${grupo}</span>`);
   if (padre) it.push(`<button type="button" data-act="${padre[1]}">${esc(padre[0])}</button>`);
   return `<nav class="crumbs" aria-label="Ruta">${it.join('<span class="sep" aria-hidden="true">/</span>')}</nav>`;
@@ -1373,11 +1394,11 @@ document.addEventListener("click", e=>{ const b=e.target.closest?.("[data-bor]")
    Favoritos y recientes se guardan en este dispositivo y solo contienen nombres de secciones
    (nunca expedientes ni datos de consultantes). Abrirlos equivale a pulsar el botón del menú,
    así que respetan los mismos permisos. */
-function navGrupos(){ document.querySelectorAll("#side .nav-g").forEach(g=>{ if (g.classList.contains("nav-ini")) return; const oc=![...g.querySelectorAll(".nav-i")].some(b=>!b.hidden); if (g.hidden!==oc) g.hidden=oc; }); }
+function navGrupos(){ document.querySelectorAll("#side .nav-g").forEach(g=>{ if (g.classList.contains("nav-ini")) return; const oc=![...g.querySelectorAll(".nav-i")].some(b=>!b.hidden); if (g.hidden!==oc) g.hidden=oc; });  if (typeof ctxAplicar==="function") ctxAplicar(); }
 new MutationObserver(ms=>{ if (ms.some(m=>m.target.classList?.contains("nav-i"))) navGrupos(); }).observe(document.querySelector("#side")||document.body, {subtree:true, attributes:true, attributeFilter:["hidden"]});
 const NAV_LS = k => { try{ return JSON.parse(localStorage.getItem("cemepi."+k)||"[]"); }catch{ return []; } };
 const NAV_GUARDA = (k,v) => { try{ localStorage.setItem("cemepi."+k, JSON.stringify(v)); }catch{} };
-const navVisible = v => { const id=VISTA_BTN[v], b=id&&$("#"+id); return b && !b.hidden ? b : null; };
+const navVisible = v => { const id=VISTA_BTN[v], b=id&&$("#"+id); return b && !b.hidden && !(document.body.classList.contains("ctx-mi") && b.closest(".nav-g.ges")) ? b : null; };
 const navTxt = v => { const b=navVisible(v); return (b?.textContent||VISTA_TXT[v]||v).trim(); };
 function navExtras(){
   const fav=NAV_LS("fav").filter(navVisible), rec=NAV_LS("rec").filter(v=>navVisible(v)&&!fav.includes(v)).slice(0,4);
@@ -1398,7 +1419,7 @@ const VISTA_AYUDA={
   colaboradores:()=>[null,"Consultar la organización"], organigrama:()=>[null,"Consultar la organización"], supervision:()=>[null,"Consultar la organización"],
   orgresumen:()=>[null,"Consultar la organización"], indicadores:()=>[null,"Consultar la organización"], sedes:()=>[null,"Consultar la organización"],
   incorporacion:()=>[null,"Iniciar el proceso de una persona en contratación"], miinc:()=>[null,"Mi incorporación"],
-  asistencia:()=>[null,"Supervisar la asistencia de mi equipo"], miasis:()=>[null,"Registrar mi entrada y salida"],
+  asistencia:()=>[null,"Supervisar la asistencia de mi equipo"], miasis:()=>[null,"Registrar mi entrada y salida"], miinfo:()=>[null,"Mi información y Mi espacio"], misol:()=>[null,"Hacer una solicitud"], bandejaSol:()=>[null,"Resolver solicitudes del equipo"],
   docs:()=>[null, dxPuedeGestionar()?"Agregar un documento a la biblioteca":"Firmar un documento"],
   contratos:()=>veTodosContratos()?["Contratos individuales del personal: captura, fecha de alta, salario y firmas.","Completar y firmar contratos del personal"]:["Tu contrato individual de trabajo: captura tus datos y fírmalo con tu contraseña.","Firmar mi contrato"],
   documentacion:()=>veDocsTodos()?[null,"Verificar documentación del personal"]:[null,"Subir mi documentación"],
@@ -1425,7 +1446,7 @@ function render(){ borAntes(); renderVista(); vistaExtras(); borDespues(); }
 function renderVista(){
   const d=$("#detail"); S.dirty=false; S.stale=false; S.editado=false; marcarNav(); document.body.classList.remove("menu-abierto");
   const p=S.pacientes.get(S.sel);
-  $("#app").classList.toggle("open", !!p || ["perfil","terapeutas","usuarios","sedes","entidades","areas","puestos","vacantes","colaboradores","supervision","organigrama","seguridad","orgresumen","indicadores","uso","reglamento","contratos","permisos","documentacion","ayuda","tablero","miasis","asistencia","docs","incorporacion","miinc"].includes(S.view));
+  $("#app").classList.toggle("open", !!p || ["perfil","miinfo","misol","bandejaSol","terapeutas","usuarios","sedes","entidades","areas","puestos","vacantes","colaboradores","supervision","organigrama","seguridad","orgresumen","indicadores","uso","reglamento","contratos","permisos","documentacion","ayuda","tablero","miasis","asistencia","docs","incorporacion","miinc"].includes(S.view));
   if (S.view==="perfil"){ d.innerHTML=perfilHtml(); activarPad(); return; }
   if (S.view==="terapeutas"){ d.innerHTML=terapeutasHtml(); return; }
   if (S.view==="usuarios"){ d.innerHTML=usuariosHtml(); return; }
@@ -1436,6 +1457,9 @@ function renderVista(){
   if (S.view==="organigrama"){ d.innerHTML=organigramaHtml(); return; }
   if (S.view==="seguridad"){ d.innerHTML=seguridadHtml(); return; }
   if (S.view==="miasis"){ d.innerHTML=miAsistenciaHtml(); return; }
+  if (S.view==="miinfo"){ d.innerHTML=miInfoHtml(); return; }
+  if (S.view==="misol"){ d.innerHTML=misSolHtml(); return; }
+  if (S.view==="bandejaSol"){ d.innerHTML=bandejaSolHtml(); return; }
   if (S.view==="docs"){ d.innerHTML=docsHtml(); return; }
   if (S.view==="incorporacion"){ d.innerHTML=incorporacionHtml(); return; }
   if (S.view==="miinc"){ d.innerHTML=miIncHtml(); return; }
@@ -1467,6 +1491,10 @@ async function cargarPendientes(){
             pend.push({t:`Evaluación del día ${k} de ${n}`, d:"Incorporación que acompañas.", act:"incorporacion", b:"Evaluar"}); break; } } }
       const venc=x.reuniones.filter(r=>!r.cumplido&&r.compromiso_para&&r.compromiso_para<hoy&&x.incs.some(i=>i.id===r.inc_id&&i.colaborador_id===yo));
       if (venc.length) pend.push({t:`${venc.length} compromiso${venc.length===1?"":"s"} de tu incorporación por cumplir`, d:"Revísalos con tu mentor(a).", act:"miinc", b:"Ver"}); }),
+    intenta(async()=>{ await solCargar(); const t=S.sol; if (!t||t.error) return;
+      const info=(t.mias||[]).filter(x=>x.estado==="info_requerida").length, pr=(t.porResolver||[]).length;
+      if (info) pend.push({t:`Te pidieron información en ${info} solicitud${info===1?"":"es"}`, d:"Respóndela para que puedan resolverla.", act:"misol", b:"Responder"});
+      if (pr) pend.push({t:`${pr} solicitud${pr===1?"":"es"} por resolver`, d:"De las personas o sedes que te corresponden.", act:"bandejaSol", b:"Revisar"}); }),
     intenta(async()=>{ const rv=(await S.api.revisionesPendientes?.())||[]; if (!rv.length) return;
       pend.push({t:`${rv.length} aviso${rv.length===1?"":"s"} por cambio de sede o de puesto`, d:"Revisa permisos o capacitación. Nada cambia automáticamente.", act:"colaboradores", b:"Revisar"}); }),
     intenta(async()=>{ const fs=(await S.api.misFirmasPendientes?.())||[]; const n=fs.filter(f=>f.mi_turno).length;
@@ -1493,7 +1521,7 @@ async function cargarPendientes(){
     intenta(async()=>{ S.avisos = await S.api.avisos();
       if ((S.avisos.domicilio||[]).some(x=>x.user_id!==S.uid) && !S.usuarios) S.usuarios = await S.api.usuarios(); }),
   ]);
-  if (esClinico() && S.rol!=="admin_sede" && !(S.perfil?.nombre && S.perfil?.cedula)) pend.unshift({t:"Completa tu nombre y cédula en Mi perfil", d:"Aparecen en la firma de cada documento clínico.", act:"perfil", b:"Completar"});
+  if (esClinico() && S.rol!=="admin_sede" && !(S.perfil?.nombre && S.perfil?.cedula)) pend.unshift({t:"Falta tu nombre o tu cédula", d:"Aparecen en la firma de cada documento clínico. Pide que los registren con una solicitud.", act:"solNueva", b:"Pedir"});
   S.pend=pend; S.pendCargando=false;
   if (!S.sel && S.view==="inicio") render();
 }
@@ -1549,6 +1577,251 @@ function avisosHtml(){
       ${g.items.length?`<div class="aviso-items">${g.items.slice(0,8).join("")}${g.items.length>8?`<span class="status">y ${g.items.length-8} más</span>`:""}</div>`:""}</div>
       ${g.boton?`<button class="btn sm primary" type="button" data-act="${g.boton.act}">${esc(g.boton.b)}</button>`:""}</li>`).join("")}</ul></section>`;
 }
+/* ---------- Módulo 06 · Mi espacio CEMEPI (fase P1, 2026-11-24) ----------
+   Vista personal: lo propio de una sola fuente (cuenta + Organización), sin una segunda ficha.
+   Mi espacio ⇄ Gestión solo cambia lo que se muestra en el menú: no da ni quita permisos. */
+const MI_ACC=new Set(["miinfo","miTab","miRecargar","ctx","tourIr","tourSig","tourPausa","tourFin","tourVer"]);
+const NIVEL_TXT={1:["Lo editas tú","lvl1"],2:["Por solicitud","lvl2"],3:["Lo administra RR. HH.","lvl3"],4:["Histórico","lvl4"]};
+const ESTATUS_TXT={activo:"Activo",por_validar:"Por validar",vacaciones:"Vacaciones",incapacidad:"Incapacidad",baja:"Baja",en_proceso_contratacion:"En proceso de contratación"};
+const fechaTxt=f=>f?String(f).slice(0,10).split("-").reverse().join("/"):"";
+async function miCargar(){
+  if (!S.api?.miFicha) { S.mi={error:"No disponible."}; return render(); }
+  S.mi=null; if (S.view==="miinfo") render();
+  try{ const [f,e]=await Promise.all([S.api.miFicha(), S.api.miEquipo()]); S.mi={ficha:f, equipo:e}; }
+  catch(e){ S.mi={error:e?.message||"No se pudo cargar."}; }
+  if (S.view==="miinfo") render();
+}
+function miFila(k,v,n,acc){ const [t,c]=NIVEL_TXT[n]; return `<div class="mi-fila"><span class="k">${k}</span><span class="v">${v}</span><span class="a"><span class="pill ${c}">${t}</span>${acc||""}</span></div>`; }
+function miInfoHtml(){
+  const cab=`<div class="phead">${migas()}<h1>Mi información</h1></div>
+    <p class="status" style="margin:0 0 8px;max-width:72ch">Tu información en CEMEPI viene de una sola fuente: tu cuenta y Organización. Cada dato dice quién puede cambiarlo.</p>`;
+  const envol=x=>`<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:12px">${cab}${x}</div>`;
+  if (!S.mi) return envol(`<p class="status">Cargando tu información…</p>`);
+  if (S.mi.error) return envol(`<div class="banner">No se pudo cargar tu información. <button class="btn sm" type="button" data-act="miRecargar">Reintentar</button></div>`);
+  const f=S.mi.ficha, eq=S.mi.equipo||{};
+  if (!f) return envol(`<div class="banner">Tu cuenta todavía no está autorizada. Cuando la autoricen verás aquí tu información.</div>`);
+  const c=f.cuenta||{}, col=f.colaborador, pu=f.puestos||[], t=S.miTab||"perfil", psi=c.rol==="psicologo";
+  const sinCol=!col?`<div class="banner">Tu cuenta aún no está en el directorio de colaboradores, por eso no aparecen tu puesto ni tu equipo. La Dirección te agrega en Personas → Colaboradores.</div>`:"";
+  const tabs=`<div class="tabs" role="tablist" aria-label="Mi información">${[["perfil","Mi perfil"],["puesto","Mi puesto y sedes"],["equipo","Mi equipo"]].map(([k,x])=>`<button class="tab" role="tab" type="button" data-act="miTab" data-t="${k}" aria-selected="${t===k}">${x}</button>`).join("")}</div>`;
+  let cuerpo="";
+  if (t==="perfil") cuerpo=`<section class="card">
+      ${miFila("Nombre completo", esc(c.nombre||"")||'<span class="status">Dato pendiente de recabar</span>', 2, `<button class="btn sm" type="button" data-act="solTipo" data-t="datos" data-c="nombre">Pedir corrección</button>`)}
+      ${psi||c.cedula?miFila("Cédula profesional", esc(c.cedula||"")||'<span class="status">Dato pendiente de recabar</span>', 2, `<button class="btn sm" type="button" data-act="solTipo" data-t="datos" data-c="cedula">Pedir corrección</button>`):""}
+      ${miFila("Teléfono de contacto", esc(c.telefono||"")||'<span class="status">Sin registrar</span>', 1, `<button class="btn sm" type="button" data-act="perfil">Editar</button>`)}
+      ${miFila("Firma para documentos", S.perfil?.firma?"Cargada":'<span class="status">Sin firma</span>', 1, `<button class="btn sm" type="button" data-act="perfil">Cambiar</button>`)}
+      ${miFila("Tipo de usuario", esc(etiquetaRol()), 3)}
+      ${col?miFila("Fecha de incorporación", fechaTxt(col.fecha_incorporacion)||'<span class="status">Dato pendiente de recabar</span>', 3):""}
+      ${col?miFila("Estado institucional", `<span class="pill ${col.estatus==="activo"?"estado-activo":"estado-pendiente"}">${esc(ESTATUS_TXT[col.estatus]||col.estatus)}</span>`, 3):""}
+      ${miFila("Historial de puestos y sedes", (f.historial||[]).length?`${f.historial.length} registro${f.historial.length===1?"":"s"}`:"Sin registros", 4, (f.historial||[]).length?`<button class="btn sm" type="button" data-act="miTab" data-t="puesto">Ver</button>`:"")}
+      <p class="status" style="margin:10px 0 0">Lo que dice «Lo editas tú» se cambia en Mi cuenta → Mi perfil, junto con tu contraseña y la apariencia de la app. Lo demás se corrige con una solicitud: así nadie cambia por error un dato que aparece en firmas y documentos.</p></section>`;
+  if (t==="puesto") cuerpo=`${sinCol}<section class="card">
+      ${pu.length?pu.map(x=>`<div class="mi-fila"><span class="k">${x.principal?"Puesto":"Otro puesto"}</span><span class="v"><b>${esc(x.puesto)}</b> <span class="status">${esc(x.codigo||"")}</span><br><span class="status">${esc(x.area||"Sin área")} · ${esc(x.sede)} · desde ${fechaTxt(x.desde)}</span></span><span class="a"><span class="pill lvl3">Lo administra RR. HH.</span></span></div>`).join(""):(col?`<p class="status" style="margin:0">Aún no tienes un puesto asignado en Organización.</p>`:"")}
+      ${col?miFila("Sede principal", esc(col.sede_principal||"")||'<span class="status">Sin asignar</span>', 3):""}
+      ${(f.sedes||[]).length?miFila("Sedes donde colaboras", (f.sedes||[]).map(esc).join(" · "), 3):""}
+      ${miFila("Reporta a", f.jefe?`<b>${esc(f.jefe.nombre)}</b>${f.jefe.puesto?`<br><span class="status">${esc(f.jefe.puesto)}</span>`:""}`:'<span class="status">Sin registrar</span>', 3)}
+      ${(f.supervision||[]).length?miFila("Supervisión clínica", f.supervision.map(x=>esc(x.nombre)+(x.tema?` <span class="status">(${esc(x.tema)})</span>`:"")).join("<br>"), 3):""}
+      ${pu.filter(x=>x.responsabilidades).slice(0,1).map(x=>`<details style="margin-top:10px"><summary><b>Responsabilidades de mi puesto</b></summary><p style="white-space:pre-line;margin:8px 0 0">${esc(x.responsabilidades)}</p></details>`).join("")}
+      ${(f.historial||[]).length?`<details style="margin-top:10px"><summary><b>Historial</b></summary><ul class="pend" style="margin-top:8px">${f.historial.map(h=>`<li><div><b>${esc(h.puesto||"Sin puesto")}</b> · ${esc(h.sede)}<br><span class="status">${fechaTxt(h.desde)} – ${h.hasta?fechaTxt(h.hasta):"vigente"}</span></div></li>`).join("")}</ul></details>`:""}
+      <p class="status" style="margin:10px 0 0">Estos datos vienen de Organización. Si algo no es correcto, <button class="btn sm" type="button" data-act="solTipo" data-t="datos" data-c="puesto">pide una corrección</button>.</p></section>`;
+  if (t==="equipo"){ const per=(x,r)=>`<li><div><b>${esc(x.nombre)}</b><br><span class="status">${esc(r)}${x.puesto?" · "+esc(x.puesto):""}${x.sede?" · "+esc(x.sede):""}</span></div></li>`;
+    const ls=[...(eq.jefe?[per(eq.jefe,"Mi jefe directo")]:[]), ...(eq.a_cargo||[]).map(x=>per(x,"Me reporta")), ...(eq.companeros||[]).map(x=>per(x,"Compañero(a) de área"))];
+    cuerpo=`${sinCol}<section class="card"><p class="status" style="margin:0 0 8px">Solo nombre, puesto y sede. Nunca se muestran teléfonos personales, domicilios ni información económica.</p>
+      ${ls.length?`<ul class="pend">${ls.join("")}</ul>`:`<p style="margin:0">Todavía no hay personas registradas en tu equipo.</p>`}
+      ${$("#ogBtn")&&!$("#ogBtn").hidden?`<div class="actions" style="border-top:0"><button class="btn sm" type="button" data-act="organigrama">Ver organigrama</button></div>`:""}</section>`; }
+  return envol(`${tabs}${cuerpo}<p class="status" style="margin:0"><button class="btn sm" type="button" data-act="tourVer">Ver el recorrido de bienvenida</button></p>`);
+}
+/* Recorrido de primer ingreso: 6 pasos, se pausa y se retoma; nunca bloquea nada. El avance se guarda en el servidor. */
+const TOUR=[
+  ["Bienvenida a Tonalli CEMEPI","Aquí encuentras tu información, tus documentos y tus pendientes. Lo que no te corresponde no aparece.",null],
+  ["Revisa tu información","Tu nombre, tu puesto, tu sede y quién es tu responsable, en Mi información.","miinfo"],
+  ["Conoce a tu equipo","Tu jefe directo y tus compañeros de área, con su puesto y su sede.","miinfo:equipo"],
+  ["Tus documentos","Contrato, Reglamento y documentos por firmar. Abrir un documento nunca es firmarlo.","docs"],
+  ["Tus pendientes","En Inicio verás lo que te toca hacer; cada pendiente te lleva a su lugar.","inicio"],
+  ["¿Dudas?","En Mi cuenta → Ayuda están las guías y el manual de tu rol.","ayuda"]];
+function tourHtml(){
+  const r=S.tour; if (!r||r.fin||S.tourPausa) return "";
+  const i=Math.min(TOUR.length-1, Math.max(0, r.paso||0)), [t,d,dest]=TOUR[i];
+  return `<section class="tour" aria-label="Recorrido de bienvenida"><div class="tx"><b>${esc(t)}</b> <span class="status">(${i+1} de ${TOUR.length})</span>
+      <div class="tour-d" aria-hidden="true">${TOUR.map((_,k)=>`<i class="${k<=i?"on":""}"></i>`).join("")}</div><span class="status">${esc(d)}</span></div>
+    ${dest?`<button class="btn sm" type="button" data-act="tourIr" data-d="${dest}">Ir ahí</button>`:""}
+    <button class="btn sm primary" type="button" data-act="${i===TOUR.length-1?"tourFin":"tourSig"}">${i===TOUR.length-1?"Terminar":"Siguiente"}</button>
+    <button class="btn sm" type="button" data-act="tourPausa" title="Lo retomas cuando quieras">Más tarde</button></section>`;
+}
+async function tourGuardar(){ try{ await S.api?.guardarRecorrido?.(S.tour); }catch{ /* el recorrido es opcional: si falla, solo se pierde el avance */ } }
+/* Hoy: estado de mi asistencia, sin duplicar el registro (se registra en Mi asistencia) */
+function miHoyHtml(){
+  const a=S.asis; if (!a||a.error||!a.yo||!a.aplica) return "";
+  const hoy=asisHoy(), ms=asisMarcasDia(a.yo,hoy), e=ms.find(m=>m.tipo==="entrada"), sl=[...ms].reverse().find(m=>m.tipo==="salida"), st=asisEstadoDia(a.yo,hoy);
+  return `<section class="note"><div class="note-h"><h3>Hoy</h3><button class="btn sm" type="button" data-act="miasis">${e&&!sl?"Registrar salida":!e?"Registrar entrada":"Ver mi asistencia"}</button></div>
+    <p style="margin:0">${e?`Entrada ${asisHora(e.momento)}`:"Sin entrada registrada"}${sl?` · salida ${asisHora(sl.momento)}`:""} <span class="pill ${st.c||""}">${esc(st.t)}</span></p></section>`;
+}
+/* Mi espacio ⇄ Gestión: solo para quien tiene botones de Personas, Administración o Configuración */
+function ctxAplicar(){
+  const box=$("#ctxBox"); if (!box) return;
+  /* «Usuarios y permisos» lo ven todos (sus solicitudes y sesiones): solo cuenta como gestión para quien administra cuentas */
+  const tieneGes=[...document.querySelectorAll("#side .nav-g.ges .nav-i")].some(b=>!b.hidden && (b.id!=="segBtn" || ["superusuario","direccion","admin_sede"].includes(S.rol)));
+  if (box.hidden!==!tieneGes) box.hidden=!tieneGes;
+  let c="ges"; try{ c=localStorage.getItem("cemepi.ctx")||"ges"; }catch{}
+  if (!tieneGes) c="ges";
+  document.body.classList.toggle("ctx-mi", c==="mi");
+  box.querySelectorAll("button").forEach(b=>{ const on=String(b.dataset.c===c); if (b.getAttribute("aria-pressed")!==on) b.setAttribute("aria-pressed", on); });
+}
+async function miAccion(a,b){
+  if (a==="miinfo"){ S.view="miinfo"; S.miTab=S.miTab||"perfil"; render(); return miCargar(); }
+  if (a==="miTab"){ S.miTab=b.dataset.t; return render(); }
+  if (a==="miRecargar"){ return miCargar(); }
+  if (a==="ctx"){ const c=b.dataset.c; try{ localStorage.setItem("cemepi.ctx", c); }catch{}
+    ctxAplicar(); navExtras(); toast(c==="mi"?"Estás en Mi espacio: el menú muestra lo tuyo.":"Estás en Gestión. Cambiar de espacio no te da permisos nuevos.");
+    if (c==="mi" && ["Personas","Administración","Configuración"].includes(GRUPO_VISTA[S.view])){ S.view="inicio"; S.sel=null; render(); }
+    return; }
+  if (a==="tourIr"){ const [v,t]=b.dataset.d.split(":"); if (v==="miinfo"){ S.miTab=t||"perfil"; return miAccion("miinfo"); }
+    const btn={docs:$("#docpBtn"),inicio:$("#iniBtn"),ayuda:$("#ayudaBtn")}[v]; return btn&&!btn.hidden?btn.click():toast("Esa sección no está disponible para tu cuenta."); }
+  if (a==="tourSig"){ S.tour={...(S.tour||{}), paso:(S.tour?.paso||0)+1}; render(); return tourGuardar(); }
+  if (a==="tourFin"){ S.tour={...(S.tour||{}), fin:true}; render(); toast("Listo. Puedes volver a verlo desde Mi información."); return tourGuardar(); }
+  if (a==="tourPausa"){ S.tourPausa=true; render(); return toast("Lo retomas cuando vuelvas a entrar o desde Mi información."); }
+  if (a==="tourVer"){ S.tour={paso:0}; S.tourPausa=false; S.view="inicio"; S.sel=null; render(); return tourGuardar(); }
+}
+/* ---------- Módulo 06 · P2 Solicitudes y notificaciones (2026-11-24) ----------
+   Centro único: muestra juntas las solicitudes generales y las de asistencia (que siguen en el Módulo 03).
+   Enviar no cambia nada por sí solo: una persona la revisa. Nadie resuelve lo propio (lo valida la base). */
+const SOL_ACC=new Set(["misol","bandejaSol","solTab","solNueva","solTipo","solCancelarForm","solBorrador","solRevisar","solVolver","solEnviar","solVer","solCerrarVer","solCancelar","solResponder","solEnviarBorrador","bsVer","bsAccion","bsTipos","bsGuardarTipo","notif","notifIr","notifLeidas","notifCerrar"]);
+const SOL_EST={borrador:["Borrador",""],enviada:["Enviada","estado-pendiente"],en_revision:["En revisión","estado-pendiente"],info_requerida:["Te pidieron información","estado-pendiente"],aprobada:["Resuelta: aprobada","estado-activo"],rechazada:["Resuelta: no aprobada","estado-suspendido"],cancelada:["Cancelada",""]};
+const PASO_TXT={jefe:"Jefe directo",rrhh:"RR. HH.",direccion:"Dirección",sede:"Administración de sede"};
+const SOL_CAMPOS=[["nombre","Nombre completo"],["cedula","Cédula profesional"],["puesto","Puesto o sede (Organización)"],["otro","Otro dato"]];
+const solEstG=(e,g)=>g&&e==="info_requerida"?["Esperando respuesta de la persona","estado-pendiente"]:SOL_EST[e]||[e,""];
+const solAbierta=e=>["borrador","enviada","en_revision","info_requerida"].includes(e);
+async function solCargar(){
+  if (!S.api?.solDatos) return;
+  try{ S.sol=await S.api.solDatos(); }catch(e){ S.sol={error:e?.message||"No se pudo cargar."}; }
+  const b=$("#bsolBtn"); if (b){ const ver=["superusuario","direccion","admin_sede"].includes(S.rol)||(S.api.rhNivel||0)>=2||(S.sol?.porResolver||[]).length>0; if (b.hidden!==!ver) b.hidden=!ver; }
+  if (["misol","bandejaSol"].includes(S.view)) render();
+}
+function solLista(){
+  const t=S.sol||{}, tipos=Object.fromEntries((t.tipos||[]).map(x=>[x.clave,x])), out=[];
+  (t.mias||[]).forEach(s=>out.push({k:"g"+s.id, id:s.id, folio:s.folio||"Borrador", tipo:tipos[s.tipo]?.nombre||s.tipo, origen:"General", fecha:(s.enviada_en||s.creado_en||"").slice(0,10), estado:s.estado,
+    con: solAbierta(s.estado)&&s.estado!=="borrador" ? (s.estado==="info_requerida"?"Tú":PASO_TXT[s.pasos?.[s.paso]]||"") : "", vence:s.vence}));
+  const a=S.asis; if (a&&!a.error&&a.yo) (a.solicitudes||[]).filter(x=>x.colaborador_id===a.yo).forEach(s=>out.push({k:"a"+s.id, id:s.id, folio:"Asistencia", tipo:ASIS_SOL[s.tipo]||s.tipo, origen:"Asistencia", fecha:s.fecha, estado:s.estado, con:solAbierta(s.estado)?"Jefe directo":"", asis:true}));
+  return out.sort((x,y)=>(y.fecha||"").localeCompare(x.fecha||""));
+}
+function solFormHtml(){
+  const f=S.solForm, t=(S.sol?.tipos||[]).find(x=>x.clave===f.tipo);
+  if (!f.tipo){ const asis=S.asis&&!S.asis.error&&S.asis.yo&&S.asis.aplica;
+    return `<section class="note"><div class="note-h"><h3>Nueva solicitud</h3><button class="btn sm" type="button" data-act="solCancelarForm">Cancelar</button></div>
+      <p class="status" style="margin:0 0 10px">Elige qué necesitas. Podrás revisarla antes de enviarla.</p>
+      <div class="fmt-grid">${asis?`<article class="fmt"><div class="fmt-h"><b>Vacaciones, permisos o corrección de asistencia</b></div><p>Se piden en Mi asistencia; aparecerán también en esta lista.</p><button class="btn sm primary" type="button" data-act="miasis">Ir a Mi asistencia</button></article>`:""}
+      ${(S.sol?.tipos||[]).filter(x=>x.activo&&(x.aplica||[]).includes(S.rol)).map(x=>`<article class="fmt"><div class="fmt-h"><b>${esc(x.nombre)}</b></div><p>${esc(x.descripcion||"")}</p><p class="status" style="margin:0">La revisa: ${x.pasos.map(p=>PASO_TXT[p]).join(" → ")}</p><button class="btn sm primary" type="button" data-act="solTipo" data-t="${x.clave}">Elegir</button></article>`).join("")}</div></section>`; }
+  const datos=f.tipo==="datos"?`${fld("solCampo","Dato a corregir *",f.campo||"nombre",{opts:SOL_CAMPOS})}${fld("solValor",f.campo==="cedula"?"Cédula correcta *":f.campo==="nombre"?"Nombre correcto *":"Valor correcto",f.valor||"",{span:2})}`:"";
+  const area=f.tipo==="apoyo"?fld("solArea","¿A qué área?",f.area||"Recursos Humanos",{opts:["Recursos Humanos","Administración","Operación de sede","Supervisión clínica","Documentos","Capacitación","Otra"].map(x=>[x,x])}):"";
+  if (f.revisar) return `<section class="note"><div class="note-h"><h3>Revisa tu solicitud</h3></div>
+      <dl class="dl"><dt>Tipo</dt><dd>${esc(t?.nombre||f.tipo)}</dd>${f.tipo==="datos"?`<dt>Dato</dt><dd>${esc(SOL_CAMPOS.find(c=>c[0]===f.campo)?.[1]||f.campo)}: <b>${esc(f.valor||"")}</b></dd>`:""}${f.area?`<dt>Área</dt><dd>${esc(f.area)}</dd>`:""}
+      <dt>Detalle</dt><dd style="white-space:pre-line">${esc(f.detalle)}</dd><dt>La revisa</dt><dd>${(t?.pasos||[]).map(p=>PASO_TXT[p]).join(" → ")}</dd>
+      <dt>Qué pasa después</dt><dd>Recibirás un folio y verás aquí quién la tiene y su respuesta. Mientras no se resuelva, puedes cancelarla.${f.tipo==="datos"&&["nombre","cedula"].includes(f.campo)?" Si se aprueba, el dato se corrige solo en tu cuenta, en tus firmas y en los directorios.":""}</dd></dl>
+      <div class="actions"><button class="btn primary" type="button" data-act="solEnviar">Enviar solicitud</button><button class="btn" type="button" data-act="solVolver">Volver a editar</button></div></section>`;
+  return `<section class="note"><div class="note-h"><h3>${esc(t?.nombre||"Solicitud")}</h3><button class="btn sm" type="button" data-act="solCancelarForm">Cancelar</button></div>
+    <p class="status" style="margin:0 0 8px">${esc(t?.descripcion||"")} Escribe con calma: lo que escribes se guarda como borrador mientras tanto.</p>
+    <form class="datos" onsubmit="return false">${datos}${area}${fld("solDet",f.tipo==="propuesta"?"Tu propuesta *":"Explica tu situación *",f.detalle||"",{area:1,span:3,rows:4,ph:"Sin datos de consultantes ni diagnósticos."})}</form>
+    ${f.tipo==="apoyo"?`<p class="banner" style="margin:8px 0 0">Esto no es atención de urgencia. Si tú u otra persona están en riesgo, llama al 911.</p>`:""}
+    <div class="actions"><button class="btn primary" type="button" data-act="solRevisar">Revisar antes de enviar</button><button class="btn" type="button" data-act="solBorrador">Guardar como borrador</button></div></section>`;
+}
+function solDetalleHtml(gestion){
+  const d=S.solVer; if (!d) return ""; const s=d.s, t=(S.sol?.tipos||[]).find(x=>x.clave===s.tipo), [et,ec]=solEstG(s.estado,gestion);
+  const quien=gestion?(S.sol?.personas||[]).find(p=>p.solicitud_id===s.id):null;
+  const flujo=(s.pasos||[]).map((p,i)=>`<span class="pill ${s.estado==="aprobada"||i<s.paso?"estado-activo":i===s.paso&&solAbierta(s.estado)?"estado-pendiente":""}">${PASO_TXT[p]}</span>`).join(" → ");
+  const ev=(d.ev||[]).map(e=>`<li><div><b>${esc(e.accion.charAt(0)+e.accion.slice(1).toLowerCase())}</b> · <span class="status">${new Date(e.momento).toLocaleString("es-MX",{dateStyle:"short",timeStyle:"short"})}</span>${e.texto?`<br>${esc(e.texto)}`:""}</div></li>`).join("");
+  const acc = gestion ? `${fld("bsTxt","Respuesta para la persona (obligatoria para pedir información o no aprobar)","",{area:1,span:3,rows:2,ph:"Sin diagnósticos ni datos de consultantes."})}
+      <div class="actions">${s.estado==="enviada"?`<button class="btn" type="button" data-act="bsAccion" data-a="tomar">Tomar en revisión</button>`:""}<button class="btn" type="button" data-act="bsAccion" data-a="pedir_info">Pedir información</button><button class="btn danger" type="button" data-act="bsAccion" data-a="rechazar">No aprobar</button><button class="btn primary" type="button" data-act="bsAccion" data-a="aprobar">Aprobar${(s.pasos||[]).length>s.paso+1?" y pasar al siguiente":""}</button></div>
+      ${s.tipo==="datos"&&["nombre","cedula"].includes(s.datos?.campo)?`<p class="status" style="margin:0">Al aprobarla, el dato se corrige en la cuenta (y en Terapeutas y Colaboradores). Solo puede aprobarla quien administra esa cuenta.</p>`:""}`
+    : s.estado==="info_requerida" ? `${fld("solResp","Tu respuesta *","",{area:1,span:3,rows:2})}<div class="actions"><button class="btn primary" type="button" data-act="solResponder">Enviar respuesta</button><button class="btn" type="button" data-act="solCancelar">Cancelar solicitud</button></div>`
+    : s.estado==="borrador" ? `<div class="actions"><button class="btn primary" type="button" data-act="solEnviarBorrador">Enviar ahora</button><button class="btn" type="button" data-act="solCancelar">Descartar</button></div>`
+    : solAbierta(s.estado) ? `<div class="actions"><button class="btn" type="button" data-act="solCancelar">Cancelar solicitud</button></div>` : "";
+  return `<section class="note"><div class="note-h"><h3>${esc(t?.nombre||s.tipo)} <span class="status">${esc(s.folio||"Borrador")}</span></h3><button class="btn sm" type="button" data-act="solCerrarVer">Cerrar</button></div>
+    <p style="margin:0 0 6px"><span class="pill ${ec}">${et}</span>${quien?` · <b>${esc(quien.nombre)}</b>${quien.sede?" · "+esc(quien.sede):""}`:""}${s.vence&&solAbierta(s.estado)?` · <span class="status">atender antes del ${fechaTxt(s.vence)}${s.vence<asisHoy()?" (atrasada)":""}</span>`:""}</p>
+    ${s.tipo==="datos"?`<p style="margin:0 0 6px">Dato: <b>${esc(SOL_CAMPOS.find(c=>c[0]===s.datos?.campo)?.[1]||s.datos?.campo||"")}</b> → ${esc(s.datos?.valor||"")}</p>`:""}${s.datos?.area?`<p style="margin:0 0 6px">Área: ${esc(s.datos.area)}</p>`:""}
+    <p style="margin:0 0 8px;white-space:pre-line">${esc(s.detalle)}</p>${s.respuesta?`<p class="banner" style="margin:0 0 8px">Respuesta: ${esc(s.respuesta)}</p>`:""}
+    <p style="margin:0 0 4px"><b>Recorrido:</b> ${flujo}</p><ul class="pend">${ev}</ul>${acc}</section>`;
+}
+function misSolHtml(){
+  const cab=`<div class="phead">${migas()}<h1>Mis solicitudes</h1><div class="acts">${S.solForm?"":`<button class="btn primary" type="button" data-act="solNueva">+ Nueva solicitud</button>`}</div></div>
+    <p class="status" style="margin:0 0 8px;max-width:72ch">Todas tus solicitudes en un solo lugar, con su folio y con quién la tiene. Enviar una solicitud no cambia nada por sí sola: una persona la revisa y te responde aquí.</p>`;
+  const env=x=>`<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:12px">${cab}${x}</div>`;
+  if (!S.sol) return env(`<p class="status">Cargando tus solicitudes…</p>`);
+  if (S.sol.error) return env(`<div class="banner">No se pudieron cargar tus solicitudes. <button class="btn sm" type="button" data-act="misol">Reintentar</button></div>`);
+  if (S.solForm) return env(solFormHtml());
+  const tab=S.solTab||"abiertas", ls=solLista().filter(x=>tab==="todas"||(tab==="abiertas")===solAbierta(x.estado));
+  const tabs=`<div class="tabs" role="tablist">${[["abiertas","Abiertas"],["cerradas","Cerradas"],["todas","Todas"]].map(([k,t])=>`<button class="tab" role="tab" type="button" data-act="solTab" data-t="${k}" aria-selected="${tab===k}">${t}</button>`).join("")}</div>`;
+  const tabla=ls.length?`<div class="tbl-wrap"><table><thead><tr><th>Folio</th><th>Solicitud</th><th>Fecha</th><th>La tiene</th><th>Estado</th><th></th></tr></thead><tbody>${ls.map(x=>{ const [et,ec]=(x.asis?ASIS_SOL_EST:SOL_EST)[x.estado]||[x.estado,""];
+      return `<tr><td class="mono">${esc(x.folio)}</td><td><b>${esc(x.tipo)}</b><br><span class="status">${x.origen}</span></td><td>${fechaTxt(x.fecha)}</td><td>${esc(x.con||"—")}</td><td><span class="pill ${ec}">${et}</span></td><td>${x.asis?`<button class="btn sm" type="button" data-act="miasis">Ver</button>`:`<button class="btn sm" type="button" data-act="solVer" data-id="${x.id}">Ver</button>`}</td></tr>`; }).join("")}</tbody></table></div>`
+    :`<p class="status">No tienes solicitudes ${tab==="cerradas"?"cerradas":tab==="abiertas"?"abiertas":""}.</p>`;
+  return env(`${solDetalleHtml(false)}${tabs}${tabla}`);
+}
+function bandejaSolHtml(){
+  const cab=`<div class="phead">${migas()}<h1>Bandeja de solicitudes</h1>${S.rol==="superusuario"?`<div class="acts"><button class="btn" type="button" data-act="bsTipos">${S.bsTipos?"Ver la bandeja":"Tipos de solicitud"}</button></div>`:""}</div>
+    <p class="status" style="margin:0 0 8px;max-width:72ch">Solicitudes en las que te toca actuar ahora: de las personas que te reportan, de tus sedes o de tu área. Nunca aparecen las tuyas.</p>`;
+  const env=x=>`<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:12px">${cab}${x}</div>`;
+  if (!S.sol) return env(`<p class="status">Cargando…</p>`); if (S.sol.error) return env(`<div class="banner">No se pudo cargar la bandeja.</div>`);
+  if (S.bsTipos) return env(`<section class="note"><p class="status" style="margin:0 0 8px">Solo el Superusuario. Lo que cambies aquí queda en la bitácora. Reglas fijas: nadie resuelve lo propio y nada se aprueba solo.</p>
+    <div class="tbl-wrap"><table><thead><tr><th>Tipo</th><th>La revisa</th><th>Plazo (días)</th><th>Activo</th><th></th></tr></thead><tbody>${(S.sol.tipos||[]).map(t=>`<tr><td><b>${esc(t.nombre)}</b></td>
+      <td><select class="sel" id="tp-${t.clave}" data-noborrador>${[["rrhh","RR. HH."],["direccion","Dirección"],["jefe,rrhh","Jefe directo → RR. HH."],["sede,rrhh","Administración de sede → RR. HH."],["jefe","Jefe directo"]].map(([v,x])=>`<option value="${v}"${t.pasos.join(",")===v?" selected":""}>${x}</option>`).join("")}</select></td>
+      <td><input id="tz-${t.clave}" type="number" min="1" max="30" value="${t.plazo_dias}" style="width:70px" data-noborrador></td><td><input id="ta-${t.clave}" type="checkbox"${t.activo?" checked":""} data-noborrador aria-label="Activo"></td>
+      <td><button class="btn sm" type="button" data-act="bsGuardarTipo" data-t="${t.clave}">Guardar</button></td></tr>`).join("")}</tbody></table></div></section>`);
+  const pr=S.sol.porResolver||[], tipos=Object.fromEntries((S.sol.tipos||[]).map(x=>[x.clave,x.nombre]));
+  const tabla=pr.length?`<div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Solicitud</th><th>Enviada</th><th>Atender antes del</th><th>Paso</th><th>Estado</th><th></th></tr></thead><tbody>${pr.map(s=>{ const q=(S.sol.personas||[]).find(p=>p.solicitud_id===s.id), [et,ec]=solEstG(s.estado,true);
+      return `<tr><td>${esc(q?.nombre||"")}<br><span class="status">${esc(q?.sede||"")}</span></td><td><b>${esc(tipos[s.tipo]||s.tipo)}</b><br><span class="mono status">${esc(s.folio||"")}</span></td><td>${fechaTxt(s.enviada_en)}</td><td>${fechaTxt(s.vence)}${s.vence&&s.vence<asisHoy()?' <span class="pill estado-pendiente">Atrasada</span>':""}</td><td>${PASO_TXT[s.pasos[s.paso]]||""}</td><td><span class="pill ${ec}">${et}</span></td><td><button class="btn sm" type="button" data-act="bsVer" data-id="${s.id}">Revisar</button></td></tr>`; }).join("")}</tbody></table></div>`
+    :`<p class="status">✓ No tienes solicitudes por resolver.</p>`;
+  return env(`${solDetalleHtml(true)}${tabla}`);
+}
+async function solVer(id, gestion){
+  try{ const s=gestion?(S.sol.porResolver||[]).find(x=>x.id===id)||await S.api.solicitud(id):(S.sol.mias||[]).find(x=>x.id===id)||await S.api.solicitud(id);
+    S.solVer={s, ev:await S.api.solEventos(id)}; render(); $("#detail").scrollTop=0; }catch(e){ toast(e?.message||"No se pudo abrir."); }
+}
+function notifHtml(){ const ns=S.notif||[];
+  return `<p class="status" style="margin:0 0 8px">Solo dentro de la app. No incluyen el detalle de tus solicitudes ni se envían por correo o mensajes.</p>
+    ${ns.length?`<ul class="pend">${ns.map(n=>`<li><div>${n.leida?"":"<b>● </b>"}${esc(n.titulo)}<br><span class="status">${new Date(n.creado).toLocaleString("es-MX",{dateStyle:"short",timeStyle:"short"})}</span></div>${n.vista?`<button class="btn sm" type="button" data-act="notifIr" data-id="${n.id}">Ver</button>`:""}</li>`).join("")}</ul>`:`<p>No tienes notificaciones.</p>`}`; }
+async function notifCargar(){ if (!S.api?.notificaciones) return; S.notif=await S.api.notificaciones(); const n=S.notif.filter(x=>!x.leida).length, b=$("#notifBtn");
+  if (b){ b.hidden=false; const d=b.querySelector(".ndot"); if (d) d.hidden=!n; b.setAttribute("aria-label", n?`Notificaciones: ${n} sin leer`:"Notificaciones"); } }
+async function solAccion(a,b){
+  const v=id=>($("#"+id)?.value??"").trim(), err=e=>toast(e?.message||"No se pudo completar.");
+  if (a==="misol"){ S.view="misol"; S.solVer=null; render(); return solCargar(); }
+  if (a==="bandejaSol"){ S.view="bandejaSol"; S.solVer=null; S.bsTipos=false; render(); return solCargar(); }
+  if (a==="solTab"){ S.solTab=b.dataset.t; S.solVer=null; return render(); }
+  if (a==="solNueva"){ S.solForm={tipo:null, clave:crypto.randomUUID()}; S.solVer=null; if (S.view!=="misol"){ S.view="misol"; render(); return solCargar(); } return render(); }
+  if (a==="solTipo"){ S.solForm={...(S.solForm||{clave:crypto.randomUUID()}), tipo:b.dataset.t, campo:b.dataset.c||S.solForm?.campo}; if (S.view!=="misol"){ S.view="misol"; render(); return solCargar(); } return render(); }
+  if (a==="solCancelarForm"){ S.solForm=null; S.editado=false; return render(); }
+  const leer=()=>{ const f=S.solForm; f.detalle=v("solDet")||f.detalle||""; if ($("#solCampo")) f.campo=v("solCampo"); if ($("#solValor")) f.valor=v("solValor"); if ($("#solArea")) f.area=v("solArea"); return f; };
+  const datosDe=f=>f.tipo==="datos"?{campo:f.campo,valor:f.valor||""}:f.tipo==="apoyo"?{area:f.area}:{};
+  if (a==="solRevisar"){ const f=leer(); if (f.detalle.length<5) return toast("Explica tu situación (al menos 5 caracteres).");
+    if (f.tipo==="datos"&&["nombre","cedula"].includes(f.campo)&&!f.valor) return toast("Escribe el dato correcto."); f.revisar=true; S.editado=false; return render(); }
+  if (a==="solVolver"){ S.solForm.revisar=false; return render(); }
+  if (a==="solBorrador"){ const f=leer(); if (f.detalle.length<5) return toast("Escribe al menos unas palabras para guardar el borrador.");
+    try{ await S.api.crearSolicitud(f.tipo,f.detalle,datosDe(f),null,false,f.clave); S.solForm=null; S.editado=false; toast("Guardada como borrador. Nadie más la ve hasta que la envíes."); S.solTab="abiertas"; return solCargar(); }catch(e){ return err(e); } }
+  if (a==="solEnviar"){ if (b.disabled) return; b.disabled=true; const f=S.solForm;
+    try{ const r=await S.api.crearSolicitud(f.tipo,f.detalle,datosDe(f),null,true,f.clave); S.solForm=null; S.editado=false; S.solTab="abiertas"; toast(`Solicitud enviada${r?.folio?" con folio "+r.folio:""}. Te avisaremos aquí cuando respondan.`); return solCargar(); }
+    catch(e){ b.disabled=false; return err(e); } }
+  if (a==="solVer") return solVer(b.dataset.id,false);
+  if (a==="bsVer") return solVer(b.dataset.id,true);
+  if (a==="solCerrarVer"){ S.solVer=null; return render(); }
+  if (a==="solCancelar"){ const s=S.solVer?.s; if (!s||!confirm(s.estado==="borrador"?"¿Descartar este borrador?":"¿Cancelar esta solicitud? Quedará en tu historial.")) return;
+    try{ await S.api.cancelarSolicitud(s.id,null); S.solVer=null; toast("Listo. Queda en tu historial."); return solCargar(); }catch(e){ return err(e); } }
+  if (a==="solEnviarBorrador"){ try{ const f=await S.api.enviarSolicitud(S.solVer.s.id); S.solVer=null; toast(`Enviada con folio ${f}.`); return solCargar(); }catch(e){ return err(e); } }
+  if (a==="solResponder"){ const t=v("solResp"); if (t.length<3) return toast("Escribe tu respuesta.");
+    try{ await S.api.responderInfoSolicitud(S.solVer.s.id,t); S.solVer=null; S.editado=false; toast("Respuesta enviada."); return solCargar(); }catch(e){ return err(e); } }
+  if (a==="bsAccion"){ const acc=b.dataset.a, t=v("bsTxt");
+    if (acc==="rechazar"&&t.length<10) return toast("Explica a la persona el motivo (10 caracteres o más).");
+    if (acc==="pedir_info"&&t.length<5) return toast("Escribe qué información necesitas.");
+    if (acc==="aprobar"&&!confirm("¿Aprobar esta solicitud?")) return;
+    try{ const r=await S.api.resolverSolicitud(S.solVer.s.id,acc,t); S.solVer=null; S.editado=false;
+      toast({tomar:"La tomaste en revisión.",pedir_info:"Se pidió información a la persona.",rechazar:"Registrado con tu respuesta.",aprobar:r==="siguiente_paso"?"Aprobada en tu paso; pasa al siguiente.":"Aprobada. La persona ya lo ve."}[acc]); return solCargar(); }catch(e){ return err(e); } }
+  if (a==="bsTipos"){ S.bsTipos=!S.bsTipos; S.solVer=null; return render(); }
+  if (a==="bsGuardarTipo"){ const k=b.dataset.t, z=Number(v("tz-"+k));
+    if (!(z>=1&&z<=30)) return toast("El plazo va de 1 a 30 días.");
+    try{ await S.api.guardarTipoSolicitud(k,{pasos:v("tp-"+k).split(","), plazo_dias:z, activo:$("#ta-"+k).checked}); toast("Guardado. Quedó en la bitácora."); return solCargar(); }catch(e){ return err(e); } }
+  if (a==="notif"){ await notifCargar().catch(()=>{}); const d=$("#dlgNotif"); d.querySelector(".body").innerHTML=notifHtml(); d.showModal(); return; }
+  if (a==="notifLeidas"){ try{ await S.api.marcarLeidas((S.notif||[]).filter(n=>!n.leida).map(n=>n.id)); await notifCargar(); $("#dlgNotif .body").innerHTML=notifHtml(); }catch(e){ err(e); } return; }
+  if (a==="notifCerrar"){ $("#dlgNotif").close(); return; }
+  if (a==="notifIr"){ const n=(S.notif||[]).find(x=>x.id===b.dataset.id); $("#dlgNotif").close(); if (!n) return;
+    if (!n.leida) S.api.marcarLeidas([n.id]).then(notifCargar).catch(()=>{});
+    await solAccion(n.vista==="bandejaSol"?"bandejaSol":"misol"); if (n.ref) solVer(n.ref, n.vista==="bandejaSol"); return; }
+}
 function inicioHtml(){
   if (!S.api) return `<div class="wrap"><div class="welcome"><h2>Expedientes y documentos psicológicos</h2><p class="status">Cargando tu espacio…</p></div></div>`;
   if (!S.pend && !S.pendCargando) setTimeout(cargarPendientes, 0);
@@ -1567,10 +1840,11 @@ function inicioHtml(){
       <li><b class="n">4</b><div><b>Si corresponde, compártelo</b> con el consultante desde Documentos (solo reportes y evaluaciones), con un código que le entregas en persona.</div></li></ol>`}
     <div style="display:flex;gap:8px;flex-wrap:wrap">${S.canWrite?`<button class="btn primary" type="button" data-act="new">+ Nuevo expediente</button>`:""}<button class="btn" type="button" data-act="hoja">Hoja administrativa en blanco (Word)</button></div></section>` : "";
   return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">
-    <section class="hola"><div><small>CEMEPI · Tu espacio</small><h2>Hola${nombre?", "+esc(nombre):""}</h2>
+    ${tourHtml()}<section class="hola"><div><small>Mi espacio CEMEPI</small><h2>Hola${nombre?", "+esc(nombre):""}</h2>
       <p style="margin:4px 0 0"><span class="pill estado-activo">${esc(info.n||"")}</span>${S.miSede?` <span class="pill">${esc(S.miSede)}</span>`:""} ${esc(info.d||"")}</p>
       ${perms.length?`<p class="status" style="margin:6px 0 0">Permisos adicionales: ${esc(perms.join(" · "))}.</p>`:""}</div>
       <button class="btn" type="button" data-act="ayuda">¿Qué puedo hacer?</button></section>
+    ${miHoyHtml()}
     <section class="note"><div class="note-h"><h3>Pendientes</h3>${S.pend?`<button class="btn sm" type="button" data-act="refrescarPend">Actualizar</button>`:""}</div>${pend}</section>
     ${S.pend?avisosHtml():""}
     ${pasos}
@@ -1612,11 +1886,12 @@ function perfilHtml(){
   return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px"><div class="phead">${migas()}<h1>Mi perfil</h1></div>${preferenciasHtml()}${S.api?mfaPerfilHtml():""}<div class="card">
     <p class="status" style="margin:0">Se usan en la firma de tus documentos. Tu rol y tu sede los asigna quien autorizó tu cuenta.</p>
     <form id="frmPerfil" class="datos">
-      <div class="fld" style="grid-column:1/-1"><label for="pf-nombre">Nombre completo, como aparecerá en la firma</label><input id="pf-nombre" data-k="nombre" type="text" value="${esc(pf.nombre||"")}" placeholder="Psic. Nombre Apellido"></div>
-      <div class="fld"><label for="pf-cedula">Cédula profesional</label><input id="pf-cedula" data-k="cedula" type="text" value="${esc(pf.cedula||"")}"></div>
+      <div class="fld" style="grid-column:1/-1"><label for="pf-nombre">Nombre completo, como aparecerá en la firma</label><input id="pf-nombre" type="text" value="${esc(pf.nombre||"")}" readonly aria-describedby="pfCorr"></div>
+      <div class="fld"><label for="pf-cedula">Cédula profesional</label><input id="pf-cedula" type="text" value="${esc(pf.cedula||"")}" readonly aria-describedby="pfCorr"></div>
       <div class="fld"><label for="pf-tel">Teléfono</label><input id="pf-tel" data-k="telefono" type="tel" value="${esc(pf.telefono||"")}"></div>
       <div class="fld"><label>Sede y rol</label><input type="text" value="${esc((S.miSede||"Todas las sedes")+" · "+(ROL_TXT[S.rol]||S.rol||"")+(S.rol==="psicologo"&&S.api?.modalidad?" · "+MOD_TXT[S.api.modalidad]:""))}" disabled></div>
     </form>
+    <p class="status" id="pfCorr" style="margin:0">Tu nombre y tu cédula aparecen en tus firmas y documentos, por eso se corrigen con una solicitud que revisa RR. HH. <button class="btn sm" type="button" data-act="solTipo" data-t="datos" data-c="nombre">Pedir corrección</button></p>
     <section class="firma-box">
       <div class="card-h"><b>Firma (opcional)</b><span class="status">Se coloca sobre la línea de firma en los documentos Word y PDF.</span></div>
       <div class="firma-prev" id="firmaPrev">${S.firmaTmp ? `<img src="${S.firmaTmp.src}" alt="Vista previa de tu firma">` : `<span class="status">Sin firma cargada</span>`}</div>
@@ -3924,14 +4199,17 @@ const GUIAS = [
   {t:"Consultar la organización", si:()=>(S.api?.orgNivel||0)>=1, pasos:["Entra a Administración → Resumen para ver sedes, personas, vacantes y alertas de las sedes que tienes autorizadas.","En Organigrama elige la vista (línea de reporte, área, sede, supervisión clínica o coordinación) y pulsa a una persona para ver su ficha.","En Supervisión registra a quién reporta cada persona; en Vacantes, quién ocupa cada plaza."]},
   {t:"Iniciar el proceso de una persona en contratación", si:()=>S.rol==="superusuario"||(S.api?.rhNivel||0)>=2, pasos:["Antes, en Personas → Supervisión registra a quién reporta (su jefe directo) y, si es psicólogo(a), quién le da supervisión clínica.","Entra a Personas → Incorporación y pulsa + Iniciar proceso.","Elige a la persona (si aún no tiene cuenta, déjala en preingreso e indica si es administrativo o psicólogo), las fechas, la duración y a su responsable, capacitador, mentor y supervisor.","El plan se arma con la ruta de su puesto y se puede personalizar. A los días 30, 60 y 90 se evalúa; al final el responsable recomienda y tú decides: confirmar, revisión adicional, suspender o concluir sin continuidad."]},
   {t:"Acompañar o evaluar a una persona en incorporación", si:()=>!!S.rol, pasos:["Entra a Personas → Incorporación y abre a la persona (también aparece en Pendientes de Inicio cuando toca).","Como capacitador(a) o responsable: completa sus actividades con retroalimentación o márcalas para refuerzo. Como mentor(a): registra reuniones con acuerdos y compromisos.","Como responsable o supervisor(a): cada evaluación se abre 10 días antes de su corte; califica cada criterio del 1 al 4 con evidencias y un plan de mejora, y ciérrala. Después de la del día 90 envía tu recomendación con una valoración escrita."]},
-  {t:"Mi incorporación", si:()=>!!S.rol, pasos:["Si estás en proceso de contratación, entra a Mi trabajo → Mi incorporación: ahí ves tu etapa, tu avance y lo que sigue.","En tu plan pulsa Avancé y escribe tu evidencia; tu capacitador(a) completa la actividad. Los requisitos de cuenta, contrato, documentación y Reglamento se marcan solos.","Cuando se abra cada corte (días 30, 60 y 90) haz tu autoevaluación y revisa tu retroalimentación y tus compromisos."]},
+  {t:"Hacer una solicitud", si:()=>!!S.rol, pasos:["Entra a Mi espacio → Mis solicitudes y pulsa «+ Nueva solicitud».","Elige el tipo: corregir tus datos, constancia, aclaración de pago, necesito apoyo, propuesta o problema con la app. Vacaciones, permisos y correcciones de asistencia se piden en Mi asistencia y aparecen en la misma lista.","Escribe con calma: lo que escribes se guarda como borrador. Puedes «Guardar como borrador» y enviarla después.","Pulsa «Revisar antes de enviar» y luego «Enviar solicitud»: recibes un folio CEMEPI-SOL.","En la lista ves quién la tiene y su estado. Si te piden información, respóndela ahí mismo. Mientras no se resuelva, puedes cancelarla.","La campana de arriba te avisa cuando hay respuesta. No llegan avisos por correo ni mensajes."]},
+  {t:"Resolver solicitudes del equipo", si:()=>!!S.rol && ["superusuario","direccion","admin_sede"].includes(S.rol), pasos:["Entra a Personas → Bandeja de solicitudes: ves solo las que te toca resolver ahora (de quien te reporta o de tus sedes). Nunca las tuyas.","Pulsa «Revisar»: ves el detalle, el recorrido y el historial.","Puedes tomarla en revisión, pedir información, no aprobarla (explicando el motivo) o aprobarla. Si tiene otro paso, pasa a la siguiente persona.","Una corrección de nombre o cédula aprobada se aplica sola a la cuenta, a las firmas y a los directorios; solo la aprueba quien administra esa cuenta.","El Superusuario define en «Tipos de solicitud» quién revisa cada tipo, el plazo y si está activo. Cada cambio queda en la bitácora."]},
+  {t:"Mi información y Mi espacio", si:()=>!!S.rol, pasos:["Entra a Mi espacio → Mi información: ahí ves tu perfil, tu puesto, tus sedes, a quién reportas y tu equipo.","Cada dato dice quién puede cambiarlo: «Lo editas tú» (teléfono y firma, en Mi cuenta → Mi perfil), «Por solicitud» (nombre y cédula), «Lo administra RR. HH.» (puesto, sede, fecha de incorporación) e «Histórico».","Si algo no es correcto, pulsa «Pedir corrección»: se abre una solicitud que revisa RR. HH. Al aprobarse, tu nombre o tu cédula se corrigen solos en tu cuenta, tus firmas y los directorios.","Si administras personas, arriba verás «Mi espacio | Gestión»: Mi espacio muestra solo lo tuyo y Gestión todo lo que administras. Cambiar de espacio no te da ni te quita permisos.","El recorrido de bienvenida se puede pausar con «Más tarde» y volver a ver desde Mi información."]},
+  {t:"Mi incorporación", si:()=>!!S.rol, pasos:["Si estás en proceso de contratación, entra a Mi espacio → Mi incorporación: ahí ves tu etapa, tu avance y lo que sigue.","En tu plan pulsa Avancé y escribe tu evidencia; tu capacitador(a) completa la actividad. Los requisitos de cuenta, contrato, documentación y Reglamento se marcan solos.","Cuando se abra cada corte (días 30, 60 y 90) haz tu autoevaluación y revisa tu retroalimentación y tus compromisos."]},
   {t:"Firmar un documento", si:()=>!!S.rol, pasos:["Antes de tu primera firma, guarda la imagen de tu firma en Mi perfil (se imprime en el documento).","Entra a Mis documentos → Por firmar y pulsa Revisar y firmar.","Pulsa Abrir y revisar el documento y léelo completo. La app comprueba que es exactamente el archivo que se envió a firma.","Escribe tu contraseña de la app, marca que aceptas y pulsa Firmar. Si algo está mal, pulsa Rechazar y explica qué corregir."]},
   {t:"Firmar mi contrato", si:()=>tieneContrato()||S.rol==="superusuario", pasos:["Cuando la Dirección registre tu fecha de alta y salario, entra a Mi contrato y pulsa Firmar mi contrato.","Lee el contrato, escribe tu contraseña, marca que aceptas y pulsa Firmar.","Se guarda la huella del contenido: si después cambia un dato, la firma se anula y se vuelve a firmar."]},
   {t:"Enviar un documento a firma", si:()=>dxPuedeGestionar(), pasos:["Abre el documento en Documentos y firmas (ya con su archivo) y pulsa Enviar a firma.","Marca a las personas en el orden en que deben firmar, escribe su papel (por ejemplo Representante legal), elige si firman en orden o a la vez y la fecha límite.","Cuando firman todas, el documento queda Firmado, recibe su folio y puedes Descargar firmado (PDF) con las firmas impresas y su evidencia.","Mientras está en firma no se cambia el archivo. Si hay que corregirlo, cancela la solicitud con un motivo, sube una versión nueva y vuelve a enviarlo."]},
   {t:"Agregar un documento a la biblioteca", si:()=>dxPuedeGestionar(), pasos:["Entra a Documentos → Documentos y firmas y pulsa + Nuevo documento.","Elige el tipo, escribe el nombre y elige la sede (la entidad fiscal se toma de la sede) o, si es un documento de la entidad, la entidad fiscal. Si es de una persona, elígela para que quede en su expediente.","Pulsa Crear borrador y sube el archivo (PDF, Word, PNG o JPG, máx. 20 MB). La app calcula su huella digital antes de subirlo.","Pulsa Publicar con folio. Un documento publicado no se elimina: si deja de valer, se archiva con un motivo."]},
   {t:"Corregir un documento sin perder el anterior", si:()=>dxPuedeGestionar(), pasos:["Abre el documento en Documentos y firmas.","En Versiones elige el archivo nuevo, escribe el motivo y pulsa Subir versión.","La versión anterior se conserva con su huella; la nueva queda como vigente."]},
   {t:"Comprobar que un archivo no se alteró", si:()=>dxPuedeGestionar(), pasos:["Abre el documento y, en Versiones, pulsa Verificar integridad.","La app vuelve a calcular la huella del archivo guardado y la compara con la registrada al subirlo."]},
-  {t:"Registrar mi entrada y salida", si:()=>!!S.rol, pasos:["Entra a Mi trabajo → Mi asistencia.","En la sede, escanea con la cámara de tu celular el código QR de la recepción: se abre la app y confirma la sede. También puedes pulsar Registrar entrada desde la app.","Al terminar tu jornada, pulsa Registrar salida. La hora la pone el servidor, no tu celular.","Si olvidaste registrar o te equivocaste, pulsa Pedir corrección o permiso. Tu registro original no se borra: la corrección aprobada queda como ajuste.","Si eres psicólogo(a) independiente, el control no te aplica; puedes registrar actividades de forma voluntaria."]},
+  {t:"Registrar mi entrada y salida", si:()=>!!S.rol, pasos:["Entra a Mi espacio → Mi asistencia.","En la sede, escanea con la cámara de tu celular el código QR de la recepción: se abre la app y confirma la sede. También puedes pulsar Registrar entrada desde la app.","Al terminar tu jornada, pulsa Registrar salida. La hora la pone el servidor, no tu celular.","Si olvidaste registrar o te equivocaste, pulsa Pedir corrección o permiso. Tu registro original no se borra: la corrección aprobada queda como ajuste.","Si eres psicólogo(a) independiente, el control no te aplica; puedes registrar actividades de forma voluntaria."]},
   {t:"Pedir un permiso, vacaciones o justificar una incidencia", si:()=>!!S.rol, pasos:["En Mi asistencia pulsa Pedir corrección o permiso.","Elige el tipo, la fecha y explica brevemente. En incapacidades no escribas el diagnóstico.","Tu jefe directo la revisa. Nada cambia hasta que se apruebe; verás la respuesta en Mis solicitudes."]},
   {t:"Supervisar la asistencia de mi equipo", si:()=>asisSupervisa(), pasos:["Entra a Personas → Asistencia y jornadas. Solo ves a las personas que te corresponden.","En Resumen eliges sede y fecha. Fuera de horario y Sin entrada son datos por revisar, nunca faltas ni descuentos automáticos.","En Permisos y solicitudes e Incidencias revisa y resuelve con un motivo. No puedes resolver lo tuyo.","En Actividades complementarias valida el tiempo reportado (notas, supervisión, capacitación: son tiempo de trabajo)."]},
   {t:"Poner el código QR de asistencia en recepción", si:()=>S.rol==="superusuario"||S.rol==="admin_sede"||(S.api?.asisNivel||0)>=2, pasos:["En el equipo de recepción entra a Asistencia y jornadas → QR de sede y elige la sede.","Deja la pantalla abierta: el código cambia cada 30 segundos, así que una foto vieja no sirve.","Cada persona lo escanea con la cámara de su celular, entra con su cuenta y registra. No se guarda la ubicación de nadie."]},
@@ -4007,7 +4285,7 @@ const MANUALES = {
     "En los datos del expediente pulsa «Expediente completo (PDF)», elige la finalidad y pulsa «Generar PDF».",
     "Es un documento interno y confidencial: guárdalo en un lugar seguro y no lo envíes por mensajería. La exportación queda en la bitácora.",
     "Si una autoridad solicita información, avisa a la Dirección antes de entregar nada."]},
-   {t:"Mi trabajo: contrato, documentación y reglamento", p:[
+   {t:"Mi espacio: contrato, documentación y reglamento", p:[
     "Psicólogo base: en «Mi contrato» pulsa «Comenzar mi contrato», captura tus datos y beneficiarios y guarda. La Dirección registra tu fecha de alta y salario; después firmas tú y al final firma CEMEPI. Psicólogo independiente: no tienes contrato individual de trabajo.",
     "En «Mis documentos» sube en PDF tus documentos obligatorios (identificación, CURP, comprobante de domicilio, constancia fiscal, cédula y título). Las etiquetas «Falta» y «✓» te guían. El comprobante de domicilio debe tener menos de 3 meses.",
     "En «Reglamento» léelo y pulsa «Confirmo que lo recibí y lo leí»."]},
@@ -4128,7 +4406,7 @@ for (const k of Object.keys(MANUALES)) MANUALES[k].caps.push({t:"Mis documentos"
   "«Mis documentos» reúne tus documentos institucionales (constancias, convenios, acuses), los accesos a tu contrato y al Reglamento, y tus PDF personales (identificación, CURP, comprobante de domicilio, cédula, título). Antes se llamaba «Mi documentación».",
   "Cuando se active la firma electrónica, aquí aparecerán los documentos que debes firmar."]});
 for (const k of Object.keys(MANUALES)) MANUALES[k].caps.push({t:"Mi asistencia", p:[
-  "En Mi trabajo → Mi asistencia registras tu entrada y salida, ves tu horario, tu historial de los últimos días, tus solicitudes y tus incidencias. El control solo funciona cuando la Dirección lo activa.",
+  "En Mi espacio → Mi asistencia registras tu entrada y salida, ves tu horario, tu historial de los últimos días, tus solicitudes y tus incidencias. El control solo funciona cuando la Dirección lo activa.",
   "En la sede escanea con la cámara de tu celular el código QR de recepción: se abre la app y confirma la sede sin guardar tu ubicación. La hora la pone el servidor.",
   "Si olvidaste registrar, pulsa Pedir corrección o permiso. Tu registro original no se borra; la corrección aprobada queda como ajuste. Lo mismo para permisos, vacaciones o incapacidad (sin diagnóstico).",
   "Una incidencia detectada no es una falta: se revisa contigo. Hay 10 minutos de tolerancia y los retardos no generan multas (Reglamento, art. 21).",
@@ -4145,7 +4423,7 @@ MANUALES.direccion.caps.push({t:"Documentos y firmas", p:[
   "Los documentos sensibles (fiscales) requieren el permiso de información sensible. Las firmas electrónicas llegan en la siguiente fase."]});
 for (const k of Object.keys(MANUALES)) MANUALES[k].caps.push({t:"Incorporación (en proceso de contratación)", p:[
   "Mientras dura tu proceso apareces como «En proceso de contratación». Tienes una ruta de capacitación por áreas, con fechas, un responsable, un capacitador(a), un mentor(a) y un supervisor(a).",
-  "En Mi trabajo → Mi incorporación ves tu etapa (inducción, formación supervisada o valoración), tu avance, lo que sigue, tu retroalimentación y tus compromisos.",
+  "En Mi espacio → Mi incorporación ves tu etapa (inducción, formación supervisada o valoración), tu avance, lo que sigue, tu retroalimentación y tus compromisos.",
   "A los días 30, 60 y 90 te autoevalúas y tu responsable te evalúa con evidencias y un plan de mejora. Al final se confirma tu incorporación, se programa una revisión adicional o se concluye el proceso; ninguna decisión se toma de forma automática.",
   "Completar tu capacitación no te da por sí mismo permisos de caja, cobros, información sensible ni de atención clínica: esos se autorizan aparte."]});
 for (const k of Object.keys(MANUALES)) MANUALES[k].caps.push({t:"Firma electrónica", p:[
@@ -4743,6 +5021,8 @@ document.addEventListener("click", async ev => {
   /* Usuarios, sedes y tiempo de uso */
   if (a==="usuarios"){ S.view="usuarios"; S.usrEdit=null; S.usuarios=null; render(); return cargarAdmin("usuarios"); }
   if (ORG_ACCIONES.has(a)) return orgAccion(a, b);   /* Módulo 01 · Organización */
+  if (MI_ACC.has(a)) return miAccion(a, b);
+  if (SOL_ACC.has(a)) return solAccion(a, b);   /* Módulo 06 · Solicitudes */   /* Módulo 06 · Mi espacio */
   if (INC_ACC.has(a)) return incAccion(a, b);   /* Incorporación */
   if (FIRMA_ACC.has(a)) return firmaAccion(a, b);   /* Módulo 05 · firmas */
   if (DOC_ACC.has(a)) return docAccion(a, b);   /* Módulo 05 · Documentos y firmas */
@@ -4973,7 +5253,7 @@ document.addEventListener("click", async ev => {
     if (!S.uid){ toast("Inicia sesión en claude.ai para guardar tus datos."); return; }
     if (S.firmaTmp){ v.firma=S.firmaTmp.src; v.firmaW=S.firmaTmp.w; v.firmaH=S.firmaTmp.h; } else { v.firma=""; v.firmaW=0; v.firmaH=0; }
     if (v.firma.length>200000){ toast("La imagen de la firma es demasiado grande. Usa una imagen más pequeña o dibújala."); return; }
-    try{ await S.db.doc(`data/users/${S.uid}/perfil`).set(v); S.perfil=v; S.perfilDraft=null; toast("Datos de firma guardados"); S.view=S.sel?"exp":"inicio"; render(); }
+    try{ await S.db.doc(`data/users/${S.uid}/perfil`).set(v); S.perfil={...(S.perfil||{}), ...v}; S.perfilDraft=null; toast("Datos de firma guardados"); S.view=S.sel?"exp":"inicio"; render(); }
     catch(e){ toast(errMsg(e)); } return;
   }
   if (a==="save"){
@@ -5218,6 +5498,10 @@ render();
     $("#permBtn").hidden = true;
     $("#docpBtn").hidden = !S.rol;
     $("#masBtn").hidden = !S.rol;
+    $("#miinfBtn").hidden = !S.rol;   /* Módulo 06 · Mi espacio */
+    $("#misolBtn").hidden = !S.rol;
+    if (S.rol){ solCargar().catch(()=>{}); notifCargar().catch(()=>{}); setInterval(()=>{ if (!document.hidden) notifCargar().catch(()=>{}); }, 120000); }
+    if (S.rol && S.api.recorrido) S.api.recorrido().then(r=>{ S.tour=r||{}; if (S.view==="inicio") render(); }).catch(()=>{});
     $("#docsBtn").hidden = !((S.api.docNivel||0)>=1 || S.rol==="superusuario");   /* Módulo 05 */
     $("#incBtn").hidden = !((S.api.rhNivel||0)>=1 || S.rol==="superusuario");   /* Incorporación (jefes directos y la persona se ajustan al cargar) */
     if (S.rol) incCargar().catch(()=>{});   /* Módulo 03: cada quien ve su asistencia */
@@ -5234,8 +5518,8 @@ render();
     $("#ctrBtn span").textContent = veTodosContratos() ? "Contratos del personal" : "Mi contrato";
     $("#ctrBtn").hidden = !(tieneContrato() || veTodosContratos());
     $("#docpBtn span").textContent = veDocsTodos() ? "Documentación del personal" : "Mis documentos";
-    /* Menú por áreas (2026-11-24): lo propio de cada persona va en «Mi trabajo»; lo del personal, en «Documentos» */
-    const miT=document.querySelector('.nav-g[aria-label="Mi trabajo"]');
+    /* Menú por áreas (2026-11-24): lo propio de cada persona va en «Mi espacio»; lo del personal, en «Documentos» */
+    const miT=document.querySelector('.nav-g[aria-label="Mi espacio"]');
     if (!veTodosContratos()) miT.appendChild($("#ctrBtn"));
     if (!veDocsTodos()) miT.appendChild($("#docpBtn"));
     if ($("#docsBtn").hidden && !veTodosContratos() && !veDocsTodos()) miT.appendChild($("#regBtn"));

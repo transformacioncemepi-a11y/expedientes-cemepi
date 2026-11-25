@@ -343,7 +343,7 @@ const db = {
     if (/^data\/users\/[^/]+\/perfil$/.test(path)) return {
       async get(){ const data = await leerPerfil(usuario.id);
         return { exists: !!data, data: () => data ? { nombre: data.nombre || "", cedula: data.cedula || "", telefono: data.telefono || "", sede: data.sede || "", firma: data.firma || "", firmaW: data.firma_w || 0, firmaH: data.firma_h || 0 } : undefined }; },
-      async set(v){ const { error } = await sb.from("perfiles").update({ nombre: v.nombre || "", cedula: v.cedula || "", telefono: v.telefono || "", firma: v.firma || null, firma_w: v.firmaW || null, firma_h: v.firmaH || null }).eq("id", usuario.id);
+      async set(v){ const { error } = await sb.from("perfiles").update({ telefono: v.telefono || "", firma: v.firma || null, firma_w: v.firmaW || null, firma_h: v.firmaH || null }).eq("id", usuario.id);
         if (error) throw err(error); } };
     const [col, id] = path.split("/"); return refDoc(col, id);
   },
@@ -604,6 +604,32 @@ const cemepi = {
     /* Avisos por cambio de sede o puesto (migración 039): cada quien recibe solo los que le tocan */
     const { data: rv } = await sb.from("revisiones").select("*").order("creado_en", { ascending: false }).limit(500);
     return { sedes: sd, sedeEnt: se, entidades: en, datosFiscales: ed, areas: ar, puestos: pu, posiciones: po, autorizadas: aut, niveles, colaboradores: co, asignaciones: asg, relaciones: rel, revisiones: rv || [] }; },
+  /* ---------- Módulo 06 · Mi espacio (solo lo propio: las funciones no reciben identificadores) ---------- */
+  async miFicha(){ const { data, error } = await sb.rpc("mi_ficha"); if (error) fallo(error); return data; },
+  async miEquipo(){ const { data, error } = await sb.rpc("mi_equipo"); if (error) fallo(error); return data; },
+  async recorrido(){ const { data, error } = await sb.from("portal_preferencias").select("recorrido").maybeSingle(); if (error) return {}; return data?.recorrido || {}; },
+  async guardarRecorrido(r){ const { error } = await sb.from("portal_preferencias").upsert({ perfil_id: usuario.id, recorrido: r, actualizado: new Date().toISOString() }); if (error) fallo(error); },
+  /* Solicitudes generales (Módulo 06 · P2): todo se valida en la base */
+  async solDatos(){
+    const q = await Promise.all([
+      sb.from("sol_tipos").select("*").order("orden"),
+      sb.from("solicitudes").select("*").eq("solicitante", usuario.id).order("creado_en", { ascending: false }).limit(200),
+      sb.rpc("solicitudes_por_resolver"),
+      sb.rpc("sol_personas")]);
+    q.forEach(r => { if (r.error) fallo(r.error); });
+    return { tipos: q[0].data || [], mias: q[1].data || [], porResolver: q[2].data || [], personas: q[3].data || [] };
+  },
+  async solEventos(id){ const { data, error } = await sb.from("sol_eventos").select("*").eq("solicitud_id", id).order("momento"); if (error) fallo(error); return data || []; },
+  async solicitud(id){ const { data, error } = await sb.from("solicitudes").select("*").eq("id", id).maybeSingle(); if (error) fallo(error); return data; },
+  async crearSolicitud(tipo, detalle, datos, asunto, enviar, clave){ const { data, error } = await sb.rpc("crear_solicitud", { p_tipo: tipo, p_detalle: detalle, p_datos: datos || {}, p_asunto: asunto || null, p_enviar: !!enviar, p_clave: clave || null }); if (error) fallo(error); return data; },
+  async editarBorradorSolicitud(id, detalle, datos, asunto){ const { error } = await sb.rpc("editar_borrador_solicitud", { p_id: id, p_detalle: detalle, p_datos: datos || {}, p_asunto: asunto || null }); if (error) fallo(error); },
+  async enviarSolicitud(id){ const { data, error } = await sb.rpc("enviar_solicitud", { p_id: id }); if (error) fallo(error); return data; },
+  async cancelarSolicitud(id, motivo){ const { error } = await sb.rpc("cancelar_solicitud", { p_id: id, p_motivo: motivo || null }); if (error) fallo(error); },
+  async responderInfoSolicitud(id, t){ const { error } = await sb.rpc("responder_info_solicitud", { p_id: id, p_texto: t }); if (error) fallo(error); },
+  async resolverSolicitud(id, accion, t){ const { data, error } = await sb.rpc("resolver_solicitud", { p_id: id, p_accion: accion, p_texto: t || null }); if (error) fallo(error); return data; },
+  async guardarTipoSolicitud(clave, cambios){ const { error } = await sb.from("sol_tipos").update(cambios).eq("clave", clave); if (error) fallo(error); },
+  async notificaciones(){ const { data, error } = await sb.from("notificaciones").select("*").order("creado", { ascending: false }).limit(40); if (error) return []; return data || []; },
+  async marcarLeidas(ids){ if (!ids?.length) return; const { error } = await sb.from("notificaciones").update({ leida: true }).in("id", ids); if (error) fallo(error); },
   async revisionesPendientes(){ const { data, error } = await sb.from("revisiones").select("id,tipo").eq("estado", "pendiente"); if (error) return []; return data || []; },
   async atenderRevision(id, estado, nota){ const { error } = await sb.rpc("atender_revision", { p_id: id, p_estado: estado, p_nota: nota || null }); if (error) fallo(error); },
   async guardarColaborador(c){
