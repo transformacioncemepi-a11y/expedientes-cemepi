@@ -389,6 +389,8 @@ body.ctx-mi .nav-g.ges{display:none}
   <nav class="nav-g" aria-label="Mi espacio"><span class="nav-l">Mi espacio</span>
     <button class="nav-i" id="miinfBtn" type="button" data-act="miinfo" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/><path d="M17 4h4M19 2v4"/></svg><span>Mi información</span></button>
     <button class="nav-i" id="misolBtn" type="button" data-act="misol" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h4l2 3h4l2-3h4M5 5h14l2 8v6H3v-6z"/></svg><span>Mis solicitudes</span></button>
+    <button class="nav-i" id="micalBtn" type="button" data-act="micalendario" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Mi calendario</span></button>
+    <button class="nav-i" id="comuBtn" type="button" data-act="comunidad" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11v3a1 1 0 0 0 1 1h2l5 4V6L7 10H5a1 1 0 0 0-1 1z"/><path d="M16 9a3 3 0 0 1 0 6M18.5 6.5a6.5 6.5 0 0 1 0 11"/></svg><span>Comunidad</span></button>
     <button class="nav-i" id="masBtn" type="button" data-act="miasis" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg><span>Mi asistencia</span></button>
     <button class="nav-i" id="miincBtn" type="button" data-act="miinc" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg><span>Mi incorporación</span></button></nav>
   <nav class="nav-g ges" aria-label="Administración"><span class="nav-l">Administración</span>
@@ -1166,13 +1168,13 @@ function renderList(){
   el.innerHTML=grupos.map(s=>{ const g=arr.filter(p=>(p.ficha?.sede||"")===s); if(!g.length) return "";
     return `<div class="grupo"><span>${esc(s||"Sin sede")}</span><b>${g.length}</b></div>${porTerapeuta(g)}`; }).join("");
 }
-const VISTA_TXT={inicio:"Inicio",exp:"Expediente",perfil:"Mi perfil",terapeutas:"Terapeutas",usuarios:"Usuarios y permisos",seguridad:"Usuarios y permisos",orgresumen:"Resumen organizacional",indicadores:"Indicadores",organigrama:"Organigrama",colaboradores:"Colaboradores",supervision:"Supervisión",sedes:"Sedes",entidades:"Entidades fiscales",areas:"Áreas",puestos:"Puestos y funciones",vacantes:"Vacantes",uso:"Tiempo de uso",tablero:"Tablero",miasis:"Mi asistencia",asistencia:"Asistencia y jornadas",docs:"Documentos y firmas",incorporacion:"Incorporación",miinc:"Mi incorporación",miinfo:"Mi información",misol:"Mis solicitudes",perfprof:"Perfiles profesionales",bandejaSol:"Bandeja de solicitudes",
+const VISTA_TXT={inicio:"Inicio",exp:"Expediente",perfil:"Mi perfil",terapeutas:"Terapeutas",usuarios:"Usuarios y permisos",seguridad:"Usuarios y permisos",orgresumen:"Resumen organizacional",indicadores:"Indicadores",organigrama:"Organigrama",colaboradores:"Colaboradores",supervision:"Supervisión",sedes:"Sedes",entidades:"Entidades fiscales",areas:"Áreas",puestos:"Puestos y funciones",vacantes:"Vacantes",uso:"Tiempo de uso",tablero:"Tablero",miasis:"Mi asistencia",asistencia:"Asistencia y jornadas",docs:"Documentos y firmas",incorporacion:"Incorporación",miinc:"Mi incorporación",miinfo:"Mi información",misol:"Mis solicitudes",micalendario:"Mi calendario",comunidad:"Comunidad",perfprof:"Perfiles profesionales",bandejaSol:"Bandeja de solicitudes",
   reglamento:"Reglamento",contratos:"Contratos",permisos:"Usuarios y permisos",documentacion:"Documentación",ayuda:"Ayuda"};
 /* Estructura de la organización: un solo botón con pestañas (2026-11-22) */
 const ESTR_VISTAS=[["sedes","Sedes"],["entidades","Entidades fiscales"],["areas","Áreas"],["puestos","Puestos y funciones"],["vacantes","Vacantes"]];
-const VISTA_BTN={inicio:"iniBtn",terapeutas:"terBtn",contratos:"ctrBtn",documentacion:"docpBtn",reglamento:"regBtn",usuarios:"segBtn",permisos:"segBtn",seguridad:"segBtn",orgresumen:"resBtn",indicadores:"indBtn",organigrama:"ogBtn",colaboradores:"colBtn",supervision:"supBtn",sedes:"sedBtn",entidades:"sedBtn",areas:"sedBtn",puestos:"sedBtn",vacantes:"sedBtn",uso:"usoBtn",tablero:"tabBtn",miasis:"masBtn",asistencia:"asjBtn",docs:"docsBtn",incorporacion:"incBtn",miinc:"miincBtn",miinfo:"miinfBtn",misol:"misolBtn",bandejaSol:"bsolBtn",perfprof:"ppBtn",ayuda:"ayudaBtn",perfil:"perfilBtn"};
+const VISTA_BTN={inicio:"iniBtn",terapeutas:"terBtn",contratos:"ctrBtn",documentacion:"docpBtn",reglamento:"regBtn",usuarios:"segBtn",permisos:"segBtn",seguridad:"segBtn",orgresumen:"resBtn",indicadores:"indBtn",organigrama:"ogBtn",colaboradores:"colBtn",supervision:"supBtn",sedes:"sedBtn",entidades:"sedBtn",areas:"sedBtn",puestos:"sedBtn",vacantes:"sedBtn",uso:"usoBtn",tablero:"tabBtn",miasis:"masBtn",asistencia:"asjBtn",docs:"docsBtn",incorporacion:"incBtn",miinc:"miincBtn",miinfo:"miinfBtn",misol:"misolBtn",bandejaSol:"bsolBtn",perfprof:"ppBtn",micalendario:"micalBtn",comunidad:"comuBtn",ayuda:"ayudaBtn",perfil:"perfilBtn"};
 const GRUPO_VISTA={exp:"Atención",terapeutas:"Atención",colaboradores:"Personas",organigrama:"Personas",supervision:"Personas",incorporacion:"Personas",asistencia:"Personas",
-  docs:"Documentos",contratos:"Documentos",documentacion:"Documentos",reglamento:"Documentos",miasis:"Mi espacio",miinc:"Mi espacio",miinfo:"Mi espacio",misol:"Mi espacio",bandejaSol:"Personas",perfprof:"Personas",
+  docs:"Documentos",contratos:"Documentos",documentacion:"Documentos",reglamento:"Documentos",miasis:"Mi espacio",miinc:"Mi espacio",miinfo:"Mi espacio",misol:"Mi espacio",micalendario:"Mi espacio",comunidad:"Mi espacio",bandejaSol:"Personas",perfprof:"Personas",
   tablero:"Administración",orgresumen:"Administración",indicadores:"Administración",uso:"Administración",
   sedes:"Configuración",entidades:"Configuración",areas:"Configuración",puestos:"Configuración",vacantes:"Configuración",seguridad:"Configuración",usuarios:"Configuración",permisos:"Configuración",
   ayuda:"Mi cuenta",perfil:"Mi cuenta"};
@@ -1422,7 +1424,7 @@ const VISTA_AYUDA={
   colaboradores:()=>[null,"Consultar la organización"], organigrama:()=>[null,"Consultar la organización"], supervision:()=>[null,"Consultar la organización"],
   orgresumen:()=>[null,"Consultar la organización"], indicadores:()=>[null,"Consultar la organización"], sedes:()=>[null,"Consultar la organización"],
   incorporacion:()=>[null,"Iniciar el proceso de una persona en contratación"], miinc:()=>[null,"Mi incorporación"],
-  asistencia:()=>[null,"Supervisar la asistencia de mi equipo"], miasis:()=>[null,"Registrar mi entrada y salida"], miinfo:()=>[null,"Mi información y Mi espacio"], misol:()=>[null,"Hacer una solicitud"], bandejaSol:()=>[null,"Resolver solicitudes del equipo"], perfprof:()=>[null,"Verificar perfiles profesionales"],
+  asistencia:()=>[null,"Supervisar la asistencia de mi equipo"], miasis:()=>[null,"Registrar mi entrada y salida"], miinfo:()=>[null,"Mi información y Mi espacio"], misol:()=>[null,"Hacer una solicitud"], bandejaSol:()=>[null,"Resolver solicitudes del equipo"], perfprof:()=>[null,"Verificar perfiles profesionales"], micalendario:()=>[null,"Mi calendario"], comunidad:()=>[null,"Comunicados y preguntas frecuentes"],
   docs:()=>[null, dxPuedeGestionar()?"Agregar un documento a la biblioteca":"Firmar un documento"],
   contratos:()=>veTodosContratos()?["Contratos individuales del personal: captura, fecha de alta, salario y firmas.","Completar y firmar contratos del personal"]:["Tu contrato individual de trabajo: captura tus datos y fírmalo con tu contraseña.","Firmar mi contrato"],
   documentacion:()=>veDocsTodos()?[null,"Verificar documentación del personal"]:[null,"Subir mi documentación"],
@@ -1449,7 +1451,7 @@ function render(){ borAntes(); renderVista(); vistaExtras(); borDespues(); }
 function renderVista(){
   const d=$("#detail"); S.dirty=false; S.stale=false; S.editado=false; marcarNav(); document.body.classList.remove("menu-abierto");
   const p=S.pacientes.get(S.sel);
-  $("#app").classList.toggle("open", !!p || ["perfil","miinfo","misol","bandejaSol","perfprof","terapeutas","usuarios","sedes","entidades","areas","puestos","vacantes","colaboradores","supervision","organigrama","seguridad","orgresumen","indicadores","uso","reglamento","contratos","permisos","documentacion","ayuda","tablero","miasis","asistencia","docs","incorporacion","miinc"].includes(S.view));
+  $("#app").classList.toggle("open", !!p || ["perfil","miinfo","misol","bandejaSol","perfprof","micalendario","comunidad","terapeutas","usuarios","sedes","entidades","areas","puestos","vacantes","colaboradores","supervision","organigrama","seguridad","orgresumen","indicadores","uso","reglamento","contratos","permisos","documentacion","ayuda","tablero","miasis","asistencia","docs","incorporacion","miinc"].includes(S.view));
   if (S.view==="perfil"){ d.innerHTML=perfilHtml(); activarPad(); return; }
   if (S.view==="terapeutas"){ d.innerHTML=terapeutasHtml(); return; }
   if (S.view==="usuarios"){ d.innerHTML=usuariosHtml(); return; }
@@ -1464,6 +1466,8 @@ function renderVista(){
   if (S.view==="misol"){ d.innerHTML=misSolHtml(); return; }
   if (S.view==="bandejaSol"){ d.innerHTML=bandejaSolHtml(); return; }
   if (S.view==="perfprof"){ d.innerHTML=perfprofHtml(); return; }
+  if (S.view==="micalendario"){ d.innerHTML=micalendarioHtml(); return; }
+  if (S.view==="comunidad"){ d.innerHTML=comunidadHtml(); return; }
   if (S.view==="docs"){ d.innerHTML=docsHtml(); return; }
   if (S.view==="incorporacion"){ d.innerHTML=incorporacionHtml(); return; }
   if (S.view==="miinc"){ d.innerHTML=miIncHtml(); return; }
@@ -1499,6 +1503,9 @@ async function cargarPendientes(){
       const info=(t.mias||[]).filter(x=>x.estado==="info_requerida").length, pr=(t.porResolver||[]).length;
       if (info) pend.push({t:`Te pidieron información en ${info} solicitud${info===1?"":"es"}`, d:"Respóndela para que puedan resolverla.", act:"misol", b:"Responder"});
       if (pr) pend.push({t:`${pr} solicitud${pr===1?"":"es"} por resolver`, d:"De las personas o sedes que te corresponden.", act:"bandejaSol", b:"Revisar"}); }),
+    intenta(async()=>{ if (!S.api.misComunicados) return; const l=await S.api.misComunicados(), n=l.filter(x=>x.requiere_acuse&&!x.leido_en).length;
+      if (n) pend.push({t:`Confirma la lectura de ${n} comunicado${n===1?"":"s"}`, d:"Ábrelo, léelo completo y pulsa «Confirmo que lo leí».", act:"comunidad", b:"Leer"});
+      const h=new Date(), f=isoDia(h), t=isoDia(new Date(h.getTime()+14*864e5)); try{ S.calProx=(await S.api.miCalendario(f,t)).filter(x=>x.tipo!=="comunicado").sort((a,b)=>a.fecha.localeCompare(b.fecha)); }catch{ S.calProx=[]; } }),
     intenta(async()=>{ if (!S.api.compPorVerificar) return; await ppCargar(); const p=S.pp; if (!p||p.error) return;
       const n=(p.per||[]).reduce((a,x)=>a+(x.declaradas||0),0), nv=(p.lista||[]).filter(x=>x.perfil_id===S.uid&&x.estado==="no_verificada").length;
       if (n) pend.push({t:`${n} competencia${n===1?"":"s"} profesional${n===1?"":"es"} por verificar`, d:"Cotéjalas con el documento original. Verificar no habilita la atención de casos.", act:"perfprof", b:"Revisar"});
@@ -1830,6 +1837,7 @@ async function solAccion(a,b){
   if (a==="notifIr"){ const n=(S.notif||[]).find(x=>x.id===b.dataset.id); $("#dlgNotif").close(); if (!n) return;
     if (!n.leida) S.api.marcarLeidas([n.id]).then(notifCargar).catch(()=>{});
     if (n.vista==="miinfo"){ S.miTab="prof"; return miAccion("miinfo"); }
+    if (n.vista==="comunidad"){ S.comTab="com"; return comAccion("comunidad"); }
     await solAccion(n.vista==="bandejaSol"?"bandejaSol":"misol"); if (n.ref) solVer(n.ref, n.vista==="bandejaSol"); return; }
 }
 function inicioHtml(){
@@ -1855,6 +1863,7 @@ function inicioHtml(){
       ${perms.length?`<p class="status" style="margin:6px 0 0">Permisos adicionales: ${esc(perms.join(" · "))}.</p>`:""}</div>
       <button class="btn" type="button" data-act="ayuda">¿Qué puedo hacer?</button></section>
     ${miHoyHtml()}
+    ${proxFechasHtml()}
     <section class="note"><div class="note-h"><h3>Pendientes</h3>${S.pend?`<button class="btn sm" type="button" data-act="refrescarPend">Actualizar</button>`:""}</div>${pend}</section>
     ${S.pend?avisosHtml():""}
     ${pasos}
@@ -3484,6 +3493,129 @@ function miAsistenciaHtml(){
     ${actividadesHtml}`);
 }
 
+/* ---------- Módulo 06 · P5 Calendario y comunidad (2026-11-24) ----------
+   Calendario de SOLO LECTURA con fechas que ya existen en otros módulos. Comunicados = documentos
+   institucionales (categoría A) ya publicados en Documentos y firmas, enviados a destinatarios con
+   acuse opcional. Las preguntas frecuentes viven aquí, sin datos. */
+const COM_ACC=new Set(["micalendario","calMes","calIr","comunidad","comTab","comAbrir","comAcuse","comPubForm","comPubCancelar","comPublicar","comSeg","comSegCerrar","comRetirar"]);
+const CAL_TIPO={ausencia:["Ausencia autorizada","estado-activo"],tramite:["En trámite","estado-pendiente"],incorporacion:["Incorporación",""],compromiso:["Compromiso","estado-pendiente"],firma:["Firma","estado-suspendido"],vencimiento:["Vencimiento","estado-pendiente"],comunicado:["Comunicado",""]};
+const ROL_COM=[["psicologo","Psicólogas y psicólogos"],["administrativo","Personal administrativo"],["admin_sede","Administración de sede"],["direccion","Directivos"]];
+const FAQ=[
+  ["¿Quién puede ver mi información?","Tú ves todo lo tuyo. Tu jefe directo y RR. HH. ven lo que necesitan para su función (por ejemplo, tus solicitudes o tu asistencia). Las constancias de permisos solo las ven RR. HH. y tú. Nadie ve tus contraseñas."],
+  ["¿Cómo corrijo mi nombre o mi cédula?","En Mi información → Mi perfil, pulsa «Pedir corrección». RR. HH. la revisa y, al aprobarla, el dato se corrige en tu cuenta, tus firmas y los directorios."],
+  ["Olvidé registrar mi entrada o mi salida","En Mi asistencia pulsa «Pedir corrección o permiso». Tu registro original no se borra; la corrección aprobada queda como ajuste."],
+  ["¿Cómo pido vacaciones?","En Mi asistencia → «Solicitar vacaciones». Verás tus días confirmados por RR. HH. y la demanda de tu sede esos días. Tu jefe directo la resuelve."],
+  ["¿Qué pasa si escribo algo y se cierra la pantalla?","La app guarda un borrador cada pocos segundos. Al volver a la misma pantalla verás «Tienes un borrador sin guardar» con la opción de recuperarlo."],
+  ["¿Qué significa «Por verificar» en mi perfil profesional?","Que la coordinación aún no revisa tu documento. Declarar una competencia no habilita por sí sola la atención de esos casos."],
+  ["¿Debo confirmar los comunicados?","Solo los que dicen «Requiere confirmar lectura». Ábrelo, léelo completo y pulsa «Confirmo que lo leí». La confirmación queda registrada con fecha."],
+  ["¿Puedo usar la app en el celular?","Sí. En Mi cuenta pulsa «Instalar app» (en iPhone: Compartir → Agregar a pantalla de inicio)."],
+  ["¿Dónde pido ayuda?","En Mis solicitudes → «Solicitar apoyo». Si es un problema de la app, elige «Reportar un problema técnico». Esto no es atención de urgencia: si alguien está en riesgo, llama al 911."]];
+const isoDia=d=>{ const x=new Date(d.getTime()-d.getTimezoneOffset()*60000); return x.toISOString().slice(0,10); };
+const diaLargo=f=>new Date(f+"T12:00").toLocaleDateString("es-MX",{weekday:"long",day:"numeric",month:"long"});
+async function calCargar(){
+  const m=S.calMes||isoDia(new Date()).slice(0,7), [y,mm]=m.split("-").map(Number), ini=`${m}-01`, fin=isoDia(new Date(y,mm,0));
+  S.cal={mes:m, cargando:true}; if (S.view==="micalendario") render();
+  try{ S.cal={mes:m, items:await S.api.miCalendario(ini,fin)}; }catch(e){ S.cal={mes:m, error:e?.message||"No se pudo cargar."}; }
+  if (S.view==="micalendario") render();
+}
+function micalendarioHtml(){
+  const c=S.cal||{}, m=c.mes||S.calMes||isoDia(new Date()).slice(0,7), hoy=isoDia(new Date());
+  const tit=new Date(m+"-15T12:00").toLocaleDateString("es-MX",{month:"long",year:"numeric"});
+  const cab=`<div class="phead">${migas()}<h1>Mi calendario</h1></div>
+    <p class="status" style="margin:0;max-width:75ch">Tus fechas en un solo lugar: ausencias autorizadas y en trámite, tu incorporación, firmas pendientes, vencimientos de tus documentos y comunicados. Es de solo lectura: cada fecha se cambia en su sección.</p>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn sm" type="button" data-act="calMes" data-d="-1" aria-label="Mes anterior">‹ Anterior</button><b style="text-transform:capitalize;min-width:12ch;text-align:center">${esc(tit)}</b><button class="btn sm" type="button" data-act="calMes" data-d="1" aria-label="Mes siguiente">Siguiente ›</button><button class="btn sm" type="button" data-act="calMes" data-d="0">Hoy</button></div>`;
+  const env=x=>`<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:12px">${cab}${x}</div>`;
+  if (c.cargando||!c.items&&!c.error) return env(`<p class="status">Cargando…</p>`);
+  if (c.error) return env(`<div class="banner">No se pudo cargar tu calendario. <button class="btn sm" type="button" data-act="calMes" data-d="0">Reintentar</button></div>`);
+  const dias={}; c.items.forEach(it=>{ const f0=it.fecha<`${m}-01`?`${m}-01`:it.fecha; (dias[f0]=dias[f0]||[]).push(it); });
+  const ks=Object.keys(dias).sort();
+  if (!ks.length) return env(`<section class="card"><p style="margin:0">No tienes fechas registradas este mes.</p></section>`);
+  return env(`<section class="card"><ul class="pend">${ks.map(f=>`<li style="display:block${f===hoy?";border-left:3px solid var(--accent,#0560bd);padding-left:8px":""}"><b style="text-transform:capitalize">${esc(diaLargo(f))}</b>${f===hoy?' <span class="pill estado-activo">Hoy</span>':""}
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">${dias[f].map(it=>{ const [t,cl]=CAL_TIPO[it.tipo]||[it.tipo,""];
+        return `<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap"><span><span class="pill ${cl}">${t}</span> ${esc(it.titulo)}${it.fin&&it.fin!==it.fecha?` <span class="status">hasta el ${fechaTxt(it.fin)}</span>`:""}</span><button class="btn sm" type="button" data-act="calIr" data-v="${esc(it.vista)}">Abrir</button></div>`; }).join("")}</div></li>`).join("")}</ul></section>`);
+}
+function proxFechasHtml(){
+  const l=(S.calProx||[]).slice(0,5); if (!l.length) return "";
+  return `<section class="note"><div class="note-h"><h3>Próximas fechas</h3><button class="btn sm" type="button" data-act="micalendario">Ver calendario</button></div>
+    <ul class="pend">${l.map(it=>`<li><div><b>${esc(fechaTxt(it.fecha))}</b> · ${esc(it.titulo)}</div></li>`).join("")}</ul></section>`;
+}
+async function comCargar(){
+  try{ const g=dxPuedeGestionar();
+    const [mios,todos,docs,sedes]=await Promise.all([S.api.misComunicados(), g?S.api.comunicados():[], g?S.api.docsComunicables():[], g&&!S.sedesL?S.api.sedes():S.sedesL]);
+    S.com={mios, todos, docs, error:null}; if (sedes) S.sedesL=sedes; }
+  catch(e){ S.com={error:e?.message||"No se pudo cargar."}; }
+  if (S.view==="comunidad") render();
+}
+function comunidadHtml(){
+  const c=S.com, g=dxPuedeGestionar(), t=S.comTab||"com";
+  const cab=`<div class="phead">${migas()}<h1>Comunidad</h1></div>`;
+  const env=x=>`<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:12px">${cab}${x}</div>`;
+  const tabs=`<div class="tabs" role="tablist" aria-label="Comunidad">${[["com","Comunicados"],["faq","Preguntas frecuentes"],...(g?[["pub","Publicar y seguimiento"]]:[])].map(([k,x])=>`<button class="tab" role="tab" type="button" data-act="comTab" data-t="${k}" aria-selected="${t===k}">${x}</button>`).join("")}</div>`;
+  if (t==="faq") return env(`${tabs}<section class="card">${FAQ.map(([q,r])=>`<details style="margin:6px 0"><summary><b>${esc(q)}</b></summary><p style="margin:6px 0 0;max-width:75ch">${esc(r)}</p></details>`).join("")}
+    <p class="status" style="margin:12px 0 0">¿No encontraste tu respuesta? Revisa las guías en Ayuda o envía una solicitud de apoyo.</p></section>`);
+  if (!c) return env(`${tabs}<p class="status">Cargando…</p>`);
+  if (c.error) return env(`${tabs}<div class="banner">No se pudo cargar. <button class="btn sm" type="button" data-act="comunidad">Reintentar</button></div>`);
+  if (t==="com"){ const l=c.mios||[];
+    return env(`${tabs}${l.length?l.map(x=>`<section class="card"><div class="note-h" style="align-items:flex-start"><div><h3 style="margin:0">${esc(x.titulo)}</h3><span class="status">${esc(x.folio||"")} · ${fechaTxt(x.publicado_en)}${x.vigente_hasta?` · vigente hasta el ${fechaTxt(x.vigente_hasta)}`:""}</span></div>
+        ${x.requiere_acuse?(x.leido_en?`<span class="pill estado-activo">Leído el ${fechaTxt(x.leido_en)}</span>`:`<span class="pill estado-pendiente">Requiere confirmar lectura</span>`):""}</div>
+        ${x.resumen?`<p style="margin:8px 0;white-space:pre-line;max-width:75ch">${esc(x.resumen)}</p>`:""}
+        <div class="actions" style="border-top:0;padding-top:0"><button class="btn sm" type="button" data-act="comAbrir" data-id="${x.doc_id}">Abrir documento</button>${x.requiere_acuse&&!x.leido_en?`<button class="btn sm primary" type="button" data-act="comAcuse" data-id="${x.id}">Confirmo que lo leí</button>`:""}</div></section>`).join("")
+      :`<section class="card"><p style="margin:0">No tienes comunicados vigentes.</p></section>`}`); }
+  /* Publicar y seguimiento */
+  const pub=new Set((c.todos||[]).map(x=>x.doc_id)), libres=(c.docs||[]).filter(d=>!pub.has(d.id)&&d.version>=1), f=S.comForm;
+  const form=f?`<section class="note"><div class="note-h"><h3>Publicar comunicado</h3><button class="btn sm" type="button" data-act="comPubCancelar">Cancelar</button></div>
+      <form class="datos" onsubmit="return false">
+        ${fld("comDoc","Documento *",f.doc||"",{span:3,opts:[["","Elige el documento"],...libres.map(d=>[d.id,`${d.folio||"Sin folio"} · ${d.nombre}`])]})}
+        ${fld("comTit","Título del comunicado *",f.titulo||"",{span:3,max:200})}
+        ${fld("comRes","Resumen (opcional)",f.resumen||"",{area:1,span:3,rows:3,ph:"Qué cambia, a quién aplica y desde cuándo. Sin datos de consultantes."})}
+        ${fld("comAlc","¿A quién? *",f.alcance||"sedes",{opts:[["sedes","Sedes elegidas"],["roles","Por tipo de usuario"],["todos",S.rol==="superusuario"?"Toda la organización":"Todas las sedes donde operas"]]})}
+        ${fld("comVig","Vigente hasta (opcional)",f.vigente||"",{type:"date"})}
+        <div class="fld"><label><input type="checkbox" id="comAcu"${f.acuse?" checked":""}> Requiere confirmar lectura</label></div>
+        <fieldset class="fld" style="grid-column:span 3;border:0;padding:0"><legend><b>Sedes</b> <span class="status">(si eliges «Sedes elegidas»)</span></legend>
+          <div style="display:flex;flex-wrap:wrap;gap:10px">${(S.sedesL||[]).map(s=>`<label><input type="checkbox" name="comSede" value="${s.id}"${(f.sedes||[]).includes(s.id)?" checked":""}> ${esc(s.nombre)}</label>`).join("")}</div></fieldset>
+        <fieldset class="fld" style="grid-column:span 3;border:0;padding:0"><legend><b>Tipos de usuario</b> <span class="status">(si eliges «Por tipo de usuario»)</span></legend>
+          <div style="display:flex;flex-wrap:wrap;gap:10px">${ROL_COM.map(([k,n])=>`<label><input type="checkbox" name="comRol" value="${k}"${(f.roles||[]).includes(k)?" checked":""}> ${n}</label>`).join("")}</div></fieldset>
+      </form>
+      <p class="status" style="margin:8px 0 0">Solo llega a las sedes donde gestionas documentos. Cada persona recibe un aviso dentro de la app. El archivo es el mismo del documento: no se duplica.</p>
+      <div class="actions"><button class="btn primary" type="button" data-act="comPublicar">Publicar</button></div></section>`:"";
+  const seg=S.comSeg?`<section class="note"><div class="note-h"><h3>Seguimiento: ${esc(S.comSeg.titulo)}</h3><button class="btn sm" type="button" data-act="comSegCerrar">Cerrar</button></div>
+      ${S.comSeg.l?`<p style="margin:0 0 8px"><b>${S.comSeg.l.filter(x=>x.leido_en).length}</b> de ${S.comSeg.l.length} confirmaron lectura.</p><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Persona</th><th>Sede</th><th>Lectura</th></tr></thead><tbody>${S.comSeg.l.map(x=>`<tr><td class="sens">${esc(x.nombre)}</td><td>${esc(x.sede||"—")}</td><td>${x.leido_en?fechaTxt(x.leido_en):'<span class="pill estado-pendiente">Pendiente</span>'}</td></tr>`).join("")}</tbody></table></div>`:`<p class="status">Cargando…</p>`}</section>`:"";
+  const sedeN=id=>(S.sedesL||[]).find(s=>s.id===id)?.nombre||"Sede";
+  const dest=x=>x.alcance==="todos"?(x.sedes.length?`Todas sus sedes (${x.sedes.length})`:"Toda la organización"):x.alcance==="roles"?ROL_COM.filter(r=>x.roles.includes(r[0])).map(r=>r[1]).join(", "):x.alcance==="entidad"?"Entidad fiscal":x.sedes.map(sedeN).join(", ");
+  const lista=(c.todos||[]).filter(x=>x.publicado_por===S.uid||g);
+  return env(`${tabs}${form}${seg}${f?"":`<div><button class="btn primary" type="button" data-act="comPubForm"${libres.length?"":" disabled"}>+ Publicar comunicado</button>${libres.length?"":` <span class="status">Primero publica el documento (política, circular u oficio) con folio y firmas en Documentos y firmas.</span>`}</div>`}
+    <section class="card">${lista.length?`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Comunicado</th><th>Destinatarios</th><th>Publicado</th><th>Estado</th><th></th></tr></thead><tbody>${lista.map(x=>`<tr><td>${esc(x.titulo)}${x.requiere_acuse?'<br><span class="status">Con confirmación de lectura</span>':""}</td><td>${esc(dest(x))}</td><td>${fechaTxt(x.publicado_en)}</td>
+      <td>${x.retirado_en?`<span class="pill">Retirado</span><br><span class="status">${esc(x.retiro_motivo||"")}</span>`:x.vigente_hasta&&x.vigente_hasta<isoDia(new Date())?'<span class="pill">Vencido</span>':'<span class="pill estado-activo">Vigente</span>'}</td>
+      <td style="white-space:nowrap"><button class="btn sm" type="button" data-act="comSeg" data-id="${x.id}">Seguimiento</button>${x.retirado_en?"":` <button class="btn sm" type="button" data-act="comRetirar" data-id="${x.id}">Retirar</button>`}</td></tr>`).join("")}</tbody></table></div>`:`<p class="status" style="margin:0">Aún no hay comunicados publicados.</p>`}</section>`);
+}
+async function comAccion(a,b){
+  const id=b?.dataset?.id;
+  try{
+    if (a==="micalendario"){ S.view="micalendario"; render(); return calCargar(); }
+    if (a==="calMes"){ const d=+b.dataset.d; if (!d) S.calMes=isoDia(new Date()).slice(0,7); else { const [y,m]=(S.cal?.mes||isoDia(new Date()).slice(0,7)).split("-").map(Number); S.calMes=isoDia(new Date(y,m-1+d,1)).slice(0,7); } return calCargar(); }
+    if (a==="calIr"){ const v=b.dataset.v, btn=$("#"+(VISTA_BTN[v]||"")); if (v==="comunidad") return comAccion("comunidad"); return btn&&!btn.hidden?btn.click():toast("Esa sección no está disponible para tu cuenta."); }
+    if (a==="comunidad"){ S.view="comunidad"; S.comSeg=null; render(); return comCargar(); }
+    if (a==="comTab"){ S.comTab=b.dataset.t; S.comSeg=null; return render(); }
+    if (a==="comAbrir"){ const w=window.open("","_blank"); try{ const d=(S.com?.mios||[]).find(x=>x.doc_id===id); const docs=await S.api.docsComunicables(); const v=docs.find(x=>x.id===id)?.version||1;
+        const url=await S.api.urlDoc(id,v); if (w) w.location.href=url; else location.assign(url); }catch(e){ if (w) w.close(); throw e; } return; }
+    if (a==="comAcuse"){ const x=(S.com?.mios||[]).find(c=>c.id===id); if (!confirm(`¿Confirmas que leíste completo «${x?.titulo||"el comunicado"}»?\n\nQuedará registrado con la fecha de hoy.`)) return;
+      await S.api.acusarComunicado(id); toast("Lectura confirmada."); return comCargar(); }
+    if (a==="comPubForm"){ S.comForm={alcance:"sedes", sedes:S.rol==="admin_sede"?(S.sedesL||[]).filter(s=>s.nombre===S.miSede).map(s=>s.id):[]}; return render(); }
+    if (a==="comPubCancelar"){ S.comForm=null; S.editado=false; return render(); }
+    if (a==="comPublicar"){ const v=k=>($("#"+k)?.value||"").trim();
+      const c={doc:v("comDoc"), titulo:v("comTit"), resumen:v("comRes"), alcance:v("comAlc"), vigente:v("comVig"), acuse:!!$("#comAcu")?.checked,
+        sedes:[...document.querySelectorAll('input[name=comSede]:checked')].map(x=>x.value), roles:[...document.querySelectorAll('input[name=comRol]:checked')].map(x=>x.value)};
+      S.comForm={...S.comForm,...c};
+      if (!c.doc) return toast("Elige el documento."); if (c.titulo.length<3) return toast("Escribe el título.");
+      if (c.alcance==="sedes"&&!c.sedes.length) return toast("Elige al menos una sede."); if (c.alcance==="roles"&&!c.roles.length) return toast("Elige al menos un tipo de usuario.");
+      if (!confirm(`¿Publicar «${c.titulo}»?\n\nCada destinatario recibirá un aviso dentro de la app.`)) return;
+      await S.api.publicarComunicado(c); S.comForm=null; S.editado=false; toast("Comunicado publicado."); return comCargar(); }
+    if (a==="comSeg"){ const x=(S.com?.todos||[]).find(c=>c.id===id); S.comSeg={id, titulo:x?.titulo||""}; render(); S.comSeg.l=await S.api.comunicadoSeguimiento(id); return render(); }
+    if (a==="comSegCerrar"){ S.comSeg=null; return render(); }
+    if (a==="comRetirar"){ const m=prompt("¿Por qué se retira el comunicado? (10 caracteres o más)\nYa no aparecerá a sus destinatarios; las confirmaciones de lectura se conservan."); if (m==null) return;
+      if (m.trim().length<10) return toast("Explica el motivo (10 caracteres o más)."); await S.api.retirarComunicado(id, m.trim()); toast("Comunicado retirado."); return comCargar(); }
+  }catch(e){ toast(e?.message||"No se pudo completar."); }
+}
 /* ---------- Módulo 06 · P4 Perfil profesional (2026-11-24) ----------
    Lo que la persona declara queda «por verificar» hasta que la coordinación lo revisa contra el documento.
    Declarar o verificar NUNCA habilita la atención clínica ni cambia permisos (lo garantiza la base). */
@@ -4421,6 +4553,9 @@ const GUIAS = [
   {t:"Saldos de vacaciones y cobertura (RR. HH.)", si:()=>!!S.rol && (S.rol==="superusuario"||(S.api?.rhNivel||0)>=2||(S.api?.asisNivel||0)>=1), pasos:["Entra a Personas → Asistencia y jornadas → «Vacaciones y cobertura».","Elige la sede y la fecha de inicio: ves 31 días con las personas con control y quiénes estarán ausentes (aprobado o en trámite).","RR. HH. registra el saldo confirmado de cada persona con «Registrar». Nada se calcula solo; tu propio saldo lo registra otra persona.","Las constancias de los permisos aparecen como «Ver constancia» en «Permisos y solicitudes», solo para RR. HH."]},
   {t:"Hacer una solicitud", si:()=>!!S.rol, pasos:["Entra a Mi espacio → Mis solicitudes y pulsa «+ Nueva solicitud».","Elige el tipo: corregir tus datos, constancia, aclaración de pago, necesito apoyo, propuesta o problema con la app. Vacaciones, permisos y correcciones de asistencia se piden en Mi asistencia y aparecen en la misma lista.","Escribe con calma: lo que escribes se guarda como borrador. Puedes «Guardar como borrador» y enviarla después.","Pulsa «Revisar antes de enviar» y luego «Enviar solicitud»: recibes un folio CEMEPI-SOL.","En la lista ves quién la tiene y su estado. Si te piden información, respóndela ahí mismo. Mientras no se resuelva, puedes cancelarla.","La campana de arriba te avisa cuando hay respuesta. No llegan avisos por correo ni mensajes."]},
   {t:"Resolver solicitudes del equipo", si:()=>!!S.rol && ["superusuario","direccion","admin_sede"].includes(S.rol), pasos:["Entra a Personas → Bandeja de solicitudes: ves solo las que te toca resolver ahora (de quien te reporta o de tus sedes). Nunca las tuyas.","Pulsa «Revisar»: ves el detalle, el recorrido y el historial.","Puedes tomarla en revisión, pedir información, no aprobarla (explicando el motivo) o aprobarla. Si tiene otro paso, pasa a la siguiente persona.","Una corrección de nombre o cédula aprobada se aplica sola a la cuenta, a las firmas y a los directorios; solo la aprueba quien administra esa cuenta.","El Superusuario define en «Tipos de solicitud» quién revisa cada tipo, el plazo y si está activo. Cada cambio queda en la bitácora."]},
+  {t:"Mi calendario", si:()=>!!S.rol, pasos:["Entra a Mi espacio → Mi calendario. Ves por mes tus ausencias autorizadas y en trámite, los cortes y compromisos de tu incorporación, las fechas límite para firmar, los vencimientos de tus documentos y los comunicados.","Es de solo lectura: cada fecha se cambia en su sección. Pulsa «Abrir» para ir ahí.","En Inicio verás tus próximas fechas de los siguientes 14 días."]},
+  {t:"Comunicados y confirmación de lectura", si:()=>!!S.rol, pasos:["Entra a Mi espacio → Comunidad → «Comunicados». Ahí están las circulares, políticas y oficios dirigidos a ti.","Pulsa «Abrir documento» para leerlo completo.","Si dice «Requiere confirmar lectura», al terminar pulsa «Confirmo que lo leí». Queda registrado con la fecha y no se puede deshacer.","En «Preguntas frecuentes» encuentras respuestas rápidas sobre la app."]},
+  {t:"Publicar un comunicado", si:()=>!!S.rol && (S.rol==="superusuario"||(S.api?.docNivel||0)>=2), pasos:["Primero publica el documento (política, circular u oficio) en Documentos y firmas: con su archivo, sus firmas completas y folio.","Entra a Comunidad → «Publicar y seguimiento» → «+ Publicar comunicado». Elige el documento, escribe un título y, si quieres, un resumen.","Elige a quién: sedes, tipos de usuario o todas tus sedes. Solo llega a las sedes donde gestionas documentos; Bosques de Santa Fe requiere autorización. El Superusuario puede publicar a toda la organización.","Marca «Requiere confirmar lectura» si cada persona debe confirmarlo, y opcionalmente una fecha de vigencia.","En «Seguimiento» ves quién confirmó. «Retirar» exige un motivo; las confirmaciones se conservan."]},
   {t:"Mi perfil profesional", si:()=>!!S.rol && (S.rol==="psicologo"||!!S.perfil?.cedula), pasos:["Entra a Mi espacio → Mi información → «Perfil profesional».","Agrega tu formación, enfoques, población que atiendes, evaluaciones e instrumentos y motivos de consulta. Puedes elegir de la lista o escribir uno que no esté.","Si tienes el documento (título, cédula, diplomado, constancia), súbelo primero en Mis documentos → Mis PDF personales y elígelo como respaldo.","Todo queda «Por verificar» hasta que la coordinación lo revise. Si cambias algo ya verificado, vuelve a revisión. Si te marcan «No verificada», verás qué falta.","Declarar una competencia no habilita por sí sola la atención de esos casos. Si quieres capacitarte en algo, usa «Necesito formación en…»."]},
   {t:"Verificar perfiles profesionales", si:()=>!!S.rol && (["superusuario","direccion"].includes(S.rol)||(S.perm&&[...S.perm].includes("supervision_clinica"))||(S.pp?.per||[]).length>0), pasos:["Entra a Personas → Perfiles profesionales. Ves a las personas de tu alcance (tu sede, tus supervisadas o, si eres Directivo, las sedes de CEMEPI, S.C.).","Pulsa «Revisar», coteja cada competencia con el documento original o la constancia y pulsa «Verificar». Si falta algo, «No verificada» y escribe qué falta: la persona lo verá.","«Buscar por competencia» sirve para orientar la asignación de casos (por ejemplo, quién atiende duelo en adolescentes). La asignación la decides tú, nunca la lista.","Verificar no habilita la atención de casos ni cambia permisos. Nadie verifica lo propio.","El Superusuario mantiene el catálogo de opciones en la pestaña «Catálogo»."]},
   {t:"Mi información y Mi espacio", si:()=>!!S.rol, pasos:["Entra a Mi espacio → Mi información: ahí ves tu perfil, tu puesto, tus sedes, a quién reportas y tu equipo.","Cada dato dice quién puede cambiarlo: «Lo editas tú» (teléfono y firma, en Mi cuenta → Mi perfil), «Por solicitud» (nombre y cédula), «Lo administra RR. HH.» (puesto, sede, fecha de incorporación) e «Histórico».","Si algo no es correcto, pulsa «Pedir corrección»: se abre una solicitud que revisa RR. HH. Al aprobarse, tu nombre o tu cédula se corrigen solos en tu cuenta, tus firmas y los directorios.","Si administras personas, arriba verás «Mi espacio | Gestión»: Mi espacio muestra solo lo tuyo y Gestión todo lo que administras. Cambiar de espacio no te da ni te quita permisos.","El recorrido de bienvenida se puede pausar con «Más tarde» y volver a ver desde Mi información."]},
@@ -5244,6 +5379,7 @@ document.addEventListener("click", async ev => {
   if (a==="usuarios"){ S.view="usuarios"; S.usrEdit=null; S.usuarios=null; render(); return cargarAdmin("usuarios"); }
   if (ORG_ACCIONES.has(a)) return orgAccion(a, b);   /* Módulo 01 · Organización */
   if (MI_ACC.has(a)) return miAccion(a, b);
+  if (COM_ACC.has(a)) return comAccion(a, b);   /* Módulo 06 · Calendario y comunidad */
   if (PP_ACC.has(a)) return ppAccion(a, b);   /* Módulo 06 · Perfil profesional */
   if (SOL_ACC.has(a)) return solAccion(a, b);   /* Módulo 06 · Solicitudes */   /* Módulo 06 · Mi espacio */
   if (INC_ACC.has(a)) return incAccion(a, b);   /* Incorporación */
@@ -5723,6 +5859,7 @@ render();
     $("#masBtn").hidden = !S.rol;
     $("#miinfBtn").hidden = !S.rol;   /* Módulo 06 · Mi espacio */
     $("#misolBtn").hidden = !S.rol;
+    $("#micalBtn").hidden = !S.rol; $("#comuBtn").hidden = !S.rol;   /* Módulo 06 · P5 */
     if (S.rol){ solCargar().catch(()=>{}); notifCargar().catch(()=>{}); setInterval(()=>{ if (!document.hidden) notifCargar().catch(()=>{}); }, 120000); }
     if (S.rol && S.api.recorrido) S.api.recorrido().then(r=>{ S.tour=r||{}; if (S.view==="inicio") render(); }).catch(()=>{});
     $("#docsBtn").hidden = !((S.api.docNivel||0)>=1 || S.rol==="superusuario");   /* Módulo 05 */

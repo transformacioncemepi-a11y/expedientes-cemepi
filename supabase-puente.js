@@ -645,6 +645,17 @@ const cemepi = {
     const up = await sb.storage.from("evidencias-asistencia").upload(ruta, file, { contentType: file.type, upsert: false }); if (up.error) fallo(up.error);
     const { error } = await sb.from("asis_evidencias").insert({ solicitud_id: solId, archivo: ruta, nombre: (file.name || "").slice(0, 120) }); if (error) fallo(error); },
   async urlEvidencia(archivo){ const { data, error } = await sb.storage.from("evidencias-asistencia").createSignedUrl(archivo, 120); if (error) fallo(error); return data.signedUrl; },
+  // Módulo 06 · P5 Calendario y comunidad
+  async miCalendario(desde, hasta){ const { data, error } = await sb.rpc("mi_calendario", { p_desde: desde, p_hasta: hasta }); if (error) fallo(error); return data || []; },
+  async misComunicados(){ const { data, error } = await sb.rpc("mis_comunicados"); if (error) return []; return data || []; },
+  async comunicados(){ const { data, error } = await sb.from("comunicados").select("*").order("publicado_en", { ascending: false }); if (error) return []; return data || []; },
+  async docsComunicables(){ const { data, error } = await sb.from("docs").select("id,folio,nombre,tipo,estado,sede_id,version").in("tipo", ["politica","circular","oficio"]).in("estado", ["firmado","vigente"]).order("creado_en", { ascending: false });
+    if (error) return []; return data || []; },
+  async publicarComunicado(c){ const { data, error } = await sb.rpc("publicar_comunicado", { p_doc: c.doc, p_titulo: c.titulo, p_resumen: c.resumen || null, p_alcance: c.alcance,
+      p_sedes: c.sedes || [], p_roles: c.roles || [], p_entidad: c.entidad || null, p_acuse: !!c.acuse, p_vigente_hasta: c.vigente || null }); if (error) fallo(error); return data; },
+  async retirarComunicado(id, motivo){ const { error } = await sb.rpc("retirar_comunicado", { p_id: id, p_motivo: motivo }); if (error) fallo(error); },
+  async acusarComunicado(id){ const { error } = await sb.rpc("acusar_comunicado", { p_id: id }); if (error) fallo(error); },
+  async comunicadoSeguimiento(id){ const { data, error } = await sb.rpc("comunicado_seguimiento", { p_id: id }); if (error) fallo(error); return data || []; },
   // Módulo 06 · P4 Perfil profesional (declarar no habilita la atención clínica)
   async compCatalogo(){ const { data, error } = await sb.from("comp_catalogo").select("*").order("tipo").order("orden").order("valor"); if (error) return []; return data || []; },
   async competencias(perfil){ let q = sb.from("competencias").select("*").order("tipo").order("valor"); if (perfil) q = q.eq("perfil_id", perfil);
