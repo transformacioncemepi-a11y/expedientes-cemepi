@@ -4440,7 +4440,7 @@ async function catSelGuia(cl){
     + T("Requisitos indispensables cubiertos:  ☐ Sí   ☐ No   ☐ Pendiente de verificar") + T("Competencias críticas demostradas:  ☐ Todas   ☐ Alguna por debajo del ideal (no se compensa)")
     + T("Fortalezas (con evidencia): ________________________________________________________________") + T("Necesidades de desarrollo para la incorporación: _________________________________________________")
     + T("Decisión y motivos: ______________________________________________________________________") + T("Firmas de quienes evaluaron: ______________________________   ______________________________");
-  try{ const blob=await docxBlob(`${p.clave} v${v.version}`, xml, [], "Guía", false); await dl.save({filename:`Guia-entrevista-${p.clave}.docx`, data:blob}); }
+  try{ const blob=await docxBlob(`${p.clave} v${v.version}`, xml, [], "Guía", true); /* sin nota aclaratoria: instrumento de selección (decisión del Director, 2026-11-25) */ await dl.save({filename:`Guia-entrevista-${p.clave}.docx`, data:blob}); }
   catch(e){ if (e?.code!=="declined") toast("No se pudo descargar la guía."); }
 }
 function catSelIA(cl){
