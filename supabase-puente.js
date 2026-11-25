@@ -645,6 +645,17 @@ const cemepi = {
     const up = await sb.storage.from("evidencias-asistencia").upload(ruta, file, { contentType: file.type, upsert: false }); if (up.error) fallo(up.error);
     const { error } = await sb.from("asis_evidencias").insert({ solicitud_id: solId, archivo: ruta, nombre: (file.name || "").slice(0, 120) }); if (error) fallo(error); },
   async urlEvidencia(archivo){ const { data, error } = await sb.storage.from("evidencias-asistencia").createSignedUrl(archivo, 120); if (error) fallo(error); return data.signedUrl; },
+  // Módulo 06 · P4 Perfil profesional (declarar no habilita la atención clínica)
+  async compCatalogo(){ const { data, error } = await sb.from("comp_catalogo").select("*").order("tipo").order("orden").order("valor"); if (error) return []; return data || []; },
+  async competencias(perfil){ let q = sb.from("competencias").select("*").order("tipo").order("valor"); if (perfil) q = q.eq("perfil_id", perfil);
+    const { data, error } = await q; if (error) fallo(error); return data || []; },
+  async compPorVerificar(){ const { data, error } = await sb.rpc("competencias_por_verificar"); if (error) return []; return data || []; },
+  async declararCompetencia(tipo, valor, detalle, doc){ const { data, error } = await sb.rpc("declarar_competencia", { p_tipo: tipo, p_valor: valor, p_detalle: detalle || null, p_documento: doc || null }); if (error) fallo(error); return data; },
+  async editarCompetencia(id, valor, detalle, doc, actualizado){ const { error } = await sb.rpc("editar_competencia", { p_id: id, p_valor: valor, p_detalle: detalle || null, p_documento: doc || null, p_actualizado: actualizado || null });
+    if (error){ if (/CONFLICTO_EDICION/.test(error.message || "")) throw { message: "La competencia cambió en otra ventana. Vuelve a abrirla para ver la versión actual." }; fallo(error); } },
+  async retirarCompetencia(id){ const { error } = await sb.rpc("retirar_competencia", { p_id: id }); if (error) fallo(error); },
+  async verificarCompetencia(id, resultado, nota){ const { error } = await sb.rpc("verificar_competencia", { p_id: id, p_resultado: resultado, p_nota: nota || null }); if (error) fallo(error); },
+  async guardarCatalogoComp(id, tipo, valor, activo, orden){ const { error } = await sb.rpc("guardar_catalogo_competencia", { p_id: id || null, p_tipo: tipo, p_valor: valor, p_activo: activo, p_orden: orden ?? 100 }); if (error) fallo(error); },
   async revisionesPendientes(){ const { data, error } = await sb.from("revisiones").select("id,tipo").eq("estado", "pendiente"); if (error) return []; return data || []; },
   async atenderRevision(id, estado, nota){ const { error } = await sb.rpc("atender_revision", { p_id: id, p_estado: estado, p_nota: nota || null }); if (error) fallo(error); },
   async guardarColaborador(c){

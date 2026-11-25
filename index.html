@@ -378,6 +378,7 @@ body.ctx-mi .nav-g.ges{display:none}
     <button class="nav-i" id="colBtn" type="button" data-act="colaboradores" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/></svg><span>Colaboradores</span></button>
     <button class="nav-i" id="ogBtn" type="button" data-act="organigrama" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-4h12v4"/></svg><span>Organigrama</span></button>
     <button class="nav-i" id="supBtn" type="button" data-act="supervision" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="6" r="3"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M12 9v3M12 12l-6 4M12 12l6 4"/></svg><span>Supervisión</span></button>
+    <button class="nav-i" id="ppBtn" type="button" data-act="perfprof" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="8" r="3.5"/><path d="M3.5 20a6.5 6.5 0 0 1 11-4.7"/><path d="M15 18l2 2 4-4"/></svg><span>Perfiles profesionales</span></button>
     <button class="nav-i" id="incBtn" type="button" data-act="incorporacion" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/><path d="M3 18l9 5 9-5"/></svg><span>Incorporación</span></button>
     <button class="nav-i" id="asjBtn" type="button" data-act="asistencia" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M8 14l2 2 4-4"/></svg><span>Asistencia y jornadas</span></button></nav>
   <nav class="nav-g" aria-label="Documentos"><span class="nav-l">Documentos</span>
@@ -1165,13 +1166,13 @@ function renderList(){
   el.innerHTML=grupos.map(s=>{ const g=arr.filter(p=>(p.ficha?.sede||"")===s); if(!g.length) return "";
     return `<div class="grupo"><span>${esc(s||"Sin sede")}</span><b>${g.length}</b></div>${porTerapeuta(g)}`; }).join("");
 }
-const VISTA_TXT={inicio:"Inicio",exp:"Expediente",perfil:"Mi perfil",terapeutas:"Terapeutas",usuarios:"Usuarios y permisos",seguridad:"Usuarios y permisos",orgresumen:"Resumen organizacional",indicadores:"Indicadores",organigrama:"Organigrama",colaboradores:"Colaboradores",supervision:"Supervisión",sedes:"Sedes",entidades:"Entidades fiscales",areas:"Áreas",puestos:"Puestos y funciones",vacantes:"Vacantes",uso:"Tiempo de uso",tablero:"Tablero",miasis:"Mi asistencia",asistencia:"Asistencia y jornadas",docs:"Documentos y firmas",incorporacion:"Incorporación",miinc:"Mi incorporación",miinfo:"Mi información",misol:"Mis solicitudes",bandejaSol:"Bandeja de solicitudes",
+const VISTA_TXT={inicio:"Inicio",exp:"Expediente",perfil:"Mi perfil",terapeutas:"Terapeutas",usuarios:"Usuarios y permisos",seguridad:"Usuarios y permisos",orgresumen:"Resumen organizacional",indicadores:"Indicadores",organigrama:"Organigrama",colaboradores:"Colaboradores",supervision:"Supervisión",sedes:"Sedes",entidades:"Entidades fiscales",areas:"Áreas",puestos:"Puestos y funciones",vacantes:"Vacantes",uso:"Tiempo de uso",tablero:"Tablero",miasis:"Mi asistencia",asistencia:"Asistencia y jornadas",docs:"Documentos y firmas",incorporacion:"Incorporación",miinc:"Mi incorporación",miinfo:"Mi información",misol:"Mis solicitudes",perfprof:"Perfiles profesionales",bandejaSol:"Bandeja de solicitudes",
   reglamento:"Reglamento",contratos:"Contratos",permisos:"Usuarios y permisos",documentacion:"Documentación",ayuda:"Ayuda"};
 /* Estructura de la organización: un solo botón con pestañas (2026-11-22) */
 const ESTR_VISTAS=[["sedes","Sedes"],["entidades","Entidades fiscales"],["areas","Áreas"],["puestos","Puestos y funciones"],["vacantes","Vacantes"]];
-const VISTA_BTN={inicio:"iniBtn",terapeutas:"terBtn",contratos:"ctrBtn",documentacion:"docpBtn",reglamento:"regBtn",usuarios:"segBtn",permisos:"segBtn",seguridad:"segBtn",orgresumen:"resBtn",indicadores:"indBtn",organigrama:"ogBtn",colaboradores:"colBtn",supervision:"supBtn",sedes:"sedBtn",entidades:"sedBtn",areas:"sedBtn",puestos:"sedBtn",vacantes:"sedBtn",uso:"usoBtn",tablero:"tabBtn",miasis:"masBtn",asistencia:"asjBtn",docs:"docsBtn",incorporacion:"incBtn",miinc:"miincBtn",miinfo:"miinfBtn",misol:"misolBtn",bandejaSol:"bsolBtn",ayuda:"ayudaBtn",perfil:"perfilBtn"};
+const VISTA_BTN={inicio:"iniBtn",terapeutas:"terBtn",contratos:"ctrBtn",documentacion:"docpBtn",reglamento:"regBtn",usuarios:"segBtn",permisos:"segBtn",seguridad:"segBtn",orgresumen:"resBtn",indicadores:"indBtn",organigrama:"ogBtn",colaboradores:"colBtn",supervision:"supBtn",sedes:"sedBtn",entidades:"sedBtn",areas:"sedBtn",puestos:"sedBtn",vacantes:"sedBtn",uso:"usoBtn",tablero:"tabBtn",miasis:"masBtn",asistencia:"asjBtn",docs:"docsBtn",incorporacion:"incBtn",miinc:"miincBtn",miinfo:"miinfBtn",misol:"misolBtn",bandejaSol:"bsolBtn",perfprof:"ppBtn",ayuda:"ayudaBtn",perfil:"perfilBtn"};
 const GRUPO_VISTA={exp:"Atención",terapeutas:"Atención",colaboradores:"Personas",organigrama:"Personas",supervision:"Personas",incorporacion:"Personas",asistencia:"Personas",
-  docs:"Documentos",contratos:"Documentos",documentacion:"Documentos",reglamento:"Documentos",miasis:"Mi espacio",miinc:"Mi espacio",miinfo:"Mi espacio",misol:"Mi espacio",bandejaSol:"Personas",
+  docs:"Documentos",contratos:"Documentos",documentacion:"Documentos",reglamento:"Documentos",miasis:"Mi espacio",miinc:"Mi espacio",miinfo:"Mi espacio",misol:"Mi espacio",bandejaSol:"Personas",perfprof:"Personas",
   tablero:"Administración",orgresumen:"Administración",indicadores:"Administración",uso:"Administración",
   sedes:"Configuración",entidades:"Configuración",areas:"Configuración",puestos:"Configuración",vacantes:"Configuración",seguridad:"Configuración",usuarios:"Configuración",permisos:"Configuración",
   ayuda:"Mi cuenta",perfil:"Mi cuenta"};
@@ -1421,7 +1422,7 @@ const VISTA_AYUDA={
   colaboradores:()=>[null,"Consultar la organización"], organigrama:()=>[null,"Consultar la organización"], supervision:()=>[null,"Consultar la organización"],
   orgresumen:()=>[null,"Consultar la organización"], indicadores:()=>[null,"Consultar la organización"], sedes:()=>[null,"Consultar la organización"],
   incorporacion:()=>[null,"Iniciar el proceso de una persona en contratación"], miinc:()=>[null,"Mi incorporación"],
-  asistencia:()=>[null,"Supervisar la asistencia de mi equipo"], miasis:()=>[null,"Registrar mi entrada y salida"], miinfo:()=>[null,"Mi información y Mi espacio"], misol:()=>[null,"Hacer una solicitud"], bandejaSol:()=>[null,"Resolver solicitudes del equipo"],
+  asistencia:()=>[null,"Supervisar la asistencia de mi equipo"], miasis:()=>[null,"Registrar mi entrada y salida"], miinfo:()=>[null,"Mi información y Mi espacio"], misol:()=>[null,"Hacer una solicitud"], bandejaSol:()=>[null,"Resolver solicitudes del equipo"], perfprof:()=>[null,"Verificar perfiles profesionales"],
   docs:()=>[null, dxPuedeGestionar()?"Agregar un documento a la biblioteca":"Firmar un documento"],
   contratos:()=>veTodosContratos()?["Contratos individuales del personal: captura, fecha de alta, salario y firmas.","Completar y firmar contratos del personal"]:["Tu contrato individual de trabajo: captura tus datos y fírmalo con tu contraseña.","Firmar mi contrato"],
   documentacion:()=>veDocsTodos()?[null,"Verificar documentación del personal"]:[null,"Subir mi documentación"],
@@ -1448,7 +1449,7 @@ function render(){ borAntes(); renderVista(); vistaExtras(); borDespues(); }
 function renderVista(){
   const d=$("#detail"); S.dirty=false; S.stale=false; S.editado=false; marcarNav(); document.body.classList.remove("menu-abierto");
   const p=S.pacientes.get(S.sel);
-  $("#app").classList.toggle("open", !!p || ["perfil","miinfo","misol","bandejaSol","terapeutas","usuarios","sedes","entidades","areas","puestos","vacantes","colaboradores","supervision","organigrama","seguridad","orgresumen","indicadores","uso","reglamento","contratos","permisos","documentacion","ayuda","tablero","miasis","asistencia","docs","incorporacion","miinc"].includes(S.view));
+  $("#app").classList.toggle("open", !!p || ["perfil","miinfo","misol","bandejaSol","perfprof","terapeutas","usuarios","sedes","entidades","areas","puestos","vacantes","colaboradores","supervision","organigrama","seguridad","orgresumen","indicadores","uso","reglamento","contratos","permisos","documentacion","ayuda","tablero","miasis","asistencia","docs","incorporacion","miinc"].includes(S.view));
   if (S.view==="perfil"){ d.innerHTML=perfilHtml(); activarPad(); return; }
   if (S.view==="terapeutas"){ d.innerHTML=terapeutasHtml(); return; }
   if (S.view==="usuarios"){ d.innerHTML=usuariosHtml(); return; }
@@ -1462,6 +1463,7 @@ function renderVista(){
   if (S.view==="miinfo"){ d.innerHTML=miInfoHtml(); return; }
   if (S.view==="misol"){ d.innerHTML=misSolHtml(); return; }
   if (S.view==="bandejaSol"){ d.innerHTML=bandejaSolHtml(); return; }
+  if (S.view==="perfprof"){ d.innerHTML=perfprofHtml(); return; }
   if (S.view==="docs"){ d.innerHTML=docsHtml(); return; }
   if (S.view==="incorporacion"){ d.innerHTML=incorporacionHtml(); return; }
   if (S.view==="miinc"){ d.innerHTML=miIncHtml(); return; }
@@ -1497,6 +1499,10 @@ async function cargarPendientes(){
       const info=(t.mias||[]).filter(x=>x.estado==="info_requerida").length, pr=(t.porResolver||[]).length;
       if (info) pend.push({t:`Te pidieron información en ${info} solicitud${info===1?"":"es"}`, d:"Respóndela para que puedan resolverla.", act:"misol", b:"Responder"});
       if (pr) pend.push({t:`${pr} solicitud${pr===1?"":"es"} por resolver`, d:"De las personas o sedes que te corresponden.", act:"bandejaSol", b:"Revisar"}); }),
+    intenta(async()=>{ if (!S.api.compPorVerificar) return; await ppCargar(); const p=S.pp; if (!p||p.error) return;
+      const n=(p.per||[]).reduce((a,x)=>a+(x.declaradas||0),0), nv=(p.lista||[]).filter(x=>x.perfil_id===S.uid&&x.estado==="no_verificada").length;
+      if (n) pend.push({t:`${n} competencia${n===1?"":"s"} profesional${n===1?"":"es"} por verificar`, d:"Cotéjalas con el documento original. Verificar no habilita la atención de casos.", act:"perfprof", b:"Revisar"});
+      if (nv) pend.push({t:`${nv} competencia${nv===1?"":"s"} de tu perfil profesional necesita${nv===1?"":"n"} respaldo`, d:"Revisa qué falta en Mi información → Perfil profesional.", act:"ppMiPerfil", b:"Ver"}); }),
     intenta(async()=>{ const rv=(await S.api.revisionesPendientes?.())||[]; if (!rv.length) return;
       pend.push({t:`${rv.length} aviso${rv.length===1?"":"s"} por cambio de sede o de puesto`, d:"Revisa permisos o capacitación. Nada cambia automáticamente.", act:"colaboradores", b:"Revisar"}); }),
     intenta(async()=>{ const fs=(await S.api.misFirmasPendientes?.())||[]; const n=fs.filter(f=>f.mi_turno).length;
@@ -1604,7 +1610,7 @@ function miInfoHtml(){
   if (!f) return envol(`<div class="banner">Tu cuenta todavía no está autorizada. Cuando la autoricen verás aquí tu información.</div>`);
   const c=f.cuenta||{}, col=f.colaborador, pu=f.puestos||[], t=S.miTab||"perfil", psi=c.rol==="psicologo";
   const sinCol=!col?`<div class="banner">Tu cuenta aún no está en el directorio de colaboradores, por eso no aparecen tu puesto ni tu equipo. La Dirección te agrega en Personas → Colaboradores.</div>`:"";
-  const tabs=`<div class="tabs" role="tablist" aria-label="Mi información">${[["perfil","Mi perfil"],["puesto","Mi puesto y sedes"],["equipo","Mi equipo"]].map(([k,x])=>`<button class="tab" role="tab" type="button" data-act="miTab" data-t="${k}" aria-selected="${t===k}">${x}</button>`).join("")}</div>`;
+  const tabs=`<div class="tabs" role="tablist" aria-label="Mi información">${[["perfil","Mi perfil"],["puesto","Mi puesto y sedes"],["equipo","Mi equipo"],...(psi||c.cedula?[["prof","Perfil profesional"]]:[])].map(([k,x])=>`<button class="tab" role="tab" type="button" data-act="miTab" data-t="${k}" aria-selected="${t===k}">${x}</button>`).join("")}</div>`;
   let cuerpo="";
   if (t==="perfil") cuerpo=`<section class="card">
       ${miFila("Nombre completo", esc(c.nombre||"")||'<span class="status">Dato pendiente de recabar</span>', 2, `<button class="btn sm" type="button" data-act="solTipo" data-t="datos" data-c="nombre">Pedir corrección</button>`)}
@@ -1630,6 +1636,7 @@ function miInfoHtml(){
     cuerpo=`${sinCol}<section class="card"><p class="status" style="margin:0 0 8px">Solo nombre, puesto y sede. Nunca se muestran teléfonos personales, domicilios ni información económica.</p>
       ${ls.length?`<ul class="pend">${ls.join("")}</ul>`:`<p style="margin:0">Todavía no hay personas registradas en tu equipo.</p>`}
       ${$("#ogBtn")&&!$("#ogBtn").hidden?`<div class="actions" style="border-top:0"><button class="btn sm" type="button" data-act="organigrama">Ver organigrama</button></div>`:""}</section>`; }
+  if (t==="prof") cuerpo=perfilProfHtml();
   return envol(`${tabs}${cuerpo}<p class="status" style="margin:0"><button class="btn sm" type="button" data-act="tourVer">Ver el recorrido de bienvenida</button></p>`);
 }
 /* Recorrido de primer ingreso: 6 pasos, se pausa y se retoma; nunca bloquea nada. El avance se guarda en el servidor. */
@@ -1669,8 +1676,8 @@ function ctxAplicar(){
   box.querySelectorAll("button").forEach(b=>{ const on=String(b.dataset.c===c); if (b.getAttribute("aria-pressed")!==on) b.setAttribute("aria-pressed", on); });
 }
 async function miAccion(a,b){
-  if (a==="miinfo"){ S.view="miinfo"; S.miTab=S.miTab||"perfil"; render(); return miCargar(); }
-  if (a==="miTab"){ S.miTab=b.dataset.t; return render(); }
+  if (a==="miinfo"){ S.view="miinfo"; S.miTab=S.miTab||"perfil"; render(); if (S.miTab==="prof") compCargar(); return miCargar(); }
+  if (a==="miTab"){ S.miTab=b.dataset.t; S.compForm=null; render(); if (S.miTab==="prof") return compCargar(); return; }
   if (a==="miRecargar"){ return miCargar(); }
   if (a==="ctx"){ const c=b.dataset.c; try{ localStorage.setItem("cemepi.ctx", c); }catch{}
     ctxAplicar(); navExtras(); toast(c==="mi"?"Estás en Mi espacio: el menú muestra lo tuyo.":"Estás en Gestión. Cambiar de espacio no te da permisos nuevos.");
@@ -1822,6 +1829,7 @@ async function solAccion(a,b){
   if (a==="notifCerrar"){ $("#dlgNotif").close(); return; }
   if (a==="notifIr"){ const n=(S.notif||[]).find(x=>x.id===b.dataset.id); $("#dlgNotif").close(); if (!n) return;
     if (!n.leida) S.api.marcarLeidas([n.id]).then(notifCargar).catch(()=>{});
+    if (n.vista==="miinfo"){ S.miTab="prof"; return miAccion("miinfo"); }
     await solAccion(n.vista==="bandejaSol"?"bandejaSol":"misol"); if (n.ref) solVer(n.ref, n.vista==="bandejaSol"); return; }
 }
 function inicioHtml(){
@@ -3476,6 +3484,142 @@ function miAsistenciaHtml(){
     ${actividadesHtml}`);
 }
 
+/* ---------- Módulo 06 · P4 Perfil profesional (2026-11-24) ----------
+   Lo que la persona declara queda «por verificar» hasta que la coordinación lo revisa contra el documento.
+   Declarar o verificar NUNCA habilita la atención clínica ni cambia permisos (lo garantiza la base). */
+const PP_ACC=new Set(["ppMiPerfil","ppAgregar","ppEditar","ppCancelar","ppGuardar","ppRetirar","ppFormacion","perfprof","ppTab","ppVer","ppVolver","ppVerificar","ppNoVerif","ppRevision","ppDoc","ppCatAgregar","ppCatEstado","ppBuscar"]);
+const COMP_TIPOS=[["formacion","Formación","Licenciatura, especialidad, maestría, diplomados, certificaciones y cursos."],["enfoque","Enfoques terapéuticos","Los enfoques en los que tienes formación o experiencia."],["poblacion","Población que atiendes","Edades y grupos con los que trabajas."],["evaluacion","Evaluaciones e instrumentos","Solo los que sabes aplicar e interpretar."],["motivo","Motivos de consulta con mayor experiencia","Los temas en los que tienes más experiencia o formación."]];
+const COMP_TXT=Object.fromEntries(COMP_TIPOS.map(([k,n])=>[k,n]));
+const COMP_EST={declarada:["Por verificar","estado-pendiente"],verificada:["Verificada","estado-activo"],no_verificada:["No verificada","estado-suspendido"]};
+const COMP_DOCS=["cedula_profesional","titulo_profesional","comprobante_estudios","curso","diplomado","certificacion","otro"];
+const ppVal=id=>($("#"+id)?.value||"").trim();
+async function compCargar(perfil){
+  if (!S.api?.competencias) { S.comp={error:"No disponible."}; return render(); }
+  try{ const [lista,cat,docs]=await Promise.all([S.api.competencias(perfil||S.uid), S.comp?.cat||S.api.compCatalogo(), perfil?Promise.resolve([]):(S.api.docsPersonal?.(S.uid)||[])]);
+    S.comp={lista, cat, docs:(docs||[]).filter(d=>COMP_DOCS.includes(d.tipo))}; }
+  catch(e){ S.comp={error:e?.message||"No se pudo cargar."}; }
+  render();
+}
+function compItem(c, gestion){
+  const [et,ec]=COMP_EST[c.estado]||[c.estado,""], doc=(S.comp?.docs||[]).find(d=>d.id===c.documento_id);
+  const acc=gestion
+    ? `${c.documento_id?`<button class="btn sm" type="button" data-act="ppDoc" data-id="${c.id}">Ver respaldo</button>`:""}
+       ${c.estado!=="verificada"?`<button class="btn sm primary" type="button" data-act="ppVerificar" data-id="${c.id}">Verificar</button>`:""}
+       ${c.estado!=="no_verificada"?`<button class="btn sm" type="button" data-act="ppNoVerif" data-id="${c.id}">No verificada</button>`:""}
+       ${c.estado!=="declarada"?`<button class="btn sm" type="button" data-act="ppRevision" data-id="${c.id}">Regresar a revisión</button>`:""}`
+    : `<button class="btn sm" type="button" data-act="ppEditar" data-id="${c.id}">Editar</button><button class="btn sm" type="button" data-act="ppRetirar" data-id="${c.id}">Retirar</button>`;
+  return `<li><div><b>${esc(c.valor)}</b> <span class="pill ${ec}">${et}</span>${c.detalle?`<br><span class="status">${esc(c.detalle)}</span>`:""}
+    ${c.documento_id?`<br><span class="status">Respaldo: ${doc?esc(DOCP_TIPOS[doc.tipo]||doc.tipo)+(doc.descripcion?" · "+esc(doc.descripcion):""):"documento de Documentación"}</span>`:(c.estado!=="verificada"?`<br><span class="status">Sin documento de respaldo</span>`:"")}
+    ${c.estado==="no_verificada"&&c.nota?`<br><span class="status"><b>Qué falta:</b> ${esc(c.nota)}</span>`:""}
+    ${c.estado==="verificada"&&c.verificado_en?`<br><span class="status">Verificada el ${fechaTxt(c.verificado_en)}</span>`:""}</div>
+    <div class="acts" style="display:flex;gap:6px;flex-wrap:wrap">${acc}</div></li>`;
+}
+function compFormHtml(){
+  const f=S.compForm, cat=(S.comp?.cat||[]).filter(x=>x.tipo===f.tipo&&x.activo), docs=S.comp?.docs||[];
+  return `<section class="note"><div class="note-h"><h3>${f.id?"Editar":"Agregar"}: ${esc(COMP_TXT[f.tipo])}</h3><button class="btn sm" type="button" data-act="ppCancelar">Cancelar</button></div>
+    <form class="datos" onsubmit="return false">
+      <div class="fld" style="grid-column:span 2"><label for="ppValor">${f.tipo==="formacion"?"Grado, programa o curso *":"Cuál *"}</label>
+        <input id="ppValor" list="ppLista" maxlength="120" value="${esc(f.valor||"")}" placeholder="${f.tipo==="formacion"?"Por ejemplo: Maestría en Psicoterapia Gestalt":"Elige de la lista o escríbelo"}">
+        <datalist id="ppLista">${cat.map(x=>`<option value="${esc(x.valor)}">`).join("")}</datalist></div>
+      ${fld("ppDetalle", f.tipo==="formacion"?"Institución y año":"Detalle (opcional)", f.detalle||"", {max:300, ph:f.tipo==="formacion"?"Institución, año, horas":"Años de experiencia, formación específica…"})}
+      ${fld("ppDoc","Documento de respaldo",f.doc||"",{span:3,opts:[["","Sin documento por ahora"],...docs.map(d=>[d.id,(DOCP_TIPOS[d.tipo]||d.tipo)+(d.descripcion?" · "+d.descripcion:"")+(d.nombre_archivo?" ("+d.nombre_archivo+")":"")])],
+        hint:docs.length?"Se usa uno de tus PDF de Mis documentos.":"Aún no tienes PDF de estudios o cursos. Súbelos en Mis documentos → Mis PDF personales y vuelve aquí."})}
+    </form>
+    <p class="status" style="margin:8px 0 0">Quedará «Por verificar» hasta que la coordinación la revise.${f.id&&f.estado==="verificada"?" <b>Si cambias el texto o el respaldo, volverá a revisión.</b>":""} Declararla no habilita por sí sola la atención de esos casos.</p>
+    <div class="actions"><button class="btn primary" type="button" data-act="ppGuardar">Guardar</button></div></section>`;
+}
+function perfilProfHtml(){
+  const c=S.comp;
+  if (!c) return `<section class="card"><p class="status" style="margin:0">Cargando tu perfil profesional…</p></section>`;
+  if (c.error) return `<div class="banner">No se pudo cargar tu perfil profesional. <button class="btn sm" type="button" data-act="miTab" data-t="prof">Reintentar</button></div>`;
+  const l=c.lista||[], n={d:l.filter(x=>x.estado==="declarada").length, v:l.filter(x=>x.estado==="verificada").length, x:l.filter(x=>x.estado==="no_verificada").length};
+  return `${S.compForm?compFormHtml():""}<section class="card">
+    <p class="status" style="margin:0 0 8px;max-width:75ch">Lo que declares queda <b>por verificar</b> hasta que la coordinación lo revise con tu documento. Ayuda a asignarte casos acordes a tu formación; declarar una competencia <b>no</b> habilita por sí sola la atención de esos casos.</p>
+    <div class="kpis"><div class="kpi"><span>Verificadas</span><b>${n.v}</b></div><div class="kpi"><span>Por verificar</span><b>${n.d}</b></div><div class="kpi"><span>No verificadas</span><b>${n.x}</b></div></div>
+    ${COMP_TIPOS.map(([k,nom,ay])=>{ const it=l.filter(x=>x.tipo===k);
+      return `<div style="margin-top:14px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div><b>${nom}</b><br><span class="status">${ay}</span></div>
+        <button class="btn sm" type="button" data-act="ppAgregar" data-t="${k}">+ Agregar</button></div>
+        ${it.length?`<ul class="pend" style="margin-top:6px">${it.map(x=>compItem(x,false)).join("")}</ul>`:`<p class="status" style="margin:6px 0 0">Sin registros.</p>`}</div>`; }).join("")}
+    <div class="actions" style="border-top:0"><button class="btn sm" type="button" data-act="ppFormacion">Necesito formación en…</button></div></section>`;
+}
+/* Vista de quien verifica: Personas → Perfiles profesionales */
+async function ppCargar(){
+  if (!S.api?.compPorVerificar) return;
+  try{ const [per,lista,cat]=await Promise.all([S.api.compPorVerificar(), S.api.competencias(), S.api.compCatalogo()]); S.pp={...(S.pp||{}), per, lista, cat, error:null}; }
+  catch(e){ S.pp={...(S.pp||{}), error:e?.message||"No se pudo cargar."}; }
+  ppBoton(); if (S.view==="perfprof") render();
+}
+function ppBoton(){ const b=$("#ppBtn"); if (!b) return; const ver=["superusuario","direccion"].includes(S.rol)||(S.perm&&[...S.perm].includes("supervision_clinica"))||(S.pp?.per||[]).length>0; if (b.hidden!==!ver) b.hidden=!ver; }
+function perfprofHtml(){
+  const p=S.pp, t=S.ppTab||"pend", su=S.rol==="superusuario";
+  const cab=`<div class="phead">${migas()}<h1>Perfiles profesionales</h1></div>`;
+  const env=x=>`<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:12px">${cab}${x}</div>`;
+  if (!p) return env(`<p class="status">Cargando…</p>`);
+  if (p.error) return env(`<div class="banner">No se pudo cargar. <button class="btn sm" type="button" data-act="perfprof">Reintentar</button></div>`);
+  const nombre=id=>(p.per||[]).find(x=>x.perfil_id===id)?.nombre||"Persona";
+  const aviso=`<p class="status" style="margin:0;max-width:78ch">Verifica cada competencia contra el documento original o la constancia. <b>Verificar no habilita la atención de casos ni cambia permisos</b>: solo deja constancia de lo revisado. Nadie verifica lo propio.</p>`;
+  if (S.ppSel){ const l=(p.lista||[]).filter(x=>x.perfil_id===S.ppSel), per=(p.per||[]).find(x=>x.perfil_id===S.ppSel);
+    return env(`${aviso}<section class="card"><div class="note-h"><h3>${esc(per?.nombre||"Persona")}${per?.sede?` <span class="status">· ${esc(per.sede)}</span>`:""}</h3><button class="btn sm" type="button" data-act="ppVolver">Volver a la lista</button></div>
+      ${S.ppNota?`<div class="note" style="margin:8px 0"><label for="ppNotaTx"><b>¿Qué falta para verificar «${esc(S.ppNota.valor)}»?</b></label><textarea id="ppNotaTx" rows="2" maxlength="300" placeholder="Por ejemplo: falta la constancia del diplomado con horas"></textarea>
+        <div class="actions"><button class="btn primary" type="button" data-act="ppNoVerif" data-id="${S.ppNota.id}" data-ok="1">Guardar «No verificada»</button><button class="btn" type="button" data-act="ppNoVerif" data-id="">Cancelar</button></div></div>`:""}
+      ${COMP_TIPOS.map(([k,nom])=>{ const it=l.filter(x=>x.tipo===k); return it.length?`<div style="margin-top:12px"><b>${nom}</b><ul class="pend" style="margin-top:6px">${it.map(x=>compItem(x,true)).join("")}</ul></div>`:""; }).join("")||`<p class="status">Sin competencias registradas.</p>`}
+      <p class="status" style="margin:10px 0 0">El respaldo se abre con los permisos de Documentación del personal: si no puedes abrirlo, pide a RR. HH. que lo coteje.</p></section>`); }
+  const tabs=`<div class="tabs" role="tablist" aria-label="Perfiles profesionales">${[["pend","Por verificar"],["buscar","Buscar por competencia"],...(su?[["cat","Catálogo"]]:[])].map(([k,x])=>`<button class="tab" role="tab" type="button" data-act="ppTab" data-t="${k}" aria-selected="${t===k}">${x}</button>`).join("")}</div>`;
+  let cuerpo="";
+  if (t==="pend") cuerpo=`<section class="card">${(p.per||[]).length?`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Persona</th><th>Sede</th><th>Por verificar</th><th>Verificadas</th><th>No verificadas</th><th></th></tr></thead><tbody>
+      ${p.per.map(x=>`<tr><td class="sens">${esc(x.nombre)}</td><td>${esc(x.sede||"—")}</td><td>${x.declaradas?`<b>${x.declaradas}</b>`:"0"}</td><td>${x.verificadas}</td><td>${x.no_verificadas}</td><td><button class="btn sm${x.declaradas?" primary":""}" type="button" data-act="ppVer" data-id="${x.perfil_id}">Revisar</button></td></tr>`).join("")}</tbody></table></div>`
+      :`<p class="status" style="margin:0">No hay perfiles profesionales de personas a tu cargo o de tu sede todavía.</p>`}</section>`;
+  if (t==="buscar"){ const q=norm(S.ppQ||""), soloV=!!S.ppSoloV;
+    const res=(p.lista||[]).filter(x=>(!q||norm(x.valor).includes(q)||norm(COMP_TXT[x.tipo]).includes(q))&&(!soloV||x.estado==="verificada")&&(p.per||[]).some(y=>y.perfil_id===x.perfil_id));
+    cuerpo=`<section class="card"><div class="filtros" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">
+        <div class="fld"><label for="ppQ">Competencia</label><input id="ppQ" value="${esc(S.ppQ||"")}" placeholder="Duelo, adolescentes, WISC…"></div>
+        <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="ppSoloV"${soloV?" checked":""}> Solo verificadas</label>
+        <button class="btn sm" type="button" data-act="ppBuscar">Buscar</button></div>
+      <p class="status" style="margin:8px 0">Sirve para orientar la asignación de casos. La asignación la decide una persona, nunca la lista.</p>
+      ${res.length?`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Persona</th><th>Tipo</th><th>Competencia</th><th>Estado</th></tr></thead><tbody>${res.slice(0,200).map(x=>{ const [et,ec]=COMP_EST[x.estado]; return `<tr><td class="sens"><button class="btn sm" type="button" data-act="ppVer" data-id="${x.perfil_id}">${esc(nombre(x.perfil_id))}</button></td><td>${esc(COMP_TXT[x.tipo])}</td><td>${esc(x.valor)}</td><td><span class="pill ${ec}">${et}</span></td></tr>`; }).join("")}</tbody></table></div>`:`<p class="status" style="margin:0">Sin resultados.</p>`}</section>`; }
+  if (t==="cat"&&su) cuerpo=`<section class="card"><p class="status" style="margin:0 0 8px">El catálogo solo sugiere opciones: cada persona puede escribir una que no esté. Desactivar una opción no borra lo que ya declararon.</p>
+    ${COMP_TIPOS.map(([k,nom])=>{ const it=(p.cat||[]).filter(x=>x.tipo===k); return `<details style="margin-top:8px"${S.ppCatAb===k?" open":""}><summary><b>${nom}</b> <span class="status">(${it.filter(x=>x.activo).length} activas)</span></summary>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">${it.map(x=>`<button class="pill ${x.activo?"estado-activo":""}" type="button" data-act="ppCatEstado" data-id="${x.id}" title="${x.activo?"Desactivar":"Activar"}">${esc(x.valor)}${x.activo?"":" (inactiva)"}</button>`).join("")}</div>
+      <div style="display:flex;gap:6px"><input id="ppCat_${k}" maxlength="120" placeholder="Nueva opción"><button class="btn sm" type="button" data-act="ppCatAgregar" data-t="${k}">Agregar</button></div></details>`; }).join("")}</section>`;
+  return env(`${aviso}${tabs}${cuerpo}`);
+}
+async function ppAccion(a,b){
+  const id=b?.dataset?.id, buscar=x=>(S.comp?.lista||[]).find(c=>c.id===x);
+  try{
+    if (a==="ppMiPerfil"){ S.miTab="prof"; return miAccion("miinfo"); }
+    if (a==="ppAgregar"){ S.compForm={tipo:b.dataset.t}; render(); return $("#ppValor")?.focus(); }
+    if (a==="ppEditar"){ const c=buscar(id); if (!c) return; S.compForm={id:c.id, tipo:c.tipo, valor:c.valor, detalle:c.detalle||"", doc:c.documento_id||"", estado:c.estado, actualizado:c.actualizado}; render(); return $("#ppValor")?.focus(); }
+    if (a==="ppCancelar"){ S.compForm=null; S.editado=false; return render(); }
+    if (a==="ppGuardar"){ const f=S.compForm, valor=ppVal("ppValor"), det=ppVal("ppDetalle"), doc=ppVal("ppDoc");
+      if (valor.length<2) return toast("Escribe la competencia.");
+      if (f.id) await S.api.editarCompetencia(f.id, valor, det, doc, f.actualizado); else await S.api.declararCompetencia(f.tipo, valor, det, doc);
+      S.compForm=null; S.editado=false; toast(f.id?"Cambios guardados.":"Guardada. Queda por verificar."); return compCargar(); }
+    if (a==="ppRetirar"){ const c=buscar(id); if (!c||!confirm(`¿Retirar «${c.valor}» de tu perfil profesional?${c.estado==="verificada"?"\n\nEstá verificada: si la vuelves a agregar, tendrá que verificarse de nuevo.":""}`)) return;
+      await S.api.retirarCompetencia(id); toast("Retirada."); return compCargar(); }
+    if (a==="ppFormacion"){ await solAccion("solTipo",{dataset:{t:"apoyo"}}); if (S.solForm){ S.solForm.area="Capacitación"; S.solForm.detalle=S.solForm.detalle||"Necesito formación en: "; render(); } return; }
+    if (a==="perfprof"){ S.view="perfprof"; S.ppSel=null; S.ppNota=null; render(); return ppCargar(); }
+    if (a==="ppTab"){ S.ppTab=b.dataset.t; S.ppSel=null; return render(); }
+    if (a==="ppBuscar"){ S.ppQ=ppVal("ppQ"); S.ppSoloV=!!$("#ppSoloV")?.checked; return render(); }
+    if (a==="ppVer"){ S.ppSel=id; S.ppNota=null; if (S.view!=="perfprof"){ S.view="perfprof"; render(); return ppCargar(); } return render(); }
+    if (a==="ppVolver"){ S.ppSel=null; S.ppNota=null; return render(); }
+    const enP=x=>(S.pp?.lista||[]).find(c=>c.id===x);
+    if (a==="ppVerificar"){ const c=enP(id); if (!c||!confirm(`¿Verificar «${c.valor}»?\n\nConfirma que lo cotejaste con el documento original o la constancia.`)) return;
+      await S.api.verificarCompetencia(id,"verificada",null); toast("Verificada."); return ppCargar(); }
+    if (a==="ppNoVerif"){ if (!id){ S.ppNota=null; return render(); }
+      if (!b.dataset.ok){ const c=enP(id); S.ppNota={id, valor:c?.valor||""}; render(); return $("#ppNotaTx")?.focus(); }
+      const nota=ppVal("ppNotaTx"); if (nota.length<10) return toast("Explica qué falta (10 caracteres o más).");
+      await S.api.verificarCompetencia(id,"no_verificada",nota); S.ppNota=null; S.editado=false; toast("Guardada como no verificada. La persona verá qué falta."); return ppCargar(); }
+    if (a==="ppRevision"){ if (!confirm("¿Regresar esta competencia a «Por verificar»?")) return; await S.api.verificarCompetencia(id,"declarada",null); toast("Regresó a revisión."); return ppCargar(); }
+    if (a==="ppDoc"){ const c=enP(id); if (!c?.documento_id) return;
+      const d=(await S.api.docsPersonal(c.perfil_id)).find(x=>x.id===c.documento_id);
+      if (!d) return toast("No tienes acceso a ese documento. Pide a RR. HH. que lo coteje.");
+      return window.open(await S.api.urlDocPersonal(d.archivo),"_blank","noopener"); }
+    if (a==="ppCatAgregar"){ const k=b.dataset.t; S.ppCatAb=k; const val=ppVal("ppCat_"+k); if (val.length<2) return toast("Escribe la opción.");
+      await S.api.guardarCatalogoComp(null,k,val,true,100); toast("Agregada al catálogo."); return ppCargar(); }
+    if (a==="ppCatEstado"){ const x=(S.pp?.cat||[]).find(c=>c.id===id); if (!x) return; S.ppCatAb=x.tipo;
+      await S.api.guardarCatalogoComp(x.id,x.tipo,x.valor,!x.activo,x.orden); return ppCargar(); }
+  }catch(e){ toast(e?.message||"No se pudo completar."); }
+}
 /* ---------- Módulo 06 · P3 Vacaciones y permisos (2026-11-24) ----------
    Saldo: lo registra RR. HH. (confirmado). Usados y en trámite son ESTIMADOS (días laborables configurados).
    Cobertura: el colaborador ve solo el nivel de demanda de su sede; los nombres, quien opera asistencia. */
@@ -4277,6 +4421,8 @@ const GUIAS = [
   {t:"Saldos de vacaciones y cobertura (RR. HH.)", si:()=>!!S.rol && (S.rol==="superusuario"||(S.api?.rhNivel||0)>=2||(S.api?.asisNivel||0)>=1), pasos:["Entra a Personas → Asistencia y jornadas → «Vacaciones y cobertura».","Elige la sede y la fecha de inicio: ves 31 días con las personas con control y quiénes estarán ausentes (aprobado o en trámite).","RR. HH. registra el saldo confirmado de cada persona con «Registrar». Nada se calcula solo; tu propio saldo lo registra otra persona.","Las constancias de los permisos aparecen como «Ver constancia» en «Permisos y solicitudes», solo para RR. HH."]},
   {t:"Hacer una solicitud", si:()=>!!S.rol, pasos:["Entra a Mi espacio → Mis solicitudes y pulsa «+ Nueva solicitud».","Elige el tipo: corregir tus datos, constancia, aclaración de pago, necesito apoyo, propuesta o problema con la app. Vacaciones, permisos y correcciones de asistencia se piden en Mi asistencia y aparecen en la misma lista.","Escribe con calma: lo que escribes se guarda como borrador. Puedes «Guardar como borrador» y enviarla después.","Pulsa «Revisar antes de enviar» y luego «Enviar solicitud»: recibes un folio CEMEPI-SOL.","En la lista ves quién la tiene y su estado. Si te piden información, respóndela ahí mismo. Mientras no se resuelva, puedes cancelarla.","La campana de arriba te avisa cuando hay respuesta. No llegan avisos por correo ni mensajes."]},
   {t:"Resolver solicitudes del equipo", si:()=>!!S.rol && ["superusuario","direccion","admin_sede"].includes(S.rol), pasos:["Entra a Personas → Bandeja de solicitudes: ves solo las que te toca resolver ahora (de quien te reporta o de tus sedes). Nunca las tuyas.","Pulsa «Revisar»: ves el detalle, el recorrido y el historial.","Puedes tomarla en revisión, pedir información, no aprobarla (explicando el motivo) o aprobarla. Si tiene otro paso, pasa a la siguiente persona.","Una corrección de nombre o cédula aprobada se aplica sola a la cuenta, a las firmas y a los directorios; solo la aprueba quien administra esa cuenta.","El Superusuario define en «Tipos de solicitud» quién revisa cada tipo, el plazo y si está activo. Cada cambio queda en la bitácora."]},
+  {t:"Mi perfil profesional", si:()=>!!S.rol && (S.rol==="psicologo"||!!S.perfil?.cedula), pasos:["Entra a Mi espacio → Mi información → «Perfil profesional».","Agrega tu formación, enfoques, población que atiendes, evaluaciones e instrumentos y motivos de consulta. Puedes elegir de la lista o escribir uno que no esté.","Si tienes el documento (título, cédula, diplomado, constancia), súbelo primero en Mis documentos → Mis PDF personales y elígelo como respaldo.","Todo queda «Por verificar» hasta que la coordinación lo revise. Si cambias algo ya verificado, vuelve a revisión. Si te marcan «No verificada», verás qué falta.","Declarar una competencia no habilita por sí sola la atención de esos casos. Si quieres capacitarte en algo, usa «Necesito formación en…»."]},
+  {t:"Verificar perfiles profesionales", si:()=>!!S.rol && (["superusuario","direccion"].includes(S.rol)||(S.perm&&[...S.perm].includes("supervision_clinica"))||(S.pp?.per||[]).length>0), pasos:["Entra a Personas → Perfiles profesionales. Ves a las personas de tu alcance (tu sede, tus supervisadas o, si eres Directivo, las sedes de CEMEPI, S.C.).","Pulsa «Revisar», coteja cada competencia con el documento original o la constancia y pulsa «Verificar». Si falta algo, «No verificada» y escribe qué falta: la persona lo verá.","«Buscar por competencia» sirve para orientar la asignación de casos (por ejemplo, quién atiende duelo en adolescentes). La asignación la decides tú, nunca la lista.","Verificar no habilita la atención de casos ni cambia permisos. Nadie verifica lo propio.","El Superusuario mantiene el catálogo de opciones en la pestaña «Catálogo»."]},
   {t:"Mi información y Mi espacio", si:()=>!!S.rol, pasos:["Entra a Mi espacio → Mi información: ahí ves tu perfil, tu puesto, tus sedes, a quién reportas y tu equipo.","Cada dato dice quién puede cambiarlo: «Lo editas tú» (teléfono y firma, en Mi cuenta → Mi perfil), «Por solicitud» (nombre y cédula), «Lo administra RR. HH.» (puesto, sede, fecha de incorporación) e «Histórico».","Si algo no es correcto, pulsa «Pedir corrección»: se abre una solicitud que revisa RR. HH. Al aprobarse, tu nombre o tu cédula se corrigen solos en tu cuenta, tus firmas y los directorios.","Si administras personas, arriba verás «Mi espacio | Gestión»: Mi espacio muestra solo lo tuyo y Gestión todo lo que administras. Cambiar de espacio no te da ni te quita permisos.","El recorrido de bienvenida se puede pausar con «Más tarde» y volver a ver desde Mi información."]},
   {t:"Mi incorporación", si:()=>!!S.rol, pasos:["Si estás en proceso de contratación, entra a Mi espacio → Mi incorporación: ahí ves tu etapa, tu avance y lo que sigue.","En tu plan pulsa Avancé y escribe tu evidencia; tu capacitador(a) completa la actividad. Los requisitos de cuenta, contrato, documentación y Reglamento se marcan solos.","Cuando se abra cada corte (días 30, 60 y 90) haz tu autoevaluación y revisa tu retroalimentación y tus compromisos."]},
   {t:"Firmar un documento", si:()=>!!S.rol, pasos:["Antes de tu primera firma, guarda la imagen de tu firma en Mi perfil (se imprime en el documento).","Entra a Mis documentos → Por firmar y pulsa Revisar y firmar.","Pulsa Abrir y revisar el documento y léelo completo. La app comprueba que es exactamente el archivo que se envió a firma.","Escribe tu contraseña de la app, marca que aceptas y pulsa Firmar. Si algo está mal, pulsa Rechazar y explica qué corregir."]},
@@ -5098,6 +5244,7 @@ document.addEventListener("click", async ev => {
   if (a==="usuarios"){ S.view="usuarios"; S.usrEdit=null; S.usuarios=null; render(); return cargarAdmin("usuarios"); }
   if (ORG_ACCIONES.has(a)) return orgAccion(a, b);   /* Módulo 01 · Organización */
   if (MI_ACC.has(a)) return miAccion(a, b);
+  if (PP_ACC.has(a)) return ppAccion(a, b);   /* Módulo 06 · Perfil profesional */
   if (SOL_ACC.has(a)) return solAccion(a, b);   /* Módulo 06 · Solicitudes */   /* Módulo 06 · Mi espacio */
   if (INC_ACC.has(a)) return incAccion(a, b);   /* Incorporación */
   if (FIRMA_ACC.has(a)) return firmaAccion(a, b);   /* Módulo 05 · firmas */
