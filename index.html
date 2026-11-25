@@ -536,7 +536,7 @@ const FORMATOS = {
     guia:["Secciones con título: Periodo de atención; Motivo de consulta; Evolución durante el proceso; Objetivos trabajados y alcanzados; Motivo de alta; Recomendaciones."],
     ph:"Opcional: fecha y motivo del alta." },
   expediente:{ nombre:"Expediente clínico", riesgo:"moderado", ia:true, interno:true, ident:true, titulo:"Expediente clínico psicológico",
-    desc:"Organiza tus notas en la estructura del expediente institucional. Uso interno.",
+    desc:"Organiza tus notas en la estructura del expediente clínico de CEMEPI. Uso interno.",
     guia:["Secciones con título: Motivo de consulta; Fuente de información; Historia del problema actual; Antecedentes personales y familiares relevantes; Contexto relacional y social; Factores de riesgo y protección; Observaciones clínicas; Formulación clínica (dificultades, hipótesis de trabajo sustentadas, recursos personales y familiares, necesidades de atención); Impresión diagnóstica (solo con fundamento suficiente; si no, Dato pendiente de recabar); Plan de atención; Notas de evolución.",
       "En Notas de evolución escribe un párrafo por cada fecha de nota, empezando con la fecha en formato dd/mm/aaaa, con lo clínicamente relevante, intervenciones, respuesta observada, acuerdos y plan de continuidad. Respeta lo escrito: no lo reinterpretes."],
     ph:"Opcional: indicaciones adicionales." },
@@ -1632,7 +1632,7 @@ function miInfoHtml(){
       ${miFila("Firma para documentos", S.perfil?.firma?"Cargada":'<span class="status">Sin firma</span>', 1, `<button class="btn sm" type="button" data-act="perfil">Cambiar</button>`)}
       ${miFila("Tipo de usuario", esc(etiquetaRol()), 3)}
       ${col?miFila("Fecha de incorporación", fechaTxt(col.fecha_incorporacion)||'<span class="status">Dato pendiente de recabar</span>', 3):""}
-      ${col?miFila("Estado institucional", `<span class="pill ${col.estatus==="activo"?"estado-activo":"estado-pendiente"}">${esc(ESTATUS_TXT[col.estatus]||col.estatus)}</span>`, 3):""}
+      ${col?miFila("Estado organizacional", `<span class="pill ${col.estatus==="activo"?"estado-activo":"estado-pendiente"}">${esc(ESTATUS_TXT[col.estatus]||col.estatus)}</span>`, 3):""}
       ${miFila("Historial de puestos y sedes", (f.historial||[]).length?`${f.historial.length} registro${f.historial.length===1?"":"s"}`:"Sin registros", 4, (f.historial||[]).length?`<button class="btn sm" type="button" data-act="miTab" data-t="puesto">Ver</button>`:"")}
       <p class="status" style="margin:10px 0 0">Lo que dice «Lo editas tú» se cambia en Mi cuenta → Mi perfil, junto con tu contraseña y la apariencia de la app. Lo demás se corrige con una solicitud: así nadie cambia por error un dato que aparece en firmas y documentos.</p></section>`;
   if (t==="puesto") cuerpo=`${sinCol}<section class="card">
@@ -2949,16 +2949,16 @@ function docDetalleHtml(){ const d=DX().docs.find(x=>x.id===S.dxVer); if (!d){ S
    <div class="tbl-wrap"><table><thead><tr><th>Versión</th><th>Archivo</th><th>Huella SHA-256</th><th>Subida</th><th>Motivo</th><th></th></tr></thead><tbody>
    ${vs.map(v=>`<tr><td>${v.version}${v.version===d.version?` <span class="pill estado-activo">Vigente</span>`:""}</td><td>${esc(v.nombre_archivo)}<br><span class="status">${dxTam(v.tamano)}</span></td><td class="mono" style="font-size:11px;word-break:break-all;max-width:240px">${esc(v.sha256)}</td><td>${fmtFH(v.creado_en)}</td><td>${esc(v.motivo)}</td>
      <td style="white-space:nowrap"><button class="btn sm" type="button" data-act="docDescargar" data-id="${d.id}" data-v="${v.version}">Descargar</button> <button class="btn sm" type="button" data-act="docIntegridad" data-id="${d.id}" data-v="${v.version}">Verificar integridad</button></td></tr>`).join("")||`<tr><td colspan="6" class="status">Aún no hay archivo.</td></tr>`}</tbody></table></div>
-   <p class="status" style="margin:0">Las versiones no se modifican ni se borran. Ver un documento no da permiso de descargarlo: descarga su dueño, quien lo gestiona o el Superusuario, y cada descarga queda en la bitácora.</p></section></div>`; }
+   <p class="status" style="margin:0">Las versiones no se modifican ni se borran. Ver un documento no da permiso de descargarlo: descarga su titular, quien lo gestiona o el Superusuario, y cada descarga queda en la bitácora.</p></section></div>`; }
 
 /* ---------- Mis documentos: lo institucional de la persona (dentro de la vista de documentación) ---------- */
 function misDocsInstHtml(){
-  if (!S.dx){ if (!S.dxCargando){ S.dxCargando=true; docsCargar().finally(()=>{ S.dxCargando=false; }); } return `<section class="doc-sec"><h3 class="sec-h">Mis documentos institucionales</h3><p class="status">Cargando…</p></section>`; }
+  if (!S.dx){ if (!S.dxCargando){ S.dxCargando=true; docsCargar().finally(()=>{ S.dxCargando=false; }); } return `<section class="doc-sec"><h3 class="sec-h">Mis documentos organizacionales</h3><p class="status">Cargando…</p></section>`; }
   if (S.dx.error) return "";
   const porFirmar=dxPorFirmarHtml();
   const yo=DX().yo, mios=yo?DX().docs.filter(d=>d.colaborador_id===yo&&d.estado!=="archivado"):[];
-  return `${porFirmar}<section class="doc-sec"><h3 class="sec-h">Mis documentos institucionales</h3>
-    <div class="org-grid"><div><ul class="pend">${mios.map(d=>`<li><b>${esc(d.nombre)}</b> ${dxEstado(d)}<br><span class="status">${esc(d.folio||"Sin folio")}${d.vence?" · vence "+fmtDate(d.vence):""}</span> <button class="btn sm" type="button" data-act="docVer" data-id="${d.id}">Abrir</button></li>`).join("")||`<li class="status">Aún no tienes documentos institucionales (constancias, convenios, acuses).</li>`}</ul></div>
+  return `${porFirmar}<section class="doc-sec"><h3 class="sec-h">Mis documentos organizacionales</h3>
+    <div class="org-grid"><div><ul class="pend">${mios.map(d=>`<li><b>${esc(d.nombre)}</b> ${dxEstado(d)}<br><span class="status">${esc(d.folio||"Sin folio")}${d.vence?" · vence "+fmtDate(d.vence):""}</span> <button class="btn sm" type="button" data-act="docVer" data-id="${d.id}">Abrir</button></li>`).join("")||`<li class="status">Aún no tienes documentos organizacionales (constancias, convenios, acuses).</li>`}</ul></div>
     <div><ul class="pend"><li><b>Mi contrato</b><br><span class="status">Contrato individual de trabajo y su firma.</span> <button class="btn sm" type="button" data-act="contratos">Abrir</button></li>
       <li><b>Reglamento Interior de Trabajo</b><br><span class="status">Lectura y constancia de recepción.</span> <button class="btn sm" type="button" data-act="reglamento">Abrir</button></li></ul></div></div>
     <p class="status" style="margin:0">Cuando te envíen un documento a firmar aparecerá arriba, en «Por firmar». Para firmar necesitas tu imagen de firma en Mi perfil y tu contraseña.</p></section>`;
@@ -3206,7 +3206,7 @@ function incForm(){ const N=S.ixNueva||{}, abiertos=new Set(IX().incs.filter(ixA
       ${d.prevista?`<dt>Fecha prevista de ingreso</dt><dd>${fmtDate(d.prevista)}</dd>`:""}${d.inicioAct?`<dt>Fecha real de inicio</dt><dd>${fmtDate(d.inicioAct)}</dd>`:""}
       <dt>Acompañan</dt><dd>${[["Responsable",d.responsable],["Mentor(a)",d.mentor],["Supervisor(a)",d.supervisor],["Capacitador(a)",d.capacitador]].filter(x=>x[1]).map(x=>x[0]+": "+esc(ixCol(x[1])?.nombre||"")).join(" · ")||"Su jefe directo (si está registrado)"}</dd>
       ${d.objetivos?`<dt>Objetivos</dt><dd>${esc(d.objetivos)}</dd>`:""}
-      <dt>Al activar</dt><dd>Se copia el plan de la versión ${m?.version} de la plantilla, ${d.modo==="programado"?"queda programado (sin estatus nuevo todavía)":"su estatus institucional pasa a «En proceso de contratación»"} y nadie recibe permisos nuevos.${d.modo==="ya_trabaja"?" Después podrás registrar como «reconstruidas» las actividades que ya realizó, con una nota.":""}</dd></dl>
+      <dt>Al activar</dt><dd>Se copia el plan de la versión ${m?.version} de la plantilla, ${d.modo==="programado"?"queda programado (sin estatus nuevo todavía)":"su estatus organizacional pasa a «En proceso de contratación»"} y nadie recibe permisos nuevos.${d.modo==="ya_trabaja"?" Después podrás registrar como «reconstruidas» las actividades que ya realizó, con una nota.":""}</dd></dl>
       <div class="actions"><button class="btn primary" type="button" data-act="incCrear" data-paso="2">Activar proceso</button><button class="btn" type="button" data-act="incCrearVolver">Volver a editar</button><button class="btn" type="button" data-act="incCancelarForm">Cancelar</button></div></section>`; }
   return `<section class="note"><div class="note-h"><h3>Iniciar proceso</h3></div>
     <div class="datos" style="align-items:end">${fld("inBus","¿Ya existe? Busca por nombre",N.bus||"",{span:2,ph:"Mínimo 3 letras"})}<div><button class="btn sm" type="button" data-act="incBuscar">Buscar coincidencias</button></div></div>
@@ -3365,9 +3365,9 @@ function incAcompHtml(i){ if (!ixV3()) return ""; const mia=ixEsMia(i), acomp=ix
    <ul class="pend">${rs.map(r=>`<li style="display:block"><b>${esc(INC_RETRO[r.tipo]||r.tipo)}</b>${r.de_persona?` · <span class="pill">De la persona</span>`:""} ${r.visibilidad==="interna"?`<span class="pill">Interna</span>`:""} <span class="status">${fmtDate(r.creado.slice(0,10))}${r.proxima_revision?" · revisar el "+fmtDate(r.proxima_revision):""}</span><br>${esc(r.texto)}
      ${r.respuesta?`<br><span class="status"><b>Respuesta:</b> ${esc(r.respuesta)}</span>`:mia&&!r.de_persona&&r.visibilidad==="compartida"?(S.ixResp===r.id?`<div class="datos">${fld("irrX","Tu respuesta","",{span:3})}</div><div class="actions"><button class="btn sm primary" type="button" data-act="incRespGuardar" data-id="${r.id}">Responder</button><button class="btn sm" type="button" data-act="incCancelarForm">Cancelar</button></div>`:` <button class="btn sm" type="button" data-act="incRespForm" data-id="${r.id}">Responder</button>`):""}</li>`).join("")||`<li class="status">Sin retroalimentación todavía.</li>`}</ul></section>
   <section class="note"><div class="note-h"><h3>Planes de acompañamiento</h3>${acomp&&ixAbierta(i)&&!A?`<button class="btn sm" type="button" data-act="incApoyoForm">+ Plan de acompañamiento</button>`:""}</div>
-   <p class="status" style="margin:0">Cuando se detecta una necesidad de desarrollo, se acuerda un plan con apoyo de la institución. No es una sanción.</p>
+   <p class="status" style="margin:0">Cuando se detecta una necesidad de desarrollo, se acuerda un plan con apoyo de la organización. No es una sanción.</p>
    ${A?`<form class="datos" onsubmit="return false">${fld("iapC","Competencia por fortalecer *",A.competencia||"",{opts:[["","— Elige —"],...ixComps(i).map(c=>[c.nombre,c.nombre])]})}${fld("iapR","Responsable",A.responsable_id||"",{opts:gente})}${fld("iapF","Fecha de revisión",A.fecha_revision||"",{type:"date"})}
-     ${fld("iapS","Situación observada *",A.situacion||"",{area:1,span:3,rows:2,ph:"Hechos concretos, sin etiquetas"})}${fld("iapO","Objetivo *",A.objetivo||"",{span:3})}${fld("iapA","Actividades",A.actividades||"",{area:1,span:3,rows:2})}${fld("iapRe","Recursos",A.recursos||"",{span:2})}${fld("iapAp","Apoyo institucional",A.apoyo||"")}
+     ${fld("iapS","Situación observada *",A.situacion||"",{area:1,span:3,rows:2,ph:"Hechos concretos, sin etiquetas"})}${fld("iapO","Objetivo *",A.objetivo||"",{span:3})}${fld("iapA","Actividades",A.actividades||"",{area:1,span:3,rows:2})}${fld("iapRe","Recursos",A.recursos||"",{span:2})}${fld("iapAp","Apoyo de la organización",A.apoyo||"")}
      ${A.id?fld("iapEv","Evidencias",A.evidencias||"",{span:2})+fld("iapE","Estado",A.estado||"abierto",{opts:Object.entries(INC_APOYO_EST).map(([k,[t]])=>[k,t])})+fld("iapRs","Resultado",A.resultado||"",{area:1,span:3,rows:2}):""}</form>
      <div class="actions"><button class="btn primary" type="button" data-act="incApoyoGuardar" data-id="${i.id}">Guardar</button><button class="btn" type="button" data-act="incCancelarForm">Cancelar</button></div>`:""}
    <ul class="pend">${ap.map(x=>`<li style="display:block"><b>${esc(x.competencia)}</b> ${incPill(INC_APOYO_EST[x.estado])}${x.fecha_revision?` <span class="status">revisión ${fmtDate(x.fecha_revision)}</span>`:""}<br><span class="status">Situación: ${esc(x.situacion)}</span><br>Objetivo: ${esc(x.objetivo)}${x.actividades?`<br><span class="status">Actividades: ${esc(x.actividades)}</span>`:""}${x.apoyo?`<br><span class="status">Apoyo: ${esc(x.apoyo)}</span>`:""}${x.responsable_id?`<br><span class="status">Responsable: ${esc(ixCol(x.responsable_id)?.nombre||"")}</span>`:""}${x.resultado?`<br><span class="status">Resultado: ${esc(x.resultado)}</span>`:""}
@@ -3414,7 +3414,7 @@ function incIndicadoresHtml(i){ const ts=ixTareas(i.id), act=ts.filter(t=>!t.aut
    <p class="status" style="margin:0">Indicadores separados a propósito: el tiempo transcurrido no mide el aprendizaje y ningún número decide la continuidad.</p>`; }
 function incEncuestaHtml(i){ if (!i.inicio||!Array.isArray(IX()?.experiencia)) return ""; const d=ixDia(i), hechas=(IX().experiencia||[]).filter(x=>x.inc_id===i.id).map(x=>x.corte);
   const c=[30,90].find(k=>d>=ixCorteDia(i,k)-10&&!hechas.includes(k)); if (!c) return ""; const E=S.ixExp||{};
-  return `<section class="note"><div class="note-h"><h3>¿Cómo te está incorporando CEMEPI?</h3></div><p class="status" style="margin:0">Esta encuesta evalúa a la institución, no a ti. Solo la lee RR. HH.; los reportes son agregados. Del 1 (poco) al 5 (mucho).</p>
+  return `<section class="note"><div class="note-h"><h3>¿Cómo te está incorporando CEMEPI?</h3></div><p class="status" style="margin:0">Esta encuesta evalúa a la organización, no a ti. Solo la lee RR. HH.; los reportes son agregados. Del 1 (poco) al 5 (mucho).</p>
    <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center">${INC_EXP.map(([k,t])=>`<span>${t}</span><span style="display:flex;gap:4px">${[1,2,3,4,5].map(n=>`<button class="btn sm${E[k]===n?" primary":""}" type="button" data-act="incExpN" data-k="${k}" data-n="${n}" aria-pressed="${E[k]===n}">${n}</button>`).join("")}</span>`).join("")}</div>
    <div class="datos">${fld("iexC","¿Qué mejorarías de tu incorporación?",E.comentario||"",{area:1,span:3,rows:2})}</div>
    <div class="actions"><button class="btn primary" type="button" data-act="incExpEnviar" data-id="${i.id}" data-c="${c}">Enviar mi opinión</button></div></section>`; }
@@ -3576,7 +3576,7 @@ function incDocsHtml(i){ const c=ixCol(i.colaborador_id), gest=ixGestiono(i);
   if (!S.dx&&!S.dxCargando){ S.dxCargando=true; docsCargar().finally(()=>{ S.dxCargando=false; render(); }); }
   const ds=(S.dx&&!S.dx.error)?S.dx.docs.filter(d=>d.colaborador_id===i.colaborador_id):[];
   return `<div class="actions">${gest&&ixActiva(i)?`<button class="btn sm" type="button" data-act="incPlanPdf" data-id="${i.id}">Generar plan de capacitación (PDF) para firma</button>`:""}</div>
-   <ul class="pend">${ds.map(d=>`<li><b>${esc(d.nombre)}</b> ${dxEstado(d)} <button class="btn sm" type="button" data-act="docVer" data-id="${d.id}">Abrir</button></li>`).join("")||`<li class="status">${S.dx?"Sin documentos institucionales todavía.":"Cargando…"}</li>`}</ul>
+   <ul class="pend">${ds.map(d=>`<li><b>${esc(d.nombre)}</b> ${dxEstado(d)} <button class="btn sm" type="button" data-act="docVer" data-id="${d.id}">Abrir</button></li>`).join("")||`<li class="status">${S.dx?"Sin documentos organizacionales todavía.":"Cargando…"}</li>`}</ul>
    <p class="status" style="margin:0">Requisitos: ${["cuenta","docs","regl","contrato"].filter(k=>S.ixAuto?.[i.id]?.[k]!==undefined).map(k=>({cuenta:"cuenta",docs:"documentación",regl:"Reglamento",contrato:"contrato"})[k]+(S.ixAuto[i.id][k]?" ✓":" pendiente")).join(" · ")||"—"}. El contrato individual se gestiona en Contratos.</p>`; }
 function incAsisHtml(i){ if (i.clase==="psicologo_comision") return `<p class="status">No aplica: los psicólogos independientes no tienen control de asistencia.</p>`;
   const k=i.id; if (S.ixAsis?.[k]===undefined){ S.ixAsis=S.ixAsis||{}; S.ixAsis[k]=null; const h=asisHoy(), dsd=asisMas(h,-29);
@@ -4079,12 +4079,12 @@ const CAT_IMP_ORD=["critica","esencial","complementaria","deseable"];
 const CAT_NIV=["","Inicial","En desarrollo","Competente","Avanzado","Referente"];
 const CAT_SIT={no_evaluado:["No evaluado",""],no_observado:["No observado",""],no_aplicable:["No aplicable",""],evidencia_insuficiente:["Evidencia insuficiente","estado-pendiente"],
   en_nivel:["En el nivel esperado","estado-activo"],por_fortalecer:["Por fortalecer","estado-pendiente"]};
-const CAT_CATG={institucional:"Institucionales (CEM)",clinica:"Clínicas (CLI)",administrativa:"Administrativas (ADM-C)",directiva:"Directivas (LID)",financiera:"Financieras (FIN-C)",especifica:"Específicas de perfil (ESP)"};
+const CAT_CATG={institucional:"Organizacionales (CEM)",clinica:"Clínicas (CLI)",administrativa:"Administrativas (ADM-C)",directiva:"Directivas (LID)",financiera:"Financieras (FIN-C)",especifica:"Específicas de perfil (ESP)"};
 const CAT_FAM={clinica:"Clínica",administrativa:"Administrativa",coordinacion:"Coordinación",directiva:"Directiva",financiera:"Financiera",otra:"Otra"};
 const CAT_EST={por_validar:["Por validar","estado-pendiente"],vigente:["Vigente","estado-activo"],inactivo:["Inactivo","estado-suspendido"]};
 const CAT_CONT=[["proposito","Propósito del puesto","texto"],["objetivo","Objetivo general","texto"],["alcance","Alcance","texto"],["responsabilidades","Responsabilidades principales","lista"],
   ["limites","Límites de actuación","lista"],["indicadores","Indicadores de desempeño","lista"],["indispensables","Requisitos indispensables","lista"],
-  ["deseables","Formación y requisitos deseables","lista"],["pendientes","Pendientes de validación institucional","lista"],["conocimientos","Conocimientos","lista"]];
+  ["deseables","Formación y requisitos deseables","lista"],["pendientes","Pendientes de validación organizacional","lista"],["conocimientos","Conocimientos","lista"]];
 const C=()=>S.cat;
 const catVal=id=>($("#"+id)?.value||"").trim();
 const catPerf=id=>C()?.perfiles.find(p=>p.id===id);
@@ -4192,7 +4192,7 @@ function catFichaHtml(pid){
       <h3 style="margin:12px 0 0">Indicadores de desempeño</h3>${li(ct.indicadores)}
       <p class="status" style="margin:12px 0 0">Los indicadores orientan el acompañamiento; no deciden por sí solos la contratación ni la permanencia.</p></section>`;
   else if (ft==="req") cuerpo=`<section class="card"><h3 style="margin:0">Requisitos indispensables</h3>${catLista(ct.indispensables).length?li(ct.indispensables):`<p class="status" style="margin:4px 0 0">CEMEPI no ha establecido requisitos indispensables para este perfil.</p>`}
-      <h3 style="margin:12px 0 0">Deseables</h3>${li(ct.deseables)}${catLista(ct.pendientes).length?`<h3 style="margin:12px 0 0">Pendientes de validación institucional</h3>${li(ct.pendientes)}`:""}
+      <h3 style="margin:12px 0 0">Deseables</h3>${li(ct.deseables)}${catLista(ct.pendientes).length?`<h3 style="margin:12px 0 0">Pendientes de validación organizacional</h3>${li(ct.pendientes)}`:""}
       <h3 style="margin:12px 0 0">Conocimientos</h3>${li(ct.conocimientos)}
       <p class="status" style="margin:12px 0 0">Una calificación alta en competencias complementarias no sustituye un requisito indispensable. Las credenciales se verifican en Documentación del personal.</p></section>`;
   else if (ft==="comp") cuerpo=catFichaCompHtml(v, verBor);
@@ -4221,7 +4221,7 @@ function catFichaCompHtml(v, editable){
     ${CAT_IMP_ORD.map(k=>{ const it=cs.filter(x=>x.importancia===k); if (!it.length) return "";
       return `<h3 style="margin:12px 0 4px">${CAT_IMP[k][0]}${k==="critica"?" <span class=\"status\">· indispensable para desempeñar la función con seguridad</span>":""}</h3>
         ${it.map(x=>{ const d=catDic(x.competencia);
-          return `<details style="border-top:1px solid var(--line);padding:6px 0"><summary><b>${esc(x.competencia)}</b> · ${esc(d?.nombre||"")} — ideal <b>${catNivTxt(x.nivel_ideal)}</b>${x.verificacion?' <span class="pill estado-pendiente">Se verifica</span>':""}${x.origen==="nucleo"?' <span class="status">(núcleo institucional, propuesta)</span>':""}</summary>
+          return `<details style="border-top:1px solid var(--line);padding:6px 0"><summary><b>${esc(x.competencia)}</b> · ${esc(d?.nombre||"")} — ideal <b>${catNivTxt(x.nivel_ideal)}</b>${x.verificacion?' <span class="pill estado-pendiente">Se verifica</span>':""}${x.origen==="nucleo"?' <span class="status">(núcleo organizacional, propuesta)</span>':""}</summary>
             <p style="margin:6px 0 0">${esc(d?.definicion||"")}</p>${x.nombre_encargo&&x.nombre_encargo!==d?.nombre?`<p class="status" style="margin:4px 0 0">En el encargo: «${esc(x.nombre_encargo)}».</p>`:""}
             ${catRubrica(d, x.nivel_ideal)}
             <p class="status" style="margin:6px 0 0"><b>Evidencia:</b> ${esc(x.evidencia||"—")} · <b>Método:</b> ${esc(x.metodo||"—")} · <b>Evalúa:</b> ${esc(x.evaluador||"—")} · <b>Revisión:</b> ${esc(x.frecuencia||"—")}</p>
@@ -4331,7 +4331,7 @@ function catPersonaHtml(col, incrustada){
     <p class="status" style="margin:4px 0 0">${esc(a.formula||"")} La alineación se muestra a partir de 3 competencias evaluadas.</p>`;
   const ev=S.catEvalF&&S.catEvalF.col===col?(()=>{ const d=catDic(S.catEvalF.comp), b=pd.brechas.find(y=>y.competencia===S.catEvalF.comp);
     return `<section class="note"><div class="note-h"><h3>${yo?"Mi autoevaluación":"Evaluar"}: ${esc(d?.nombre||"")}</h3><button class="btn sm" type="button" data-act="catCancelar">Cancelar</button></div>
-      <p class="status" style="margin:0">Nivel ideal: <b>${catNivTxt(b?.nivel_ideal)}</b>. ${yo?"Tu autoevaluación se guarda aparte y no cambia la brecha.":"Asigna un nivel solo con evidencia observada. Una ausencia, incapacidad o permiso autorizado no es evidencia negativa."}</p>${catRubrica(d,b?.nivel_ideal)}
+      <p class="status" style="margin:0">Nivel ideal: <b>${catNivTxt(b?.nivel_ideal)}</b>. ${yo?"Tu autoevaluación se guarda aparte y no cambia la brecha.":"Asigna un nivel solo con evidencia observada. Una ausencia, incapacidad o permiso autorizado no es evidencia negativa."} Se evalúan comportamientos profesionales, nunca creencias ni vida privada.</p>${catRubrica(d,b?.nivel_ideal)}
       <form class="datos" onsubmit="return false">${fld("ceEst","Resultado","evaluado",{opts:[["evaluado","Nivel observado"],["no_observado","No observado"],["no_aplicable","No aplicable"],["evidencia_insuficiente","Evidencia insuficiente"]]})}
         ${fld("ceNiv","Nivel","",{opts:[["","—"],...[1,2,3,4,5].map(n=>[n,catNivTxt(n)])]})}${fld("ceEvi",yo?"Comentario (opcional)":"Evidencia observada *","",{area:1,rows:3,span:3,hint:yo?"":"Qué viste, en qué situación y cuándo (10 caracteres o más)."})}</form>
       <p class="status" style="margin:6px 0 0">Las evaluaciones no se modifican: si te equivocas, registra una nueva y quedará la más reciente.</p>
@@ -4390,7 +4390,7 @@ function miPerfilIdealHtml(){
       ${catLista(ct.indicadores).length?`<details style="margin-top:6px"><summary><b>Cómo se observa el desempeño</b></summary><ul style="margin:6px 0 0">${catLista(ct.indicadores).map(x=>`<li>${esc(x)}</li>`).join("")}</ul></details>`:""}
       <div class="actions" style="border-top:0"><button class="btn sm" type="button" data-act="catWord" data-id="${p.id}">Descargar mi ficha de puesto</button></div></section>`; }).join("");
   const pd=S.catPD&&S.catPD.col===c.yo?catPersonaHtml(c.yo,true):`<p class="status">Cargando mis competencias…</p>`;
-  return `<p class="status" style="margin:0;max-width:80ch">Aquí ves qué se espera de tu función y cómo vas. Los niveles describen conductas observables; no son una calificación psicológica ni deciden por sí solos tu permanencia.</p>${desc}${pd}`;
+  return `<p class="status" style="margin:0;max-width:80ch">Aquí ves qué se espera de tu función y cómo vas. Los niveles describen conductas observables; no son una calificación psicológica ni deciden por sí solos tu permanencia. Nunca se evalúan tus creencias ni tu vida privada.</p>${desc}${pd}`;
 }
 /* L. Reportes autorizados */
 function catReportesHtml(){
@@ -4413,7 +4413,7 @@ function catReportesHtml(){
 /* J. Configuración institucional */
 function catConfigHtml(){
   const c=C();
-  return `<section class="card"><h3 style="margin:0">Escala institucional</h3><ol style="margin:6px 0 0">${[1,2,3,4,5].map(n=>`<li><b>${CAT_NIV[n]}</b></li>`).join("")}</ol>
+  return `<section class="card"><h3 style="margin:0">Escala organizacional</h3><ol style="margin:6px 0 0">${[1,2,3,4,5].map(n=>`<li><b>${CAT_NIV[n]}</b></li>`).join("")}</ol>
       <p style="margin:8px 0 0">Además: <b>No evaluado</b> (sin registro), <b>No observado</b>, <b>No aplicable</b> y <b>Evidencia insuficiente</b>. Ninguno cuenta como cero en los indicadores.</p></section>
     <section class="card"><h3 style="margin:0">Reglas del catálogo</h3><ul style="margin:6px 0 0">
       <li>Editan borradores: Superusuario, Directivos y RR. HH. Publican versiones y validan: Superusuario y Directivos.</li>
@@ -4438,7 +4438,7 @@ async function catWord(pid){
     + P(R(`${p.tipo==="especialidad"?"Especialidad":"Perfil"} del puesto ${pu?pu.codigo+" · "+pu.nombre:"(sin puesto)"} · Área: ${catArea(p.area_id)?.nombre||"—"} · Versión ${v.version}${v.estado==="borrador"?" (BORRADOR)":""} · Estado: ${CAT_EST[p.estado][0]}`,{color:"55688A"}),{jc:"center",after:200})
     + (p.poblacion?H("Población")+T(p.poblacion):"") + H("Propósito")+T(ct.proposito) + H("Responsabilidades")+Lst(ct.responsabilidades) + H("Límites de actuación")+Lst(ct.limites)
     + H("Requisitos indispensables")+(catLista(ct.indispensables).length?Lst(ct.indispensables):T("CEMEPI no ha establecido requisitos indispensables para este perfil."))
-    + H("Deseables")+Lst(ct.deseables) + (catLista(ct.pendientes).length?H("Pendientes de validación institucional")+Lst(ct.pendientes):"") + H("Conocimientos")+Lst(ct.conocimientos)
+    + H("Deseables")+Lst(ct.deseables) + (catLista(ct.pendientes).length?H("Pendientes de validación organizacional")+Lst(ct.pendientes):"") + H("Conocimientos")+Lst(ct.conocimientos)
     + H("Competencias y nivel ideal") + CAT_IMP_ORD.map(k=>{ const it=cs.filter(x=>x.importancia===k); return it.length?P(R(CAT_IMP[k][0],{b:1}),{before:100,after:40})+it.map(x=>P(R(`${x.competencia} · ${catDic(x.competencia)?.nombre||""}: nivel ${catNivTxt(x.nivel_ideal)}`),{after:30})).join(""):""; }).join("")
     + H("Indicadores de desempeño")+Lst(ct.indicadores)
     + H("Incorporación")+["30","60","90"].map(d=>P(R(`Día ${d}`,{b:1}),{before:60,after:30})+Lst(ct.incorporacion?.[d])).join("")
@@ -4505,7 +4505,7 @@ async function catAccion(a,b){
       S.catVerBor=false; toast("Versión publicada."); return catCargar(); }
     if (a==="catDescartar"){ if (!confirm("¿Descartar el borrador? Se pierden sus cambios; la versión vigente no cambia.")) return;
       await rpc("descartar_borrador_perfil",{p_version:id}); S.catVerBor=false; S.catEditV=null; toast("Borrador descartado."); return catCargar(); }
-    if (a==="catValidar"){ if (!confirm("¿Validar este perfil? Quedará como vigente para la institución.")) return; await rpc("validar_perfil_ideal",{p_perfil:id,p_estado:"vigente"}); toast("Perfil validado."); return catCargar(); }
+    if (a==="catValidar"){ if (!confirm("¿Validar este perfil? Quedará como vigente para la organización.")) return; await rpc("validar_perfil_ideal",{p_perfil:id,p_estado:"vigente"}); toast("Perfil validado."); return catCargar(); }
     if (a==="catInactivar"){ if (!confirm("¿Desactivar este perfil? No se borra; ya no se podrá asignar.")) return; await rpc("validar_perfil_ideal",{p_perfil:id,p_estado:"inactivo"}); toast("Perfil desactivado."); return catCargar(); }
     if (a==="catWord") return catWord(id);
     if (a==="catCsv") return catCsv(b.dataset.t);
@@ -5372,7 +5372,7 @@ const GUIAS = [
   {t:"Instalar la app en mi celular o computadora", si:()=>true, pasos:["Android (Chrome): abre la app, pulsa Instalar app en el menú (o en el menú ⋮ del navegador, Instalar aplicación) y confirma.","iPhone o iPad (Safari): abre la app, pulsa el botón Compartir (cuadro con flecha) y elige Agregar a pantalla de inicio.","Computadora (Chrome o Edge): pulsa Instalar app o el ícono de instalar en la barra de direcciones.","La app instalada abre en su propia ventana con el ícono de CEMEPI. Tus datos siguen en el servidor seguro: no se guardan en el teléfono. Si pierdes el dispositivo, cambia tu contraseña en Mi perfil."]},
   {t:"Consultar el perfil ideal de un puesto", si:()=>!!S.rol, pasos:["Entra a Personas → Perfiles de puesto (o, desde Organización → Puestos, pulsa «Ver perfil ideal y competencias»).","Abre un perfil: Descripción (propósito, responsabilidades, límites, indicadores), Requisitos, Competencias (con su nivel ideal e importancia; pulsa una para ver su rúbrica de 5 niveles), Incorporación y Versiones.","Descargar ficha (Word) genera la ficha del puesto. El perfil describe la función: no concede permisos ni fija salario."]},
   {t:"Mi perfil ideal y mis competencias", si:()=>!!S.rol, pasos:["Entra a Mi espacio → Mi información → «Mi perfil ideal».","Ves qué se espera de tu función, tus responsabilidades, tus competencias con su nivel ideal y cómo vas: fortalezas, lo que está por fortalecer y tu plan de desarrollo.","Puedes autoevaluarte; tu autoevaluación se guarda aparte y no cambia la evaluación de quien te acompaña. Lo no evaluado aparece como «No evaluado», nunca como cero."]},
-  {t:"Editar un perfil de puesto", si:()=>["superusuario","direccion"].includes(S.rol)||(S.api?.misRoles||[]).includes("rrhh"), pasos:["Abre el perfil y pulsa «Editar (nueva versión)»: se crea un borrador; la versión vigente no cambia.","Edita el contenido (un elemento por renglón en las listas) y, en Competencias, agrega, ajusta nivel e importancia o quita competencias.","La Dirección pulsa «Publicar versión» y escribe el motivo; la anterior queda en Versiones con sus diferencias. «Validar perfil» lo deja como vigente para la institución."]},
+  {t:"Editar un perfil de puesto", si:()=>["superusuario","direccion"].includes(S.rol)||(S.api?.misRoles||[]).includes("rrhh"), pasos:["Abre el perfil y pulsa «Editar (nueva versión)»: se crea un borrador; la versión vigente no cambia.","Edita el contenido (un elemento por renglón en las listas) y, en Competencias, agrega, ajusta nivel e importancia o quita competencias.","La Dirección pulsa «Publicar versión» y escribe el motivo; la anterior queda en Versiones con sus diferencias. «Validar perfil» lo deja como vigente para la organización."]},
   {t:"Evaluar competencias y proponer un plan de desarrollo", si:()=>["superusuario","direccion","admin_sede"].includes(S.rol)||(S.api?.misRoles||[]).some(r=>["rrhh","coord_clinica"].includes(r))||(S.perm&&[...S.perm].includes("supervision_clinica")), pasos:["En Perfiles de puesto → Personas abre a la persona (solo ves a quien te corresponde: tu equipo, tu supervisión clínica o tu alcance de RR. HH.).","Pulsa «Evaluar» en una competencia: elige el nivel observado con la rúbrica a la vista y describe la evidencia (qué viste, cuándo). Si no hay datos usa «No observado», «No aplicable» o «Evidencia insuficiente».","Una ausencia, incapacidad o permiso autorizado no es evidencia negativa. Las evaluaciones no se modifican: si te equivocas registra una nueva.","En una competencia por fortalecer pulsa «Plan» y define objetivo, actividad, mentor(a), recursos y fecha de revisión. La persona marca «En curso»; quien acompaña la da por completada con el resultado."]},
   {t:"Cambiar mi contraseña o mi firma", si:()=>true, pasos:["Entra a Mi perfil.","Para la firma: súbela en imagen o dibújala y pulsa Guardar mis datos.","Para la contraseña: escríbela dos veces en Cambiar mi contraseña (mínimo 10 caracteres)."]},
 ];
@@ -5396,6 +5396,21 @@ const MATRIZ = [
   ["Tablero de indicadores", ["✓","✓","—","—","—","—"]],
   ["Perfiles de puesto y competencias", ["Editar, publicar y validar","Editar, publicar y validar (sedes de CEMEPI, S.C.)","Consultar · evaluar a su equipo","Consultar su perfil ideal","Consultar · evaluar a quien supervisa","Consultar su perfil ideal"]],
 ];
+/* Cultura organizacional (FASE 02, 2026-11-25): principios de la Dirección; definiciones operativas en conocimiento/VALORES_Y_PRINCIPIOS.md (propuesta) */
+const CULTURA_PRINCIPIOS = [
+  ["Calidez sin permisividad","Tratamos a cada persona con cercanía y respeto, y también señalamos lo que no está bien y cómo corregirlo."],
+  ["Firmeza sin agresión","Sostenemos límites y decisiones con serenidad, explicando el porqué."],
+  ["Contextualización sin justificación automática","El contexto cambia la respuesta, pero no borra la responsabilidad."],
+  ["Ética sin moralismo","Cumplimos criterios éticos sin sermonear ni juzgar la vida privada."],
+  ["Responsabilidad sin humillación","Reconocer un error es seguro; la retroalimentación es privada, concreta y con un plan."],
+  ["Autonomía responsable","Decidimos dentro de lo que nos corresponde y respondemos por ello; canalizamos lo que nos excede."],
+  ["Consideración positiva incondicional","Valoramos a la persona, aunque no aprobemos toda conducta."],
+  ["Respeto a la palabra","Cumplimos lo acordado y cuidamos lo que decimos de los demás."],
+  ["Reciprocidad","Damos y recibimos: la organización cuida a quien cuida y cada quien aporta a la comunidad."],
+  ["Congruencia","Hacemos lo que decimos; las reglas aplican a todos."],
+  ["Contribución comunitaria","Nuestro trabajo suma a la comunidad CEMEPI y a la sociedad."],
+  ["Cuidado de quienes cuidan","El bienestar de quienes atienden es condición de una buena atención."],
+  ["Primacía del bien común","Lo que es de todos —consultantes, información, recursos— no se usa para provecho personal indebido."]];
 /* ---------- Manuales por rol (Ayuda → Manual de mi rol y descarga en Word). Una sola fuente para la app y el Word. ---------- */
 const MANUALES = {
  psicologo: { n:"Psicólogo(a)", para:"Psicólogo base (nómina) y psicólogo independiente (comisión)",
@@ -5560,7 +5575,7 @@ MANUALES.direccion.caps.push(
 MANUALES.admin_sede.caps.push({t:"Organización de tu sede", p:[
   "En Organización consultas la información de tu sede: sus colaboradores, plazas y vacantes, su lugar en el organigrama y los indicadores. Es de consulta; los cambios los hace la Dirección."]});
 for (const k of Object.keys(MANUALES)) MANUALES[k].caps.push({t:"Mis documentos", p:[
-  "«Mis documentos» reúne tus documentos institucionales (constancias, convenios, acuses), los accesos a tu contrato y al Reglamento, y tus PDF personales (identificación, CURP, comprobante de domicilio, cédula, título). Antes se llamaba «Mi documentación».",
+  "«Mis documentos» reúne tus documentos organizacionales (constancias, convenios, acuses), los accesos a tu contrato y al Reglamento, y tus PDF personales (identificación, CURP, comprobante de domicilio, cédula, título). Antes se llamaba «Mi documentación».",
   "En «Por firmar» aparecen los documentos que debes firmar con tu contraseña (ver el capítulo Firma electrónica)."]});
 for (const k of Object.keys(MANUALES)) MANUALES[k].caps.push({t:"Mi asistencia", p:[
   "En Mi espacio → Mi asistencia registras tu entrada y salida, ves tu horario, tu historial de los últimos días, tus solicitudes y tus incidencias. El control solo funciona cuando la Dirección lo activa.",
@@ -5574,7 +5589,7 @@ MANUALES.direccion.caps.push({t:"Asistencia y jornadas", p:[
   "El corte para nómina lo valida el Superusuario o Recursos Humanos por entidad fiscal; este módulo no calcula descuentos ni pagos.",
   "Si eres el Superusuario: en Configuración activas o apagas el control (las 8 sedes a la vez), la tolerancia, a quién aplica y los métodos de registro."]});
 MANUALES.direccion.caps.push({t:"Documentos y firmas", p:[
-  "En Documentos → Documentos y firmas está la biblioteca institucional: políticas, circulares, oficios, convenios, contratos de servicios, documentación de sedes y documentos fiscales de la entidad. Los documentos clínicos siguen en cada expediente.",
+  "En Documentos → Documentos y firmas está la biblioteca de la organización: políticas, circulares, oficios, convenios, contratos de servicios, documentación de sedes y documentos fiscales de la entidad. Los documentos clínicos siguen en cada expediente.",
   "Para agregar uno: + Nuevo documento → tipo, nombre, sede o entidad y, si es de una persona, la persona → Crear borrador → subir el archivo → Publicar con folio. La entidad fiscal se toma de la sede: un documento de Bosques de Santa Fe nunca queda con los datos de CEMEPI, S.C.",
   "Cada versión guarda su huella digital y no se modifica. Para corregir, sube una versión nueva. Para retirar un documento publicado, archívalo con un motivo. Ver un documento no da permiso de descargarlo; cada descarga queda registrada.",
   "Los documentos sensibles (fiscales) requieren el permiso de información sensible. Los que requieren firma se envían a firma desde su detalle y reciben folio al completarse."]});
@@ -5583,7 +5598,7 @@ for (const k of Object.keys(MANUALES)) MANUALES[k].caps.push({t:"Mi proceso de c
   "En Mi espacio → Mi proceso de contratación ves tu etapa, el día en que vas y seis indicadores separados: tiempo, actividades, requisitos, evaluaciones, competencias demostradas y necesidades de acompañamiento. El tiempo transcurrido no mide tu aprendizaje.",
   "En «Plan» pulsa «Avancé» y escribe tu evidencia (sin datos de consultantes): queda «Por revisar» hasta que la valide quien te acompaña. Si algo no está claro, pide una aclaración.",
   "A los días 30, 60 y 90 te autoevalúas con preguntas de reflexión; puedes guardar borrador y continuar después. Tu responsable te evalúa con evidencias y la ves cuando la cierra. En «Acompañamiento» lees la retroalimentación compartida, respondes y puedes dejar sugerencias.",
-  "También respondes una breve encuesta sobre cómo te está incorporando CEMEPI; solo la lee RR. HH. y evalúa a la institución, no a ti.",
+  "También respondes una breve encuesta sobre cómo te está incorporando CEMEPI; solo la lee RR. HH. y evalúa a la organización, no a ti.",
   "Completar tu capacitación no te da por sí mismo permisos de caja, cobros, información sensible ni de atención clínica: esos se autorizan aparte. Llegar al día 90 no cambia nada automáticamente."]});
 for (const k of Object.keys(MANUALES)) MANUALES[k].caps.push({t:"Firma electrónica", p:[
   "Los documentos que emite CEMEPI (políticas, circulares, oficios, acuses, constancias laborales, convenios y el contrato individual) solo valen con firma. Se firman en la app con tu contraseña; el código de verificación (MFA) no se usa por ahora.",
@@ -5646,6 +5661,11 @@ MANUALES.direccion.caps.push({t:"Perfiles de puesto y competencias", p:[
 for (const k of ["admin_sede"]) MANUALES[k].caps.push({t:"Perfiles de puesto y evaluación de tu equipo", p:[
   "En Personas → Perfiles de puesto consultas los perfiles ideales y, en «Personas», a quienes te reportan.",
   "Evalúa una competencia solo con evidencia observada; una ausencia o permiso autorizado no es evidencia negativa. Propón un plan de desarrollo cuando algo esté por fortalecer."]});
+for (const k of Object.keys(MANUALES)) MANUALES[k].caps.splice(1,0,{t:"Nuestra cultura: CEMEPI somos nosotros", p:[
+  "CEMEPI es un proyecto colectivo al servicio del desarrollo humano y del cuidado de la vida; el consultante es el centro de nuestro propósito y la autosustentabilidad permite su continuidad.",
+  "Somos una organización circular, bidireccional y colaborativa, con responsabilidades claras: la autoridad es servicio, escucha y capacidad de generar condiciones para el desarrollo de los demás.",
+  "Principios: "+CULTURA_PRINCIPIOS.map(([t])=>t.toLowerCase()).join("; ")+". Puedes leerlos completos en Ayuda → Nuestra cultura.",
+  "La cultura se vive en conductas profesionales concretas: nadie es evaluado por sus creencias, opiniones ni vida privada."]});
 const manualDeRol = k => k==="psicologo_base"||k==="psicologo_ind"||k==="psicologo" ? "psicologo" : k==="superusuario" ? "direccion" : k;
 
 function manualHtml(k){
@@ -5680,6 +5700,11 @@ function ayudaHtml(){
       <div class="ayuda-cols"><div><b>Puedes</b><ul>${(info.puede||[]).map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>
       <div><b>No puedes</b><ul>${(info.no||[]).map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div></div>
       ${perms.length?`<p style="margin:0"><b>Permisos adicionales que te otorgó el superusuario:</b> ${esc(perms.join(" · "))}.</p>`:""}</section>
+    <section class="note" id="nuestraCultura"><div class="note-h"><h3>Nuestra cultura: CEMEPI somos nosotros</h3></div>
+      <p style="margin:0;max-width:80ch">CEMEPI es un proyecto colectivo al servicio del desarrollo humano y del cuidado de la vida. Se construye con las aportaciones de psicólogos, administrativos, supervisores, coordinadores, directivos y demás colaboradores. <b>El consultante es el centro de nuestro propósito</b>, y la autosustentabilidad permite que el proyecto continúe y contribuya a la sociedad.</p>
+      <p style="margin:8px 0 0;max-width:80ch">Somos una organización circular, bidireccional, colaborativa y relacional. La circularidad no elimina responsabilidades ni estructura: <b>la autoridad es servicio</b>, escucha y la capacidad de generar condiciones para el desarrollo de los demás.</p>
+      <details class="guia"><summary>Nuestros principios</summary><ul style="margin:6px 0 0">${CULTURA_PRINCIPIOS.map(([t,d])=>`<li><b>${esc(t)}.</b> ${esc(d)}</li>`).join("")}</ul></details>
+      <p class="status" style="margin:8px 0 0">La cultura se vive en conductas profesionales concretas. Nadie es evaluado por sus creencias, opiniones ni vida privada, y proponer otra forma de hacer las cosas también es contribuir.</p></section>
     ${manualHtml(k)}
     <section class="note"><div class="note-h"><h3>Guías paso a paso</h3></div>
       ${GUIAS.filter(g=>g.si()).map(g=>`<details class="guia"${S.ayudaGuia===g.t?" open id=\"guiaAbierta\"":""}><summary>${esc(g.t)}</summary><ol>${g.pasos.map(p=>`<li>${esc(p)}</li>`).join("")}</ol></details>`).join("")}</section>
