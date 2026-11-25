@@ -5913,7 +5913,7 @@ async function acuArchivo(fmt, texto, folio, sha, marca){
         + acuBloques(texto).map(({i,h,r})=>{ if (i===0&&h) return P(R(h,{b:1,color:"0560BD"}),{jc:"center",after:60})+P(R(r),{jc:"center",after:160});
           return (h?P(R(h,{b:1}),{before:160,after:60,keep:1}):"")+(r?r.split("\n").map(l=>P(R(l),{after:60})).join(""):""); }).join("")
         + P(R(`Folio ${folio}${sha?" · Huella SHA-256 del texto: "+sha:""}`,{color:"55688A",sz:16}),{before:240});
-      const blob=await docxBlob(folio, xml, [], "Carta", false); /* lleva la nota aclaratoria por la regla «si no corresponde, incluirla y señalarlo»; decide la Dirección */
+      const blob=await docxBlob(folio, xml, [], "Carta", true); /* sin nota aclaratoria: documento contractual (decisión del Director, 2026-11-25) */
       await dl.save({filename:nom+".docx", data:blob});
     } else {
       await libCargar("pdf");
@@ -5921,7 +5921,7 @@ async function acuArchivo(fmt, texto, folio, sha, marca){
       const pdf=await PDFDocument.create(); pdf.setTitle("Carta Compromiso para el Psicólogo Independiente"); pdf.setAuthor("CEMEPI · Centro Mexicano de Plenitud Humana, S.C."); pdf.setLanguage("es-MX");
       const font=await pdf.embedFont(StandardFonts.Helvetica), bold=await pdf.embedFont(StandardFonts.HelveticaBold);
       const W=612,H=792,M=54,CW=W-2*M,FS=11,LH=13.8, azul=rgb(0.02,0.376,0.741), tinta=rgb(0.06,0.14,0.25), gris=rgb(0.33,0.41,0.54), rojo=rgb(0.776,0.157,0.157);
-      const nota=envolver(NOTA_ACLARATORIA, font, 7, CW), pieH=nota.length*8.6, BASE=26+pieH+18; let page,y;
+      const pieH=0, BASE=26+18; let page,y;   /* sin nota aclaratoria: documento contractual (decisión del Director, 2026-11-25) */
       const nueva=()=>{ page=pdf.addPage([W,H]); y=H-M; }, espacio=h=>{ if (y-h<BASE) nueva(); };
       const centro=(t,sz,f,col)=>{ for (const l of envolver(limpiarPdf(t), f, sz, CW)){ espacio(sz+4); y-=sz+4; page.drawText(l,{x:(W-f.widthOfTextAtSize(l,sz))/2, y, size:sz, font:f, color:col}); } };
       const parrafo=(texto,o={})=>{ const fo=o.b?bold:font, sz=o.size||FS, lh=o.lh||LH;
@@ -5946,7 +5946,7 @@ async function acuArchivo(fmt, texto, folio, sha, marca){
       y-=6; parrafo(`Folio ${folio}${sha?" · Huella SHA-256 del texto: "+sha:""}`, {size:8, color:gris});
       parrafo("Las firmas electrónicas de ambas partes, con su evidencia (fecha y hora, huella del archivo y método), se registran en el Módulo de Documentos y firmas de Tonalli CEMEPI.", {size:8, color:gris});
       const total=pdf.getPageCount();
-      pdf.getPages().forEach((pg,k)=>{ nota.forEach((l,q)=>pg.drawText(l,{x:M,y:26+(nota.length-1-q)*8.6,size:7,font,color:gris}));
+      pdf.getPages().forEach((pg,k)=>{
         const t=limpiarPdf(`Folio ${folio} · Página ${k+1} de ${total}`); pg.drawText(t,{x:W-M-font.widthOfTextAtSize(t,7),y:26+pieH+4,size:7,font,color:gris}); });
       await dl.save({filename:nom+".pdf", data:await pdf.save()});
     }
