@@ -4078,7 +4078,7 @@ async function ppAccion(a,b){
 const CAT_ACC=new Set(["catalogo","catTab","catFicha","catFichaTab","catVolver","catBuscar","catNuevo","catNuevoGuardar","catCancelar","catEditar","catGuardarV",
   "catCompGuardar","catCompQuitar","catCompAgregar","catPublicar","catDescartar","catValidar","catInactivar","catDuplicar","catWord","catVerBor",
   "catDicAbrir","catDicEditar","catDicGuardar","catDicNueva","catDicValidar","catCmp","catCsv","catPer","catPerVolver","catAsignar","catTerminar",
-  "catEval","catEvalGuardar","catAcc","catAccGuardar","catAccEstado","catPerBuscar","catDePuesto"]);
+  "catEval","catEvalGuardar","catAcc","catAccGuardar","catAccEstado","catPerBuscar","catDePuesto","catNodo","catNodoEstado","catVBuscar"]);
 const CAT_IMP={critica:["Crítica","estado-suspendido"],esencial:["Esencial","estado-activo"],complementaria:["Complementaria","estado-pendiente"],deseable:["Deseable",""]};
 const CAT_IMP_ORD=["critica","esencial","complementaria","deseable"];
 const CAT_NIV=["","Inicial","En desarrollo","Competente","Avanzado","Referente"];
@@ -4089,7 +4089,23 @@ const CAT_FAM={clinica:"Clínica",administrativa:"Administrativa",coordinacion:"
 const CAT_EST={por_validar:["Por validar","estado-pendiente"],vigente:["Vigente","estado-activo"],inactivo:["Inactivo","estado-suspendido"]};
 const CAT_CONT=[["proposito","Propósito del puesto","texto"],["objetivo","Objetivo general","texto"],["alcance","Alcance","texto"],["responsabilidades","Responsabilidades principales","lista"],
   ["limites","Límites de actuación","lista"],["indicadores","Indicadores de desempeño","lista"],["indispensables","Requisitos indispensables","lista"],
-  ["deseables","Formación y requisitos deseables","lista"],["pendientes","Pendientes de validación organizacional","lista"],["conocimientos","Conocimientos","lista"]];
+  ["deseables","Formación y requisitos deseables","lista"],["pendientes","Pendientes de validación organizacional","lista"],["conocimientos","Conocimientos","lista"],
+  ["habilidades","Habilidades","lista"],["actitudes","Actitudes profesionales observables","lista"],["evidencias","Evidencias de desempeño","lista"],
+  ["valores","Valores relacionados (claves VAL-…)","lista"],["formacion","Formación (claves FOR-…)","lista"],["supervision_texto","Supervisión","texto"],["desarrollo","Ruta de desarrollo","texto"]];
+/* Grafo de conocimiento (FASE 07): valores, principios, tipos de competencia, formación, supervisión, procesos y módulos */
+const GR_TIPO={autor:"Autor",obra:"Obra",fundamento:"Fundamento",categoria:"Categoría",valor:"Valor",principio:"Principio",competencia:"Competencia",
+  tipo_competencia:"Tipo de competencia",comportamiento:"Comportamiento observable",perfil:"Perfil",formacion:"Formación",supervision:"Supervisión",proceso:"Proceso",modulo:"Módulo"};
+const GR_REL={escribe:"escribe",fundamenta:"fundamenta",agrupa:"agrupa",orienta:"orienta",se_expresa_en:"se expresa en",se_observa_en:"se observa en",
+  se_manifiesta_en:"se manifiesta en",es_de_tipo:"es de tipo",se_desarrolla_con:"se desarrolla con",se_acompana_con:"se acompaña con",alimenta:"alimenta",
+  se_opera_en:"se opera en",requiere:"requiere",relacionado:"se relaciona con"};
+const GR_EST={propuesta:["Propuesta","estado-pendiente"],validada:["Validada","estado-activo"],retirada:["Retirada","estado-suspendido"]};
+const grN=k=>C()?.grafo?.nodos.find(n=>n.clave===k);
+const grRels=()=>(C()?.grafo?.rels||[]).filter(r=>r.estado!=="retirada");
+const grDe=(k,t)=>grRels().filter(r=>r.origen===k&&(!t||r.tipo===t)).map(r=>r.destino);
+const grA=(k,t)=>grRels().filter(r=>r.destino===k&&(!t||r.tipo===t)).map(r=>r.origen);
+const grNom=k=>{ const n=grN(k); return n?n.nombre:(catDic(k)?.nombre||k); };
+const grTipos=k=>grDe(k,"es_de_tipo").map(t=>grN(t)?.nombre).filter(Boolean);
+const grChip=k=>`<button class="pill" type="button" data-act="catNodo" data-id="${esc(k)}" style="margin:2px;cursor:pointer;border:0">${esc(/^(CAT|AUT|COM|FUN)-/.test(k)?grNom(k):k+" · "+grNom(k))}</button>`;
 const C=()=>S.cat;
 const catVal=id=>($("#"+id)?.value||"").trim();
 const catPerf=id=>C()?.perfiles.find(p=>p.id===id);
@@ -4133,9 +4149,9 @@ function catHtml(){
   if (S.catSel&&t==="puestos") return env(catFichaHtml(S.catSel));
   if (S.catPer&&t==="personas") return env(catPersonaHtml(S.catPer));
   const aviso=`<p class="status" style="margin:0;max-width:80ch">El catálogo describe <b>qué se espera de cada puesto</b>. Es distinto del perfil de acceso: asignar un perfil o evaluar una competencia <b>no concede permisos</b>, no fija salario ni cambia el contrato. Los perfiles nacen «Por validar» hasta que la Dirección los revisa.</p>`;
-  const tabs=[["puestos","Puestos"],["dicc","Diccionario"],["matriz","Matriz"],["comparar","Comparar"],["personas","Personas"],["reportes","Reportes"],["config","Configuración"]];
+  const tabs=[["puestos","Puestos"],["dicc","Diccionario"],["valores","Valores y relaciones"],["matriz","Matriz"],["comparar","Comparar"],["personas","Personas"],["reportes","Reportes"],["config","Configuración"]];
   const tb=`<div class="tabs" role="tablist" aria-label="Catálogo">${tabs.map(([k,x])=>`<button class="tab" role="tab" type="button" data-act="catTab" data-t="${k}" aria-selected="${t===k}">${x}</button>`).join("")}</div>`;
-  const cuerpo={puestos:catPuestosHtml, dicc:catDiccHtml, matriz:catMatrizHtml, comparar:catCompararHtml, personas:catPersonasHtml, reportes:catReportesHtml, config:catConfigHtml}[t]||catPuestosHtml;
+  const cuerpo={puestos:catPuestosHtml, dicc:catDiccHtml, valores:catValoresHtml, matriz:catMatrizHtml, comparar:catCompararHtml, personas:catPersonasHtml, reportes:catReportesHtml, config:catConfigHtml}[t]||catPuestosHtml;
   return env(`${aviso}${tb}${cuerpo()}`);
 }
 /* A. Catálogo de puestos */
@@ -4179,7 +4195,7 @@ function catFichaHtml(pid){
     <span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">${editando?"":`<button class="btn sm" type="button" data-act="catEditar" data-id="${pid}">Editar contenido</button>`}
     ${c.valido?`<button class="btn sm primary" type="button" data-act="catPublicar" data-id="${bor.id}">Publicar versión ${bor.version}</button>`:""}
     ${vig?`<button class="btn sm" type="button" data-act="catDescartar" data-id="${bor.id}">Descartar borrador</button>`:""}</span></div>`:"";
-  const subt=[["desc","Descripción"],["req","Requisitos"],["comp","Competencias"],["inc","Incorporación"],["hist","Versiones"]];
+  const subt=[["desc","Descripción"],["req","Requisitos"],["comp","Competencias"],["des","Desarrollo y valores"],["inc","Incorporación"],["hist","Versiones"]];
   const li=x=>catLista(x).length?`<ul style="margin:4px 0 0">${catLista(x).map(i=>`<li>${esc(i)}</li>`).join("")}</ul>`:`<p class="status" style="margin:4px 0 0">Dato pendiente de recabar.</p>`;
   const tx=x=>x?`<p style="margin:4px 0 0;max-width:80ch">${esc(x)}</p>`:`<p class="status" style="margin:4px 0 0">Dato pendiente de recabar.</p>`;
   let cuerpo="";
@@ -4201,6 +4217,19 @@ function catFichaHtml(pid){
       <h3 style="margin:12px 0 0">Conocimientos</h3>${li(ct.conocimientos)}
       <p class="status" style="margin:12px 0 0">Una calificación alta en competencias complementarias no sustituye un requisito indispensable. Las credenciales se verifican en Documentación del personal.</p></section>`;
   else if (ft==="comp") cuerpo=catFichaCompHtml(v, verBor);
+  else if (ft==="des"){ const amp=!!(ct.habilidades||ct.actitudes||ct.valores), enBor=!amp&&bor?.contenido?.fase07;
+    const keys=x=>catLista(x).length?`<p style="margin:4px 0 0">${catLista(x).map(k=>grN(k)?grChip(k):`<span class="pill" style="margin:2px">${esc(k)}</span>`).join(" ")}</p>`:`<p class="status" style="margin:4px 0 0">Dato pendiente de recabar.</p>`;
+    cuerpo=amp?`<section class="card">${ct.fase07?`<p class="status" style="margin:0 0 6px">Ampliación propuesta en la FASE 07: <b>por validar</b> por la Dirección.</p>`:""}
+      <h3 style="margin:0">Habilidades</h3>${li(ct.habilidades)}
+      <h3 style="margin:12px 0 0">Actitudes profesionales observables</h3>${li(ct.actitudes)}
+      <h3 style="margin:12px 0 0">Valores relacionados</h3>${keys(ct.valores)}
+      <p class="status" style="margin:4px 0 0">Los valores se observan solo a través de comportamientos profesionales y competencias; nunca se evalúan creencias, vida privada ni cuerpo.</p>
+      <h3 style="margin:12px 0 0">Evidencias de desempeño</h3>${li(ct.evidencias)}
+      <h3 style="margin:12px 0 0">Formación</h3>${keys(ct.formacion)}
+      <h3 style="margin:12px 0 0">Supervisión</h3>${keys(ct.supervision)}${ct.supervision_texto?tx(ct.supervision_texto):""}
+      <h3 style="margin:12px 0 0">Ruta de desarrollo</h3>${tx(ct.desarrollo)}
+      <p class="status" style="margin:12px 0 0">Una persona puede desempeñar varios perfiles sin duplicar su ficha. Nada de esto decide por sí solo una contratación, una promoción ni una baja.</p></section>`
+    :`<section class="card"><p class="status" style="margin:0">${enBor&&c.edito?`La ampliación (habilidades, actitudes, valores, evidencias, formación, supervisión y desarrollo) está en el <b>borrador de la versión ${bor.version}</b>. Pulsa «Ver el borrador» para revisarla; se aplicará cuando la Dirección la publique.`:"La ampliación de este perfil todavía no se publica."}</p></section>`; }
   else if (ft==="inc"){ const cs=v?catComps(v.id).filter(x=>["critica","esencial"].includes(x.importancia)):[];
     cuerpo=`<section class="card"><p class="status" style="margin:0 0 8px">Ruta de incorporación sugerida para este perfil. El proceso se gestiona en Personas → Incorporación; terminar los 90 días no es una contratación ni una baja automática.</p>
       ${["30","60","90"].map(d=>`<h3 style="margin:10px 0 0">Día ${d}</h3>${li(ct.incorporacion?.[d])}`).join("")}
@@ -4222,7 +4251,7 @@ function catFichaCompHtml(v, editable){
       <div class="fld" style="min-width:260px"><label for="caComp">Competencia</label><input id="caComp" list="caLista" placeholder="Escribe clave o nombre"><datalist id="caLista">${c.dic.filter(d=>d.activa&&!d.alias_de&&!cs.some(x=>x.competencia===d.clave)).map(d=>`<option value="${esc(d.clave)} · ${esc(d.nombre)}">`).join("")}</datalist></div>
       ${fld("caNiv","Nivel ideal","3",{opts:[1,2,3,4,5].map(n=>[n,catNivTxt(n)])})}${fld("caImp","Importancia","esencial",{opts:CAT_IMP_ORD.map(k=>[k,CAT_IMP[k][0]])})}
       <button class="btn sm primary" type="button" data-act="catCompAgregar" data-id="${v.id}">Agregar</button></div></div>`:"";
-  return `${add}<section class="card"><p class="status" style="margin:0 0 8px">${cs.length} competencias: ${CAT_IMP_ORD.map(k=>`${cs.filter(x=>x.importancia===k).length} ${CAT_IMP[k][0].toLowerCase()}${cs.filter(x=>x.importancia===k).length===1?"":"s"}`).join(" · ")}. Pulsa una competencia para ver su rúbrica.</p>
+  return `${add}<section class="card"><p class="status" style="margin:0 0 6px"><b>Críticas y esenciales</b> son indispensables; <b>complementarias</b> enriquecen el desempeño; <b>deseables</b> son susceptibles de desarrollo. <b>Ningún promedio compensa una competencia crítica</b> por debajo del nivel ideal o sin evidencia.</p><p class="status" style="margin:0 0 8px">${cs.length} competencias: ${CAT_IMP_ORD.map(k=>`${cs.filter(x=>x.importancia===k).length} ${CAT_IMP[k][0].toLowerCase()}${cs.filter(x=>x.importancia===k).length===1?"":"s"}`).join(" · ")}. Pulsa una competencia para ver su rúbrica.</p>
     ${CAT_IMP_ORD.map(k=>{ const it=cs.filter(x=>x.importancia===k); if (!it.length) return "";
       return `<h3 style="margin:12px 0 4px">${CAT_IMP[k][0]}${k==="critica"?" <span class=\"status\">· indispensable para desempeñar la función con seguridad</span>":""}</h3>
         ${it.map(x=>{ const d=catDic(x.competencia);
@@ -4249,7 +4278,8 @@ function catHistHtml(pid){
 function catDiccHtml(){
   const c=C(), q=norm(S.catDq||""), cg=S.catDc||"";
   const uso=k=>c.perfiles.filter(p=>{ const v=catVer(p.id,"vigente"); return v&&catComps(v.id).some(x=>x.competencia===k); });
-  const l=c.dic.filter(d=>(!cg||d.categoria===cg)&&(!q||norm(d.clave+" "+d.nombre+" "+d.definicion).includes(q)));
+  const tp=S.catDt||"";
+  const l=c.dic.filter(d=>(!cg||d.categoria===cg)&&(!tp||grDe(d.clave,"es_de_tipo").includes(tp))&&(!q||norm(d.clave+" "+d.nombre+" "+d.definicion).includes(q)));
   const ed=S.catDicEd;
   const form=ed?`<section class="note"><div class="note-h"><h3>${ed.nueva?"Nueva competencia":"Editar "+esc(ed.clave)}</h3><button class="btn sm" type="button" data-act="catCancelar">Cancelar</button></div>
     <form class="datos" onsubmit="return false">${ed.nueva?fld("cdClave","Clave *",ed.clave||"",{max:7,ph:"CEM-028",up:1,hint:"Prefijo de la categoría y número (p. ej. CEM-028, ESP-040)."}):""}
@@ -4261,17 +4291,59 @@ function catDiccHtml(){
     <div class="actions"><button class="btn primary" type="button" data-act="catDicGuardar">Guardar</button></div></section>`:"";
   return `${form}<section class="card"><div class="filtros" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">
       <div class="fld"><label for="catDq">Buscar</label><input id="catDq" type="search" value="${esc(S.catDq||"")}" placeholder="Clave, nombre o definición"></div>
-      ${fld("catDc","Categoría",cg,{opts:[["","Todas"],...Object.entries(CAT_CATG)]})}<button class="btn sm" type="button" data-act="catBuscar">Filtrar</button>
+      ${fld("catDc","Categoría",cg,{opts:[["","Todas"],...Object.entries(CAT_CATG)]})}${c.grafo?.nodos.length?fld("catDt","Tipo",tp,{opts:[["","Todos"],...c.grafo.nodos.filter(n=>n.tipo==="tipo_competencia").map(n=>[n.clave,n.nombre])]}):""}<button class="btn sm" type="button" data-act="catBuscar">Filtrar</button>
       ${c.edito&&!ed?`<button class="btn sm primary" type="button" data-act="catDicNueva" style="margin-left:auto">+ Nueva competencia</button>`:""}</div>
     <p class="status" style="margin:8px 0">Escala: <b>1 Inicial · 2 En desarrollo · 3 Competente · 4 Avanzado · 5 Referente</b>. Además: No evaluado, No observado, No aplicable y Evidencia insuficiente (ninguno cuenta como cero). Los niveles describen conductas observables; no son mediciones psicológicas exactas.</p>
     ${l.map(d=>{ const u=d.alias_de?[]:uso(d.clave), eq=c.dic.filter(x=>x.alias_de===d.clave);
       return `<details style="border-top:1px solid var(--line);padding:6px 0"${S.catDicAb===d.clave?" open":""}><summary><b>${esc(d.clave)}</b> · ${esc(d.nombre)} <span class="status">· ${esc(CAT_CATG[d.categoria]||d.categoria)}</span>
           ${d.alias_de?` <span class="pill">Equivale a ${esc(d.alias_de)}</span>`:` <span class="pill ${d.validada?"estado-activo":"estado-pendiente"}">${d.validada?"Validada":"Por validar"}</span>`}${d.activa?"":' <span class="pill estado-suspendido">Inactiva</span>'}${u.length?` <span class="status">· en ${u.length} perfil${u.length===1?"":"es"}</span>`:""}</summary>
-        <p style="margin:6px 0 0;max-width:80ch">${esc(d.definicion)}</p>${catRubrica(d,0)}
+        <p style="margin:6px 0 0;max-width:80ch">${esc(d.definicion)}</p>${!d.alias_de&&grTipos(d.clave).length?`<p class="status" style="margin:4px 0 0">Tipo: ${grTipos(d.clave).map(esc).join(" · ")}${grA(d.clave,"se_observa_en").length?` · Valores que se observan en ella: ${grA(d.clave,"se_observa_en").map(k=>esc(grNom(k))).join(", ")}`:""}</p>`:""}${catRubrica(d,0)}
         ${eq.length?`<p class="status" style="margin:6px 0 0">Equivalencias consolidadas aquí: ${eq.map(x=>esc(x.clave+" «"+x.nombre+"»")).join(", ")}.</p>`:""}
         ${u.length?`<p class="status" style="margin:6px 0 0">Usada en: ${u.map(p=>{ const x=catComps(catVer(p.id,"vigente").id).find(y=>y.competencia===d.clave); return `${esc(p.clave)} (nivel ${x.nivel_ideal}, ${CAT_IMP[x.importancia][0].toLowerCase()})`; }).join(", ")}.</p>`:""}
         <div style="display:flex;gap:6px;margin-top:6px">${c.edito&&!d.alias_de?`<button class="btn sm" type="button" data-act="catDicEditar" data-id="${esc(d.clave)}">Editar</button>`:""}
           ${c.valido&&!d.alias_de?`<button class="btn sm${d.validada?"":" primary"}" type="button" data-act="catDicValidar" data-id="${esc(d.clave)}">${d.validada?"Quitar validación":"Validar"}</button>`:""}</div></details>`; }).join("")||`<p class="status">Sin resultados.</p>`}</section>`;
+}
+/* Valores y relaciones (FASE 07): catálogo de valores y explorador del grafo */
+function catValoresHtml(){
+  const c=C(), g=c.grafo;
+  if (!g?.ok) return `<section class="card"><p class="status" style="margin:0">El catálogo de valores y relaciones estará disponible cuando se apliquen las migraciones 054–055.</p></section>`;
+  if (S.catNodo&&grN(S.catNodo)) return catNodoHtml(S.catNodo);
+  const q=norm(S.catVq||""), u=S.catVu||"", tp=S.catVt||"valor";
+  const l=g.nodos.filter(n=>n.tipo===tp&&(tp!=="valor"||!u||n.datos?.uso===u)&&(!q||norm(n.clave+" "+n.nombre+" "+(n.descripcion||"")+" "+(n.datos?.alias||[]).join(" ")).includes(q)));
+  const cuenta=t=>g.nodos.filter(n=>n.tipo===t&&n.estado!=="retirada").length;
+  return `<section class="card"><p class="status" style="margin:0 0 8px;max-width:85ch">Mapa que une <b>autores, obras, fundamentos, categorías, valores, principios, competencias, comportamientos, perfiles, formación, supervisión, procesos y módulos</b>. Los valores de <b>conducta</b> se observan solo a través de competencias; los de <b>orientación</b> guían la cultura y la formación voluntaria y <b>nunca se evalúan</b> en una persona. Todo nace como propuesta hasta que la Dirección lo valida.</p>
+    <div class="kpis">${["valor","principio","competencia","perfil","formacion","categoria"].map(t=>`<div class="kpi"><span>${esc(GR_TIPO[t])}</span><b>${cuenta(t)}</b></div>`).join("")}<div class="kpi"><span>Relaciones</span><b>${grRels().length}</b></div></div>
+    <div class="filtros" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-top:8px">
+      <div class="fld"><label for="catVq">Buscar</label><input id="catVq" type="search" value="${esc(S.catVq||"")}" placeholder="Nombre, clave o definición"></div>
+      ${fld("catVt","Ver",tp,{opts:Object.entries(GR_TIPO).filter(([k])=>k!=="competencia"&&k!=="perfil")})}
+      ${tp==="valor"?fld("catVu","Uso",u,{opts:[["","Todos"],["conducta","Conducta observable"],["orientacion","Orientación (no se evalúa)"]]}):""}
+      <button class="btn sm" type="button" data-act="catVBuscar">Filtrar</button></div></section>
+    <section class="card">${l.map(n=>`<div style="border-top:1px solid var(--line);padding:8px 0;display:flex;gap:8px;justify-content:space-between;align-items:start;flex-wrap:wrap">
+      <div style="max-width:75ch"><b>${esc(n.clave)}</b> · ${esc(n.nombre)} ${catPill(GR_EST,n.estado)}${n.tipo==="valor"?` <span class="pill">${n.datos?.uso==="orientacion"?"Orientación":"Conducta"}</span>`:""}
+        ${n.descripcion?`<br><span class="status">${esc(n.descripcion)}</span>`:""}${(n.datos?.alias||[]).length?`<br><span class="status">Incluye: ${esc(n.datos.alias.join(", "))}</span>`:""}</div>
+      <button class="btn sm" type="button" data-act="catNodo" data-id="${esc(n.clave)}">Ver relaciones</button></div>`).join("")||`<p class="status" style="margin:0">Sin resultados.</p>`}</section>`;
+}
+function catNodoHtml(k){
+  const c=C(), n=grN(k), d=n.datos||{};
+  const sal=grRels().filter(r=>r.origen===k), ent=grRels().filter(r=>r.destino===k);
+  const grupos=(rs,lado)=>{ const m={}; rs.forEach(r=>{ const key=r.tipo; (m[key]=m[key]||[]).push(lado==="sal"?r.destino:r.origen); });
+    return Object.entries(m).map(([t,ks])=>`<p style="margin:6px 0 0"><span class="status">${lado==="sal"?esc(n.nombre)+" "+esc(GR_REL[t]||t):esc(GR_REL[t]||t)+" → "+esc(n.nombre)} (${ks.length}):</span><br>${ks.slice(0,60).map(grChip).join(" ")}${ks.length>60?` <span class="status">y ${ks.length-60} más</span>`:""}</p>`).join(""); };
+  const perfiles=n.tipo==="valor"?c.perfiles.filter(p=>catLista((catVer(p.id,"vigente")?.contenido||{}).valores).includes(k)||catLista((catVer(p.id,"borrador")?.contenido||{}).valores).includes(k)):[];
+  return `<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center"><div><h2 style="margin:0">${esc(n.clave)} · ${esc(n.nombre)} ${catPill(GR_EST,n.estado)}</h2>
+      <span class="status">${esc(GR_TIPO[n.tipo]||n.tipo)} · versión ${n.version}${n.nota_estado?" · "+esc(n.nota_estado):""}</span></div>
+      <button class="btn sm" type="button" data-act="catNodo" data-id="">Volver a la lista</button></div>
+    <section class="card">${n.descripcion?`<p style="margin:0;max-width:80ch">${esc(n.descripcion)}</p>`:""}
+      ${n.tipo==="valor"?`<p style="margin:8px 0 0"><b>Uso:</b> ${d.uso==="orientacion"?"orientación: guía la cultura y la formación voluntaria; <b>no se evalúa en personas</b>.":"conducta: se observa solo a través de las competencias enlazadas."}</p>
+        ${(d.conductas||[]).length?`<h3 style="margin:10px 0 0">Conductas observables</h3><ul style="margin:4px 0 0">${d.conductas.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}
+        ${d.no_es?`<p style="margin:8px 0 0"><b>Qué no es:</b> ${esc(d.no_es)}</p>`:""}${d.cautela?`<p style="margin:6px 0 0"><b>Cautela:</b> ${esc(d.cautela)}</p>`:""}
+        ${(d.alias||[]).length?`<p class="status" style="margin:6px 0 0">Conceptos consolidados aquí para no duplicarlos: ${esc(d.alias.join(", "))}.</p>`:""}
+        ${perfiles.length?`<p style="margin:8px 0 0"><b>Perfiles que lo mencionan:</b> ${perfiles.map(p=>esc(p.clave+" · "+p.nombre)).join(", ")}</p>`:""}`:""}
+      ${(n.fuentes||[]).length?`<p class="status" style="margin:8px 0 0">Fuentes: ${esc(n.fuentes.join("; "))}</p>`:""}
+      ${c.valido&&n.tipo!=="competencia"&&n.tipo!=="perfil"?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+        ${n.estado!=="validada"?`<button class="btn sm primary" type="button" data-act="catNodoEstado" data-id="${esc(k)}" data-e="validada">Validar</button>`:`<button class="btn sm" type="button" data-act="catNodoEstado" data-id="${esc(k)}" data-e="propuesta">Volver a propuesta</button>`}
+        ${n.estado!=="retirada"?`<button class="btn sm" type="button" data-act="catNodoEstado" data-id="${esc(k)}" data-e="retirada">Retirar</button>`:""}</div>`:""}</section>
+    <section class="card"><h3 style="margin:0">Relaciones</h3>${grupos(sal,"sal")}${grupos(ent,"ent")||""}${!sal.length&&!ent.length?`<p class="status" style="margin:6px 0 0">Sin relaciones.</p>`:""}
+      <p class="status" style="margin:10px 0 0">Pulsa cualquier elemento para recorrer el mapa. Las relaciones perfil–competencia están en la ficha de cada perfil (versionadas).</p></section>`;
 }
 /* D. Matriz de competencias por puesto */
 function catMatrizHtml(){
@@ -4333,7 +4405,10 @@ function catPersonaHtml(col, incrustada){
     <div class="kpi"><span>Pendientes de evaluar</span><b>${a.pendientes??0}</b></div><div class="kpi"><span>En el nivel esperado</span><b>${a.en_nivel??0}</b></div>
     <div class="kpi"><span>Por fortalecer</span><b>${a.por_fortalecer??0}</b></div><div class="kpi"><span>Críticas pendientes</span><b>${a.criticas_pendientes??0}</b></div>
     <div class="kpi"><span>Alineación</span><b>${a.alineacion_pct==null?"Sin datos":(a.evaluadas||0)<3?"Pocos datos":"≈ "+a.alineacion_pct+"%"}</b></div><div class="kpi"><span>Cobertura de evaluación</span><b>${a.cobertura_pct==null?"—":a.cobertura_pct+"%"}</b></div></div>
-    <p class="status" style="margin:4px 0 0">${esc(a.formula||"")} La alineación se muestra a partir de 3 competencias evaluadas.</p>`;
+    <p class="status" style="margin:4px 0 0">${esc(a.formula||"")} La alineación se muestra a partir de 3 competencias evaluadas.</p>
+    ${a.requisitos_criticos==="con_brecha"?`<div class="banner" style="margin-top:6px"><b>Requisitos críticos con brecha (${a.criticas_por_fortalecer}).</b> Ningún promedio los compensa: requieren un plan de desarrollo acordado y acompañamiento. Esto no es una decisión laboral automática.</div>`
+      :a.requisitos_criticos==="sin_evidencia"?`<p class="status" style="margin:6px 0 0"><b>Requisitos críticos sin evidencia (${a.criticas_pendientes}).</b> Se informan aparte de la alineación hasta que se evalúen.</p>`
+      :a.requisitos_criticos==="cubiertos"?`<p class="status" style="margin:6px 0 0">Requisitos críticos en el nivel esperado.</p>`:""}`;
   const ev=S.catEvalF&&S.catEvalF.col===col?(()=>{ const d=catDic(S.catEvalF.comp), b=pd.brechas.find(y=>y.competencia===S.catEvalF.comp);
     return `<section class="note"><div class="note-h"><h3>${yo?"Mi autoevaluación":"Evaluar"}: ${esc(d?.nombre||"")}</h3><button class="btn sm" type="button" data-act="catCancelar">Cancelar</button></div>
       <p class="status" style="margin:0">Nivel ideal: <b>${catNivTxt(b?.nivel_ideal)}</b>. ${yo?"Tu autoevaluación se guarda aparte y no cambia la brecha.":"Asigna un nivel solo con evidencia observada. Una ausencia, incapacidad o permiso autorizado no es evidencia negativa."} Se evalúan comportamientos profesionales, nunca creencias ni vida privada.</p>${catRubrica(d,b?.nivel_ideal)}
@@ -4471,9 +4546,16 @@ async function catAccion(a,b){
   const id=b?.dataset?.id, rpc=(fn,args)=>S.api.catRpc(fn,args), c=C();
   try{
     if (a==="catalogo"){ S.view="catalogo"; S.catSel=null; S.catPer=null; render(); return catCargar(); }
-    if (a==="catTab"){ S.catTab=b.dataset.t; S.catSel=null; S.catPer=null; S.catNuevo=null; S.catDicEd=null; return render(); }
+    if (a==="catNodo"){ const k=b.dataset.id||null; if (k&&["competencia"].includes(grN(k)?.tipo)){ S.catTab="dicc"; S.catDq=k; S.catDicAb=k; S.catNodo=null; return render(); }
+      if (k&&grN(k)?.tipo==="perfil"){ const p=c.perfiles.find(x=>x.clave===k); if (p){ S.catTab="puestos"; S.catSel=p.id; S.catFichaTab="desc"; return render(); } }
+      S.catTab="valores"; S.catSel=null; S.catNodo=k; window.scrollTo(0,0); return render(); }
+    if (a==="catVBuscar"){ S.catVq=catVal("catVq"); S.catVt=catVal("catVt")||"valor"; S.catVu=$("#catVu")?catVal("catVu"):""; return render(); }
+    if (a==="catNodoEstado"){ const k=b.dataset.id, e=b.dataset.e; let nota=null;
+      if (e==="retirada"){ nota=prompt("Motivo del retiro (10 caracteres o más):"); if (!nota) return; }
+      await rpc("grafo_estado_nodo",{p_clave:k,p_estado:e,p_nota:nota}); toast(e==="validada"?"Validado.":e==="retirada"?"Retirado; sus relaciones también.":"Vuelve a propuesta."); return catCargar(); }
+    if (a==="catTab"){ S.catTab=b.dataset.t; S.catNodo=null; S.catSel=null; S.catPer=null; S.catNuevo=null; S.catDicEd=null; return render(); }
     if (a==="catBuscar"){ if ($("#catQ")) S.catQ=catVal("catQ"); if ($("#catFam")) S.catFam=catVal("catFam");
-      if ($("#catDq")) S.catDq=catVal("catDq"); if ($("#catDc")) S.catDc=catVal("catDc"); if ($("#catMf")) S.catMf=catVal("catMf"); if ($("#catMc")) S.catMc=catVal("catMc"); return render(); }
+      if ($("#catDq")) S.catDq=catVal("catDq"); if ($("#catDc")) S.catDc=catVal("catDc"); if ($("#catDt")) S.catDt=catVal("catDt"); if ($("#catMf")) S.catMf=catVal("catMf"); if ($("#catMc")) S.catMc=catVal("catMc"); return render(); }
     if (a==="catDePuesto"){ const pu=b.dataset.c; S.view="catalogo"; S.catTab="puestos"; S.catSel=null; S.catPer=null; S.catQ=pu; S.catFam=""; render(); return catCargar(); }
     if (a==="catPerBuscar"){ S.catPq=catVal("catPq"); return render(); }
     if (a==="catFicha"){ S.catSel=id; S.catFichaTab="desc"; S.catVerBor=false; S.catEditV=null; return render(); }
@@ -5377,7 +5459,8 @@ const GUIAS = [
   {t:"Instalar la app en mi celular o computadora", si:()=>true, pasos:["Android (Chrome): abre la app, pulsa Instalar app en el menú (o en el menú ⋮ del navegador, Instalar aplicación) y confirma.","iPhone o iPad (Safari): abre la app, pulsa el botón Compartir (cuadro con flecha) y elige Agregar a pantalla de inicio.","Computadora (Chrome o Edge): pulsa Instalar app o el ícono de instalar en la barra de direcciones.","La app instalada abre en su propia ventana con el ícono de CEMEPI. Tus datos siguen en el servidor seguro: no se guardan en el teléfono. Si pierdes el dispositivo, cambia tu contraseña en Mi perfil."]},
   {t:"Consultar o proponer palabras en náhuatl", si:()=>!!S.rol, pasos:["Entra a Mi espacio → Raíces y comunidad → «Palabras (diccionario vivo)».","Cada palabra muestra su significado en español, su variante, sus fuentes y sus cautelas. Solo las aprobadas aparecen en la app, siempre junto al nombre en español.","Para proponer una, pulsa «+ Proponer una palabra» e indica su fuente (diccionario, investigación o una persona hablante). No inventes traducciones ni palabras compuestas.","La Dirección la verifica, la aprueba o la retira; cada cambio queda en el historial."]},
   {t:"Explorar Raíces y comunidad", si:()=>!!S.rol, pasos:["Entra a Mi espacio → Raíces y comunidad.","En «Comunalidad CEMEPI» están los cuatro principios y lo que lo comunitario nunca justifica (trabajo sin pago, renuncia de derechos, subordinación ideológica, abusos).","En «Categorías culturales» cada concepto dice de qué pueblo y época viene, qué dicen las fuentes y cómo lo adapta CEMEPI.","Es lectura voluntaria: nadie es evaluado por estos contenidos."]},
-  {t:"Consultar el perfil ideal de un puesto", si:()=>!!S.rol, pasos:["Entra a Personas → Perfiles de puesto (o, desde Organización → Puestos, pulsa «Ver perfil ideal y competencias»).","Abre un perfil: Descripción (propósito, responsabilidades, límites, indicadores), Requisitos, Competencias (con su nivel ideal e importancia; pulsa una para ver su rúbrica de 5 niveles), Incorporación y Versiones.","Descargar ficha (Word) genera la ficha del puesto. El perfil describe la función: no concede permisos ni fija salario."]},
+  {t:"Recorrer los valores y sus relaciones", si:()=>!!S.rol, pasos:["Entra a Personas → Perfiles de puesto → pestaña «Valores y relaciones».","Busca un valor (o cambia «Ver» a principios, categorías, formación, supervisión, procesos o módulos) y pulsa «Ver relaciones»: verás su definición, conductas observables, qué no es, cautelas y con qué se conecta. Pulsa cualquier elemento para seguir recorriendo el mapa.","Los valores de «conducta» se observan solo a través de competencias; los de «orientación» nunca se evalúan en una persona. La Dirección valida o retira cada elemento (retirar pide motivo y retira sus relaciones)."]},
+  {t:"Consultar el perfil ideal de un puesto", si:()=>!!S.rol, pasos:["Entra a Personas → Perfiles de puesto (o, desde Organización → Puestos, pulsa «Ver perfil ideal y competencias»).","Abre un perfil: Descripción (propósito, responsabilidades, límites, indicadores), Requisitos, Competencias (con su nivel ideal e importancia; pulsa una para ver su rúbrica de 5 niveles), Desarrollo y valores (habilidades, actitudes observables, valores, evidencias, formación, supervisión y ruta de desarrollo), Incorporación y Versiones.","Descargar ficha (Word) genera la ficha del puesto. El perfil describe la función: no concede permisos ni fija salario."]},
   {t:"Mi perfil ideal y mis competencias", si:()=>!!S.rol, pasos:["Entra a Mi espacio → Mi información → «Mi perfil ideal».","Ves qué se espera de tu función, tus responsabilidades, tus competencias con su nivel ideal y cómo vas: fortalezas, lo que está por fortalecer y tu plan de desarrollo.","Puedes autoevaluarte; tu autoevaluación se guarda aparte y no cambia la evaluación de quien te acompaña. Lo no evaluado aparece como «No evaluado», nunca como cero."]},
   {t:"Editar un perfil de puesto", si:()=>["superusuario","direccion"].includes(S.rol)||(S.api?.misRoles||[]).includes("rrhh"), pasos:["Abre el perfil y pulsa «Editar (nueva versión)»: se crea un borrador; la versión vigente no cambia.","Edita el contenido (un elemento por renglón en las listas) y, en Competencias, agrega, ajusta nivel e importancia o quita competencias.","La Dirección pulsa «Publicar versión» y escribe el motivo; la anterior queda en Versiones con sus diferencias. «Validar perfil» lo deja como vigente para la organización."]},
   {t:"Evaluar competencias y proponer un plan de desarrollo", si:()=>["superusuario","direccion","admin_sede"].includes(S.rol)||(S.api?.misRoles||[]).some(r=>["rrhh","coord_clinica"].includes(r))||(S.perm&&[...S.perm].includes("supervision_clinica")), pasos:["En Perfiles de puesto → Personas abre a la persona (solo ves a quien te corresponde: tu equipo, tu supervisión clínica o tu alcance de RR. HH.).","Pulsa «Evaluar» en una competencia: elige el nivel observado con la rúbrica a la vista y describe la evidencia (qué viste, cuándo). Si no hay datos usa «No observado», «No aplicable» o «Evidencia insuficiente».","Una ausencia, incapacidad o permiso autorizado no es evidencia negativa. Las evaluaciones no se modifican: si te equivocas registra una nueva.","En una competencia por fortalecer pulsa «Plan» y define objetivo, actividad, mentor(a), recursos y fecha de revisión. La persona marca «En curso»; quien acompaña la da por completada con el resultado."]},
@@ -5785,7 +5868,8 @@ for (const k of Object.keys(MANUALES)) MANUALES[k].caps.push({t:"Mi perfil ideal
   "Tu perfil describe tu función: no concede permisos, no fija tu salario y no cambia tu contrato."]});
 MANUALES.direccion.caps.push({t:"Perfiles de puesto y competencias", p:[
   "Personas → Perfiles de puesto reúne el catálogo maestro: 11 perfiles enlazados a los puestos de Organización (PSI-01 a PSI-04 como especialidades del puesto de psicología), un solo diccionario de competencias con rúbrica de 5 niveles y las equivalencias consolidadas.",
-  "Pestañas: Puestos (ficha de cada perfil con Descripción, Requisitos, Competencias, Incorporación y Versiones), Diccionario, Matriz (nivel ideal e importancia por perfil; exportable), Comparar, Personas, Reportes y Configuración.",
+  "Pestañas: Puestos (ficha de cada perfil con Descripción, Requisitos, Competencias, Desarrollo y valores, Incorporación y Versiones), Diccionario (con filtro por los 11 tipos de competencia), Valores y relaciones (62 valores, 17 principios y el mapa que los une con fundamentos, competencias, perfiles, formación, supervisión, procesos y módulos), Matriz (nivel ideal e importancia por perfil; exportable), Comparar, Personas, Reportes y Configuración.",
+  "Requisitos críticos: en Personas, la alineación (promedio) se informa aparte de los requisitos críticos. Ningún promedio compensa una competencia crítica por debajo del nivel ideal o sin evidencia; se avisa para acordar un plan de desarrollo, nunca como decisión laboral automática.",
   "Editar crea una versión nueva en borrador; publicarla exige motivo y la anterior queda en el historial. Los perfiles nacen «Por validar» hasta que la Dirección los valida.",
   "En Personas asignas perfiles (una persona puede tener varios), evalúas con evidencia y propones planes de desarrollo. Asignar un perfil no concede permisos: los accesos se deciden en Usuarios y permisos. Bosques de Santa Fe sigue restringida.",
   "La alineación con el perfil ideal es descriptiva: muestra su fórmula, la cobertura de evaluación y las competencias críticas pendientes; no decide contratación ni permanencia."]});

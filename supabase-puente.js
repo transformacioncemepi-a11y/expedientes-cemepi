@@ -719,7 +719,14 @@ const cemepi = {
     const d = q.map(r => r.data);
     return { dic: d[0] || [], perfiles: d[1] || [], versiones: d[2] || [], pcomps: d[3] || [], puestos: d[4] || [], areas: d[5] || [],
       resumen: d[6] || {}, cp: d[7] || [], cols: d[8] || [], rel: d[9] || [], asg: d[10] || [], pos: d[11] || [], cargas: d[12] || [],
-      edito: !!d[13], valido: !!d[14], yo: d[15] || null, acciones: d[16] || [], sedes: d[17] || [] }; },
+      edito: !!d[13], valido: !!d[14], yo: d[15] || null, acciones: d[16] || [], sedes: d[17] || [], grafo: await this.grafoDatos() }; },
+  /* Grafo de conocimiento y valores (migraciones 054/055). Si aún no existen las tablas, devuelve vacío. Se pagina de 1000 en 1000. */
+  async grafoDatos(){
+    const todo = async (t, orden) => { const out = []; for (let i = 0; i < 20; i++) {
+        const { data, error } = await sb.from(t).select("*").order(orden).range(i * 1000, i * 1000 + 999);
+        if (error) return null; out.push(...(data || [])); if (!data || data.length < 1000) break; } return out; };
+    const [n, r] = await Promise.all([todo("grafo_nodos", "clave"), todo("grafo_relaciones", "creada_en")]);
+    return { nodos: n || [], rels: r || [], ok: !!n }; },
   async catPersona(col){
     const [b, a, r] = await Promise.all([sb.rpc("brechas_colaborador", { p_col: col }), sb.rpc("alineacion_colaborador", { p_col: col }),
       sb.from("competencia_registros").select("*").eq("colaborador_id", col).order("created_at", { ascending: false })]);
