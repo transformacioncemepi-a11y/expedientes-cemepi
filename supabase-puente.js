@@ -736,6 +736,25 @@ const cemepi = {
       sb.from("competencia_registros").select("*").eq("colaborador_id", col).order("created_at", { ascending: false })]);
     if (b.error) fallo(b.error); if (a.error) fallo(a.error);
     return { brechas: b.data || [], ali: a.data || {}, reg: r.data || [] }; },
+  /* Acuerdos profesionales: Carta Compromiso (migraciones 058/059). Firma vía Módulo 05. Si no existe, devuelve ok:false. */
+  async acuDatos(){
+    const q = await Promise.all([
+      sb.from("acu_plantillas").select("*"), sb.from("acu_plantilla_versiones").select("*").order("version"),
+      sb.from("acu_anexos").select("*").order("clave").order("version"), sb.from("acuerdos").select("*").order("creado_en", { ascending: false }),
+      sb.from("acu_eventos").select("*").order("fecha").range(0, 4999), sb.from("acu_contenidos").select("*").order("etapa").order("orden"),
+      sb.from("acu_avance").select("*"), sb.from("acu_reflexiones").select("*").order("creado_en", { ascending: false }),
+      sb.from("acu_campanas").select("*").order("creado_en", { ascending: false }), sb.from("sel_casos").select("*").eq("familia", "comunidad").order("id"),
+      sb.rpc("acu_configuro"), sb.rpc("acu_apruebo"), sb.rpc("mi_colaborador"),
+      sb.from("colaboradores").select("id,nombre,perfil_id,sede_principal_id,estatus").order("nombre"),
+      sb.from("perfiles").select("id,nombre,rol,modalidad,estado"), sb.from("sedes").select("id,nombre,clave"),
+      sb.from("entidades_fiscales").select("id,nombre_corto"),
+      sb.from("docs").select("id,folio,nombre,tipo,colaborador_id,estado,version").eq("tipo", "contrato_servicios_prof")]);
+    if (q[0].error) return { ok: false };
+    const d = q.map(r => r.error ? null : r.data);
+    return { ok: true, plantillas: d[0] || [], versiones: d[1] || [], anexos: d[2] || [], acuerdos: d[3] || [], eventos: d[4] || [], contenidos: d[5] || [],
+      avance: d[6] || [], reflexiones: d[7] || [], campanas: d[8] || [], situaciones: d[9] || [], configuro: !!d[10], apruebo: !!d[11], yo: d[12] || null,
+      cols: d[13] || [], perfiles: d[14] || [], sedes: d[15] || [], entidades: d[16] || [], docs: d[17] || [] }; },
+  async acuRpc(fn, args){ const { data, error } = await sb.rpc(fn, args); if (error) fallo(error); return data; },
   async catRpc(fn, args){ const { data, error } = await sb.rpc(fn, args); if (error) fallo(error); return data; },
   /* Diccionario vivo (migraciones 052/053). Si las tablas aún no existen, devuelve vacío y la app sigue igual. */
   async lexicoDatos(){
