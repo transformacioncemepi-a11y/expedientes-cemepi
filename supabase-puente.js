@@ -749,13 +749,21 @@ const cemepi = {
       sb.from("perfiles").select("id,nombre,rol,modalidad,estado"), sb.from("sedes").select("id,nombre,clave"),
       sb.from("entidades_fiscales").select("id,nombre_corto"),
       sb.from("docs").select("id,folio,nombre,tipo,colaborador_id,estado,version").eq("tipo", "contrato_servicios_prof"),
-      sb.from("acu_lecturas").select("version_id,perfil_id,leido_en"), sb.from("acu_solicitudes_lectura").select("*")]);
+      sb.from("acu_lecturas").select("version_id,perfil_id,leido_en"), sb.from("acu_solicitudes_lectura").select("*"),
+      /* Carta 2026 (064): bloques, flexibilidad, consultorios, anexo individual y datos de la parte */
+      sb.from("disp_config").select("clave,valor,descripcion"), sb.from("disp_bloques").select("*").order("dia"),
+      sb.from("consultorios").select("*").order("identificador"), sb.from("disp_propuestas").select("*").order("creada_en", { ascending: false }),
+      sb.from("disp_items").select("*").order("dia"), sb.from("disp_anexos").select("*").order("version", { ascending: false }),
+      sb.from("acu_datos_parte").select("*"), sb.from("asignaciones").select("colaborador_id,sede_id,hasta"),
+      sb.from("documentos_personal").select("id,user_id,tipo,descripcion,nombre_archivo,verificado_en").eq("tipo", "identificacion").is("borrado_en", null)]);
     if (q[0].error) return { ok: false };
     const d = q.map(r => r.error ? null : r.data);
     return { ok: true, plantillas: d[0] || [], versiones: d[1] || [], anexos: d[2] || [], acuerdos: d[3] || [], eventos: d[4] || [], contenidos: d[5] || [],
       avance: d[6] || [], reflexiones: d[7] || [], campanas: d[8] || [], situaciones: d[9] || [], configuro: !!d[10], apruebo: !!d[11], yo: d[12] || null,
       cols: d[13] || [], perfiles: d[14] || [], sedes: d[15] || [], entidades: d[16] || [], docs: d[17] || [],
-      lecturas: d[18] || [], solLectura: d[19] || [] }; },
+      lecturas: d[18] || [], solLectura: d[19] || [],
+      dispOk: !!d[20], dispConfig: d[20] || [], bloques: d[21] || [], consultorios: d[22] || [], dispProps: d[23] || [], dispItems: d[24] || [],
+      dispAnexos: d[25] || [], datosParte: d[26] || [], asignaciones: d[27] || [], identificaciones: d[28] || [] }; },
   async acuRpc(fn, args){ const { data, error } = await sb.rpc(fn, args); if (error) fallo(error); return data; },
   async catRpc(fn, args){ const { data, error } = await sb.rpc(fn, args); if (error) fallo(error); return data; },
   /* Diccionario vivo (migraciones 052/053). Si las tablas aún no existen, devuelve vacío y la app sigue igual. */
