@@ -695,6 +695,37 @@ const cemepi = {
   async competencias(perfil){ let q = sb.from("competencias").select("*").order("tipo").order("valor"); if (perfil) q = q.eq("perfil_id", perfil);
     const { data, error } = await q; if (error) fallo(error); return data || []; },
   async compPorVerificar(){ const { data, error } = await sb.rpc("competencias_por_verificar"); if (error) return []; return data || []; },
+  /* ---------- Catálogo maestro de puestos y competencias (migraciones 050/051) ----------
+     Asignar un perfil o evaluar una competencia NUNCA concede accesos (lo garantiza la base). */
+  async catDatos(){
+    const q = await Promise.all([
+      sb.from("dic_competencias").select("*").order("clave"),
+      sb.from("perfiles_ideales").select("*").order("clave"),
+      sb.from("perfil_versiones").select("*").order("version"),
+      sb.from("perfil_competencias").select("*").order("orden").range(0, 4999),
+      sb.from("puestos").select("id,codigo,nombre,area_id,estatus").order("codigo"),
+      sb.from("areas").select("id,nombre,estatus").order("nombre"),
+      sb.rpc("catalogo_resumen"),
+      sb.from("colaborador_perfiles").select("*").order("desde"),
+      sb.from("colaboradores").select("id,nombre,perfil_id,sede_principal_id,estatus").order("nombre"),
+      sb.from("relaciones").select("tipo,de_id,a_id,desde,hasta"),
+      sb.from("asignaciones").select("colaborador_id,posicion_id,desde,hasta"),
+      sb.from("posiciones").select("id,puesto_id,sede_id"),
+      sb.from("cat_cargas").select("*").order("fecha", { ascending: false }).limit(20),
+      sb.rpc("cat_edito"), sb.rpc("cat_valido"), sb.rpc("mi_colaborador"),
+      sb.from("desarrollo_acciones").select("*").order("creado_en", { ascending: false }),
+      sb.from("sedes").select("id,nombre,clave")]);
+    for (const r of q.slice(0, 6)) if (r.error) fallo(r.error);
+    const d = q.map(r => r.data);
+    return { dic: d[0] || [], perfiles: d[1] || [], versiones: d[2] || [], pcomps: d[3] || [], puestos: d[4] || [], areas: d[5] || [],
+      resumen: d[6] || {}, cp: d[7] || [], cols: d[8] || [], rel: d[9] || [], asg: d[10] || [], pos: d[11] || [], cargas: d[12] || [],
+      edito: !!d[13], valido: !!d[14], yo: d[15] || null, acciones: d[16] || [], sedes: d[17] || [] }; },
+  async catPersona(col){
+    const [b, a, r] = await Promise.all([sb.rpc("brechas_colaborador", { p_col: col }), sb.rpc("alineacion_colaborador", { p_col: col }),
+      sb.from("competencia_registros").select("*").eq("colaborador_id", col).order("created_at", { ascending: false })]);
+    if (b.error) fallo(b.error); if (a.error) fallo(a.error);
+    return { brechas: b.data || [], ali: a.data || {}, reg: r.data || [] }; },
+  async catRpc(fn, args){ const { data, error } = await sb.rpc(fn, args); if (error) fallo(error); return data; },
   async declararCompetencia(tipo, valor, detalle, doc){ const { data, error } = await sb.rpc("declarar_competencia", { p_tipo: tipo, p_valor: valor, p_detalle: detalle || null, p_documento: doc || null }); if (error) fallo(error); return data; },
   async editarCompetencia(id, valor, detalle, doc, actualizado){ const { error } = await sb.rpc("editar_competencia", { p_id: id, p_valor: valor, p_detalle: detalle || null, p_documento: doc || null, p_actualizado: actualizado || null });
     if (error){ if (/CONFLICTO_EDICION/.test(error.message || "")) throw { message: "La competencia cambió en otra ventana. Vuelve a abrirla para ver la versión actual." }; fallo(error); } },
