@@ -4761,7 +4761,7 @@ MANUALES.admin_sede.caps.push({t:"Organización de tu sede", p:[
   "En Organización consultas la información de tu sede: sus colaboradores, plazas y vacantes, su lugar en el organigrama y los indicadores. Es de consulta; los cambios los hace la Dirección."]});
 for (const k of Object.keys(MANUALES)) MANUALES[k].caps.push({t:"Mis documentos", p:[
   "«Mis documentos» reúne tus documentos institucionales (constancias, convenios, acuses), los accesos a tu contrato y al Reglamento, y tus PDF personales (identificación, CURP, comprobante de domicilio, cédula, título). Antes se llamaba «Mi documentación».",
-  "Cuando se active la firma electrónica, aquí aparecerán los documentos que debes firmar."]});
+  "En «Por firmar» aparecen los documentos que debes firmar con tu contraseña (ver el capítulo Firma electrónica)."]});
 for (const k of Object.keys(MANUALES)) MANUALES[k].caps.push({t:"Mi asistencia", p:[
   "En Mi espacio → Mi asistencia registras tu entrada y salida, ves tu horario, tu historial de los últimos días, tus solicitudes y tus incidencias. El control solo funciona cuando la Dirección lo activa.",
   "En la sede escanea con la cámara de tu celular el código QR de recepción: se abre la app y confirma la sede sin guardar tu ubicación. La hora la pone el servidor.",
@@ -4777,7 +4777,7 @@ MANUALES.direccion.caps.push({t:"Documentos y firmas", p:[
   "En Documentos → Documentos y firmas está la biblioteca institucional: políticas, circulares, oficios, convenios, contratos de servicios, documentación de sedes y documentos fiscales de la entidad. Los documentos clínicos siguen en cada expediente.",
   "Para agregar uno: + Nuevo documento → tipo, nombre, sede o entidad y, si es de una persona, la persona → Crear borrador → subir el archivo → Publicar con folio. La entidad fiscal se toma de la sede: un documento de Bosques de Santa Fe nunca queda con los datos de CEMEPI, S.C.",
   "Cada versión guarda su huella digital y no se modifica. Para corregir, sube una versión nueva. Para retirar un documento publicado, archívalo con un motivo. Ver un documento no da permiso de descargarlo; cada descarga queda registrada.",
-  "Los documentos sensibles (fiscales) requieren el permiso de información sensible. Las firmas electrónicas llegan en la siguiente fase."]});
+  "Los documentos sensibles (fiscales) requieren el permiso de información sensible. Los que requieren firma se envían a firma desde su detalle y reciben folio al completarse."]});
 for (const k of Object.keys(MANUALES)) MANUALES[k].caps.push({t:"Incorporación (en proceso de contratación)", p:[
   "Mientras dura tu proceso apareces como «En proceso de contratación». Tienes una ruta de capacitación por áreas, con fechas, un responsable, un capacitador(a), un mentor(a) y un supervisor(a).",
   "En Mi espacio → Mi incorporación ves tu etapa (inducción, formación supervisada o valoración), tu avance, lo que sigue, tu retroalimentación y tus compromisos.",
@@ -4796,6 +4796,33 @@ for (const k of Object.keys(MANUALES)) MANUALES[k].caps.push({t:"Accesos y segur
   "Si necesitas consultar algo que hoy no ves, entra a Configuración → Usuarios y permisos → Solicitudes de acceso, pulsa + Nueva solicitud y explica para qué lo necesitas. Nada cambia hasta que el Superusuario la apruebe.",
   "En Sesiones y dispositivos ves dónde tienes la sesión abierta y puedes cerrar las de otros dispositivos. La sesión se cierra sola después de un tiempo sin actividad.",
   "Opcional: en Mi perfil → Código de verificación (MFA) puedes registrar un código en tu celular (Google o Microsoft Authenticator). Desde entonces, al entrar se te pedirá el número de 6 dígitos."]});
+/* Módulo 06 · Mi espacio (2026-11-24) */
+for (const k of Object.keys(MANUALES)) MANUALES[k].caps.push({t:"Mi espacio: tu información y tus solicitudes", p:[
+  "En Mi espacio → Mi información ves tu perfil, tu puesto, tus sedes, a quién reportas y tu equipo (solo nombre, puesto y sede). Cada dato dice quién puede cambiarlo: tú (teléfono y firma, en Mi perfil), por solicitud (nombre y cédula), RR. HH. (puesto, sede, fecha de incorporación) o histórico.",
+  "Si un dato no es correcto, pulsa «Pedir corrección». En Mis solicitudes también pides constancias, aclaraciones de pago, apoyo, propuestas o reportas un problema de la app. Antes de enviar ves un resumen; mientras no se resuelva puedes cancelarla.",
+  "Cada solicitud recibe un folio y ves quién la tiene. Si te piden información, respóndela desde la misma solicitud. Nadie resuelve sus propias solicitudes.",
+  "La campana de la barra superior muestra los avisos: respuestas, verificaciones y comunicados. Los pendientes por hacer aparecen en Inicio.",
+  "Si administras personas, arriba verás «Mi espacio | Gestión»: Mi espacio muestra solo lo tuyo y Gestión lo que administras. Cambiar de espacio no te da ni te quita permisos."]});
+for (const k of Object.keys(MANUALES)) MANUALES[k].caps.push({t:"Vacaciones y permisos", p:[
+  "En Mi asistencia → «Mis vacaciones» ves los días confirmados por RR. HH., los usados, los que están en trámite y los disponibles. Usados y en trámite son un estimado que cuenta de lunes a sábado.",
+  "Al pedir vacaciones ves la demanda de tu sede esos días (Normal, Alta o Muy alta), sin nombres de otras personas. Tu jefe directo la resuelve.",
+  "Para un permiso elige el tipo (personal, revisión médica, emergencia familiar, con o sin goce, incapacidad…) y, si hace falta, adjunta una constancia en PDF o imagen. No escribas ni adjuntes diagnósticos: la constancia solo la ven RR. HH. y tú."]});
+for (const k of Object.keys(MANUALES)) MANUALES[k].caps.push({t:"Mi calendario y Comunidad", p:[
+  "Mi calendario reúne tus fechas: ausencias, solicitudes en trámite, tu incorporación, fechas límite para firmar, vencimientos de tus documentos y comunicados. Es de solo lectura; «Abrir» te lleva a la sección donde se cambia. En Inicio ves las de los próximos 14 días.",
+  "En Comunidad están los comunicados dirigidos a ti (circulares, políticas y oficios). Si piden confirmar lectura, ábrelo, léelo completo y pulsa «Confirmo que lo leí»: queda registrado con fecha.",
+  "En Comunidad → Preguntas frecuentes encuentras respuestas rápidas sobre la app."]});
+MANUALES.psicologo.caps.push({t:"Perfil profesional", p:[
+  "En Mi información → Perfil profesional registras tu formación, enfoques, población que atiendes, evaluaciones e instrumentos y motivos de consulta con mayor experiencia. Puedes elegir de la lista o escribir uno que no esté.",
+  "Como respaldo elige uno de tus PDF (título, cédula, diplomado o constancia) de Mis documentos. Todo queda «Por verificar» hasta que la coordinación lo revisa; si cambias algo verificado, vuelve a revisión, y si te marcan «No verificada» verás qué falta.",
+  "Declarar una competencia no habilita por sí sola la atención de esos casos. Si quieres capacitarte, usa «Necesito formación en…»."]});
+for (const k of ["direccion","admin_sede"]) MANUALES[k].caps.push({t:"Solicitudes del personal y comunicados", p:[
+  "En Personas → Bandeja de solicitudes ves las solicitudes que te corresponden: tómala, pide información, apruébala o explica por qué no se aprueba. Nunca resuelves las tuyas. Al aprobar una corrección de nombre o cédula, el dato se corrige solo en la cuenta, las firmas y los directorios.",
+  "Para comunicar una circular, política u oficio: primero publícalo con folio y firmas en Documentos y firmas; después, en Comunidad → Publicar y seguimiento, elige a quién (sedes, tipos de usuario o todas tus sedes), si requiere confirmar lectura y la vigencia. Solo llega a las sedes donde gestionas documentos.",
+  "En Seguimiento ves quién confirmó la lectura. Retirar un comunicado exige un motivo y las confirmaciones se conservan."]});
+MANUALES.direccion.caps.push({t:"Saldos de vacaciones y perfiles profesionales", p:[
+  "RR. HH. registra el saldo confirmado de vacaciones de cada persona en Personas → Asistencia y jornadas → «Vacaciones y cobertura». Nada se calcula solo y tu propio saldo lo registra otra persona. Ahí ves también la cobertura por sede.",
+  "En Personas → Perfiles profesionales revisas las competencias declaradas por los psicólogos de tu alcance: cotéjalas con el documento original y márcalas «Verificada» o «No verificada» explicando qué falta. Verificar no habilita la atención de casos ni cambia permisos.",
+  "«Buscar por competencia» orienta la asignación de casos (por ejemplo, quién atiende duelo en adolescentes); la decisión siempre es de una persona."]});
 const manualDeRol = k => k==="psicologo_base"||k==="psicologo_ind"||k==="psicologo" ? "psicologo" : k==="superusuario" ? "direccion" : k;
 
 function manualHtml(k){
