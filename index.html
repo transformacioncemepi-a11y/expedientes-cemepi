@@ -1406,7 +1406,10 @@ const NAV_GUARDA = (k,v) => { try{ localStorage.setItem("cemepi."+k, JSON.string
 const navVisible = v => { const id=VISTA_BTN[v], b=id&&$("#"+id); return b && !b.hidden && !(document.body.classList.contains("ctx-mi") && b.closest(".nav-g.ges")) ? b : null; };
 const navTxt = v => { const b=navVisible(v); return (b?.textContent||VISTA_TXT[v]||v).trim(); };
 function navExtras(){
-  const fav=NAV_LS("fav").filter(navVisible), rec=NAV_LS("rec").filter(v=>navVisible(v)&&!fav.includes(v)).slice(0,4);
+  /* Varias vistas comparten un botón (pestañas de Usuarios y permisos, de Estructura…): se muestran una sola vez */
+  const unico=xs=>{ const ya=new Set(); return xs.filter(v=>{ const id=VISTA_BTN[v]||v; if (ya.has(id)) return false; ya.add(id); return true; }); };
+  const fav=unico(NAV_LS("fav").filter(navVisible)), fb=new Set(fav.map(v=>VISTA_BTN[v]||v)),
+        rec=unico(NAV_LS("rec").filter(v=>navVisible(v)&&!fb.has(VISTA_BTN[v]||v))).slice(0,4);
   const pinta=(el, titulo, xs)=>{ if (!el) return; if (el.hidden!==!xs.length) el.hidden=!xs.length;
     el.innerHTML = xs.length ? `<span class="nav-sub-l">${titulo}</span>${xs.map(v=>`<button class="nav-i nav-mini" type="button" data-navir="${v}">${esc(navTxt(v))}</button>`).join("")}` : ""; };
   pinta($("#navFav"), "★ Favoritos", fav); pinta($("#navRec"), "Recientes", rec);
