@@ -5501,7 +5501,7 @@ function manUnidadesHtml(v,us,rev){
   const u=us.find(x=>x.unidad===S.manU)||us.find(x=>!rev.has(x.unidad))||us[0], i=us.indexOf(u), camb=manCambiadas(v), mias=(MAN().cuaderno||[]).filter(c=>c.perfil_id===MAN().uid&&c.unidad===u.unidad);
   const nav=`<div class="actions" style="justify-content:space-between;gap:6px;flex-wrap:wrap">${i>0?`<button class="btn sm" type="button" data-act="manAbrir" data-u="${us[i-1].unidad}">← Anterior</button>`:"<span></span>"}
     ${i<us.length-1?`<button class="btn sm" type="button" data-act="manAbrir" data-u="${us[i+1].unidad}">Siguiente →</button>`:`<button class="btn sm primary" type="button" data-act="manTab" data-t="reconocer">Ir al reconocimiento de lectura</button>`}</div>`;
-  const sel=`<div class="fld"><label for="manSel">Unidad</label><select id="manSel" data-man="1">${us.map(x=>`<option value="${x.unidad}" ${x===u?"selected":""}>${rev.has(x.unidad)?"✓ ":""}${esc(x.titulo)}${camb.has(x.unidad)?" (actualizada)":""}</option>`).join("")}</select></div>`;
+  const sel=`<div class="fld"><label for="manUnidadSel">Unidad</label><select id="manUnidadSel" data-man="1">${us.map(x=>`<option value="${x.unidad}" ${x===u?"selected":""}>${rev.has(x.unidad)?"✓ ":""}${esc(x.titulo)}${camb.has(x.unidad)?" (actualizada)":""}</option>`).join("")}</select></div>`;
   return `<section class="card">${sel}<p class="status" style="margin:6px 0 0">Unidad ${i+1} de ${us.length} · Manual de Bienvenida 2026, ${u.paginas.length>1?"páginas":"página"} ${u.paginas.join(", ")} · versión ${v.version}${camb.has(u.unidad)?` · <span class="pill estado-pendiente">Actualizada desde tu última lectura</span>`:""}</p></section>
     <section class="card"><h2 style="margin:0">${esc(u.titulo)}</h2><p style="margin:6px 0 0"><b>Intención:</b> ${esc(u.intencion||"")}</p>
       <div style="margin-top:8px">${acuTextoHtml(u.texto)}</div></section>
@@ -5563,11 +5563,17 @@ function manRutaHtml(){
 function manBuscarHtml(v){
   const m=MAN(), q=(S.manQ||"").trim(), nq=norm(q);
   const fuentes=[...manUnidades(v).map(u=>({t:u.titulo,txt:u.texto,src:`Manual de Bienvenida 2026 v${v.version}, ${u.paginas.length>1?"págs.":"pág."} ${u.paginas.join(", ")}`,u:u.unidad})),
-    ...m.otrasVersiones.flatMap(x=>{ const pl=m.otrasPlantillas.find(p=>p.id===x.plantilla_id); return (x.contenido?.secciones||[]).filter(s=>!s.sistema).map(s=>({t:s.titulo,txt:s.texto||"",src:`${pl?.nombre||"Documento"} v${x.version}`})); })];
-  const res=nq.length<3?[]:fuentes.map(f=>{ const n=norm(f.t+" "+f.txt), k=n.indexOf(nq); return k<0?null:{...f,k,frag:(f.t+" "+f.txt).slice(Math.max(0,k-120),k+220)}; }).filter(Boolean).slice(0,15);
-  return `<section class="card"><h2 style="margin:0">Conoce CEMEPI</h2><p style="margin:6px 0 0;max-width:80ch">Busca en el Manual de Bienvenida, los documentos de cultura y la Carta Compromiso vigente. Cada resultado indica su fuente. No sustituye la supervisión clínica ni la valoración médica; si no encuentras algo, pregúntalo en Mis solicitudes.</p>
+    ...m.otrasVersiones.flatMap(x=>{ const pl=m.otrasPlantillas.find(p=>p.id===x.plantilla_id); return (x.contenido?.secciones||[]).filter(s=>!s.sistema).map(s=>({t:s.titulo,txt:s.texto||"",src:`${pl?.nombre||"Documento"} v${x.version}`})); }),
+    /* E3 (P25): glosario de fundamentos con su tipo epistemológico (F/H/E/O), guías paso a paso y manual de uso de la app de tu rol */
+    ...FUNDAMENTOS.map(([n,d,t])=>({t:n,txt:d,src:"Glosario de fundamentos (propuesta por validar)",tipo:t,ayuda:"fundamentos"})),
+    ...GUIAS.filter(g=>{ try{ return g.si(); }catch{ return false; } }).map(g=>({t:g.t,txt:g.pasos.join(" "),src:"Guía paso a paso de la app",ayuda:"guias"})),
+    ...((M=>M?M.caps.map(c=>({t:c.t,txt:c.p.join(" "),src:`Manual de uso de la app · ${M.n}`,ayuda:"manualRol"})):[])(MANUALES[manualDeRol(S.rol)]))];
+  /* Orden (E3): primero el título idéntico, luego títulos que contienen la búsqueda y al final menciones en el texto */
+  const res=nq.length<3?[]:fuentes.map(f=>{ const n=norm(f.t+" "+f.txt), k=n.indexOf(nq); if (k<0) return null; const nt=norm(f.t);
+      return {...f,k,peso:nt===nq?0:nt.includes(nq)?1:2,frag:(f.t+" "+f.txt).slice(Math.max(0,k-120),k+220)}; }).filter(Boolean).sort((x,y)=>x.peso-y.peso).slice(0,15);
+  return `<section class="card"><h2 style="margin:0">Conoce CEMEPI</h2><p style="margin:6px 0 0;max-width:80ch">Busca en el Manual de Bienvenida, los documentos de cultura, la Carta Compromiso vigente, el glosario de fundamentos y las guías de uso de la app. Cada resultado indica su fuente y, en el glosario, si es fundamento filosófico, teoría clínica, evidencia o criterio de CEMEPI. No sustituye la supervisión clínica ni la valoración médica; si no encuentras algo, pregúntalo en Mis solicitudes.</p>
       <div class="filtros" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap"><div class="fld"><label for="manQ">¿Qué quieres saber?</label><input id="manQ" type="search" value="${esc(q)}" placeholder="Ej.: primera sesión, canalización, herbolaria"></div><button class="btn sm primary" type="button" data-act="manBuscar">Buscar</button></div></section>
-    ${q?(res.length?res.map(r=>`<section class="card"><p class="status" style="margin:0">Fuente: ${esc(r.src)}</p><h3 style="margin:4px 0 0">${esc(r.t)}</h3><p style="margin:4px 0 0">…${esc(r.frag)}…</p>${r.u?`<div class="actions" style="justify-content:flex-start"><button class="btn sm" type="button" data-act="manAbrir" data-u="${r.u}">Abrir la unidad</button></div>`:""}</section>`).join("")
+    ${q?(res.length?res.map(r=>`<section class="card"><p class="status" style="margin:0">Fuente: ${esc(r.src)}${r.tipo?` · <span class="pill">${esc(FUND_TIPO[r.tipo]||r.tipo)}</span>`:""}</p><h3 style="margin:4px 0 0">${esc(r.t)}</h3><p style="margin:4px 0 0">…${esc(r.frag)}…</p>${r.u?`<div class="actions" style="justify-content:flex-start"><button class="btn sm" type="button" data-act="manAbrir" data-u="${r.u}">Abrir la unidad</button></div>`:r.ayuda?`<div class="actions" style="justify-content:flex-start"><button class="btn sm" type="button" data-act="ayuda">Abrir en Ayuda</button></div>`:""}</section>`).join("")
       :`<section class="card"><p style="margin:0">No encontré información autorizada sobre «${esc(q)}». No invento respuestas: pregunta en <button class="linkbtn" type="button" data-act="misol">Mis solicitudes</button> o a tu coordinación.</p></section>`):""}`;
 }
 function manReconocerHtml(v,us,rev,rec){
@@ -5626,7 +5632,7 @@ async function manAccion(a,b){
   }catch(e){ toast(e?.message||"No se pudo completar."); }
 }
 const MAN_ACC=new Set(["miintegracion","manTab","manAbrir","manRevisada","manGuardar","manCompartir","manBorrar","manBuscar","manReconocer","manAcomp","manAvisar"]);
-document.addEventListener("change", e=>{ if (e.target?.dataset?.man&&e.target.id==="manSel"){ S.manU=e.target.value; render(); } });
+document.addEventListener("change", e=>{ if (e.target?.dataset?.man&&e.target.id==="manUnidadSel"){ S.manU=e.target.value; render(); } });
 
 const ACU_ACC=new Set(["misacuerdos","acuerdos","acuTab","acuEtapa","acuMarcar","acuReflex","acuLeer","acuLeido","acuDuda","acuAceptar","acuWord","acuIA",
   "acuSinc","acuVer","acuVerCerrar","acuGenerar","acuGenerarOk","acuTrans","acuRecordar","acuVincular","acuVEstado","acuVEditar","acuVGuardar","acuAnexoNuevo",
