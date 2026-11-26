@@ -918,6 +918,8 @@ const cemepi = {
   async emitirDocumento(id){ const { data, error } = await sb.rpc("emitir_documento", { p_id: id }); if (error) fallo(error); avisar("documentos"); return data; },
   async anularDocumento(id, motivo){ const { error } = await sb.rpc("anular_documento", { p_id: id, p_motivo: motivo }); if (error) fallo(error); avisar("documentos"); },
   async nuevaVersion(id){ const { data, error } = await sb.rpc("nueva_version_documento", { p_id: id }); if (error) fallo(error); avisar("documentos"); return data; },
+  /* Salud integral (076): comprobaciones de consistencia; solo Superusuario y Dirección */
+  async saludIntegral(){ const { data, error } = await sb.rpc("salud_integral"); if (error) fallo(error); return data; },
   /* Uso de la IA (071): resumen por persona y día y configuración del límite. Si 071 no está aplicada, devuelve ok:false. */
   async iaUso(desde){ const d = new Date(desde).toISOString().slice(0, 10);
     const [r, c] = await Promise.all([sb.rpc("ia_resumen", { p_desde: d }), sb.from("ia_config").select("*")]);
