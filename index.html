@@ -394,6 +394,7 @@ body.ctx-mi .nav-g.ges{display:none}
     <button class="nav-i" id="misolBtn" type="button" data-act="misol" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h4l2 3h4l2-3h4M5 5h14l2 8v6H3v-6z"/></svg><span>Mis solicitudes</span></button>
     <button class="nav-i" id="micalBtn" type="button" data-act="micalendario" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Mi calendario</span></button>
     <button class="nav-i" id="comuBtn" type="button" data-act="comunidad" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11v3a1 1 0 0 0 1 1h2l5 4V6L7 10H5a1 1 0 0 0-1 1z"/><path d="M16 9a3 3 0 0 1 0 6M18.5 6.5a6.5 6.5 0 0 1 0 11"/></svg><span>Comunidad</span></button>
+    <button class="nav-i" id="manBtn" type="button" data-act="miintegracion" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h5v18H6a2 2 0 0 1-2-2z"/><path d="M13 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"/></svg><span>Mi integración y desarrollo</span></button>
     <button class="nav-i" id="misacuBtn" type="button" data-act="misacuerdos" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v18H7z"/><path d="M10 8h4M10 12h4M10 16h2"/></svg><span>Mis acuerdos y compromisos</span></button>
     <button class="nav-i" id="raiBtn" type="button" data-act="raices"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V11"/><path d="M12 11c0-4 3-7 7-7 0 4-3 7-7 7zM12 13c0-3-2.5-5.5-6-5.5 0 3.5 2.5 5.5 6 5.5z"/><path d="M7 21h10"/></svg><span>Cultura organizacional</span></button>
     <button class="nav-i" id="masBtn" type="button" data-act="miasis" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg><span>Mi asistencia</span></button>
@@ -1182,13 +1183,13 @@ function renderList(){
   el.innerHTML=grupos.map(s=>{ const g=arr.filter(p=>(p.ficha?.sede||"")===s); if(!g.length) return "";
     return `<div class="grupo"><span>${esc(s||"Sin sede")}</span><b>${g.length}</b></div>${porTerapeuta(g)}`; }).join("");
 }
-const VISTA_TXT={inicio:"Inicio",exp:"Expediente",perfil:"Mi perfil",terapeutas:"Terapeutas",usuarios:"Usuarios y permisos",seguridad:"Usuarios y permisos",orgresumen:"Resumen organizacional",indicadores:"Indicadores",organigrama:"Organigrama",colaboradores:"Colaboradores",supervision:"Supervisión",sedes:"Sedes",entidades:"Entidades fiscales",areas:"Áreas",puestos:"Puestos y funciones",vacantes:"Vacantes",uso:"Tiempo de uso",tablero:"Tablero",miasis:"Mi asistencia",asistencia:"Asistencia y jornadas",docs:"Documentos y firmas",incorporacion:"Incorporación",miinc:"Mi proceso de contratación",miinfo:"Mi información",misol:"Mis solicitudes",micalendario:"Mi calendario",comunidad:"Comunidad",raices:"Cultura organizacional",misacuerdos:"Mis acuerdos y compromisos",acuerdos:"Acuerdos y documentos",perfprof:"Perfiles profesionales",catalogo:"Perfiles de puesto y competencias",bandejaSol:"Bandeja de solicitudes",
+const VISTA_TXT={inicio:"Inicio",exp:"Expediente",perfil:"Mi perfil",terapeutas:"Terapeutas",usuarios:"Usuarios y permisos",seguridad:"Usuarios y permisos",orgresumen:"Resumen organizacional",indicadores:"Indicadores",organigrama:"Organigrama",colaboradores:"Colaboradores",supervision:"Supervisión",sedes:"Sedes",entidades:"Entidades fiscales",areas:"Áreas",puestos:"Puestos y funciones",vacantes:"Vacantes",uso:"Tiempo de uso",tablero:"Tablero",miasis:"Mi asistencia",asistencia:"Asistencia y jornadas",docs:"Documentos y firmas",incorporacion:"Incorporación",miinc:"Mi proceso de contratación",miinfo:"Mi información",misol:"Mis solicitudes",micalendario:"Mi calendario",comunidad:"Comunidad",raices:"Cultura organizacional",misacuerdos:"Mis acuerdos y compromisos",miintegracion:"Mi integración y desarrollo",acuerdos:"Acuerdos y documentos",perfprof:"Perfiles profesionales",catalogo:"Perfiles de puesto y competencias",bandejaSol:"Bandeja de solicitudes",
   reglamento:"Reglamento",contratos:"Contratos",permisos:"Usuarios y permisos",documentacion:"Documentación",ayuda:"Ayuda"};
 /* Estructura de la organización: un solo botón con pestañas (2026-11-22) */
 const ESTR_VISTAS=[["sedes","Sedes"],["entidades","Entidades fiscales"],["areas","Áreas"],["puestos","Puestos y funciones"],["vacantes","Vacantes"]];
-const VISTA_BTN={inicio:"iniBtn",terapeutas:"terBtn",contratos:"ctrBtn",documentacion:"docpBtn",reglamento:"regBtn",usuarios:"segBtn",permisos:"segBtn",seguridad:"segBtn",orgresumen:"resBtn",indicadores:"indBtn",organigrama:"ogBtn",colaboradores:"colBtn",supervision:"supBtn",sedes:"sedBtn",entidades:"sedBtn",areas:"sedBtn",puestos:"sedBtn",vacantes:"sedBtn",uso:"usoBtn",tablero:"tabBtn",miasis:"masBtn",asistencia:"asjBtn",docs:"docsBtn",incorporacion:"incBtn",miinc:"miincBtn",miinfo:"miinfBtn",misol:"misolBtn",bandejaSol:"bsolBtn",perfprof:"ppBtn",catalogo:"catBtn",micalendario:"micalBtn",comunidad:"comuBtn",raices:"raiBtn",misacuerdos:"misacuBtn",acuerdos:"acuBtn",ayuda:"ayudaBtn",perfil:"perfilBtn"};
+const VISTA_BTN={inicio:"iniBtn",terapeutas:"terBtn",contratos:"ctrBtn",documentacion:"docpBtn",reglamento:"regBtn",usuarios:"segBtn",permisos:"segBtn",seguridad:"segBtn",orgresumen:"resBtn",indicadores:"indBtn",organigrama:"ogBtn",colaboradores:"colBtn",supervision:"supBtn",sedes:"sedBtn",entidades:"sedBtn",areas:"sedBtn",puestos:"sedBtn",vacantes:"sedBtn",uso:"usoBtn",tablero:"tabBtn",miasis:"masBtn",asistencia:"asjBtn",docs:"docsBtn",incorporacion:"incBtn",miinc:"miincBtn",miinfo:"miinfBtn",misol:"misolBtn",bandejaSol:"bsolBtn",perfprof:"ppBtn",catalogo:"catBtn",micalendario:"micalBtn",comunidad:"comuBtn",raices:"raiBtn",misacuerdos:"misacuBtn",miintegracion:"manBtn",acuerdos:"acuBtn",ayuda:"ayudaBtn",perfil:"perfilBtn"};
 const GRUPO_VISTA={exp:"Atención",terapeutas:"Atención",colaboradores:"Personas",organigrama:"Personas",supervision:"Personas",incorporacion:"Personas",asistencia:"Personas",
-  docs:"Documentos",contratos:"Documentos",documentacion:"Documentos",reglamento:"Documentos",miasis:"Mi espacio",miinc:"Mi espacio",miinfo:"Mi espacio",misol:"Mi espacio",micalendario:"Mi espacio",comunidad:"Mi espacio",raices:"Mi espacio",misacuerdos:"Mi espacio",acuerdos:"Personas",bandejaSol:"Personas",perfprof:"Personas",catalogo:"Personas",
+  docs:"Documentos",contratos:"Documentos",documentacion:"Documentos",reglamento:"Documentos",miasis:"Mi espacio",miinc:"Mi espacio",miinfo:"Mi espacio",misol:"Mi espacio",micalendario:"Mi espacio",comunidad:"Mi espacio",raices:"Mi espacio",misacuerdos:"Mi espacio",miintegracion:"Mi espacio",acuerdos:"Personas",bandejaSol:"Personas",perfprof:"Personas",catalogo:"Personas",
   tablero:"Administración",orgresumen:"Administración",indicadores:"Administración",uso:"Administración",
   sedes:"Configuración",entidades:"Configuración",areas:"Configuración",puestos:"Configuración",vacantes:"Configuración",seguridad:"Configuración",usuarios:"Configuración",permisos:"Configuración",
   ayuda:"Mi cuenta",perfil:"Mi cuenta"};
@@ -1441,7 +1442,7 @@ const VISTA_AYUDA={
   colaboradores:()=>[null,"Consultar la organización"], organigrama:()=>[null,"Consultar la organización"], supervision:()=>[null,"Consultar la organización"],
   orgresumen:()=>[null,"Consultar la organización"], indicadores:()=>[null,"Consultar la organización"], sedes:()=>[null,"Consultar la organización"],
   incorporacion:()=>[null,"Iniciar el proceso de una persona en contratación"], miinc:()=>[null,"Mi proceso de contratación"],
-  asistencia:()=>[null,"Supervisar la asistencia de mi equipo"], miasis:()=>[null,"Registrar mi entrada y salida"], miinfo:()=>[null,"Mi información y Mi espacio"], misol:()=>[null,"Hacer una solicitud"], bandejaSol:()=>[null,"Resolver solicitudes del equipo"], perfprof:()=>[null,"Verificar perfiles profesionales"], catalogo:()=>["Qué se espera de cada puesto: perfiles ideales, competencias con rúbrica de 5 niveles, brechas y planes de desarrollo. No concede permisos.","Consultar el perfil ideal de un puesto"], micalendario:()=>[null,"Mi calendario"], comunidad:()=>[null,"Comunicados y preguntas frecuentes"], raices:()=>[null,null], misacuerdos:()=>["Tu Carta Compromiso, sus anexos, la formación previa y tus dudas. Nada se firma sin que leas el documento completo.","Leer y aceptar mis acuerdos"], acuerdos:()=>["Plantilla versionada de la Carta Compromiso, bloques de colaboración y consultorios, anexos, acuerdos por persona, vigencias, campañas y reflexiones. La firma usa Documentos y firmas.","Administrar acuerdos profesionales"],
+  asistencia:()=>[null,"Supervisar la asistencia de mi equipo"], miasis:()=>[null,"Registrar mi entrada y salida"], miinfo:()=>[null,"Mi información y Mi espacio"], misol:()=>[null,"Hacer una solicitud"], bandejaSol:()=>[null,"Resolver solicitudes del equipo"], perfprof:()=>[null,"Verificar perfiles profesionales"], catalogo:()=>["Qué se espera de cada puesto: perfiles ideales, competencias con rúbrica de 5 niveles, brechas y planes de desarrollo. No concede permisos.","Consultar el perfil ideal de un puesto"], micalendario:()=>[null,"Mi calendario"], comunidad:()=>[null,"Comunicados y preguntas frecuentes"], raices:()=>[null,null], miintegracion:()=>["Tu bienvenida a CEMEPI: el manual en 20 unidades, tu Cuaderno del Terapeuta (privado), tu ruta de 90 días y a quién acudir. No es un examen ni un contrato.","Conocer CEMEPI y mi ruta de integración"], misacuerdos:()=>["Tu Carta Compromiso, sus anexos, la formación previa y tus dudas. Nada se firma sin que leas el documento completo.","Leer y aceptar mis acuerdos"], acuerdos:()=>["Plantilla versionada de la Carta Compromiso, bloques de colaboración y consultorios, anexos, acuerdos por persona, vigencias, campañas y reflexiones. La firma usa Documentos y firmas.","Administrar acuerdos profesionales"],
   docs:()=>[null, dxPuedeGestionar()?"Agregar un documento a la biblioteca":"Firmar un documento"],
   contratos:()=>veTodosContratos()?["Contratos individuales del personal: captura, fecha de alta, salario y firmas.","Completar y firmar contratos del personal"]:(S.rol==="psicologo"&&S.api?.modalidad==="comision")?["Tu documento contractual es la Carta Compromiso para el Psicólogo Independiente.","Leer y aceptar mi Carta Compromiso"]:["Tu contrato individual de trabajo: captura tus datos y fírmalo con tu contraseña.","Firmar mi contrato"],
   documentacion:()=>veDocsTodos()?[null,"Verificar documentación del personal"]:[null,"Subir mi documentación"],
@@ -1468,7 +1469,7 @@ function render(){ borAntes(); renderVista(); vistaExtras(); if (typeof lexSubti
 function renderVista(){
   const d=$("#detail"); S.dirty=false; S.stale=false; S.editado=false; marcarNav(); document.body.classList.remove("menu-abierto");
   const p=S.pacientes.get(S.sel);
-  $("#app").classList.toggle("open", !!p || ["perfil","miinfo","misol","bandejaSol","perfprof","catalogo","micalendario","comunidad","raices","misacuerdos","acuerdos","terapeutas","usuarios","sedes","entidades","areas","puestos","vacantes","colaboradores","supervision","organigrama","seguridad","orgresumen","indicadores","uso","reglamento","contratos","permisos","documentacion","ayuda","tablero","miasis","asistencia","docs","incorporacion","miinc"].includes(S.view));
+  $("#app").classList.toggle("open", !!p || ["perfil","miinfo","misol","bandejaSol","perfprof","catalogo","micalendario","comunidad","raices","misacuerdos","miintegracion","acuerdos","terapeutas","usuarios","sedes","entidades","areas","puestos","vacantes","colaboradores","supervision","organigrama","seguridad","orgresumen","indicadores","uso","reglamento","contratos","permisos","documentacion","ayuda","tablero","miasis","asistencia","docs","incorporacion","miinc"].includes(S.view));
   if (S.view==="perfil"){ d.innerHTML=perfilHtml(); activarPad(); return; }
   if (S.view==="terapeutas"){ d.innerHTML=terapeutasHtml(); return; }
   if (S.view==="usuarios"){ d.innerHTML=usuariosHtml(); return; }
@@ -1486,6 +1487,7 @@ function renderVista(){
   if (S.view==="catalogo"){ d.innerHTML=catHtml(); return; }
   if (S.view==="raices"){ d.innerHTML=raicesHtml(); return; }
   if (S.view==="misacuerdos"){ d.innerHTML=misAcuHtml(); return; }
+  if (S.view==="miintegracion"){ d.innerHTML=manIntegracionHtml(); return; }
   if (S.view==="acuerdos"){ d.innerHTML=acuPanelHtml(); return; }
   if (S.view==="micalendario"){ d.innerHTML=micalendarioHtml(); return; }
   if (S.view==="comunidad"){ d.innerHTML=comunidadHtml(); return; }
@@ -1536,6 +1538,9 @@ async function cargarPendientes(){
     intenta(async()=>{ await acuCargar(); const a=ACU(); if (!a?.ok) return;
       const n=a.acuerdos.filter(x=>x.colaborador_id===a.yo&&["disponible_lectura","pendiente_firma_psicologo"].includes(x.estado)).length;
       if (n) pend.push({t:`Tienes ${n} acuerdo${n===1?"":"s"} para leer`, d:"Tómate tu tiempo: puedes plantear dudas antes de aceptarlo.", act:"misacuerdos", b:"Ver"}); }),
+    intenta(async()=>{ await manCargar(); const m=MAN(), v=manPublicada(); if (!m?.ok||!v||S.rol!=="psicologo") return;
+      const tot=manUnidades(v).length, r=manMisRevisadas(v).size; if (manReconocido(v)) return;
+      pend.push({t:r?`Tu bienvenida a CEMEPI: ${r} de ${tot} unidades`:"Te damos la bienvenida a CEMEPI", d:r?"Continúa a tu ritmo; no es un examen.":"Conoce el manual, tu Cuaderno del Terapeuta y tu ruta de integración.", act:"miintegracion", b:r?"Continuar":"Comenzar"}); }),
     intenta(async()=>{ const rv=(await S.api.revisionesPendientes?.())||[]; if (!rv.length) return;
       pend.push({t:`${rv.length} aviso${rv.length===1?"":"s"} por cambio de sede o de puesto`, d:"Revisa permisos o capacitación. Nada cambia automáticamente.", act:"colaboradores", b:"Revisar"}); }),
     intenta(async()=>{ const fs=(await S.api.misFirmasPendientes?.())||[]; const n=fs.filter(f=>f.mi_turno).length;
@@ -5810,6 +5815,178 @@ function ctrCartaHtml(){
    Plantilla versionada, anexos, acuerdos por persona, formación previa y firma con el Módulo 05.
    Nada se publica ni se firma sin plantilla APROBADA. Sin sanciones ni decisiones automáticas.
    ==================================================================================== */
+/* ====================================================================================
+   P24 · Mi integración y desarrollo (migraciones 069–070). Manual de Bienvenida en 20 unidades, Cuaderno del
+   Terapeuta (privado por defecto), ruta de integración, buscador «Conoce CEMEPI» (sin IA) y reconocimiento de lectura.
+   Reutiliza: motor de documentos (versiones y publicación), Incorporación (ruta y acompañante), Mis solicitudes
+   (acompañamiento = tipo «apoyo»). La lectura no es firma; nada se califica ni bloquea la atención clínica.
+   ==================================================================================== */
+const MAN_DECL=[["identidad","Conozco la identidad de CEMEPI."],["fundamentos","He revisado sus fundamentos."],["pilares","Conozco los pilares clínico, relacional y comunitario."],
+  ["corresponsabilidad","Comprendo los principios de corresponsabilidad."],["trabajo_personal","Conozco la importancia del trabajo personal."],["procedimientos","Conozco los procedimientos esenciales."],
+  ["salud_integrativa","He revisado los fundamentos de salud integrativa."],["limites","Comprendo los límites profesionales."],["preguntas","He tenido oportunidad de formular preguntas."],
+  ["acompanamiento","Conozco los canales de acompañamiento."],["reciprocidad","Comprendo que los principios organizacionales son recíprocos."]];
+const MAN_TIPOS={reflexion:"Reflexión",aprendizaje:"Aprendizaje",pregunta:"Pregunta",fortaleza:"Fortaleza",necesidad:"Necesidad formativa",idea:"Idea",propuesta:"Propuesta",meta:"Meta profesional",supervision:"Tema para supervisión"};
+const MAN_RUTA=[["Día 1 · Bienvenida","Carta del Director General, identidad, cultura e inicio del manual.",0],["Semana 1 · Conocer","Recorrido por la sede, presentación con el equipo, acceso a la app, procedimientos, acompañamiento e inicio de tu Cuaderno.",1],
+  ["Semana 2 · Empezar","Primeras sesiones acompañadas, revisión del encuadre y primera supervisión.",8],["Semana 3 · Integrarte","Participación, comunicación, interapoyo e identificación de necesidades.",15],
+  ["Día 30 · Celebrar y ajustar","Revisión conjunta de aprendizajes, dificultades, propuestas y necesidades de acompañamiento.",30],["Días 31 a 60 · Consolidar","Continuidad, encuadre, registros clínicos, supervisión y formación complementaria.",31],
+  ["Días 61 a 90 · Crecer","Fortalezas, bienestar profesional, plan de desarrollo, propuestas y acuerdos de acompañamiento.",61]];
+const MAN=()=>S.man;
+async function manCargar(){
+  if (!S.api?.manDatos) return; try{ S.man=await S.api.manDatos(); }catch{ S.man={ok:false}; }
+  const m=MAN(), b=$("#manBtn"); if (b) b.hidden=!(m?.ok&&(S.rol==="psicologo"||["superusuario","direccion"].includes(S.rol)));
+  /* Primer ingreso: un psicólogo sin avance llega una sola vez a su bienvenida */
+  if (m?.ok&&S.rol==="psicologo"&&manPublicada()&&!m.avance.some(a=>a.perfil_id===m.uid)&&S.view==="inicio"){ let ya=false; try{ ya=sessionStorage.getItem("manBienvenida")==="1"; sessionStorage.setItem("manBienvenida","1"); }catch{}
+    if (!ya){ S.view="miintegracion"; S.manTab="inicio"; } }
+  if (["miintegracion","acuerdos"].includes(S.view)) render();
+}
+const manPublicada=()=>MAN()?.versiones?.find(v=>v.estado==="aprobada");
+const manVersion=()=>manPublicada()||(["superusuario","direccion"].includes(S.rol)?[...(MAN()?.versiones||[])].reverse().find(v=>v.estado==="borrador"):null);
+const manUnidades=v=>(v?.contenido?.secciones||[]).filter(s=>s.unidad);
+const manMisRevisadas=v=>new Set((MAN()?.avance||[]).filter(a=>a.perfil_id===MAN().uid&&a.version_id===v?.id).map(a=>a.unidad));
+const manReconocido=v=>(MAN()?.reconocimientos||[]).find(r=>r.perfil_id===MAN().uid&&r.version_id===v?.id);
+/* Unidades que cambiaron respecto de la versión anterior que la persona ya había reconocido */
+function manCambiadas(v){ const m=MAN(), ant=(m?.versiones||[]).filter(x=>x.version<v.version&&m.reconocimientos.some(r=>r.perfil_id===m.uid&&r.version_id===x.id)).sort((a,b)=>b.version-a.version)[0];
+  if (!ant) return new Set(); const prev=Object.fromEntries(manUnidades(ant).map(s=>[s.unidad,s.texto])); return new Set(manUnidades(v).filter(s=>prev[s.unidad]!==s.texto).map(s=>s.unidad)); }
+function manIntegracionHtml(){
+  const m=MAN(), cab=`<div class="phead">${migas()}<h1>Mi integración y desarrollo</h1></div>`, env=x=>`<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:12px">${cab}${x}</div>`;
+  if (!m) return env(`<p class="status">Cargando…</p>`);
+  if (!m.ok) return env(`<section class="card"><p class="status" style="margin:0">Disponible cuando se apliquen las migraciones 069–070.</p></section>`);
+  const v=manVersion(); if (!v) return env(`<section class="card"><p style="margin:0">El Manual de Bienvenida se está preparando. Cuando la Dirección lo publique, lo encontrarás aquí.</p></section>`);
+  const us=manUnidades(v), rev=manMisRevisadas(v), rec=manReconocido(v), t=S.manTab||"inicio";
+  const tabs=`<div class="tabs" role="tablist" aria-label="Secciones">${[["inicio","Bienvenida"],["unidades",`Manual (${rev.size}/${us.length})`],["cuaderno","Mi Cuaderno del Terapeuta"],["ruta","Mi ruta de integración"],["buscar","Conoce CEMEPI"],["reconocer",rec?"✓ Reconocimiento":"Reconocimiento de lectura"]]
+    .map(([k,n])=>`<button class="tab" role="tab" type="button" data-act="manTab" data-t="${k}" aria-selected="${t===k}">${n}</button>`).join("")}</div>`;
+  const borr=v.estado!=="aprobada"?`<div class="banner">Vista previa de la versión ${v.version} en borrador: los psicólogos todavía no la ven. Se publica en Personas → Acuerdos y documentos → Manual de Bienvenida.</div>`:"";
+  const f={inicio:manInicioHtml,unidades:manUnidadesHtml,cuaderno:manCuadernoHtml,ruta:manRutaHtml,buscar:manBuscarHtml,reconocer:manReconocerHtml}[t]||manInicioHtml;
+  return env(borr+tabs+f(v,us,rev,rec));
+}
+function manInicioHtml(v,us,rev,rec){
+  const m=MAN(), nom=(S.api?.nombre||"").split(/\s+/)[0]||"colega", sig=us.find(u=>!rev.has(u.unidad));
+  const carta=us.find(u=>u.unidad==="u01"), txt=(carta?.texto||"").split("\n"), i=txt.findIndex(l=>l.startsWith("Querido(a) colega")), fin=txt.findIndex(l=>l.startsWith("Romel Monroy"));
+  const cuerpo=i>=0?txt.slice(i,fin>i?fin:undefined).map((l,k)=>k===0?l.replace("Querido(a) colega",`Querido(a) ${nom}`):l):[];
+  const yo=m.cols.find(c=>c.id===m.yoCol);
+  return `<section class="card" style="background:linear-gradient(135deg,var(--accent-soft,#eaf2fb),transparent)"><div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+      <img src="iconos/icono-192.png" alt="Logotipo de CEMEPI" width="64" height="64" style="border-radius:12px" onerror="this.hidden=true">
+      <div><h2 style="margin:0">Bienvenido(a) a CEMEPI, ${esc(nom)}</h2><p style="margin:4px 0 0;max-width:70ch">Aquí no llegas solamente a un consultorio. Llegas a una comunidad de personas que cuidan a otras personas: una comunidad que aprende, reflexiona, se transforma y construye posibilidades para mejorar la calidad de vida de los demás.</p>
+      <p style="margin:6px 0 0"><b>CEMEPI SOMOS NOSOTROS.</b></p></div></div>
+    <div class="actions" style="justify-content:flex-start;gap:6px;flex-wrap:wrap">
+      ${rev.size?`<button class="btn primary" type="button" data-act="manAbrir" data-u="${(sig||us[0]).unidad}">${sig?"Continuar donde me quedé":"Volver al manual"}</button>`:`<button class="btn primary" type="button" data-act="manAbrir" data-u="${us[0].unidad}">Comenzar mi experiencia de bienvenida</button>`}
+      <button class="btn" type="button" data-act="manTab" data-t="ruta">Conocer mi ruta de integración</button>
+      <button class="btn" type="button" data-act="manAcomp">Solicitar acompañamiento</button></div>
+    <p class="status" style="margin:6px 0 0">${rev.size} de ${us.length} unidades revisadas${rec?` · Reconocimiento registrado el ${fechaTxt(rec.reconocido_en)}`:""}. Esto es una bienvenida y una herramienta permanente de consulta, no un examen ni un contrato.${yo?.fecha_incorporacion?` · Tu fecha de incorporación: ${fechaTxt(yo.fecha_incorporacion)}.`:""}</p></section>
+    ${cuerpo.length?`<section class="card"><h3 style="margin:0">Una carta para ti</h3>${cuerpo.map(l=>`<p style="margin:8px 0 0;max-width:75ch;text-align:justify">${esc(l)}</p>`).join("")}
+      <p style="margin:10px 0 0"><b>Romel Monroy Barrón</b><br><span class="status">Fundador y Director General de CEMEPI</span></p><p class="status" style="margin:6px 0 0">Fuente: Manual de Bienvenida 2026, página 2 (versión ${v.version}).</p></section>`:""}
+    <section class="card"><h3 style="margin:0">Tu recorrido</h3><ol style="margin:6px 0 0;padding-left:20px">${us.map(u=>`<li style="margin:3px 0"><button class="linkbtn" type="button" data-act="manAbrir" data-u="${u.unidad}">${esc(u.titulo.replace(/^Unidad \d+\. /,""))}</button> ${rev.has(u.unidad)?`<span class="pill estado-activo">Revisada</span>`:""}</li>`).join("")}</ol></section>`;
+}
+function manUnidadesHtml(v,us,rev){
+  const u=us.find(x=>x.unidad===S.manU)||us.find(x=>!rev.has(x.unidad))||us[0], i=us.indexOf(u), camb=manCambiadas(v), mias=(MAN().cuaderno||[]).filter(c=>c.perfil_id===MAN().uid&&c.unidad===u.unidad);
+  const nav=`<div class="actions" style="justify-content:space-between;gap:6px;flex-wrap:wrap">${i>0?`<button class="btn sm" type="button" data-act="manAbrir" data-u="${us[i-1].unidad}">← Anterior</button>`:"<span></span>"}
+    ${i<us.length-1?`<button class="btn sm" type="button" data-act="manAbrir" data-u="${us[i+1].unidad}">Siguiente →</button>`:`<button class="btn sm primary" type="button" data-act="manTab" data-t="reconocer">Ir al reconocimiento de lectura</button>`}</div>`;
+  const sel=`<div class="fld"><label for="manSel">Unidad</label><select id="manSel" data-man="1">${us.map(x=>`<option value="${x.unidad}" ${x===u?"selected":""}>${rev.has(x.unidad)?"✓ ":""}${esc(x.titulo)}${camb.has(x.unidad)?" (actualizada)":""}</option>`).join("")}</select></div>`;
+  return `<section class="card">${sel}<p class="status" style="margin:6px 0 0">Unidad ${i+1} de ${us.length} · Manual de Bienvenida 2026, ${u.paginas.length>1?"páginas":"página"} ${u.paginas.join(", ")} · versión ${v.version}${camb.has(u.unidad)?` · <span class="pill estado-pendiente">Actualizada desde tu última lectura</span>`:""}</p></section>
+    <section class="card"><h2 style="margin:0">${esc(u.titulo)}</h2><p style="margin:6px 0 0"><b>Intención:</b> ${esc(u.intencion||"")}</p>
+      <div style="margin-top:8px">${acuTextoHtml(u.texto)}</div></section>
+    ${(u.casos||[]).map((c,k)=>`<section class="card"><h3 style="margin:0">Caso para reflexionar (ficticio)</h3><p style="margin:6px 0 0">${esc(c.caso)}</p><p style="margin:4px 0 0"><b>${esc(c.pregunta)}</b></p>
+      <div class="fld" style="margin-top:6px"><label for="manCaso${k}">Tu respuesta (privada)</label><textarea id="manCaso${k}" rows="3" maxlength="5000"></textarea></div>
+      <div class="actions" style="justify-content:flex-start"><button class="btn sm" type="button" data-act="manGuardar" data-q="${esc(c.pregunta)}" data-f="manCaso${k}">Guardar en mi Cuaderno</button></div>
+      <details><summary>Ver retroalimentación formativa</summary><p style="margin:6px 0 0;max-width:80ch">${esc(c.retro)}</p></details></section>`).join("")}
+    ${(u.preguntas||[]).length?`<section class="card"><h3 style="margin:0">Para tu Cuaderno del Terapeuta</h3><p class="status" style="margin:4px 0 0">Tus respuestas son privadas. Puedes compartir alguna, si quieres, con quien acompaña tu integración.</p>
+      ${u.preguntas.map((q,k)=>{ const prev=mias.find(c=>c.pregunta===q); return `<div class="fld" style="margin-top:8px"><label for="manQ${k}">${esc(q)}</label><textarea id="manQ${k}" rows="3" maxlength="5000">${esc(prev?.texto||"")}</textarea></div>
+        <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="manQc${k}" ${prev?.compartida?"checked":""}> Compartir esta respuesta</label>
+        <div class="actions" style="justify-content:flex-start"><button class="btn sm" type="button" data-act="manGuardar" data-q="${esc(q)}" data-f="manQ${k}" data-c="manQc${k}" data-id="${prev?.id||""}">${prev?"Actualizar":"Guardar"}</button></div>`; }).join("")}</section>`:""}
+    <section class="card"><div class="actions" style="justify-content:flex-start;gap:6px">${rev.has(u.unidad)?`<span class="pill estado-activo">Unidad revisada</span>`:(v.estado==="aprobada"?`<button class="btn primary" type="button" data-act="manRevisada" data-u="${u.unidad}">Marcar como revisada</button>`:`<span class="status">Vista previa: el avance se registra cuando la versión se publique.</span>`)}</div>${nav}</section>`;
+}
+function manCuadernoHtml(v){
+  const m=MAN(), mias=m.cuaderno.filter(c=>c.perfil_id===m.uid), us=manUnidades(v), titU=k=>us.find(u=>u.unidad===k)?.titulo||"General";
+  return `<section class="card"><h2 style="margin:0">Mi Cuaderno del Terapeuta</h2>
+      <p style="margin:6px 0 0;max-width:80ch">Reflexiones, aprendizajes, preguntas, fortalezas, necesidades formativas, ideas, propuestas, metas y temas para supervisión. <b>Es privado por defecto.</b> Si compartes una entrada, la verá quien acompaña tu integración (RR. HH. o administración de tu sede, y la Dirección). Nunca se usa para evaluarte, seleccionarte ni hacer perfiles psicológicos.</p>
+      <form class="datos" onsubmit="return false" style="margin-top:8px">${fld("cnTipo","Tipo","reflexion",{opts:Object.entries(MAN_TIPOS)})}${fld("cnTexto","Escribe","",{area:1,rows:3,span:3})}</form>
+      <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="cnComp"> Compartir esta entrada</label>
+      <div class="actions" style="justify-content:flex-start"><button class="btn primary" type="button" data-act="manGuardar" data-f="cnTexto" data-c="cnComp" data-tipo="1">Guardar en mi Cuaderno</button></div></section>
+    <section class="card"><h3 style="margin:0">Mis entradas (${mias.length})</h3>${mias.length?mias.map(c=>`<div class="note" style="margin-top:8px"><p class="status" style="margin:0">${esc(MAN_TIPOS[c.tipo]||c.tipo)} · ${esc(titU(c.unidad))} · ${fechaTxt(c.actualizado_en)} · ${c.compartida?"Compartida":"Privada"}</p>
+      ${c.pregunta?`<p style="margin:4px 0 0"><b>${esc(c.pregunta)}</b></p>`:""}<p style="margin:4px 0 0;white-space:pre-wrap">${esc(c.texto)}</p>
+      <div class="actions" style="justify-content:flex-start;gap:6px"><button class="btn sm" type="button" data-act="manCompartir" data-id="${c.id}">${c.compartida?"Hacer privada":"Compartir"}</button><button class="btn sm" type="button" data-act="manBorrar" data-id="${c.id}">Borrar</button></div></div>`).join(""):`<p class="status" style="margin:4px 0 0">Aún no tienes entradas.</p>`}</section>`;
+}
+function manRutaHtml(){
+  const m=MAN(), yo=m.cols.find(c=>c.id===m.yoCol), f0=yo?.fecha_incorporacion?new Date(yo.fecha_incorporacion+"T12:00:00"):null;
+  const fecha=d=>{ if (!f0) return ""; const x=new Date(f0); x.setDate(x.getDate()+d); return ` · ${x.toLocaleDateString("es-MX",{day:"numeric",month:"short"})}`; };
+  return `<section class="card"><h2 style="margin:0">Mi ruta de integración (90 días)</h2>
+      <p style="margin:6px 0 0;max-width:80ch">Es un proceso formativo y de acompañamiento. <b>No es un periodo de prueba laboral</b> ni modifica las condiciones de colaboración. ${f0?`Se calcula desde tu fecha de incorporación (${fechaTxt(yo.fecha_incorporacion)}).`:"Las fechas aparecerán cuando se registre tu fecha de incorporación."}</p>
+      <ol style="margin:8px 0 0;padding-left:20px">${MAN_RUTA.map(([t,d,dia])=>`<li style="margin:6px 0"><b>${esc(t)}</b>${fecha(dia)}<br><span class="status">${esc(d)}</span></li>`).join("")}</ol>
+      <div class="actions" style="justify-content:flex-start;gap:6px;flex-wrap:wrap">${$("#miincBtn")&&!$("#miincBtn").hidden?`<button class="btn" type="button" data-act="miinc">Ver mi plan de incorporación (tareas, acompañante y evaluaciones)</button>`:""}
+        <button class="btn" type="button" data-act="manAcomp">Solicitar acompañamiento</button><button class="btn" type="button" data-act="manAbrir" data-u="u19">Leer la unidad «Mi ruta de integración»</button></div></section>
+    <section class="card"><h3 style="margin:0">A quién acudir</h3><ul style="margin:6px 0 0">
+      <li><b>Administración de tu sede:</b> agenda, espacios, consultorios y trámites (avisos en la app y Mis solicitudes).</li>
+      <li><b>Coordinación y supervisión clínica:</b> dudas clínicas, canalización, situaciones de riesgo y supervisión.</li>
+      <li><b>Persona de acompañamiento (padrino o madrina):</b> la asigna tu proceso de incorporación; no sustituye la supervisión.</li>
+      <li><b>RR. HH.:</b> documentos, Carta Compromiso, bloques de colaboración y apoyo.</li><li><b>Dirección General:</b> propuestas, inconformidades y acuerdos.</li></ul>
+      <p class="status" style="margin:6px 0 0">Los nombres y contactos vienen de la estructura organizacional y de tu plan de incorporación; no se escriben en el código.</p></section>`;
+}
+function manBuscarHtml(v){
+  const m=MAN(), q=(S.manQ||"").trim(), nq=norm(q);
+  const fuentes=[...manUnidades(v).map(u=>({t:u.titulo,txt:u.texto,src:`Manual de Bienvenida 2026 v${v.version}, ${u.paginas.length>1?"págs.":"pág."} ${u.paginas.join(", ")}`,u:u.unidad})),
+    ...m.otrasVersiones.flatMap(x=>{ const pl=m.otrasPlantillas.find(p=>p.id===x.plantilla_id); return (x.contenido?.secciones||[]).filter(s=>!s.sistema).map(s=>({t:s.titulo,txt:s.texto||"",src:`${pl?.nombre||"Documento"} v${x.version}`})); })];
+  const res=nq.length<3?[]:fuentes.map(f=>{ const n=norm(f.t+" "+f.txt), k=n.indexOf(nq); return k<0?null:{...f,k,frag:(f.t+" "+f.txt).slice(Math.max(0,k-120),k+220)}; }).filter(Boolean).slice(0,15);
+  return `<section class="card"><h2 style="margin:0">Conoce CEMEPI</h2><p style="margin:6px 0 0;max-width:80ch">Busca en el Manual de Bienvenida, los documentos de cultura y la Carta Compromiso vigente. Cada resultado indica su fuente. No sustituye la supervisión clínica ni la valoración médica; si no encuentras algo, pregúntalo en Mis solicitudes.</p>
+      <div class="filtros" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap"><div class="fld"><label for="manQ">¿Qué quieres saber?</label><input id="manQ" type="search" value="${esc(q)}" placeholder="Ej.: primera sesión, canalización, herbolaria"></div><button class="btn sm primary" type="button" data-act="manBuscar">Buscar</button></div></section>
+    ${q?(res.length?res.map(r=>`<section class="card"><p class="status" style="margin:0">Fuente: ${esc(r.src)}</p><h3 style="margin:4px 0 0">${esc(r.t)}</h3><p style="margin:4px 0 0">…${esc(r.frag)}…</p>${r.u?`<div class="actions" style="justify-content:flex-start"><button class="btn sm" type="button" data-act="manAbrir" data-u="${r.u}">Abrir la unidad</button></div>`:""}</section>`).join("")
+      :`<section class="card"><p style="margin:0">No encontré información autorizada sobre «${esc(q)}». No invento respuestas: pregunta en <button class="linkbtn" type="button" data-act="misol">Mis solicitudes</button> o a tu coordinación.</p></section>`):""}`;
+}
+function manReconocerHtml(v,us,rev,rec){
+  if (rec) return `<section class="card"><h2 style="margin:0">Reconocimiento de lectura</h2><p style="margin:6px 0 0"><span class="pill estado-activo">Registrado</span> el ${fechaTxt(rec.reconocido_en)} · versión ${v.version} · ${rec.unidades_revisadas} de ${rec.unidades_total} unidades.</p>
+    <p class="status" style="margin:6px 0 0">Acredita lectura y diálogo. No es una firma contractual, no modifica tus condiciones de colaboración ni implica renuncia a derechos. El manual sigue disponible para consulta.</p></section>`;
+  const faltan=us.length-rev.size;
+  return `<section class="card"><h2 style="margin:0">Reconocimiento de lectura</h2><p style="margin:6px 0 0;max-width:80ch">Una bienvenida, no un nuevo contrato: acredita lectura y diálogo, no modifica condiciones de colaboración ni implica renuncia a derechos. La cultura se aplica también a coordinación y Dirección.</p>
+    ${faltan?`<div class="banner" style="margin-top:8px">Te faltan ${faltan} unidad${faltan===1?"":"es"} por revisar. <button class="linkbtn" type="button" data-act="manTab" data-t="unidades">Continuar</button></div>`:""}
+    <div style="margin-top:8px">${MAN_DECL.map(([k,t])=>`<label style="display:flex;gap:6px;align-items:flex-start;margin-top:6px"><input type="checkbox" id="mdc_${k}"> ${esc(t)}</label>`).join("")}</div>
+    <div class="fld" style="margin-top:8px"><label for="mdcCom">Mis reflexiones, dudas o propuestas (opcional)</label><textarea id="mdcCom" rows="3" maxlength="2000"></textarea></div>
+    <div class="actions" style="justify-content:flex-start"><button class="btn primary" type="button" data-act="manReconocer" ${faltan||v.estado!=="aprobada"?"disabled":""}>Registrar mi reconocimiento</button></div>
+    <p class="status" style="margin:4px 0 0">Ninguna casilla viene marcada.</p></section>`;
+}
+/* Gestión: avance de integración (Personas → Acuerdos y documentos → Manual de Bienvenida) */
+function manAvanceHtml(){
+  const m=MAN(); if (!m) { manCargar(); return `<p class="status">Cargando…</p>`; } if (!m.ok) return `<section class="card"><p class="status" style="margin:0">Disponible cuando se apliquen las migraciones 069–070.</p></section>`;
+  const v=manPublicada(); if (!v) return `<section class="card"><p style="margin:0">Publica primero una versión del manual en «Contenido y versiones».</p></section>`;
+  const tot=manUnidades(v).length, avis=m.avisos.find(a=>a.version_id===v.id);
+  const filas=m.psicologos.filter(p=>p.estado==="activo").map(p=>{ const r=m.avance.filter(a=>a.perfil_id===p.id&&a.version_id===v.id).length, rc=m.reconocimientos.find(x=>x.perfil_id===p.id&&x.version_id===v.id), cs=m.cuaderno.filter(c=>c.perfil_id===p.id&&c.compartida);
+    const f=m.cols.find(c=>c.perfil_id===p.id)?.fecha_incorporacion, dia=f?Math.floor((Date.now()-new Date(f+"T12:00:00"))/864e5)+1:null;
+    return {p,r,rc,cs,f,dia}; }).filter(x=>x.r||x.rc||x.cs.length||ACU()?.configuro);
+  const ini=filas.filter(x=>x.r>0).length, conc=filas.filter(x=>x.rc).length, nuevos=filas.filter(x=>x.dia!=null&&x.dia>=1&&x.dia<=90).length;
+  const seg=d=>d==null?"Sin fecha de incorporación":d<1?"Ingresa pronto":d<=30?`Día ${d} · seguimiento de 30 días`:d<=60?`Día ${d} · seguimiento de 60 días`:d<=90?`Día ${d} · seguimiento de 90 días`:"Ruta concluida";
+  return `<div class="kpis">${[["Psicólogos activos visibles",filas.length],["En sus primeros 90 días",nuevos],["Bienvenidas iniciadas",ini],["Reconocimientos registrados",conc],["Entradas compartidas",filas.reduce((s,x)=>s+x.cs.length,0)]].map(([n,x])=>`<div class="kpi"><span>${n}</span><b>${x}</b></div>`).join("")}</div>
+    <p class="status" style="margin:4px 0 0">Para identificar necesidades de apoyo, no para calificar. Las reflexiones privadas no se muestran; solo lo que cada persona decide compartir. La integración también es responsabilidad de administración, coordinación, supervisión y Dirección.</p>
+    <section class="card">${avis?`<p class="status" style="margin:0">Aviso de la versión ${v.version} enviado el ${fechaTxt(avis.enviado_en)} a ${avis.destinatarios} psicólogos.</p>`:(ACU()?.configuro?`<div class="actions" style="justify-content:flex-start"><button class="btn sm primary" type="button" data-act="manAvisar" data-id="${v.id}">Avisar a los psicólogos de la versión ${v.version}</button></div>`:"")}
+      <div class="tbl-wrap" style="margin-top:8px"><table class="tbl"><thead><tr><th>Psicólogo(a)</th><th>Sede</th><th>Ruta de integración</th><th>Unidades</th><th>Reconocimiento</th><th>Compartido</th></tr></thead><tbody>
+      ${filas.map(x=>`<tr><td class="sens">${esc(x.p.nombre||"")}</td><td>${esc(x.p.sede||"—")}</td><td>${seg(x.dia)}</td><td>${x.r} de ${tot}</td><td>${x.rc?fechaTxt(x.rc.reconocido_en):"—"}</td>
+        <td>${x.cs.length?`<details><summary>${x.cs.length}</summary>${x.cs.map(c=>`<p style="margin:4px 0 0"><span class="status">${esc(MAN_TIPOS[c.tipo]||c.tipo)}</span> ${esc(c.texto)}</p>`).join("")}</details>`:"—"}</td></tr>`).join("")||`<tr><td colspan="6">Sin datos.</td></tr>`}</tbody></table></div></section>
+    <section class="card"><h3 style="margin:0">Responsabilidades de la organización en cada integración</h3><ul style="margin:6px 0 0">
+      <li><b>Administración de sede:</b> recorrido por la sede, presentación con el equipo, acceso a la app, agenda y espacios (semana 1).</li>
+      <li><b>Coordinación y supervisión clínica:</b> primeras sesiones acompañadas, revisión del encuadre y primera supervisión (semana 2); seguimiento clínico a 30, 60 y 90 días.</li>
+      <li><b>RR. HH.:</b> plan de incorporación, persona de acompañamiento y atención de solicitudes de apoyo.</li>
+      <li><b>Dirección:</b> revisión conjunta del día 30, propuestas y acuerdos de acompañamiento.</li></ul>
+      <p class="status" style="margin:6px 0 0">Tareas, reuniones y acompañante de cada persona: Personas → Incorporación. Solicitudes de acompañamiento: Bandeja de solicitudes (tipo «Necesito apoyo»).</p></section>`;
+}
+async function manAccion(a,b){
+  const rpc=(fn,args)=>S.api.acuRpc(fn,args), m=MAN(), v=manVersion();
+  try{
+    if (a==="miintegracion"){ S.view="miintegracion"; render(); return manCargar(); }
+    if (a==="manTab"){ S.manTab=b.dataset.t; render(); return window.scrollTo?.(0,0); }
+    if (a==="manAbrir"){ S.manTab="unidades"; S.manU=b.dataset.u; render(); return window.scrollTo?.(0,0); }
+    if (a==="manRevisada"){ await rpc("man_marcar",{p_version:v.id,p_unidad:b.dataset.u}); toast("Unidad revisada. Puedes volver a ella cuando quieras."); const us=manUnidades(v), i=us.findIndex(u=>u.unidad===b.dataset.u); if (us[i+1]) S.manU=us[i+1].unidad; return manCargar(); }
+    if (a==="manGuardar"){ const txt=$("#"+b.dataset.f)?.value||""; if (!txt.trim()) return toast("Escribe algo antes de guardar.");
+      await rpc("man_cuaderno_guardar",{p_id:b.dataset.id||null,p_version:v?.id||null,p_unidad:S.manTab==="unidades"?S.manU||null:null,p_tipo:b.dataset.tipo?catVal("cnTipo"):"reflexion",p_pregunta:b.dataset.q||null,p_texto:txt,p_compartida:!!(b.dataset.c&&$("#"+b.dataset.c)?.checked)});
+      toast("Guardado en tu Cuaderno."); return manCargar(); }
+    if (a==="manCompartir"){ const c=m.cuaderno.find(x=>x.id===b.dataset.id); await rpc("man_cuaderno_guardar",{p_id:c.id,p_version:null,p_unidad:null,p_tipo:c.tipo,p_pregunta:null,p_texto:c.texto,p_compartida:!c.compartida}); toast(c.compartida?"Ahora es privada.":"Compartida con quien acompaña tu integración."); return manCargar(); }
+    if (a==="manBorrar"){ if (!confirm("¿Borrar esta entrada de tu Cuaderno?")) return; await rpc("man_cuaderno_borrar",{p_id:b.dataset.id}); toast("Entrada borrada."); return manCargar(); }
+    if (a==="manBuscar"){ S.manQ=catVal("manQ"); return render(); }
+    if (a==="manReconocer"){ const d={}; MAN_DECL.forEach(([k])=>d[k]=!!$("#mdc_"+k)?.checked); if (Object.values(d).some(x=>!x)) return toast("Marca cada una de las declaraciones para continuar.");
+      await rpc("man_reconocer",{p_version:v.id,p_declaraciones:d,p_comentario:catVal("mdcCom")||null}); toast("Gracias. Registramos tu reconocimiento de lectura."); return manCargar(); }
+    if (a==="manAcomp"){ S.solForm={tipo:"apoyo", clave:crypto.randomUUID()}; S.solVer=null; S.view="misol"; render(); toast("Elige «Necesito apoyo» y cuéntanos qué acompañamiento necesitas."); return solCargar(); }
+    if (a==="manAvisar"){ if (!confirm("Se enviará un aviso dentro de la app a los psicólogos activos. ¿Continuar?")) return; const n=await rpc("man_avisar",{p_version:b.dataset.id}); toast(`Aviso enviado a ${n} psicólogos.`); return manCargar(); }
+  }catch(e){ toast(e?.message||"No se pudo completar."); }
+}
+const MAN_ACC=new Set(["miintegracion","manTab","manAbrir","manRevisada","manGuardar","manCompartir","manBorrar","manBuscar","manReconocer","manAcomp","manAvisar"]);
+document.addEventListener("change", e=>{ if (e.target?.dataset?.man&&e.target.id==="manSel"){ S.manU=e.target.value; render(); } });
+
 const ACU_ACC=new Set(["misacuerdos","acuerdos","acuTab","acuEtapa","acuMarcar","acuReflex","acuLeer","acuLeido","acuDuda","acuAceptar","acuWord","acuIA",
   "acuSinc","acuVer","acuVerCerrar","acuGenerar","acuGenerarOk","acuTrans","acuRecordar","acuVincular","acuVEstado","acuVEditar","acuVGuardar","acuAnexoNuevo",
   "acuAnexoGuardar","acuAnexoAprobar","acuContGuardar","acuRetro","acuCampana","acuBuscar","acuCancelar","acuPdf","acuDemo","acuDemoCerrar","acuDemoDoc","acuVNueva","acuPlCambiar","acuSubir","acuSubirOk","acuSubirNo","acuVApartado",
@@ -5840,6 +6017,7 @@ async function acuCargar(){
   const a=ACU(), mb=$("#misacuBtn"), pb=$("#acuBtn");
   if (mb) mb.hidden=!(a?.ok&&(S.api?.modalidad==="comision"||a.acuerdos.some(x=>x.colaborador_id===a.yo)));
   if (pb) pb.hidden=!(a?.ok&&(a.configuro||S.rol==="admin_sede"||a.acuerdos.some(x=>x.colaborador_id!==a.yo)));
+  if (S.view==="acuerdos") S.man=null;
   if (["misacuerdos","acuerdos","raices","contratos"].includes(S.view)) render();
 }
 /* Texto del acuerdo (el mismo que se firmó y cuya huella se guardó) */
@@ -5926,20 +6104,20 @@ function acuPanelHtml(){
   const env=x=>`<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:12px">${cab}${x}</div>`;
   if (!a) return env(`<p class="status">Cargando…</p>`);
   if (!a.ok) return env(`<section class="card"><p class="status" style="margin:0">Disponible cuando se apliquen las migraciones 058–059.</p></section>`);
-  const pl=acuPl(), ap=a.versiones.find(v=>v.plantilla_id===pl?.id&&v.estado==="aprobada"), cul=pl?.categoria==="cultura";
-  const tabs=cul?[["plantilla","Contenido y versiones"],["lecturas","Lecturas y alcance"]]:[["personas",pl?.modalidad==="comision"?"Psicólogos independientes":"Personas"],["plantilla","Plantilla y versiones"],["anexos","Anexos"],...(pl?.clave===ACU_CARTA?[["bloques","Bloques y autorizaciones"],["espacios","Matriz de espacios"],["config","Bloques y consultorios"],["contenidos","Formación previa"],["reflexiones","Reflexiones"]]:[]),["campanas","Campañas"]];
+  const pl=acuPl(), ap=a.versiones.find(v=>v.plantilla_id===pl?.id&&v.estado==="aprobada"), cul=["cultura","manual"].includes(pl?.categoria), man=pl?.categoria==="manual";
+  const tabs=man?[["plantilla","Contenido y versiones"],["integracion","Avance de integración"]]:cul?[["plantilla","Contenido y versiones"],["lecturas","Lecturas y alcance"]]:[["personas",pl?.modalidad==="comision"?"Psicólogos independientes":"Personas"],["plantilla","Plantilla y versiones"],["anexos","Anexos"],...(pl?.clave===ACU_CARTA?[["bloques","Bloques y autorizaciones"],["espacios","Matriz de espacios"],["config","Bloques y consultorios"],["contenidos","Formación previa"],["reflexiones","Reflexiones"]]:[]),["campanas","Campañas"]];
   const t=tabs.some(x=>x[0]===S.acuTab)?S.acuTab:tabs[0][0];
   const nuevo=S.acuNuevoPl?`<section class="note"><div class="note-h"><h3>Nuevo documento</h3><button class="btn sm" type="button" data-act="acuCancelar">Cancelar</button></div>
     <form class="datos" onsubmit="return false">${fld("npCat","Tipo","cultura",{opts:[["cultura","Cultura organizacional (se lee y se confirma su lectura)"],["servicios_profesionales_independientes","Acuerdo de servicios profesionales independientes (se firma)"],["convenio","Convenio (se firma)"],["confidencialidad","Confidencialidad (se firma)"],["acuerdo_interno","Acuerdo interno (se firma)"]]})}
       ${fld("npClave","Clave *","",{max:40,ph:"politica_buen_trato",hint:"Minúsculas, números y guion bajo."})}${fld("npNombre","Nombre visible *","",{max:160,span:2})}${fld("npSub","Subtítulo","",{max:200,span:3})}
       ${fld("npMod","Aplica a","cualquiera",{opts:[["cualquiera","Cualquier persona"],["comision","Psicólogos independientes"],["nomina","Personal de nómina"]]})}</form>
     <p class="status" style="margin:6px 0 0">Después sube su contenido (Word, Markdown o PDF) en «${"Contenido y versiones"}».</p><div class="actions"><button class="btn primary" type="button" data-act="acuNuevoPlOk">Crear</button></div></section>`:"";
-  const sel=`<div class="filtros" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">${a.plantillas.length>1?fld("acuPlSel","Documento",pl?.clave||"",{opts:[["","—"],...a.plantillas.map(p=>[p.clave,(p.categoria==="cultura"?"Cultura · ":"Acuerdo · ")+p.nombre])].filter(x=>x[0])})+`<button class="btn sm" type="button" data-act="acuPlCambiar">Ver</button>`:""}
+  const sel=`<div class="filtros" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">${a.plantillas.length>1?fld("acuPlSel","Documento",pl?.clave||"",{opts:[["","—"],...a.plantillas.map(p=>[p.clave,(p.categoria==="cultura"?"Cultura · ":p.categoria==="manual"?"Manual · ":"Acuerdo · ")+p.nombre])].filter(x=>x[0])})+`<button class="btn sm" type="button" data-act="acuPlCambiar">Ver</button>`:""}
     ${a.apruebo&&!S.acuNuevoPl?`<button class="btn sm primary" type="button" data-act="acuNuevoPl" style="margin-left:auto">+ Nuevo documento</button>`:""}</div>${nuevo}
     ${pl?.estado==="pendiente_actualizacion"&&!ap?`<div class="banner"><b>Pendiente de actualización por Dirección.</b> ${cul?"Sube el contenido y publícalo.":"El documento anterior se retiró del flujo de nuevas firmas y se conserva como historia. Sube el nuevo documento en «Plantilla y versiones» (Word, Markdown o PDF), revísalo y apruébalo; mientras tanto no se generan ni firman documentos."}</div>`:""}`;
-  const aviso=sel+`<p class="status" style="margin:0;max-width:90ch"><b>${esc(pl?.nombre||"")}</b> · ${esc(pl?.subtitulo||"")} ${cul?`Documento de cultura organizacional para toda la comunidad: no es un contrato; se lee y se confirma su lectura. ${ap?`Publicado: v${ap.version}.`:"Todavía no se publica."}`:`Categoría: contratos y acuerdos de prestación de servicios profesionales independientes (no es un contrato laboral). ${ap?`Plantilla aprobada: v${ap.version}.`:`<b>La plantilla todavía no está aprobada: no se publica ni se firma ningún documento.</b>`} No hay sanciones ni suspensiones automáticas.`}</p>`;
+  const aviso=sel+`<p class="status" style="margin:0;max-width:90ch"><b>${esc(pl?.nombre||"")}</b> · ${esc(pl?.subtitulo||"")} ${man?`Manual de formación e integración para psicólogos: no es un contrato ni sustituye la Carta Compromiso; se recorre por unidades y se registra un reconocimiento de lectura. Su fuente es <code>catalogos/bienvenida/generar.py</code>. ${ap?`Publicado: v${ap.version}.`:"Todavía no se publica: los psicólogos no lo ven."}`:cul?`Documento de cultura organizacional para toda la comunidad: no es un contrato; se lee y se confirma su lectura. ${ap?`Publicado: v${ap.version}.`:"Todavía no se publica."}`:`Categoría: contratos y acuerdos de prestación de servicios profesionales independientes (no es un contrato laboral). ${ap?`Plantilla aprobada: v${ap.version}.`:`<b>La plantilla todavía no está aprobada: no se publica ni se firma ningún documento.</b>`} No hay sanciones ni suspensiones automáticas.`}</p>`;
   const tb=`<div class="tabs" role="tablist">${tabs.map(([k,x])=>`<button class="tab" role="tab" type="button" data-act="acuTab" data-t="${k}" aria-selected="${t===k}">${x}</button>`).join("")}</div>`;
-  const f={bloques:dispValorarHtml,espacios:dispEspaciosHtml,config:dispConfigHtml,lecturas:acuLecturasHtml,personas:acuPersonasHtml,plantilla:acuPlantillaHtml,anexos:acuAnexosHtml,contenidos:acuContenidosHtml,reflexiones:acuReflexionesHtml,campanas:acuCampanasHtml}[t]||acuPersonasHtml;
+  const f={integracion:manAvanceHtml,bloques:dispValorarHtml,espacios:dispEspaciosHtml,config:dispConfigHtml,lecturas:acuLecturasHtml,personas:acuPersonasHtml,plantilla:acuPlantillaHtml,anexos:acuAnexosHtml,contenidos:acuContenidosHtml,reflexiones:acuReflexionesHtml,campanas:acuCampanasHtml}[t]||acuPersonasHtml;
   return env(`${aviso}${tb}${f()}`);
 }
 function acuPersonasHtml(){
@@ -6010,7 +6188,7 @@ function acuPlantillaHtml(){
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0"><button class="btn sm" type="button" data-act="acuDemoDoc" data-id="${demo.id}" data-f="docx">Descargar ejemplo (Word)</button><button class="btn sm primary" type="button" data-act="acuDemoDoc" data-id="${demo.id}" data-f="pdf">Descargar ejemplo (PDF)</button></div>
     <div style="max-height:65vh;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:12px 16px">${acuTextoHtml(acuDemoTexto(demo.id))}</div>
     <p class="status" style="margin:8px 0 0">Firmas: en un documento real, primero firma el psicólogo independiente y después el representante autorizado, en Documentos y firmas, con contraseña, huella SHA-256 del archivo y evidencia.</p></section>`:"";
-  const cul=pl?.categoria==="cultura", sub=S.acuSub;
+  const cul=["cultura","manual"].includes(pl?.categoria), sub=S.acuSub;
   const subir=a.configuro?`<section class="card"><h3 style="margin:0">Subir ${cul?"el contenido":"un documento nuevo"} (Word, Markdown o PDF)</h3>
     <p class="status" style="margin:4px 0 8px">Se convierte en una versión en borrador para revisarla y editarla antes de ${cul?"publicarla":"aprobarla"}. Los títulos se reconocen por los estilos de título de Word o por «#» en Markdown; en un PDF se detectan títulos en mayúsculas o numerados (revísalos). ${cul?"":"Los campos «Etiqueta: ______» conocidos se vuelven datos de la persona."} Se guarda la huella SHA-256 del archivo.</p>
     <input type="file" id="acuArchivo" accept=".docx,.md,.markdown,.txt,.pdf"> <button class="btn sm" type="button" data-act="acuSubir">Leer archivo</button>
@@ -6443,7 +6621,7 @@ async function acuAccion(a,b){
     if (a==="acuSubirNo"){ S.acuSub=null; return render(); }
     if (a==="acuSubirOk"){ const sb=S.acuSub; if (!sb) return; const pl=acuPl();
       const nid=await rpc("acu_guardar_version",{p_plantilla:pl.clave,p_contenido:{secciones:sb.secs,encabezado:"",pie:""},p_fuente:{archivo:sb.nombre,formato:sb.formato,sha256:sb.sha,subido_en:new Date().toISOString(),nota:"Cargado desde la app por la Dirección."},p_resumen:`Documento cargado desde ${sb.nombre}.`});
-      S.acuSub=null; S.acuEdit=nid; toast("Borrador creado. Revísalo y edítalo antes de "+(pl.categoria==="cultura"?"publicarlo.":"enviarlo a revisión jurídica.")); return acuCargar(); }
+      S.acuSub=null; S.acuEdit=nid; toast("Borrador creado. Revísalo y edítalo antes de "+(["cultura","manual"].includes(pl.categoria)?"publicarlo.":"enviarlo a revisión jurídica.")); return acuCargar(); }
     if (a==="acuVApartado"){ const v=acuVer(id), sec=(v.contenido.secciones||[]).map((x,i)=>({...x,titulo:catVal("vs_t"+i),texto:$("#vs_x"+i)?.value||""}));
       const si=sec.findIndex(x=>x.sistema), nuevo={titulo:"Nuevo apartado",nivel:2,texto:""}; if (si>=0) sec.splice(si,0,nuevo); else sec.push(nuevo);
       await rpc("acu_guardar_version",{p_plantilla:acuPl().clave,p_contenido:{...v.contenido,secciones:sec},p_fuente:null,p_resumen:catVal("vs_res")||null}); toast("Apartado agregado al borrador."); return acuCargar(); }
@@ -6856,7 +7034,7 @@ async function manualWord(mk){
     + P(R(M.intro),{after:160})
     + M.caps.map((c,i)=>P(R(`${i+1}. ${c.t}`,{b:1,sz:22,color:"0560BD"}),{before:220,after:80,keep:1})
         + c.p.map((x,j)=>P(R(`${i+1}.${j+1}  ${x}`),{after:100})).join("")).join("")
-    + P(R(`Plataforma: ${/^(localhost|127\.0\.0\.1)$/.test(location.hostname)?"https://transformacioncemepi-a11y.github.io/expedientes-cemepi/":location.origin+location.pathname}  ·  Dudas: Ayuda dentro de la app o la Dirección de CEMEPI.`,{color:"55688A"}),{before:280});
+    + P(R(`Plataforma: ${/^(localhost|127\.0\.0\.1)$/.test(location.hostname)?"https://cemepi.app/":location.origin+location.pathname}  ·  Dudas: Ayuda dentro de la app o la Dirección de CEMEPI.`,{color:"55688A"}),{before:280});
   try{ const blob = await docxBlob("Nov. 2026", xml, [], "Versión", true);   /* Sin nota aclaratoria: solo va en documentos del expediente (decisión del Director, 2026-11-22) */ await dl.save({filename:`Instructivo-${slug(M.n)}-CEMEPI.docx`, data:blob}); toast("Instructivo descargado."); }
   catch(e){ if (e?.code!=="declined") toast("No se pudo descargar el instructivo."); }
 }
@@ -7429,6 +7607,7 @@ document.addEventListener("click", async ev => {
   if (PP_ACC.has(a)) return ppAccion(a, b);   /* Módulo 06 · Perfil profesional */
   if (CAT_ACC.has(a)) return catAccion(a, b);
   if (RAI_ACC.has(a)) return raiAccion(a, b);   /* Raíces y comunidad */
+  if (MAN_ACC.has(a)) return manAccion(a, b);
   if (ACU_ACC.has(a)) return acuAccion(a, b);   /* Carta Compromiso y acuerdos profesionales */
   if (LEX_ACC.has(a)) return lexAccion(a, b);   /* Diccionario vivo */   /* Catálogo de puestos y competencias */
   if (SOL_ACC.has(a)) return solAccion(a, b);   /* Módulo 06 · Solicitudes */   /* Módulo 06 · Mi espacio */
