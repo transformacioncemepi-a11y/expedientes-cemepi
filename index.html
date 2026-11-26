@@ -551,7 +551,7 @@ const FORMATOS = {
     desc:"Responde a un requerimiento de juzgado o fiscalía con lo estrictamente procedente.",
     guia:["Primer párrafo sin título: en atención al requerimiento (número de oficio, expediente y fecha según indicaciones; si faltan, Dato pendiente de recabar) se remite la información que se indica.",
       "Secciones con título: Información que se remite (solo lo solicitado y legalmente procedente; síntesis clínica mínima); Carácter de la información (clínica, no pericial; basada en el proceso terapéutico; el expediente original permanece bajo resguardo de CEMEPI).",
-      "Último párrafo sin título: cierre institucional.",
+      "Último párrafo sin título: cierre formal.",
       "En advertencias recuerda: verificar autenticidad y competencia de la autoridad, alcance exacto de lo solicitado, fundamento legal, protección de datos de terceros, registro de la entrega y revisión jurídica antes de enviar. No modifiques notas para la controversia."],
     ph:"Necesario: autoridad, número de oficio y de expediente, fecha y qué información solicitan exactamente." },
   cambio_terapeuta:{ nombre:"Carta de cambio de terapeuta", riesgo:"moderado", ia:true, titulo:"Carta de continuidad de atención", dest:"A la persona consultante\nPRESENTE",
@@ -791,7 +791,7 @@ async function revisarCalidad(p){
     const r = await S.sample.json(promptRevision(g, ctxOf(p)), {modelTier:"complex", signal:S.ctlRev.signal, cache:false, expediente:p?.id||S.sel});
     g.revision = {...normalizarRevision(r), fecha:new Date().toISOString(), por:S.uid||"", firma:firmaContenido(g.contenido)}; g.guardado=false;
     toast(g.revision.veredicto==="listo"?"Revisión lista: Claude no encontró problemas importantes.":`Revisión lista: ${g.revision.hallazgos.length} hallazgo${g.revision.hallazgos.length===1?"":"s"}.`);
-  }catch(e){ if (e?.code!=="cancelled") toast({rate_limited:"Alcanzaste el límite de solicitudes. Espera un momento.",invalid_json:"La revisión llegó incompleta. Intenta de nuevo.",
+  }catch(e){ if (e?.code!=="cancelled") toast({rate_limited:"Alcanzaste el límite de solicitudes. Espera un momento.",limite_diario:"Alcanzaste el límite diario de uso de Claude que fijó la Dirección. Mañana se renueva.",invalid_json:"La revisión llegó incompleta. Intenta de nuevo.",
       session_expired:"Tu sesión expiró. Cierra sesión y vuelve a entrar.",clave_invalida:"La clave de la API de Claude no es válida o no tiene saldo. Avisa a la Dirección.",
       red:"No hubo conexión con el servicio. Revisa tu internet."}[e?.code]||"No se pudo revisar el documento. Intenta de nuevo."); }
   finally{ g.revisando=false; S.ctlRev=null; if (S.gen===g){ render(); $("#revPanel")?.scrollIntoView({block:"center"}); } }
@@ -2068,7 +2068,8 @@ async function cargarAdmin(tipo){
       if (["superusuario","direccion"].includes(S.rol) || tengo("contratos")){ S.usuarios = S.usuarios || await S.api.usuarios(); if (!S.docpSel) S.docpTodos = await S.api.docsPersonal(null); }
       if (ES_DIR() && !S.docpSel) S.docpPapelera = await S.api.papeleraDocs(); }
     if (tipo==="permisos"){ const [us, ps] = await Promise.all([S.api.usuarios(), S.api.permisosTodos()]); S.usuarios=us; S.permTodos=ps; }
-    if (tipo==="uso"){ const d=new Date(); if (S.usoDias===1) d.setHours(0,0,0,0); else d.setDate(d.getDate()-S.usoDias); S.uso = await S.api.resumenUso(d); }
+    if (tipo==="uso"){ const d=new Date(); if (S.usoDias===1) d.setHours(0,0,0,0); else d.setDate(d.getDate()-S.usoDias); S.uso = await S.api.resumenUso(d);
+      S.iaUso = S.api.iaUso ? await S.api.iaUso(d).catch(()=>null) : null; }
   }catch(e){ toast(e?.message||"No se pudo cargar la información."); }
   if (S.view===tipo) render();
 }
@@ -7182,7 +7183,30 @@ function usoHtml(){
         <td class="mono">${fmtDur(u.segundos)}</td><td><div class="uso-barra" style="width:${Math.round(100*(Number(u.segundos)||0)/max)}%"></div></td>
         <td class="mono">${Number(u.sesiones)||0}</td><td class="mono">${u.ultimo?fechaHora(Date.parse(u.ultimo)):"—"}</td></tr>`).join("")}
       <tr><td colspan="2"><b>Total</b></td><td class="mono"><b>${fmtDur(total)}</b></td><td colspan="3"></td></tr>
-    </tbody></table></div>`}</div>`;
+    </tbody></table></div>`}${iaUsoHtml()}</div>`;
+}
+/* Uso de la redacción con Claude (071, auditoría H-024): conteos y tokens por persona, nunca contenido clínico */
+function iaUsoHtml(){
+  const ia=S.iaUso; if (!ia) return ""; if (!ia.ok) return `<section class="card"><h3 style="margin:0">Uso de la redacción con Claude</h3><p class="status" style="margin:4px 0 0">Disponible cuando se aplique la migración 071.</p></section>`;
+  const cfg=Object.fromEntries((ia.config||[]).map(c=>[c.clave,c.valor])), num=v=>typeof v==="number"?v:null;
+  const pe=num(cfg.precio_entrada_usd_millon), ps=num(cfg.precio_salida_usd_millon), lim=num(cfg.limite_diario_por_persona);
+  const por={}; for (const r of ia.resumen||[]){ const k=r.perfil_id; por[k]=por[k]||{nombre:r.nombre||"Sin nombre",ll:0,lim:0,fa:0,te:0,ts:0,om:0,dias:0};
+    const x=por[k]; x.ll+=r.llamadas; x.lim+=r.limite_alcanzado; x.fa+=r.fallidas; x.te+=Number(r.tokens_entrada)||0; x.ts+=Number(r.tokens_salida)||0; x.om+=r.omitidos; x.dias++; }
+  const filas=Object.values(por).sort((a,b)=>b.ll-a.ll), tot=filas.reduce((a,x)=>({ll:a.ll+x.ll,te:a.te+x.te,ts:a.ts+x.ts}),{ll:0,te:0,ts:0});
+  const costo=(te,ts)=>pe!=null&&ps!=null?`US$ ${(te/1e6*pe+ts/1e6*ps).toFixed(2)}`:"—", n=x=>Number(x).toLocaleString("es-MX");
+  return `<section class="card"><h3 style="margin:0">Uso de la redacción con Claude</h3>
+    <p class="status" style="margin:4px 0 0">Una fila por persona en el periodo elegido. Solo conteos y tokens: nunca el texto ni las iniciales. El costo es una estimación con los precios que capture la Dirección; la cifra oficial es la factura de Anthropic.</p>
+    <form class="datos" onsubmit="return false" style="margin-top:8px">${fld("iaLim","Límite diario por persona",lim??"",{hint:"Vacío = sin límite. De 1 a 500."})}${fld("iaPe","Precio por millón de tokens de entrada (US$)",pe??"",{hint:"Según la factura de Anthropic."})}${fld("iaPs","Precio por millón de tokens de salida (US$)",ps??"",{})}</form>
+    ${S.rol==="superusuario"?`<div class="actions" style="justify-content:flex-start"><button class="btn sm primary" type="button" data-act="iaCfgGuardar">Guardar configuración</button></div>`:""}
+    <div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th>Persona</th><th>Redacciones</th><th>Días con uso</th><th>Topes alcanzados</th><th>Fallidas</th><th>Tokens (entrada / salida)</th><th>Datos omitidos</th><th>Costo estimado</th></tr></thead><tbody>
+      ${filas.map(x=>`<tr><td>${esc(x.nombre)}</td><td class="mono">${x.ll}</td><td class="mono">${x.dias}</td><td class="mono">${x.lim}</td><td class="mono">${x.fa}</td><td class="mono">${n(x.te)} / ${n(x.ts)}</td><td class="mono">${x.om}</td><td class="mono">${costo(x.te,x.ts)}</td></tr>`).join("")||`<tr><td colspan="8">Sin uso en el periodo.</td></tr>`}
+      ${filas.length?`<tr><td><b>Total</b></td><td class="mono"><b>${tot.ll}</b></td><td colspan="3"></td><td class="mono"><b>${n(tot.te)} / ${n(tot.ts)}</b></td><td></td><td class="mono"><b>${costo(tot.te,tot.ts)}</b></td></tr>`:""}
+    </tbody></table></div>${filas.some(x=>x.om)?`<p class="status" style="margin:6px 0 0">«Datos omitidos»: correos, teléfonos o CURP que estaban en las notas y no se enviaron a Claude. Conviene recordar a esas personas que en el expediente solo van iniciales.</p>`:""}</section>`;
+}
+async function iaAccion(a){
+  if (a!=="iaCfgGuardar") return; const v=id=>{ const t=catVal(id); return t===""?null:Number(t); };
+  try{ for (const [k,id] of [["limite_diario_por_persona","iaLim"],["precio_entrada_usd_millon","iaPe"],["precio_salida_usd_millon","iaPs"]]){ const x=v(id); if (x!=null&&!Number.isFinite(x)) return toast("Escribe solo números."); await S.api.iaConfigGuardar(k,x); }
+    toast("Configuración de la IA guardada."); return cargarAdmin("uso"); }catch(e){ toast(e?.message||"No se pudo guardar."); }
 }
 function expedienteHtml(p){
   const f=p.ficha||{}, ro=!S.canWrite, e=age(f.fechaNac);
@@ -7263,6 +7287,8 @@ function nom004FormHtml(){
 function leerNom004(){
   const v=id=>($("#"+id)?.value||"").trim(), c={hora:v("nm-hora"), duracion:v("nm-dur"), modalidad:v("nm-mod"), asistentes:v("nm-asis"), riesgo:v("nm-riesgo"), riesgo_det:v("nm-riesgo-det")};
   for (const f of NOM_CAMPOS) c[f.k]=v("nm-"+f.k);
+  /* Clave estable del riesgo (072): el Tablero cuenta por la clave, no por el texto de la opción */
+  c.riesgo_clave=["no","si","no_explorado"][NOM_RIESGO.indexOf(c.riesgo)]||"";
   return c;
 }
 function nom004Html(n){
@@ -7574,7 +7600,7 @@ async function generar(p){
   }catch(e){
     const m={not_granted:"Claude no tiene permiso en esta página. Puedes activarlo en los permisos del artefacto.",sampling_disabled:"Claude no está disponible para esta cuenta.",
       rate_limited:"Hiciste muchas solicitudes seguidas o alcanzaste tu límite de uso. Espera un momento e intenta de nuevo.",refused:"Claude no pudo redactar este documento con esas notas. Revisa el contenido e intenta de nuevo.",
-      invalid_json:"La respuesta llegó incompleta. Intenta de nuevo.",prompt_too_large:"Las notas son demasiado largas para un solo documento. Usa menos notas o resume las más antiguas.",session_expired:"Tu sesión expiró. Cierra sesión y vuelve a entrar.",
+      invalid_json:"La respuesta llegó incompleta. Intenta de nuevo.",prompt_too_large:"Las notas son demasiado largas para un solo documento. Usa menos notas o resume las más antiguas.",limite_diario:"Alcanzaste el límite diario de redacciones con Claude que fijó la Dirección. Mañana se renueva; mientras tanto, usa el modo copiar y pegar.",session_expired:"Tu sesión expiró. Cierra sesión y vuelve a entrar.",
       no_configurada:"La redacción automática no está configurada todavía. Usa el modo copiar y pegar.",clave_invalida:"La clave de la API de Claude no es válida o no tiene saldo. Avisa a la Dirección.",
       red:"No hubo conexión con el servicio de redacción. Revisa tu internet e intenta de nuevo.",api:"El servicio de redacción tuvo un problema. Intenta de nuevo en un momento.",solicitud:"El servicio no aceptó la solicitud. Intenta de nuevo o avisa a la Dirección."};
     if (e?.code!=="cancelled") toast(m[e?.code]||"No se pudo redactar el documento. Intenta de nuevo.");
@@ -7608,6 +7634,7 @@ document.addEventListener("click", async ev => {
   if (CAT_ACC.has(a)) return catAccion(a, b);
   if (RAI_ACC.has(a)) return raiAccion(a, b);   /* Raíces y comunidad */
   if (MAN_ACC.has(a)) return manAccion(a, b);
+  if (a==="iaCfgGuardar") return iaAccion(a);
   if (ACU_ACC.has(a)) return acuAccion(a, b);   /* Carta Compromiso y acuerdos profesionales */
   if (LEX_ACC.has(a)) return lexAccion(a, b);   /* Diccionario vivo */   /* Catálogo de puestos y competencias */
   if (SOL_ACC.has(a)) return solAccion(a, b);   /* Módulo 06 · Solicitudes */   /* Módulo 06 · Mi espacio */
