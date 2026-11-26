@@ -616,7 +616,7 @@ const marcaTexto = m => m.t==="borrador" ? MARCA_BORRADOR
 const identRows = c => [["Iniciales del consultante",c.ini],["Folio",c.folio||PEND],["Edad",c.edad!==""?`${c.edad} años`:PEND],["Sede",c.sede||PEND],
   ["Primera sesión",c.primera?fechaLarga(c.primera):PEND],["Profesional responsable",c.prof]];
 const quien = c => `la persona consultante identificada con las iniciales ${c.ini} y el folio ${c.folio}`;
-const enCemepi = c => `en el Centro Mexicano de Plenitud Humana, S.C. (CEMEPI)${c.sede?`, sede ${c.sede}`:""}`;
+const enCemepi = c => `en ${CEMEPI_EN_TEXTO}${c.sede?`, sede ${c.sede}`:""}`;
 
 /* Formatos que se arman sin IA */
 function contenidoFijo(tipo, c){
@@ -630,7 +630,7 @@ function contenidoFijo(tipo, c){
     {titulo:"",texto:fechas.length?fechas.map(fmtDate).join(", "):PEND},
     {titulo:"",texto:"Se extiende la presente a solicitud de la persona interesada, para los fines que estime convenientes. Este documento no contiene información clínica."}]}; }
   if (tipo==="consentimiento") return { destinatario:"", advertencias:["Borrador base: debe revisarse jurídicamente y ajustarse a las políticas de CEMEPI antes de usarse.","En menores de edad, considera la representación legal y la participación del propio menor conforme a su edad y madurez."], secciones:[
-    {titulo:"",texto:`Yo, la persona consultante identificada con el folio ${c.folio}${c.ini!==PEND?` (iniciales ${c.ini})`:""}, o su representante legal, declaro que el Centro Mexicano de Plenitud Humana, S.C. (CEMEPI) me ha informado de manera clara sobre lo siguiente:`},
+    {titulo:"",texto:`Yo, la persona consultante identificada con el folio ${c.folio}${c.ini!==PEND?` (iniciales ${c.ini})`:""}, o su representante legal, declaro que ${CEMEPI_EN_TEXTO} me ha informado de manera clara sobre lo siguiente:`},
     {titulo:"Naturaleza del servicio",texto:"La atención psicológica es un proceso profesional de acompañamiento orientado a comprender y atender las dificultades que motivan la consulta, desde una perspectiva integrativa, relacional y humanista."},
     {titulo:"Objetivos, metodología y alcances",texto:"Los objetivos se acuerdan con la persona consultante y se revisan durante el proceso. La metodología incluye entrevistas, intervenciones terapéuticas y, cuando se requiera, evaluaciones psicológicas. Los resultados no pueden garantizarse y dependen de múltiples factores."},
     {titulo:"Beneficios, limitaciones y riesgos",texto:"El proceso puede favorecer el bienestar, la comprensión de la propia experiencia y el desarrollo de recursos personales. En algunos momentos pueden surgir emociones intensas o incomodidad, que se trabajarán dentro del proceso."},
@@ -646,7 +646,7 @@ function contenidoFijo(tipo, c){
 function promptDe(tipo, c, indicaciones, notaId){
   const t=FORMATOS[tipo], base = notaId ? c.notas.find(n=>n.id===notaId) : null;
   const notas = t.sinNotas ? "" : c.notas.map(n=>`[${fmtDate(n.fecha)}]\n${n.texto}`).join("\n\n").slice(-60000);
-  return `Eres el asistente de documentación clínica del Centro Mexicano de Plenitud Humana, S.C. (CEMEPI), un centro de atención psicológica en Ciudad de México y Estado de México con visión integrativa, relacional y humanista.
+  return `Eres el asistente de documentación clínica del Centro Mexicano de Psicología Integrativa (CEMEPI), un centro de atención psicológica en Ciudad de México y Estado de México con visión integrativa, relacional y humanista.
 
 Redacta el cuerpo del documento "${t.nombre}" a partir de las notas del terapeuta.
 
@@ -699,7 +699,7 @@ function promptRevision(g, c){
   const t=FORMATOS[g.tipo], k=g.contenido, base = g.notaId ? c.notas.find(n=>n.id===g.notaId) : null;
   const notas = c.notas.map(n=>`[${fmtDate(n.fecha)}]\n${n.texto}`).join("\n\n").slice(-60000);
   const cuerpo = [k.destinatario?`DESTINATARIO:\n${k.destinatario}`:"", ...k.secciones.map((s,i)=>`[Sección ${i+1}${s.titulo?`: ${s.titulo}`:""}]\n${s.texto}`)].filter(Boolean).join("\n\n");
-  return `Actúa como supervisor de calidad documental del Centro Mexicano de Plenitud Humana, S.C. (CEMEPI). Revisa el documento "${t.nombre}" ANTES de que se emita, comparándolo con las notas del expediente. No lo reescribas: identifica problemas concretos y propone la corrección.
+  return `Actúa como supervisor de calidad documental del Centro Mexicano de Psicología Integrativa (CEMEPI). Revisa el documento "${t.nombre}" ANTES de que se emita, comparándolo con las notas del expediente. No lo reescribas: identifica problemas concretos y propone la corrección.
 
 QUÉ REVISAR
 - fidelidad: todo lo afirmado debe estar en las notas o en los datos del expediente. Señala hechos, sesiones, antecedentes, instrumentos, diagnósticos o intervenciones que no aparecen en las notas, y cualquier información relevante de las notas que se haya omitido para ocultar un riesgo.
@@ -805,14 +805,20 @@ const BD = ["top","left","bottom","right","insideH","insideV"].map(s=>`<w:${s} w
 const fila = (label, v="", h=420) => `<w:tr><w:trPr><w:trHeight w:val="${h}"/><w:cantSplit/></w:trPr><w:tc><w:tcPr><w:tcW w:w="3400" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="EAF1FB"/><w:vAlign w:val="center"/></w:tcPr>${P(R(label,{sz:18,color:"334A6B"}))}</w:tc><w:tc><w:tcPr><w:tcW w:w="6500" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>${P(RL(v))}</w:tc></w:tr>`;
 const tabla = rows => `<w:tbl><w:tblPr><w:tblW w:w="9900" w:type="dxa"/><w:tblBorders>${BD}</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="50" w:type="dxa"/><w:left w:w="100" w:type="dxa"/><w:bottom w:w="50" w:type="dxa"/><w:right w:w="100" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid><w:gridCol w:w="3400"/><w:gridCol w:w="6500"/></w:tblGrid>${rows}</w:tbl>`;
 /* Datos de contacto institucionales (decisión del Director, 2026-11-21): van en el encabezado de todos los documentos */
+/* Denominación (decisión del Director, 2026-11-25): la RAZÓN SOCIAL solo en documentos contractuales y laborales
+   (contratos, Carta Compromiso y sus anexos, nómina, reglamento interior); en todos los demás, el NOMBRE COMERCIAL. */
+const CEMEPI_RAZON = "Centro Mexicano de Plenitud Humana, S.C.";
+const CEMEPI_NOMBRE = "CEMEPI · Centro Mexicano de Psicología Integrativa";
+const CEMEPI_NOMBRE_LARGO = "Centro Mexicano de Psicología Integrativa";   /* encabezados de dos líneas: la segunda dice «CEMEPI · …» */
+const CEMEPI_EN_TEXTO = "el Centro Mexicano de Psicología Integrativa (CEMEPI)";
 const CEMEPI_CONTACTO = "Tel. 55 9506 9766 · Dirección administrativa: Av. Victoria 18, Industrial, Gustavo A. Madero, 07800 Ciudad de México, CDMX.";
 /* PDF: línea de contacto centrada bajo el encabezado; reduce el tamaño si no cabe */
 const pdfContacto = (page, font, y, W, M, color) => { const t=CEMEPI_CONTACTO; let sz=8; while (sz>6 && font.widthOfTextAtSize(t,sz)>W-2*M) sz-=0.25; page.drawText(t,{x:(W-font.widthOfTextAtSize(t,sz))/2, y, size:sz, font, color}); };
-const encabezado = (folio, etiqueta="Folio") => { const cx=640080, cy=552000;
+const encabezado = (folio, etiqueta="Folio") => { const cx=640080, cy=552000; const legal = folio==="Contrato individual" || etiqueta==="Carta";
   const logo = `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="1" name="Logotipo CEMEPI"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="1" name="logo.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rIdLogo"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`;
   return `<w:tbl><w:tblPr><w:tblW w:w="9900" w:type="dxa"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid><w:gridCol w:w="1300"/><w:gridCol w:w="5200"/><w:gridCol w:w="3400"/></w:tblGrid><w:tr>
     <w:tc><w:tcPr><w:tcW w:w="1300" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>${P(logo)}</w:tc>
-    <w:tc><w:tcPr><w:tcW w:w="5200" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>${P(R("Centro Mexicano de Plenitud Humana, S.C.",{b:1,sz:24,color:"0560BD"}))}${P(R("CEMEPI · Atención psicológica · www.cemepi.com.mx",{sz:17,color:"55688A"}))}</w:tc>
+    <w:tc><w:tcPr><w:tcW w:w="5200" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>${P(R(legal?CEMEPI_RAZON:CEMEPI_NOMBRE_LARGO,{b:1,sz:24,color:"0560BD"}))}${P(R("CEMEPI · Atención psicológica · www.cemepi.com.mx",{sz:17,color:"55688A"}))}</w:tc>
     <w:tc><w:tcPr><w:tcW w:w="3400" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>${P(R(etiqueta,{sz:17,color:"55688A"}),{jc:"right"})}${P(R(folio||"________________",{b:1,sz:20}),{jc:"right"})}</w:tc>
   </w:tr></w:tbl>${P(R(CEMEPI_CONTACTO,{color:"55688A"}),{jc:"center",border:1,after:160})}`; };
 const imgXml = (rid, cx, cy, id, name) => `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${id}" name="${name}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${id}" name="${name}.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`;
@@ -821,7 +827,7 @@ const firmaImgXml = c => { if (!c.firma) return ""; const r=c.firmaH/c.firmaW, m
   let cx=maxW, cy=Math.round(cx*r); if (cy>maxH){ cy=maxH; cx=Math.round(cy/r); }
   return P(imgXml("rIdFirma",cx,cy,2,"Firma"),{jc:"center"}); };
 const firmaXml = c => P("",{before:c.firma?300:900}) + firmaImgXml(c) + P(R("______________________________"),{jc:"center"}) + P(R(c.prof,{b:1}),{jc:"center",before:40})
-  + P(R(`Psicólogo(a) · Cédula profesional: ${c.ced}`,{sz:18}),{jc:"center"}) + P(R(`Centro Mexicano de Plenitud Humana, S.C.${c.sede?` · Sede ${c.sede}`:""}`,{sz:18,color:"55688A"}),{jc:"center"});
+  + P(R(`Psicólogo(a) · Cédula profesional: ${c.ced}`,{sz:18}),{jc:"center"}) + P(R(`${CEMEPI_NOMBRE}${c.sede?` · Sede ${c.sede}`:""}`,{sz:18,color:"55688A"}),{jc:"center"});
 function bloques(g, c){
   const t=FORMATOS[g.tipo], k=g.contenido||{};
   return [...(c.marca?[{marca:c.marca}]:[]), {title:t.titulo},{right:`${g.lugar||c.lugar}, a ${fechaLarga(g.fecha||today())}`}, ...(k.destinatario?[{dest:k.destinatario}]:[]),
@@ -844,7 +850,7 @@ function bloquesXml(bl, c){
 }
 function textoPlano(bl, c){
   return bl.map(b=> b.marca?marcaTexto(b.marca) : b.title?b.title.toUpperCase() : b.right?b.right : b.dest?b.dest : b.h?`\n${b.h}` : b.p!=null?b.p
-    : b.table?b.table.map(([k,x])=>`${k}: ${x}`).join("\n") : b.firma?`\n\n______________________________\n${c.prof}\nPsicólogo(a) · Cédula profesional: ${c.ced}\nCentro Mexicano de Plenitud Humana, S.C.${c.sede?` · Sede ${c.sede}`:""}` : "").join("\n\n")
+    : b.table?b.table.map(([k,x])=>`${k}: ${x}`).join("\n") : b.firma?`\n\n______________________________\n${c.prof}\nPsicólogo(a) · Cédula profesional: ${c.ced}\n${CEMEPI_NOMBRE}${c.sede?` · Sede ${c.sede}`:""}` : "").join("\n\n")
     + `\n\n${NOTA_ACLARATORIA}`;
 }
 function hojaAdminXml(c){
@@ -919,7 +925,7 @@ async function pdfExpediente(p, finalidad, generado){
   const fijos=S.docs.filter(d=>d.contenido && d.estado && d.estado!=="borrador").sort((a,b)=>String(a.emitidoEn).localeCompare(String(b.emitidoEn)));
   const borr=S.docs.filter(d=>!d.estado || d.estado==="borrador");
   const pdf=await PDFDocument.create();
-  pdf.setTitle(`Expediente ${p.folio}`); pdf.setAuthor("CEMEPI · Centro Mexicano de Plenitud Humana, S.C."); pdf.setLanguage("es-MX");
+  pdf.setTitle(`Expediente ${p.folio}`); pdf.setAuthor(CEMEPI_NOMBRE); pdf.setLanguage("es-MX");
   const font=await pdf.embedFont(StandardFonts.Helvetica), bold=await pdf.embedFont(StandardFonts.HelveticaBold);
   const b64=(document.querySelector("#logoApp")?.src||"").split(",")[1], logo=b64?await pdf.embedPng(Uint8Array.from(atob(b64), ch=>ch.charCodeAt(0))):null;
   const W=612, H=792, M=54, CW=W-2*M, FS=11, LH=13.8, azul=rgb(0.02,0.376,0.741), tinta=rgb(0.06,0.14,0.25), gris=rgb(0.33,0.41,0.54), rojo=rgb(0.776,0.157,0.157), linea=rgb(0.72,0.78,0.87);
@@ -950,7 +956,7 @@ async function pdfExpediente(p, finalidad, generado){
   /* Portada */
   nueva();
   if (logo) page.drawImage(logo,{x:M, y:y-42, width:48, height:42});
-  y-=15; T("Centro Mexicano de Plenitud Humana, S.C.",{x:M+58, b:1, size:13, color:azul});
+  y-=15; T(CEMEPI_NOMBRE_LARGO,{x:M+58, b:1, size:13, color:azul});
   y-=14; T("CEMEPI · Atención psicológica · www.cemepi.com.mx",{x:M+58, size:8.5, color:gris});
   y-=26; pdfContacto(page, font, y, W, M, gris);
   y-=8; page.drawLine({start:{x:M,y}, end:{x:W-M,y}, thickness:1.5, color:azul});
@@ -1009,7 +1015,7 @@ async function pdfEditable(g, c){
   const {PDFDocument, StandardFonts, rgb, TextAlignment} = PDFLib;
   const t=FORMATOS[g.tipo], k=g.contenido||{};
   const pdf = await PDFDocument.create();
-  pdf.setTitle(t.titulo); pdf.setAuthor("CEMEPI · Centro Mexicano de Plenitud Humana, S.C."); pdf.setLanguage("es-MX");
+  pdf.setTitle(t.titulo); pdf.setAuthor(CEMEPI_NOMBRE); pdf.setLanguage("es-MX");
   const font = await pdf.embedFont(StandardFonts.Helvetica), bold = await pdf.embedFont(StandardFonts.HelveticaBold);
   const b64 = (document.querySelector("#logoApp")?.src||"").split(",")[1];
   const logo = b64 ? await pdf.embedPng(Uint8Array.from(atob(b64), ch=>ch.charCodeAt(0))) : null;
@@ -1052,7 +1058,7 @@ async function pdfEditable(g, c){
   nueva();
   /* Encabezado */
   if (logo) page.drawImage(logo,{x:M, y:y-42, width:48, height:42});
-  y -= 15; texto("Centro Mexicano de Plenitud Humana, S.C.",{x:M+58, b:1, size:13, color:azul});
+  y -= 15; texto(CEMEPI_NOMBRE_LARGO,{x:M+58, b:1, size:13, color:azul});
   y -= 14; texto("CEMEPI · Atención psicológica · www.cemepi.com.mx",{x:M+58, size:8.5, color:gris});
   const fol = c.folio||"________________";
   page.drawText("Folio",{x:W-M-font.widthOfTextAtSize("Folio",8), y:y+16, size:8, font, color:gris});
@@ -1094,7 +1100,7 @@ async function pdfEditable(g, c){
   page.drawLine({start:{x:W/2-110,y}, end:{x:W/2+110,y}, thickness:0.8, color:tinta});
   y -= 14; centro(c.prof, 10, bold, tinta);
   y -= 13; centro(`Psicólogo(a) · Cédula profesional: ${c.ced}`, 9, font, tinta);
-  y -= 12; centro(`Centro Mexicano de Plenitud Humana, S.C.${c.sede?` · Sede ${c.sede}`:""}`, 9, font, gris);
+  y -= 12; centro(`${CEMEPI_NOMBRE}${c.sede?` · Sede ${c.sede}`:""}`, 9, font, gris);
   form.updateFieldAppearances(font);
   return pdf.save();
 }
@@ -1687,7 +1693,7 @@ function tourHtml(){
 async function tourGuardar(){ try{ await S.api?.guardarRecorrido?.(S.tour); }catch{ /* el recorrido es opcional: si falla, solo se pierde el avance */ } }
 /* Hoy: estado de mi asistencia, sin duplicar el registro (se registra en Mi asistencia) */
 function miHoyHtml(){
-  const a=S.asis; if (!a||a.error||!a.yo||!a.aplica) return "";
+  const a=S.asis; if (!a||a.error||!a.yo||!a.aplica||S.rol==="admin_sede") return "";
   const hoy=asisHoy(), ms=asisMarcasDia(a.yo,hoy), e=ms.find(m=>m.tipo==="entrada"), sl=[...ms].reverse().find(m=>m.tipo==="salida"), st=asisEstadoDia(a.yo,hoy);
   return `<section class="note"><div class="note-h"><h3>Hoy</h3><button class="btn sm" type="button" data-act="miasis">${e&&!sl?"Registrar salida":!e?"Registrar entrada":"Ver mi asistencia"}</button></div>
     <p style="margin:0">${e?`Entrada ${asisHora(e.momento)}`:"Sin entrada registrada"}${sl?` · salida ${asisHora(sl.momento)}`:""} <span class="pill ${st.c||""}">${esc(st.t)}</span></p></section>`;
@@ -1811,10 +1817,15 @@ async function solVer(id, gestion){
   try{ const s=gestion?(S.sol.porResolver||[]).find(x=>x.id===id)||await S.api.solicitud(id):(S.sol.mias||[]).find(x=>x.id===id)||await S.api.solicitud(id);
     S.solVer={s, ev:await S.api.solEventos(id)}; render(); $("#detail").scrollTop=0; }catch(e){ toast(e?.message||"No se pudo abrir."); }
 }
-function notifHtml(){ const ns=S.notif||[];
+const notifPropias=()=>(S.notif||[]).filter(x=>!x.para||x.para===S.api?.uid);
+function notifHtml(){ const ns=notifPropias(), sede=(S.notif||[]).filter(x=>x.para&&x.para!==S.api?.uid);
+  const li=(n,ajena)=>`<li><div>${!ajena&&!n.leida?"<b>● </b>":""}${ajena?`<span class="pill">${esc(n.persona?.nombre||"Persona de tu sede")}</span> `:""}${esc(n.titulo)}<br><span class="status">${new Date(n.creado).toLocaleString("es-MX",{dateStyle:"short",timeStyle:"short"})}${ajena?(n.leida?" · la persona ya la leyó":" · la persona aún no la lee"):""}</span></div>${!ajena&&n.vista?`<button class="btn sm" type="button" data-act="notifIr" data-id="${n.id}">Ver</button>`:""}</li>`;
   return `<p class="status" style="margin:0 0 8px">Solo dentro de la app. No incluyen el detalle de tus solicitudes ni se envían por correo o mensajes.</p>
-    ${ns.length?`<ul class="pend">${ns.map(n=>`<li><div>${n.leida?"":"<b>● </b>"}${esc(n.titulo)}<br><span class="status">${new Date(n.creado).toLocaleString("es-MX",{dateStyle:"short",timeStyle:"short"})}</span></div>${n.vista?`<button class="btn sm" type="button" data-act="notifIr" data-id="${n.id}">Ver</button>`:""}</li>`).join("")}</ul>`:`<p>No tienes notificaciones.</p>`}`; }
-async function notifCargar(){ if (!S.api?.notificaciones) return; S.notif=await S.api.notificaciones(); const n=S.notif.filter(x=>!x.leida).length, b=$("#notifBtn");
+    ${S.rol==="admin_sede"?`<h3 style="margin:0 0 6px">Para esta cuenta</h3>`:""}
+    ${ns.length?`<ul class="pend">${ns.map(n=>li(n,false)).join("")}</ul>`:`<p>No tienes notificaciones.</p>`}
+    ${S.rol==="admin_sede"?`<h3 style="margin:12px 0 6px">De psicólogos y administrativos de tu sede</h3><p class="status" style="margin:0 0 6px">Para dar seguimiento. Solo lectura: cada persona marca las suyas.</p>
+      ${sede.length?`<ul class="pend">${sede.map(n=>li(n,true)).join("")}</ul>`:`<p class="status">Sin notificaciones recientes en tu sede.</p>`}`:""}`; }
+async function notifCargar(){ if (!S.api?.notificaciones) return; S.notif=await S.api.notificaciones(); const n=notifPropias().filter(x=>!x.leida).length, b=$("#notifBtn");
   if (b){ b.hidden=false; const d=b.querySelector(".ndot"); if (d) d.hidden=!n; b.setAttribute("aria-label", n?`Notificaciones: ${n} sin leer`:"Notificaciones"); } }
 async function solAccion(a,b){
   const v=id=>($("#"+id)?.value??"").trim(), err=e=>toast(e?.message||"No se pudo completar.");
@@ -1853,7 +1864,7 @@ async function solAccion(a,b){
     if (!(z>=1&&z<=30)) return toast("El plazo va de 1 a 30 días.");
     try{ await S.api.guardarTipoSolicitud(k,{pasos:v("tp-"+k).split(","), plazo_dias:z, activo:$("#ta-"+k).checked}); toast("Guardado. Quedó en la bitácora."); return solCargar(); }catch(e){ return err(e); } }
   if (a==="notif"){ await notifCargar().catch(()=>{}); const d=$("#dlgNotif"); d.querySelector(".body").innerHTML=notifHtml(); d.showModal(); return; }
-  if (a==="notifLeidas"){ try{ await S.api.marcarLeidas((S.notif||[]).filter(n=>!n.leida).map(n=>n.id)); await notifCargar(); $("#dlgNotif .body").innerHTML=notifHtml(); }catch(e){ err(e); } return; }
+  if (a==="notifLeidas"){ try{ await S.api.marcarLeidas(notifPropias().filter(n=>!n.leida).map(n=>n.id)); await notifCargar(); $("#dlgNotif .body").innerHTML=notifHtml(); }catch(e){ err(e); } return; }
   if (a==="notifCerrar"){ $("#dlgNotif").close(); return; }
   if (a==="notifIr"){ const n=(S.notif||[]).find(x=>x.id===b.dataset.id); $("#dlgNotif").close(); if (!n) return;
     if (!n.leida) S.api.marcarLeidas([n.id]).then(notifCargar).catch(()=>{});
@@ -2021,7 +2032,7 @@ const ROLES_INFO = {
 const PERM_TXT = {supervision_clinica:"Supervisión clínica de tu sede", contratos:"Administrar contratos y documentación del personal", tiempo_uso:"Ver tiempo de uso"};
 const misPermisos = () => [...(S.perm||[])].map(k=>PERM_TXT[k]).filter(Boolean);
 const etiquetaRol = () => ROLES_INFO[rolClave()]?.n || ROL_TXT[S.rol] || "";
-const tieneContrato = () => ["administrativo","admin_sede"].includes(S.rol) || (S.rol==="psicologo" && S.api?.modalidad!=="comision");
+const tieneContrato = () => S.rol==="administrativo" ||   /* la cuenta de Administración de sede no es persona: no firma contrato */ (S.rol==="psicologo" && S.api?.modalidad!=="comision");
 const veTodosContratos = () => ["superusuario","direccion"].includes(S.rol) || tengo("contratos");
 const gestionaCuentas = () => ["superusuario","direccion","admin_sede"].includes(S.rol);
 const esClinico = () => S.rol!=="administrativo";
@@ -2129,7 +2140,7 @@ const orgCol = id => S.org?.colaboradores?.find(c=>c.id===id);
 const orgOcupante = posId => { const a=S.org?.asignaciones?.find(x=>x.posicion_id===posId && (!x.hasta || x.hasta>=today())); return a ? orgCol(a.colaborador_id) : null; };
 const orgNomCol = id => { if (!id) return pendH(); const c=orgCol(id); return c ? esc(c.nombre) : `<span class="status">Persona de una sede no autorizada</span>`; };
 /* Personas con cuenta activa (para elegir responsable u ocupante). Las cuentas compartidas de sede no son personas. */
-const orgPersonas = () => (S.usuarios||[]).filter(u=>u.estado==="activo" && !/^cemepi\s/i.test(u.nombre||"")).sort((a,b)=>(a.nombre||"").localeCompare(b.nombre||"","es"));
+const orgPersonas = () => (S.usuarios||[]).filter(u=>u.estado==="activo" && u.rol!=="admin_sede" && !/^cemepi\s/i.test(u.nombre||"")).sort((a,b)=>(a.nombre||"").localeCompare(b.nombre||"","es"));
 const orgOpcPersonas = (vacio) => [["",vacio],...orgPersonas().map(u=>[u.id,`${u.nombre||u.email}${u.sede?" · "+u.sede:""}`])];
 async function cargarOrg(){
   try{ S.org = await S.api.orgCatalogos(); if ((S.view==="sedes" && gestionaCuentas()) || orgEditaCatalogo() || S.rol==="superusuario") S.usuarios = await S.api.usuarios(); }
@@ -2327,7 +2338,7 @@ function colaboradoresHtml(){
       <td><button class="btn sm" type="button" data-act="verCol" data-id="${c.id}">Ver</button></td></tr>`; }).join("");
   return orgPagina("Colaboradores","Directorio laboral de la red: puesto, sede, a quién reporta y quién supervisa. No contiene expedientes clínicos de consultantes ni datos como CURP, NSS o salario (esos viven en Contratos y Documentación).",
     orgEditaCatalogo()&&sinFicha.length&&!S.orgEdit?`<button class="btn primary" type="button" data-act="agregarCol">+ Agregar desde una cuenta</button>`:"",
-    `${agregar}${ver?fichaColHtml(ver)+revHistHtml(ver):""}${revPendHtml()}${barraFiltros("colaboradores",{ph:"Buscar persona o puesto",sedes:orgSedesVis().map(s=>s.nombre),estados:Object.values(COL_ESTATUS)})}
+    `${orgEditaCatalogo()&&sinFicha.length&&!S.orgEdit?`<div class="banner" role="status"><b>${sinFicha.length} cuenta${sinFicha.length===1?"":"s"} activa${sinFicha.length===1?"":"s"} sin registro en el directorio.</b> Sin su registro, esas personas no pueden usar asistencia, solicitudes, vacaciones, firmas ni su incorporación. Agrégalas con «+ Agregar desde una cuenta» (las cuentas de Administración de sede no son personas y no se agregan).</div>`:""}${agregar}${ver?fichaColHtml(ver)+revHistHtml(ver):""}${revPendHtml()}${barraFiltros("colaboradores",{ph:"Buscar persona o puesto",sedes:orgSedesVis().map(s=>s.nombre),estados:Object.values(COL_ESTATUS)})}
     <div class="tbl-wrap"><table><thead><tr><th>Colaborador</th><th>Puesto</th><th>Área</th><th>Sede</th><th>Reporta a</th><th>Supervisión clínica</th><th>Estatus</th><th></th></tr></thead><tbody>
     ${filas||`<tr><td colspan="8" class="status">Aún no hay personas en el directorio de tus sedes.</td></tr>`}</tbody></table></div>`);
 }
@@ -3076,7 +3087,7 @@ async function dxPdfFirma(d){
     const W=612,H=792,M=54,CW=W-2*M; let pg=pdf.addPage([W,H]), y=H-M;
     const linea=(t,o={})=>{ const sz=o.size||10, f=o.bold?bold:font; for (const l of envolver(limpiarPdf(t),f,sz,CW)){ if (y<M+120){ pg=pdf.addPage([W,H]); y=H-M; } pg.drawText(l,{x:M,y,size:sz,font:f,color:o.color||rgb(0,0,0)}); y-=sz*1.35; } };
     linea("CONSTANCIA DE FIRMA ELECTRÓNICA",{size:15,bold:1,color:azul}); y-=4;
-    linea("Centro Mexicano de Plenitud Humana, S.C. (CEMEPI)",{size:10,bold:1}); linea(CEMEPI_CONTACTO,{size:8,color:gris}); y-=8;
+    linea(CEMEPI_NOMBRE,{size:10,bold:1}); linea(CEMEPI_CONTACTO,{size:8,color:gris}); y-=8;
     linea(`Documento: ${d.nombre}`,{bold:1}); linea(`Folio: ${d.folio||"—"} · Versión ${d.version} · Archivo: ${v.nombre_archivo}`); linea(`Huella SHA-256 del archivo firmado: ${v.sha256}`,{size:8});
     if (!esPdf) linea("El archivo firmado no es PDF; esta constancia lo identifica por su huella. Consérvalos juntos.",{size:9,color:gris});
     y-=10;
@@ -3637,14 +3648,14 @@ async function incPdfBase(titulo, cuerpo, firmas){ if (!(await libLista("pdf")))
       else { const ps=l.split(" "); if (n===ls.length-1||ps.length<2) pg.drawText(l,{x:M,y,size:sz,font:fo,color:col});
         else { const extra=(CW-w)/(ps.length-1), sp=fo.widthOfTextAtSize(" ",sz); let x=M; ps.forEach(p=>{ pg.drawText(p,{x,y,size:sz,font:fo,color:col}); x+=fo.widthOfTextAtSize(p,sz)+sp+extra; }); } }
       y-=sz*1.45; }); };
-  lin("Centro Mexicano de Plenitud Humana, S.C. (CEMEPI)",{bold:1,center:1}); lin(CEMEPI_CONTACTO,{size:8,center:1,color:gris}); y-=14;
+  lin(CEMEPI_NOMBRE,{bold:1,center:1}); lin(CEMEPI_CONTACTO,{size:8,center:1,color:gris}); y-=14;
   lin(`Ciudad de México, a ${new Date().toLocaleDateString("es-MX",{day:"numeric",month:"long",year:"numeric"})}`,{right:1}); y-=14; lin(titulo,{bold:1,center:1,size:13}); y-=8;
   cuerpo(lin, ()=>{ y-=6; }); y-=34; for (const [n,c] of firmas){ if (y<M+80) nueva(); lin("______________________________",{center:1}); lin(n,{bold:1,center:1}); if (c) lin(c,{center:1}); y-=24; }
   /* Sin nota aclaratoria: solo va en los documentos del expediente (decisión del Director, 2026-11-22) */
   return await pdf.save(); }
 async function incCartaPdf(i){ const c=ixCol(i.colaborador_id);
   const bytes=await incPdfBase("CARTA DE CONFIRMACIÓN DE INCORPORACIÓN",(lin,sep)=>{ lin(c?.nombre||"",{bold:1}); lin("PRESENTE"); sep();
-    lin(`Por este medio, el Centro Mexicano de Plenitud Humana, S.C. (CEMEPI) le comunica que concluyó satisfactoriamente su proceso de incorporación, iniciado el ${fmtDate(i.inicio)} en la sede ${ixSede(c?.sede_principal_id)}, como ${INC_CLASE[i.clase]}.`); sep();
+    lin(`Por este medio, ${CEMEPI_EN_TEXTO} le comunica que concluyó satisfactoriamente su proceso de incorporación, iniciado el ${fmtDate(i.inicio)} en la sede ${ixSede(c?.sede_principal_id)}, como ${INC_CLASE[i.clase]}.`); sep();
     lin(`Su fecha de inicio de actividades con CEMEPI es el ${fmtDate(i.inicio_actividades||i.inicio)}. Durante este periodo se acompañó su formación y se revisaron sus avances en los cortes de los días 30, 60 y 90.`); sep();
     lin("La presente carta no modifica las condiciones de su contrato individual de trabajo. Agradecemos su compromiso con el bienestar de las personas que atendemos."); },[["Romel Monroy Barrón","Director General"],[c?.nombre||"","Recibí"]]);
   return bytes?new File([bytes],`Carta-confirmacion-${slug(c?.nombre||"")}.pdf`,{type:"application/pdf"}):null; }
@@ -5458,8 +5469,8 @@ function documentacionHtml(){
   let general="";
   if (todos){ const cuenta=new Map(), verif=new Map(), tiposDe=new Map();
     for (const d of S.docpTodos||[]){ cuenta.set(d.user_id,(cuenta.get(d.user_id)||0)+1); if (d.verificado_en) verif.set(d.user_id,(verif.get(d.user_id)||0)+1); (tiposDe.get(d.user_id)||tiposDe.set(d.user_id,new Set()).get(d.user_id)).add(d.tipo); }
-    const us=(S.usuarios||[]).filter(u=>u.estado==="activo" && u.id!==S.uid && u.rol!=="superusuario" && (!ES_SEDE() || tengo("contratos") || (u.rol==="psicologo" && u.sede===S.miSede))).sort((a,b)=>(a.sede||"").localeCompare(b.sede||"")||(a.nombre||"").localeCompare(b.nombre||""));
-    general = `${barraFiltros("documentacion",{sedes:[...new Set(us.map(u=>u.sede).filter(Boolean))].sort(), faltan:true})}<section class="doc-sec"><h3 class="sec-h">${ES_SEDE()&&!tengo("contratos")?`Documentación de los psicólogos de ${esc(S.miSede)}`:"Documentación del personal"} (${us.length})</h3><div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Sede</th><th>Documentos</th><th>Obligatorios</th><th></th></tr></thead><tbody>
+    const us=(S.usuarios||[]).filter(u=>u.estado==="activo" && u.id!==S.uid && u.rol!=="superusuario" && (!ES_SEDE() || tengo("contratos") || (["psicologo","administrativo"].includes(u.rol) && u.sede===S.miSede))).sort((a,b)=>(a.sede||"").localeCompare(b.sede||"")||(a.nombre||"").localeCompare(b.nombre||""));
+    general = `${barraFiltros("documentacion",{sedes:[...new Set(us.map(u=>u.sede).filter(Boolean))].sort(), faltan:true})}<section class="doc-sec"><h3 class="sec-h">${ES_SEDE()&&!tengo("contratos")?`Documentación de psicólogos y administrativos de ${esc(S.miSede)}`:"Documentación del personal"} (${us.length})</h3><div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Sede</th><th>Documentos</th><th>Obligatorios</th><th></th></tr></thead><tbody>
       ${us.map(u=>{ const req=DOCP_REQ[u.rol]||[], t=tiposDe.get(u.id)||new Set(), faltan=req.filter(k=>!t.has(k)).length;
         return `<tr data-f data-sede="${esc(u.sede||"")}" data-faltan="${faltan?1:0}"><td><b>${esc(u.nombre||u.email)}</b><br><span class="status">${esc(u.rol==="psicologo"&&u.modalidad?MOD_TXT[u.modalidad]:(ROL_TXT[u.rol]||""))}</span></td><td>${esc(u.sede||"")}</td>
         <td>${cuenta.get(u.id)||0}${cuenta.get(u.id)?` <span class="status">(${verif.get(u.id)||0} verificados)</span>`:""}</td>
@@ -5467,7 +5478,7 @@ function documentacionHtml(){
         <td><button class="btn sm" type="button" data-act="docpVer" data-id="${esc(u.id)}">Abrir</button></td></tr>`; }).join("") || `<tr><td colspan="5">No hay personal activo.</td></tr>`}
     </tbody></table></div></section>`; }
   return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">${cab(todos?"Documentación":"Mis documentos")}
-    <p class="status" style="margin:0">Sube en PDF tu identificación, CURP, comprobante de domicilio, constancia de situación fiscal, cédula y título profesional, constancias de cursos, diplomados y certificaciones. ${ES_SEDE()&&!tengo("contratos")?"Como administración de sede ves la documentación de los psicólogos de tu sede y puedes verificarla contra los originales.":todos?"Como Dirección o recursos humanos ves la documentación de todo el personal y puedes verificarla contra los originales.":"Solo tú, la Dirección y recursos humanos los ven."}</p>
+    <p class="status" style="margin:0">Sube en PDF tu identificación, CURP, comprobante de domicilio, constancia de situación fiscal, cédula y título profesional, constancias de cursos, diplomados y certificaciones. ${ES_SEDE()&&!tengo("contratos")?"Como administración de sede ves la documentación de los psicólogos y administrativos de tu sede y puedes verificarla contra los originales.":todos?"Como Dirección o recursos humanos ves la documentación de todo el personal y puedes verificarla contra los originales.":"Solo tú, la Dirección y recursos humanos los ven."}</p>
     ${ES_DIR()?`<p class="banner" style="margin:0;display:block"><b>Respaldo:</b> los respaldos automáticos de Supabase guardan la base de datos, pero <b>no los PDF</b>. Pulsa <b>Descargar respaldo (ZIP)</b> al menos una vez al mes y guárdalo en un disco o carpeta segura de CEMEPI (contiene datos personales del personal). Cada descarga queda en la bitácora.</p>`:""}
     ${S.rol==="superusuario"?(S.dx&&!S.dx.error?dxPorFirmarHtml():(misDocsInstHtml(),"")):misDocsInstHtml()+docpPersonaHtml(S.uid)}${general}${ES_DIR()?papeleraHtml():""}</div>`;
 }
@@ -5541,9 +5552,9 @@ const GUIAS = [
   {t:"Consultar la organización", si:()=>(S.api?.orgNivel||0)>=1, pasos:["Entra a Administración → Resumen para ver sedes, personas, vacantes y alertas de las sedes que tienes autorizadas.","En Organigrama elige la vista (línea de reporte, área, sede, supervisión clínica o coordinación) y pulsa a una persona para ver su ficha.","En Supervisión registra a quién reporta cada persona; en Vacantes, quién ocupa cada plaza."]},
   {t:"Iniciar el proceso de una persona en contratación", si:()=>S.rol==="superusuario"||(S.api?.rhNivel||0)>=2, pasos:["Antes, en Personas → Supervisión registra a quién reporta (su jefe directo) y, si es psicólogo(a), quién le da supervisión clínica.","Entra a Personas → Incorporación y pulsa + Iniciar proceso.","Elige a la persona (si aún no tiene cuenta, déjala en preingreso e indica si es administrativo o psicólogo), las fechas, la duración y a su responsable, capacitador, mentor y supervisor.","El plan se arma con la ruta de su puesto y se puede personalizar. A los días 30, 60 y 90 se evalúa; al final el responsable recomienda y tú decides: confirmar, revisión adicional, suspender o concluir sin continuidad."]},
   {t:"Acompañar o evaluar a una persona en incorporación", si:()=>!!S.rol, pasos:["Entra a Personas → Incorporación y abre a la persona (también aparece en Pendientes de Inicio cuando toca).","Como capacitador(a) o responsable: completa sus actividades con retroalimentación o márcalas para refuerzo. Como mentor(a): registra reuniones con acuerdos y compromisos.","Como responsable o supervisor(a): cada evaluación se abre 10 días antes de su corte; califica cada criterio del 1 al 4 con evidencias y un plan de mejora, y ciérrala. Después de la del día 90 envía tu recomendación con una valoración escrita."]},
-  {t:"Solicitar vacaciones o un permiso", si:()=>!!S.rol, pasos:["Entra a Mi espacio → Mi asistencia. En «Mis vacaciones» ves los días confirmados por RR. HH., los usados, los que están en trámite y los disponibles (usados y en trámite son un estimado).","Pulsa «Solicitar vacaciones» o «Pedir corrección o permiso» y elige el tipo: permiso personal, revisión médica, emergencia familiar, con o sin goce de sueldo, incapacidad, entre otros.","En vacaciones verás la demanda de tu sede esos días (Normal, Alta o Muy alta), sin nombres de otras personas. «Alta» no significa que se rechace: tu jefe lo revisa contigo.","En permisos puedes adjuntar una constancia (PDF o imagen). No escribas ni adjuntes diagnósticos: solo la ven RR. HH. y tú.","Tu jefe directo la resuelve. Aparece también en Mis solicitudes."]},
+  {t:"Solicitar vacaciones o un permiso", si:()=>!!S.rol&&S.rol!=="admin_sede", pasos:["Entra a Mi espacio → Mi asistencia. En «Mis vacaciones» ves los días confirmados por RR. HH., los usados, los que están en trámite y los disponibles (usados y en trámite son un estimado).","Pulsa «Solicitar vacaciones» o «Pedir corrección o permiso» y elige el tipo: permiso personal, revisión médica, emergencia familiar, con o sin goce de sueldo, incapacidad, entre otros.","En vacaciones verás la demanda de tu sede esos días (Normal, Alta o Muy alta), sin nombres de otras personas. «Alta» no significa que se rechace: tu jefe lo revisa contigo.","En permisos puedes adjuntar una constancia (PDF o imagen). No escribas ni adjuntes diagnósticos: solo la ven RR. HH. y tú.","Tu jefe directo la resuelve. Aparece también en Mis solicitudes."]},
   {t:"Saldos de vacaciones y cobertura (RR. HH.)", si:()=>!!S.rol && (S.rol==="superusuario"||(S.api?.rhNivel||0)>=2||(S.api?.asisNivel||0)>=1), pasos:["Entra a Personas → Asistencia y jornadas → «Vacaciones y cobertura».","Elige la sede y la fecha de inicio: ves 31 días con las personas con control y quiénes estarán ausentes (aprobado o en trámite).","RR. HH. registra el saldo confirmado de cada persona con «Registrar». Nada se calcula solo; tu propio saldo lo registra otra persona.","Las constancias de los permisos aparecen como «Ver constancia» en «Permisos y solicitudes», solo para RR. HH."]},
-  {t:"Hacer una solicitud", si:()=>!!S.rol, pasos:["Entra a Mi espacio → Mis solicitudes y pulsa «+ Nueva solicitud».","Elige el tipo: corregir tus datos, constancia, aclaración de pago, necesito apoyo, propuesta o problema con la app. Vacaciones, permisos y correcciones de asistencia se piden en Mi asistencia y aparecen en la misma lista.","Escribe con calma: lo que escribes se guarda como borrador. Puedes «Guardar como borrador» y enviarla después.","Pulsa «Revisar antes de enviar» y luego «Enviar solicitud»: recibes un folio CEMEPI-SOL.","En la lista ves quién la tiene y su estado. Si te piden información, respóndela ahí mismo. Mientras no se resuelva, puedes cancelarla.","La campana de arriba te avisa cuando hay respuesta. No llegan avisos por correo ni mensajes."]},
+  {t:"Hacer una solicitud", si:()=>!!S.rol&&S.rol!=="admin_sede", pasos:["Entra a Mi espacio → Mis solicitudes y pulsa «+ Nueva solicitud».","Elige el tipo: corregir tus datos, constancia, aclaración de pago, necesito apoyo, propuesta o problema con la app. Vacaciones, permisos y correcciones de asistencia se piden en Mi asistencia y aparecen en la misma lista.","Escribe con calma: lo que escribes se guarda como borrador. Puedes «Guardar como borrador» y enviarla después.","Pulsa «Revisar antes de enviar» y luego «Enviar solicitud»: recibes un folio CEMEPI-SOL.","En la lista ves quién la tiene y su estado. Si te piden información, respóndela ahí mismo. Mientras no se resuelva, puedes cancelarla.","La campana de arriba te avisa cuando hay respuesta. No llegan avisos por correo ni mensajes."]},
   {t:"Resolver solicitudes del equipo", si:()=>!!S.rol && ["superusuario","direccion","admin_sede"].includes(S.rol), pasos:["Entra a Personas → Bandeja de solicitudes: ves solo las que te toca resolver ahora (de quien te reporta o de tus sedes). Nunca las tuyas.","Pulsa «Revisar»: ves el detalle, el recorrido y el historial.","Puedes tomarla en revisión, pedir información, no aprobarla (explicando el motivo) o aprobarla. Si tiene otro paso, pasa a la siguiente persona.","Una corrección de nombre o cédula aprobada se aplica sola a la cuenta, a las firmas y a los directorios; solo la aprueba quien administra esa cuenta.","El Superusuario define en «Tipos de solicitud» quién revisa cada tipo, el plazo y si está activo. Cada cambio queda en la bitácora."]},
   {t:"Plantillas de incorporación", si:()=>!!S.rol && ["superusuario","direccion"].includes(S.rol), pasos:["Entra a Personas → Incorporación → «Plantillas».","Cada plantilla tiene versiones. Una versión publicada no cambia: pulsa «Nueva versión», edita el borrador (actividad, etapa, tipo, día relativo, plazo, responsable, evidencia y quién la ve) y publícala.","Los procesos que ya empezaron conservan la versión con la que iniciaron.","Las plantillas iniciales tienen los temas del encargo y están «Por validar»: agrega el material real y pulsa «Marcar validada»."]},
   {t:"Evaluar los días 30, 60 y 90", si:()=>!!S.rol && (S.rol==="superusuario"||(S.api?.rhNivel||0)>=1||["direccion","admin_sede"].includes(S.rol)), pasos:["En la ficha de la persona abre «Evaluaciones». Cada corte se abre 10 días antes.","Califica cada competencia del 1 al 5 con su evidencia. Si no tuviste oportunidad de observarla, marca «No observado»; si no corresponde, «No aplica».","Escribe fortalezas, necesidades de desarrollo, acuerdos y la próxima revisión. Guarda como borrador y continúa después; al cerrarla queda fija y la persona la ve.","Para un seguimiento fuera de los cortes usa «Evaluación extraordinaria» con su motivo.","Ningún promedio decide la continuidad. A los psicólogos independientes no se les evalúa formalmente."]},
@@ -5564,7 +5575,7 @@ const GUIAS = [
   {t:"Agregar un documento a la biblioteca", si:()=>dxPuedeGestionar(), pasos:["Entra a Documentos → Documentos y firmas y pulsa + Nuevo documento.","Elige el tipo, escribe el nombre y elige la sede (la entidad fiscal se toma de la sede) o, si es un documento de la entidad, la entidad fiscal. Si es de una persona, elígela para que quede en su expediente.","Pulsa Crear borrador y sube el archivo (PDF, Word, PNG o JPG, máx. 20 MB). La app calcula su huella digital antes de subirlo.","Pulsa Publicar con folio. Un documento publicado no se elimina: si deja de valer, se archiva con un motivo."]},
   {t:"Corregir un documento sin perder el anterior", si:()=>dxPuedeGestionar(), pasos:["Abre el documento en Documentos y firmas.","En Versiones elige el archivo nuevo, escribe el motivo y pulsa Subir versión.","La versión anterior se conserva con su huella; la nueva queda como vigente."]},
   {t:"Comprobar que un archivo no se alteró", si:()=>dxPuedeGestionar(), pasos:["Abre el documento y, en Versiones, pulsa Verificar integridad.","La app vuelve a calcular la huella del archivo guardado y la compara con la registrada al subirlo."]},
-  {t:"Registrar mi entrada y salida", si:()=>!!S.rol, pasos:["Entra a Mi espacio → Mi asistencia.","En la sede, escanea con la cámara de tu celular el código QR de la recepción: se abre la app y confirma la sede. También puedes pulsar Registrar entrada desde la app.","Al terminar tu jornada, pulsa Registrar salida. La hora la pone el servidor, no tu celular.","Si olvidaste registrar o te equivocaste, pulsa Pedir corrección o permiso. Tu registro original no se borra: la corrección aprobada queda como ajuste.","Si eres psicólogo(a) independiente, el control no te aplica; puedes registrar actividades de forma voluntaria."]},
+  {t:"Registrar mi entrada y salida", si:()=>!!S.rol&&S.rol!=="admin_sede", pasos:["Entra a Mi espacio → Mi asistencia.","En la sede, escanea con la cámara de tu celular el código QR de la recepción: se abre la app y confirma la sede. También puedes pulsar Registrar entrada desde la app.","Al terminar tu jornada, pulsa Registrar salida. La hora la pone el servidor, no tu celular.","Si olvidaste registrar o te equivocaste, pulsa Pedir corrección o permiso. Tu registro original no se borra: la corrección aprobada queda como ajuste.","Si eres psicólogo(a) independiente, el control no te aplica; puedes registrar actividades de forma voluntaria."]},
   {t:"Pedir un permiso, vacaciones o justificar una incidencia", si:()=>!!S.rol, pasos:["En Mi asistencia pulsa Pedir corrección o permiso.","Elige el tipo, la fecha y explica brevemente. En incapacidades no escribas el diagnóstico.","Tu jefe directo la revisa. Nada cambia hasta que se apruebe; verás la respuesta en Mis solicitudes."]},
   {t:"Supervisar la asistencia de mi equipo", si:()=>asisSupervisa(), pasos:["Entra a Personas → Asistencia y jornadas. Solo ves a las personas que te corresponden.","En Resumen eliges sede y fecha. Fuera de horario y Sin entrada son datos por revisar, nunca faltas ni descuentos automáticos.","En Permisos y solicitudes e Incidencias revisa y resuelve con un motivo. No puedes resolver lo tuyo.","En Actividades complementarias valida el tiempo reportado (notas, supervisión, capacitación: son tiempo de trabajo)."]},
   {t:"Poner el código QR de asistencia en recepción", si:()=>S.rol==="superusuario"||S.rol==="admin_sede"||(S.api?.asisNivel||0)>=2, pasos:["En el equipo de recepción entra a Asistencia y jornadas → QR de sede y elige la sede.","Deja la pantalla abierta: el código cambia cada 30 segundos, así que una foto vieja no sirve.","Cada persona lo escanea con la cámara de su celular, entra con su cuenta y registra. No se guarda la ubicación de nadie."]},
@@ -5828,7 +5839,7 @@ async function acuCargar(){
   if (S.acu?.dispOk&&S.acu.configuro&&!S.acuAvisos){ S.acuAvisos=true; S.api.acuRpc("acu_avisar_vencimientos",{}).catch(()=>{}); }
   const a=ACU(), mb=$("#misacuBtn"), pb=$("#acuBtn");
   if (mb) mb.hidden=!(a?.ok&&(S.api?.modalidad==="comision"||a.acuerdos.some(x=>x.colaborador_id===a.yo)));
-  if (pb) pb.hidden=!(a?.ok&&(a.configuro||a.acuerdos.some(x=>x.colaborador_id!==a.yo)));
+  if (pb) pb.hidden=!(a?.ok&&(a.configuro||S.rol==="admin_sede"||a.acuerdos.some(x=>x.colaborador_id!==a.yo)));
   if (["misacuerdos","acuerdos","raices","contratos"].includes(S.view)) render();
 }
 /* Texto del acuerdo (el mismo que se firmó y cuya huella se guardó) */
@@ -6091,7 +6102,7 @@ async function acuArchivo(fmt, texto, folio, sha, marca, opt={}){
     } else {
       await libCargar("pdf");
       const {PDFDocument, StandardFonts, rgb}=PDFLib;
-      const pdf=await PDFDocument.create(); pdf.setTitle(opt.titulo||"Carta Compromiso para el Psicólogo Independiente"); pdf.setAuthor("CEMEPI · Centro Mexicano de Plenitud Humana, S.C."); pdf.setLanguage("es-MX");
+      const pdf=await PDFDocument.create(); pdf.setTitle(opt.titulo||"Carta Compromiso para el Psicólogo Independiente"); pdf.setAuthor(opt.titulo?CEMEPI_NOMBRE:CEMEPI_RAZON); pdf.setLanguage("es-MX");
       const font=await pdf.embedFont(StandardFonts.Helvetica), bold=await pdf.embedFont(StandardFonts.HelveticaBold);
       const W=612,H=792,M=54,CW=W-2*M,FS=11,LH=13.8, azul=rgb(0.02,0.376,0.741), tinta=rgb(0.06,0.14,0.25), gris=rgb(0.33,0.41,0.54), rojo=rgb(0.776,0.157,0.157);
       const pieH=0, BASE=26+18; let page,y;   /* sin nota aclaratoria: documento contractual (decisión del Director, 2026-11-25) */
@@ -6106,7 +6117,7 @@ async function acuArchivo(fmt, texto, folio, sha, marca, opt={}){
             const an=ws.map(w=>fo.widthOfTextAtSize(w,sz)), gap=(CW-an.reduce((a,b)=>a+b,0))/(ws.length-1); let xx=M; ws.forEach((w,q)=>{ page.drawText(w,{x:xx,y,size:sz,font:fo,color:o.color||tinta}); xx+=an[q]+gap; }); });
           y-=4; } };
       nueva();
-      y-=4; page.drawText("Centro Mexicano de Plenitud Humana, S.C.",{x:M,y,size:13,font:bold,color:azul});
+      y-=4; page.drawText(opt.titulo?CEMEPI_NOMBRE_LARGO:CEMEPI_RAZON,{x:M,y,size:13,font:bold,color:azul});
       const etq=opt.titulo?"Versión":"Folio"; page.drawText(etq,{x:W-M-font.widthOfTextAtSize(etq,8),y:y+10,size:8,font,color:gris});
       const fl=limpiarPdf(folio); page.drawText(fl,{x:W-M-bold.widthOfTextAtSize(fl,10),y:y-4,size:10,font:bold,color:tinta});
       y-=16; pdfContacto(page, font, y, W, M, gris); y-=8; page.drawLine({start:{x:M,y},end:{x:W-M,y},thickness:1.5,color:azul});
@@ -7204,7 +7215,7 @@ function firmaCIHtml(p){
 async function pdfConsentimiento(p, x){
   await libCargar("pdf");
   const {PDFDocument, StandardFonts, rgb} = PDFLib;
-  const pdf=await PDFDocument.create(); pdf.setTitle("Consentimiento informado"); pdf.setAuthor("CEMEPI · Centro Mexicano de Plenitud Humana, S.C."); pdf.setLanguage("es-MX");
+  const pdf=await PDFDocument.create(); pdf.setTitle("Consentimiento informado"); pdf.setAuthor(CEMEPI_NOMBRE); pdf.setLanguage("es-MX");
   const font=await pdf.embedFont(StandardFonts.Helvetica), bold=await pdf.embedFont(StandardFonts.HelveticaBold);
   const b64=(document.querySelector("#logoApp")?.src||"").split(",")[1], logo=b64?await pdf.embedPng(Uint8Array.from(atob(b64), ch=>ch.charCodeAt(0))):null;
   const W=612, H=792, M=54, CW=W-2*M, FS=11, LH=13.8, azul=rgb(0.02,0.376,0.741), tinta=rgb(0.06,0.14,0.25), gris=rgb(0.33,0.41,0.54), rojo=rgb(0.776,0.157,0.157);
@@ -7221,7 +7232,7 @@ async function pdfConsentimiento(p, x){
       y-=3; } };
   nueva();
   if (logo) page.drawImage(logo,{x:M, y:y-42, width:48, height:42});
-  y-=15; page.drawText("Centro Mexicano de Plenitud Humana, S.C.",{x:M+58, y, size:13, font:bold, color:azul});
+  y-=15; page.drawText(CEMEPI_NOMBRE_LARGO,{x:M+58, y, size:13, font:bold, color:azul});
   y-=14; page.drawText("CEMEPI · Atención psicológica · www.cemepi.com.mx",{x:M+58, y, size:8.5, font, color:gris});
   page.drawText("Folio",{x:W-M-font.widthOfTextAtSize("Folio",8), y:y+16, size:8, font, color:gris});
   page.drawText(limpiarPdf(p.folio),{x:W-M-bold.widthOfTextAtSize(limpiarPdf(p.folio),11), y:y+2, size:11, font:bold, color:tinta});
@@ -7243,7 +7254,7 @@ async function pdfConsentimiento(p, x){
   y-=16; centro(`Firmado electrónicamente el ${fechaHora(Date.parse(x.firmado_en))}, ${CI_VIA[x.via]||""}.`, 9, font, gris);
   y-=30; centro(x.profesional||"", 10, bold, tinta);
   y-=13; centro(`Profesional responsable · Cédula profesional: ${x.cedula||PEND}`, 9, font, tinta);
-  y-=12; centro("Centro Mexicano de Plenitud Humana, S.C.", 9, font, gris);
+  y-=12; centro(CEMEPI_NOMBRE, 9, font, gris);
   const total=pdf.getPageCount();
   pdf.getPages().forEach((pg,i)=>{ nota.forEach((l,j)=>pg.drawText(l,{x:M, y:26+(nota.length-1-j)*8.6, size:7, font, color:gris}));
     const t=limpiarPdf(`Folio ${p.folio} · Página ${i+1} de ${total}`); pg.drawText(t,{x:W-M-font.widthOfTextAtSize(t,7), y:26+pieH+4, size:7, font, color:gris}); });
@@ -7505,7 +7516,8 @@ document.addEventListener("click", async ev => {
   if (a==="tablero"){ S.view="tablero"; S.tbPer=S.tbPer||"90"; S.tbSede=S.tbSede||""; S.tb=null; render(); return cargarTablero(); }
   if (a==="uso"){ S.view="uso"; S.usoDias=S.usoDias||7; S.uso=null; render(); return cargarAdmin("uso"); }
   if (a==="autorizarUsr"){ const id=b.dataset.id;
-    try{ await S.api.gestionar(id,"activo",$(`#ar-rol-${id}`).value,$(`#ar-sede-${id}`).value); toast("Cuenta autorizada"); }catch(e){ toast(e?.message||"No se pudo autorizar."); }
+    try{ const rl=$(`#ar-rol-${id}`).value; await S.api.gestionar(id,"activo",rl,$(`#ar-sede-${id}`).value);
+      toast(["psicologo","administrativo","direccion"].includes(rl)?"Cuenta autorizada. Agrégala al directorio en Organización → Colaboradores para que pueda usar asistencia, solicitudes y firmas.":"Cuenta autorizada"); }catch(e){ toast(e?.message||"No se pudo autorizar."); }
     return cargarAdmin("usuarios"); }
   if (a==="rechazarUsr"){ if(!arm(b,"rz"+b.dataset.id,"¿Rechazar?")) return; armed=null; const u=S.usuarios.find(x=>x.id===b.dataset.id);
     try{ await S.api.gestionar(u.id,"rechazado",u.rol_solicitado||u.rol,u.sede); toast("Solicitud rechazada"); }catch(e){ toast(e?.message||"No se pudo rechazar."); }
@@ -7895,9 +7907,10 @@ render();
     $("#tabBtn").hidden = !["superusuario","direccion"].includes(S.rol);
     $("#permBtn").hidden = true;
     $("#docpBtn").hidden = !S.rol;
-    $("#masBtn").hidden = !S.rol;
+    /* Las cuentas de Administración de sede no son personas (decisión 2026-11-25): no registran asistencia ni hacen solicitudes propias */
+    $("#masBtn").hidden = !S.rol || S.rol==="admin_sede";
     $("#miinfBtn").hidden = !S.rol;   /* Módulo 06 · Mi espacio */
-    $("#misolBtn").hidden = !S.rol;
+    $("#misolBtn").hidden = !S.rol || S.rol==="admin_sede";
     $("#micalBtn").hidden = !S.rol; $("#comuBtn").hidden = !S.rol;   /* Módulo 06 · P5 */
     if (S.rol){ solCargar().catch(()=>{}); notifCargar().catch(()=>{}); setInterval(()=>{ if (!document.hidden) notifCargar().catch(()=>{}); }, 120000); }
     if (S.rol && S.api.recorrido) S.api.recorrido().then(r=>{ S.tour=r||{}; if (S.view==="inicio") render(); }).catch(()=>{});
@@ -7917,7 +7930,7 @@ render();
     $("#ctrBtn span").textContent = veTodosContratos() ? "Contratos del personal" : "Mi contrato";
     { const ind=S.rol==="psicologo"&&S.api?.modalidad==="comision";   /* el independiente ve aquí su Carta Compromiso */
       if (ind&&!veTodosContratos()) $("#ctrBtn span").textContent="Mi Carta Compromiso";
-      $("#ctrBtn").hidden = !(tieneContrato() || veTodosContratos() || ind); }
+      $("#ctrBtn").hidden = !(veTodosContratos() || ((tieneContrato() || ind) && S.rol!=="admin_sede")); }   /* la cuenta de sede no firma contrato */
     $("#docpBtn span").textContent = veDocsTodos() ? "Documentación del personal" : "Mis documentos";
     /* Menú por áreas (2026-11-24): lo propio de cada persona va en «Mi espacio»; lo del personal, en «Documentos» */
     const miT=document.querySelector('.nav-g[aria-label="Mi espacio"]');

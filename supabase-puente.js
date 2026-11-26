@@ -662,8 +662,12 @@ const cemepi = {
   async responderInfoSolicitud(id, t){ const { error } = await sb.rpc("responder_info_solicitud", { p_id: id, p_texto: t }); if (error) fallo(error); },
   async resolverSolicitud(id, accion, t){ const { data, error } = await sb.rpc("resolver_solicitud", { p_id: id, p_accion: accion, p_texto: t || null }); if (error) fallo(error); return data; },
   async guardarTipoSolicitud(clave, cambios){ const { error } = await sb.from("sol_tipos").update(cambios).eq("clave", clave); if (error) fallo(error); },
-  async notificaciones(){ const { data, error } = await sb.from("notificaciones").select("*").order("creado", { ascending: false }).limit(40); if (error) return []; return data || []; },
-  async marcarLeidas(ids){ if (!ids?.length) return; const { error } = await sb.from("notificaciones").update({ leida: true }).in("id", ids); if (error) fallo(error); },
+  async notificaciones(){
+    /* La cuenta gestora de sede también ve (solo lectura) las de psicólogos y administrativos de su sede (068) */
+    let r = await sb.from("notificaciones").select("*, persona:perfiles!notificaciones_para_fkey(nombre)").order("creado", { ascending: false }).limit(80);
+    if (r.error) r = await sb.from("notificaciones").select("*").order("creado", { ascending: false }).limit(40);
+    return r.error ? [] : (r.data || []); },
+  async marcarLeidas(ids){ if (!ids?.length) return; const { error } = await sb.from("notificaciones").update({ leida: true }).in("id", ids).eq("para", usuario.id); if (error) fallo(error); },
   /* Vacaciones y permisos (Módulo 06 · P3) */
   async saldoVacaciones(col, periodo){ const { data, error } = await sb.rpc("saldo_vacaciones", { p_col: col || null, p_periodo: periodo || null }); if (error) fallo(error); return data; },
   async vacDiasEstimados(d, h){ const { data, error } = await sb.rpc("vac_dias_estimados", { p_desde: d, p_hasta: h }); if (error) return null; return data; },
