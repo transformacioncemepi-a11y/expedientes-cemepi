@@ -2,8 +2,8 @@
    Solo guarda los archivos propios de la app (pantallas, código e íconos) para abrir más rápido.
    NUNCA guarda datos: las consultas a Supabase y a otros sitios pasan directo por la red.
    Estrategia "red primero": siempre se intenta la versión más reciente; la copia solo se usa sin conexión. */
-const VERSION = "cemepi-v34";
-const ARCHIVOS = ["./", "./index.html", "./contenidos.js", "./supabase-puente.js", "./config.js", "./manifest.webmanifest",
+const VERSION = "cemepi-v35";
+const ARCHIVOS = ["./", "./index.html", "./contenidos.js", "./estilos.css", "./supabase-puente.js", "./config.js", "./manifest.webmanifest",
   "./iconos/icono-192.png", "./iconos/icono-512.png", "./iconos/apple-touch-icon.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(ARCHIVOS)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
