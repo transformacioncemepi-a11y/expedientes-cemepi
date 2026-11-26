@@ -576,7 +576,7 @@ const S = { db:null, user:null, uid:null, canWrite:true, sample:null, pacientes:
 /* Directorio de terapeutas (compartido en la app): nombre completo, cédula y sede. uid enlaza la ficha con una cuenta de claude.ai, si la tiene. */
 const terOrden = () => [...S.terapeutas.values()].sort((a,b)=>(a.nombre||"").localeCompare(b.nombre||"","es"));
 const miTerapeuta = () => S.uid ? [...S.terapeutas.values()].find(t=>t.uid===S.uid) : null;
-const terEtiqueta = t => t ? `${t.nombre||"Sin nombre"}${t.cedula?` · Céd. ${t.cedula}`:""}` : "Sin terapeuta asignado";
+const terEtiqueta = t => t ? `${t.nombre||"Sin nombre"}${t.cedula?` · Céd. ${t.cedula}`:""}${t.activo===false?" · histórico (sin acceso)":""}` : "Sin terapeuta asignado";
 
 function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(toast.h); toast.h=setTimeout(()=>t.classList.remove("on"),3200); }
 function errMsg(e){ if(e?.code==="quota_exceeded") return "Se alcanzó el límite de almacenamiento. Elimina registros antiguos para continuar.";
@@ -2519,7 +2519,7 @@ function orgIndicadoresHtml(){
   const IND=[
     ["Colaboradores por sede","Personas del directorio con esa sede principal.","conteo(colaboradores) agrupado por sede principal","colaboradores",sedes.map(s=>[s.nombre,cols.filter(c=>c.sede_principal_id===s.id).length])],
     ["Colaboradores por área","Personas cuyo puesto vigente pertenece al área.","conteo(colaboradores) por puesto.área","colaboradores + asignaciones + puestos",S.org.areas.map(a=>[a.nombre,cols.filter(c=>areaDe(c)===a.id).length]).filter(x=>x[1])],
-    ["Terapeutas por sede","Personas con puesto de psicólogo(a).","conteo(colaboradores con puesto PS-*) por sede","colaboradores + puestos",sedes.map(s=>[s.nombre,cols.filter(c=>c.sede_principal_id===s.id&&esTerapeuta(c)).length])],
+    ["Terapeutas por sede","Colaboradores con puesto de psicólogo(a) (código PS-) o función de psicología en Organización. No es lo mismo que «Personal por rol» del Tablero, que cuenta cuentas de acceso con rol psicólogo: una diferencia señala personas sin puesto asignado o cuentas sin registro de colaborador.","conteo(colaboradores con puesto PS-*) por sede","colaboradores + puestos",sedes.map(s=>[s.nombre,cols.filter(c=>c.sede_principal_id===s.id&&esTerapeuta(c)).length])],
     ["Administrativos y directivos por sede","Personal que no ocupa un puesto de psicólogo(a).","conteo(colaboradores sin puesto PS-*) por sede","colaboradores + puestos",sedes.map(s=>[s.nombre,cols.filter(c=>c.sede_principal_id===s.id&&!esTerapeuta(c)).length])],
     ["Plazas por estado","Plazas registradas según su estado.","conteo(posiciones) por estado","posiciones",Object.entries(ESTADO_POS).map(([k,t])=>[t,pos.filter(p=>p.estado===k).length])],
     ["Puestos sin responsable","Áreas sin titular y sedes sin responsable administrativo.","áreas sin responsable + sedes sin responsable","areas + sedes",[["Áreas sin responsable",S.org.areas.filter(a=>a.estatus!=="inactiva"&&!a.responsable_id).length],["Sedes sin responsable administrativo",sedes.filter(s=>!s.responsable_admin_id).length]]],
