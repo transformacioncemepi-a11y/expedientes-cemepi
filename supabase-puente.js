@@ -833,6 +833,9 @@ const cemepi = {
   async guardarSedeOrg(s){
     const row = { direccion: s.direccion || null, alcaldia_municipio: s.alcaldia_municipio || null, estado_republica: s.estado_republica || null,
       horarios: s.horarios || null, capacidad: s.capacidad === "" || s.capacidad == null ? null : Number(s.capacidad), observaciones: s.observaciones || null };
+    if (s.portal_indicaciones !== undefined) row.portal_indicaciones = s.portal_indicaciones || null;   /* 086 · portal del consultante */
+    if (s.portal_publicado !== undefined) row.portal_publicado = s.portal_publicado === true;
+    if (s.portal_mapa !== undefined) row.portal_mapa = s.portal_mapa || null;
     if (s.nombre != null) row.nombre = s.nombre.trim();
     if (s.clave != null) row.clave = s.clave.trim().toUpperCase();
     if (s.activa != null) row.activa = s.activa !== false;

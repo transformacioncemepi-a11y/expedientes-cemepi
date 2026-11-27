@@ -1676,7 +1676,7 @@ const orgPagina = (t, desc, acciones, cuerpo) => `<div class="wrap" style="paddi
   <div class="phead">${migas()}<h1>${t}</h1><span style="display:flex;gap:8px;flex-wrap:wrap">${acciones||""}</span></div>
   <p class="status" style="margin:0">${desc}</p>${orgAlcance()}${cuerpo}</div>`;
 const fld = (id, label, val, o={}) => `<div class="fld"${o.span?` style="grid-column:span ${o.span}"`:""}><label for="${id}">${label}</label>${
-  o.area ? `<textarea id="${id}" rows="${o.rows||3}"${o.ro?" disabled":""}>${esc(val||"")}</textarea>`
+  o.area ? `<textarea id="${id}" rows="${o.rows||3}"${o.max?` maxlength="${o.max}"`:""}${o.ro?" disabled":""}>${esc(val||"")}</textarea>`
   : o.opts ? `<select id="${id}"${o.ro?" disabled":""}>${o.opts.map(([v,l])=>`<option value="${esc(v)}"${String(v)===String(val??"")?" selected":""}>${esc(l)}</option>`).join("")}</select>`
   : `<input id="${id}" type="${o.type||"text"}" value="${esc(val??"")}"${o.max?` maxlength="${o.max}"`:""}${o.ph?` placeholder="${esc(o.ph)}"`:""}${o.ro?" disabled":""}${o.up?' style="text-transform:uppercase"':""}>`}${o.hint?`<span class="status">${o.hint}</span>`:""}</div>`;
 
@@ -1701,13 +1701,18 @@ function sedesHtml(){
         ${fld("sd-hor","Horarios",ed.horarios,{span:2,ph:"Ej. Lunes a viernes de 9:00 a 20:00"})}
         ${fld("sd-cap","Capacidad (consultorios)",ed.capacidad,{type:"number"})}
         ${fld("sd-obs","Observaciones",ed.observaciones,{area:1,span:3,rows:2})}
+        ${fld("sd-portal","Indicaciones para el consultante (portal)",ed.portal_indicaciones,{area:1,span:3,rows:5,max:3000,
+           hint:"Cómo llegar, qué llevar a la cita y política de cancelación. Igual para todos los consultantes de la sede; sin datos personales ni clínicos."})}
+        ${fld("sd-mapa","Enlace al mapa (Google Maps)",ed.portal_mapa,{span:3,max:600,ph:"https://www.google.com/maps/…",hint:"Se muestra al consultante como botón «Ver en el mapa». Solo enlaces de Google Maps."})}
+        ${fld("sd-portal-pub","Mostrar en el portal del consultante",ed.portal_publicado?"1":"0",{opts:[["0","No (borrador)"],["1","Sí: mostrar dirección, horarios e indicaciones"]],span:2,
+           hint:"Revisa el bloque completo antes de publicarlo: el consultante verá la dirección, los horarios y estas indicaciones."})}
       </div>
       ${!nuevo&&su?`<p class="status" style="margin:0">Cambiar el nombre no actualiza los expedientes ni las cuentas que ya tienen la sede anterior; para eso conviene crear una sede nueva y desactivar la anterior.</p>`:""}
       <div class="actions"><button class="btn primary" type="button" data-act="saveSede">Guardar sede</button><button class="btn" type="button" data-act="cancelOrg">Cancelar</button></div></form>`; }
   const filas=orgSedesVis().map(s=>{ const e=orgEntDeSede(s.id);
     return `<tr data-f data-estado="${s.activa?"Activa":"Inactiva"}"><td><b>${esc(s.nombre)}</b><br><span class="status mono">${esc(s.clave)}</span></td>
       <td>${e?esc(e.nombre_corto)+(e.principal?"":` <span class="pill estado-pendiente">Entidad propia</span>`):pendH()}</td>
-      <td>${s.direccion?esc(s.direccion):pendH()}${s.horarios?`<br><span class="status">${esc(s.horarios)}</span>`:""}</td>
+      <td>${s.direccion?esc(s.direccion):pendH()}${s.horarios?`<br><span class="status">${esc(s.horarios)}</span>`:""}${s.portal_publicado?`<br><span class="pill estado-activo">En el portal</span>`:""}</td>
       <td>${S.usuarios?cuenta(s.nombre,"admin_sede")+cuenta(s.nombre,"administrativo"):"—"}</td><td>${S.usuarios?cuenta(s.nombre,"psicologo"):"—"}</td>
       <td><span class="pill ${s.activa?"estado-activo":"estado-suspendido"}">${s.activa?"Activa":"Inactiva"}</span></td>
       <td>${orgEditaSede(s.id)?`<button class="btn sm" type="button" data-act="editSede" data-id="${s.id}">Editar</button>`:`<span class="status">Solo lectura</span>`}</td></tr>`; }).join("");
@@ -2093,8 +2098,9 @@ async function orgAccion(a, b){
       if (!ed.id && !ent) return toast("Elige la entidad fiscal de la nueva sede.");
       if (ed.id && ent!==antes && v("sd-motivo").length<5) return toast("Escribe el motivo del cambio de entidad fiscal."); }
     const cap=v("sd-cap"); if (cap && !(Number(cap)>=0)) return toast("La capacidad debe ser un número.");
+    if (v("sd-mapa") && !/^https:\/\/(www\.google\.com\/maps|maps\.google\.com|maps\.app\.goo\.gl|goo\.gl\/maps)[\/?]/.test(v("sd-mapa"))) return toast("El enlace al mapa debe ser de Google Maps (empieza con https://www.google.com/maps o https://maps.app.goo.gl).");
     const ok=await guardar(()=>S.api.guardarSedeOrg({id:ed.id, ...(su?{nombre, clave, activa:v("sd-activa")==="1"}:{}),
-      direccion:v("sd-dir"), alcaldia_municipio:v("sd-alc"), estado_republica:v("sd-edo"), horarios:v("sd-hor"), capacidad:cap, observaciones:v("sd-obs"),
+      direccion:v("sd-dir"), alcaldia_municipio:v("sd-alc"), estado_republica:v("sd-edo"), horarios:v("sd-hor"), capacidad:cap, observaciones:v("sd-obs"), portal_indicaciones:v("sd-portal"), portal_mapa:v("sd-mapa"), portal_publicado:v("sd-portal-pub")==="1",
       entidad_id:ent, entidadCambio:su && ent && ent!==antes, motivo:v("sd-motivo")||(ed.id?"":"Alta de la sede")}), "Sede guardada");
     if (ok && su){ try{ const ss=await S.api.sedes(false); SEDES.splice(0,SEDES.length,...ss.map(s=>s.nombre)); for (const k of Object.keys(SEDE_COD)) delete SEDE_COD[k]; ss.forEach(s=>{ SEDE_COD[s.nombre]=s.clave; }); renderList(); }catch{} }
     return; }
@@ -2214,9 +2220,9 @@ function segUsuarios(){
       ${fld("ivNombre","Nombre completo *","",{span:2})}${fld("ivEmail","Correo *","",{type:"email"})}
       ${fld("ivRol","Rol base *","psicologo",{opts:S.seg.roles.filter(r=>r.base&&r.clave!=="superusuario").map(r=>[r.clave,r.nombre])})}
       ${fld("ivSede","Sede","",{opts:[["","Sin sede (solo Dirección)"],...S.seg.sedes.map(s=>[s.nombre,s.nombre])]})}</div>
-      <p class="status" style="margin:0">Se genera un enlace de un solo uso para que la persona ponga su contraseña. Cópialo y envíalo por Signal o WhatsApp. La cuenta queda “Invitado” y se activa sola en su primer acceso, con el rol y la sede que elegiste.</p>
+      <p class="status" style="margin:0">La persona recibe un correo de CEMEPIAPP para poner su contraseña. Si el correo no puede enviarse, usa «Generar enlace» y envíalo por Signal o WhatsApp. La cuenta queda “Invitado” y se activa sola en su primer acceso, con el rol y la sede que elegiste.</p>
       ${S.segEnlace?`<div class="banner ok-b" style="flex-direction:column;align-items:flex-start"><b>Enlace listo</b><span class="mono sens" style="word-break:break-all">${esc(S.segEnlace)}</span><button class="btn sm" type="button" data-act="segCopiar">Copiar enlace</button></div>`:""}
-      <div class="actions"><button class="btn primary" type="button" data-act="segInvitar">Crear invitación</button><button class="btn" type="button" data-act="segCancelar">Cerrar</button></div></form>` : "";
+      <div class="actions"><button class="btn primary" type="button" data-act="segInvitar" data-correo="1">Enviar invitación por correo</button><button class="btn" type="button" data-act="segInvitar">Generar enlace</button><button class="btn" type="button" data-act="segCancelar">Cerrar</button></div></form>` : "";
   const filas=S.seg.perfiles.map(p=>{ const sg=segSeg(p.id);
     return `<tr data-f data-estado="${SEG_ESTADOS[p.estado]||p.estado}" data-sede="${esc(p.sede||"")}"><td><b>${esc(p.nombre||"—")}</b><br><span class="status sens">${esc(p.email||"")}</span></td><td>${esc(segRolesTxt(p))}</td><td>${esc(p.sede||"—")}</td>
       <td>${sg.mfa?`<span class="pill estado-activo">Activo</span>`:`<span class="status">No</span>`}</td><td>${sg.ultimo_acceso?segFecha(sg.ultimo_acceso):"—"}</td>
@@ -2245,7 +2251,7 @@ function segFicha(p){
     <h4 style="margin:4px 0 0">Sesiones</h4><ul class="pend">${ses.map(x=>`<li>${esc(x.agente||"Dispositivo")}<br><span class="status">Desde ${segFecha(x.creada)} · última actividad ${segFecha(x.actualizada)}</span>${su?` <button class="btn sm danger" type="button" data-act="segCerrarSes" data-id="${x.id}">Cerrar</button>`:""}</li>`).join("")||`<li class="status">Sin sesiones activas.</li>`}</ul>
     <h4 style="margin:4px 0 0">Historial</h4><ul class="pend">${ev.map(e=>`<li><b>${esc(e.tipo)}</b>${e.recurso?" · "+esc(e.recurso):""}<br><span class="status">${segFecha(e.fecha)} · por ${esc(segNom(e.actor))}</span></li>`).join("")||`<li class="status">Sin eventos.</li>`}</ul>
     ${su&&!prot?`<div class="datos">${fld("seMotivo","Motivo del cambio de estado *","",{span:3})}</div><div class="actions">${(SEG_TRANS[p.estado]||[]).map(([e,t])=>`<button class="btn sm${e==="desactivado"||e==="suspendido"?" danger":""}" type="button" data-act="segEstado" data-id="${p.id}" data-e="${e}">${t}</button>`).join("")}
-      ${["activo","invitado","pendiente"].includes(p.estado)?`<button class="btn sm" type="button" data-act="segEnlacePass" data-id="${p.id}">Enlace para poner contraseña</button>`:""}</div>
+      ${["activo","invitado","pendiente"].includes(p.estado)?`<button class="btn sm" type="button" data-act="segEnlacePass" data-id="${p.id}" data-correo="1">Enviar correo para poner contraseña</button><button class="btn sm" type="button" data-act="segEnlacePass" data-id="${p.id}">Generar enlace</button>`:""}</div>
       ${S.segEnlacePass?.id===p.id?`<div class="banner ok-b" style="flex-direction:column;align-items:flex-start"><b>Enlace de un solo uso</b><span class="mono sens" style="word-break:break-all">${esc(S.segEnlacePass.enlace)}</span><button class="btn sm" type="button" data-act="segCopiar">Copiar enlace</button></div>`:""}
       <p class="status" style="margin:0">Desactivar corta el acceso y cierra sus sesiones; la cuenta y su historial se conservan.</p>`:""}</section>`;
 }
@@ -2404,7 +2410,7 @@ function segConfig(){
       <div class="actions"><button class="btn${mfa?"":" primary"}" type="button" data-act="segMfaToggle">${mfa?"Desactivar MFA":"Activar MFA"}</button></div></section>
     <section class="note"><div class="note-h"><h3>Sesiones</h3></div><div class="datos">${fld("cfInact","Cerrar sesión tras inactividad (minutos)",c.inactividad_min??30,{type:"number"})}</div>
       <div class="actions"><button class="btn" type="button" data-act="segGuardarCfg" data-c="inactividad_min" data-i="cfInact">Guardar</button></div></section>
-    <section class="note"><div class="note-h"><h3>Contraseñas y acceso</h3></div><dl class="dl-org"><dt>Longitud mínima</dt><dd>10 caracteres</dd><dt>Intentos fallidos</dt><dd>Límites automáticos de Supabase</dd><dt>Recuperación por correo</dt><dd>Requiere SMTP propio; mientras tanto usa “Enlace para poner contraseña” en la ficha de la persona.</dd></dl></section>`);
+    <section class="note"><div class="note-h"><h3>Contraseñas y acceso</h3></div><dl class="dl-org"><dt>Longitud mínima</dt><dd>10 caracteres</dd><dt>Intentos fallidos</dt><dd>Límites automáticos de Supabase</dd><dt>Recuperación por correo</dt><dd>Supabase envía el correo («Olvidé mi contraseña» o «Enviar correo para poner contraseña» en la ficha de la persona) cuando el servicio de correo está conectado. Si no sale, usa «Generar enlace» y envíalo por Signal o WhatsApp.</dd></dl></section>`);
 }
 
 /* ---------- Acciones ---------- */
@@ -4573,6 +4579,7 @@ function segErr(e){ const m=e?.message||"";
   if (/MFA|segundo factor|mfa_requerido/i.test(m)) return "Esta acción pide tu código de verificación: entra con tu código (Mi perfil → Código de verificación).";
   if (/row-level|permission|not_granted|autoriz/i.test(m)){ S.api.registrarDenegado("Usuarios y permisos: "+(S.segTab||"")); return "No tienes autorización para esa acción."; }
   if (/ya_existe/.test(m)) return "Ese correo ya tiene una cuenta.";
+  if (/correo_no_enviado/.test(m)) return "No se pudo enviar el correo (el servicio de correo aún no está conectado o se alcanzó el límite por hora). Usa «Generar enlace» y envíalo por Signal o WhatsApp.";
   if (/Failed to send|FunctionsFetchError|not found|404/i.test(m)) return "La función de invitaciones aún no está desplegada en Supabase.";
   return m||"No se pudo completar."; }
 async function segAccion(a, b){
@@ -4588,12 +4595,19 @@ async function segAccion(a, b){
   if (a==="segInvitar"){ const nombre=v("ivNombre"), email=v("ivEmail"), rol=v("ivRol"), sede=v("ivSede");
     if (nombre.length<3||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast("Escribe el nombre y un correo válido.");
     if (rol!=="direccion"&&!sede) return toast("Elige la sede de la persona.");
-    try{ const r=await S.api.adminUsuarios({accion:"invitar", email, nombre, rol, sede}); S.segEnlace=r.enlace; toast("Invitación creada. Copia el enlace y envíalo."); await cargarSeg(); }catch(e){ toast(segErr(e)); } return; }
+    const correo=b.dataset.correo==="1";
+    try{ const r=await S.api.adminUsuarios({accion:"invitar", email, nombre, rol, sede, enviar_correo:correo});
+      if (r.enviado){ S.segEnlace=null; S.segForm=null; toast(`Invitación enviada por correo a ${email}.`); } else { S.segEnlace=r.enlace; toast("Invitación creada. Copia el enlace y envíalo."); }
+      await cargarSeg(); }catch(e){ toast(segErr(e)); } return; }
   if (a==="segCopiar"){ const t=S.segEnlace||S.segEnlacePass?.enlace||""; try{ await navigator.clipboard.writeText(t); toast("Enlace copiado."); }catch{ toast("No se pudo copiar; selecciona el enlace y cópialo."); } return; }
   if (a==="segEstado"){ const m=v("seMotivo"); if (m.length<5) return toast("Escribe el motivo del cambio (5 caracteres o más).");
     if (["desactivado","suspendido"].includes(b.dataset.e) && !arm(b,"est"+b.dataset.id+b.dataset.e,"¿Confirmar?")) return; armed=null;
     return hecho(()=>S.api.cambiarEstadoCuenta(b.dataset.id,b.dataset.e,m),"Estado actualizado.",true); }
-  if (a==="segEnlacePass"){ try{ const r=await S.api.adminUsuarios({accion:"enlace_contrasena", id:b.dataset.id}); S.segEnlacePass={id:b.dataset.id, enlace:r.enlace}; toast("Enlace generado. Envíalo por Signal o WhatsApp."); render(); }catch(e){ toast(segErr(e)); } return; }
+  if (a==="segEnlacePass"){ const correo=b.dataset.correo==="1";
+    try{ const r=await S.api.adminUsuarios({accion:"enlace_contrasena", id:b.dataset.id, enviar_correo:correo});
+      if (r.enviado){ S.segEnlacePass=null; toast("Correo enviado: la persona recibirá el enlace para poner su contraseña."); }
+      else { S.segEnlacePass={id:b.dataset.id, enlace:r.enlace}; toast("Enlace generado. Envíalo por Signal o WhatsApp."); }
+      render(); }catch(e){ toast(segErr(e)); } return; }
   if (a==="segAsignarRol"){ const r=v("srRol"), m=v("srMotivo"); if (!r) return toast("Elige el rol."); if (m.length<5) return toast("Escribe el motivo.");
     return hecho(()=>S.api.asignarRol(b.dataset.id,r,v("srHasta"),m),"Rol asignado.",true); }
   if (a==="segRetirarRol"){ if (!arm(b,"ret"+b.dataset.id,"¿Retirar?")) return; armed=null; return hecho(()=>S.api.retirarRol(b.dataset.id,"Retirado desde Usuarios y permisos"),"Rol retirado.",true); }

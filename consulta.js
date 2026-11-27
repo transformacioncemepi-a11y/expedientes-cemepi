@@ -97,12 +97,22 @@ async function firmar(){
   }catch(e){ err.textContent = "No se pudo guardar la firma. Revisa tu conexión e inténtalo de nuevo."; err.hidden = false; }
   finally{ if (document.body.contains(btn)){ btn.disabled = false; btn.textContent = "Firmar consentimiento"; } }
 }
+/* 086 · Indicaciones generales de la sede (solo si la Dirección las publicó). Contenido institucional, igual para todos. */
+function sedeHtml(s){
+  if (!s) return "";
+  const lugar = [s.direccion, s.alcaldia, s.estado].filter(Boolean).map(esc).join(", ");
+  const texto = s.indicaciones ? esc(s.indicaciones).split(/\n{2,}/).map(p => `<p style="margin:8px 0 0">${p.replace(/\n/g, "<br>")}</p>`).join("") : "";
+  return `<section class="card no-print" aria-labelledby="titSede"><h2 id="titSede" style="margin:0;font-size:1.1rem">Tu sede: ${esc(s.nombre)}</h2>
+    ${lugar ? `<p style="margin:8px 0 0"><b>Dirección:</b> ${lugar}</p>` : ""}
+    ${s.horarios ? `<p style="margin:4px 0 0"><b>Horarios:</b> ${esc(s.horarios)}</p>` : ""}${texto}
+    ${/^https:\/\/(www\.google\.com\/maps|maps\.google\.com|maps\.app\.goo\.gl|goo\.gl\/maps)[\/?]/.test(s.mapa || "") ? `<p style="margin:12px 0 0"><a class="boton" href="${esc(s.mapa)}" target="_blank" rel="noopener noreferrer">Ver en el mapa</a></p>` : ""}</section>`;
+}
 function pintar(data){
   datosAct = data; const reps = data.reportes || [], cis = data.consentimientos || [];
   const pend = cis.filter(c => c.estado === "pendiente").slice(0, 1), firm = cis.filter(c => c.estado === "firmado").slice(0, 1);
   $("#titExp").textContent = `Expediente ${data.folio} · ${data.iniciales || ""}`;
   $("#reportes").innerHTML = pend.map(c => consentHtml(c, data)).join("") + firm.map(c => consentHtml(c, data)).join("") + (reps.length ? reps.map((r, i) => reporteHtml(r, i, data)).join("")
-    : (pend.length ? "" : `<div class="card"><p style="margin:0">Por ahora no tienes reportes compartidos. Tu psicólogo(a) te avisará cuando haya uno disponible.</p></div>`));
+    : (pend.length ? "" : `<div class="card"><p style="margin:0">Por ahora no tienes reportes compartidos. Tu psicólogo(a) te avisará cuando haya uno disponible.</p></div>`)) + sedeHtml(data.sede_info);
   if (pend.length) activarFirma();
 }
 async function cargar(){
