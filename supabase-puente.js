@@ -778,12 +778,15 @@ const cemepi = {
       sb.from("man_avance").select("*"), sb.from("man_cuaderno").select("*").order("actualizado_en", { ascending: false }),
       sb.from("man_reconocimientos").select("*"), sb.from("man_avisos").select("*"),
       sb.from("acu_plantillas").select("id,clave,nombre,categoria").in("categoria", ["cultura", "servicios_profesionales_independientes"]),
-      sb.from("perfiles").select("id,nombre,rol,sede,estado").eq("rol", "psicologo"),
+      sb.from("perfiles").select("id,nombre,rol,sede,estado,modalidad").in("rol", ["psicologo", "administrativo"]),
       sb.rpc("mi_colaborador"), sb.from("colaboradores").select("id,perfil_id,nombre,sede_principal_id,fecha_incorporacion")]);
     const d = q.map(r => r.error ? null : r.data);
     const otros = d[5] || [], oIds = otros.map(x => x.id);
     const ov = oIds.length ? await sb.from("acu_plantilla_versiones").select("id,plantilla_id,version,estado,contenido").in("plantilla_id", oIds).eq("estado", "aprobada") : { data: [] };
-    return { ok: true, plantilla: (pl.data || [])[0] || null, versiones: d[0] || [], avance: d[1] || [], cuaderno: d[2] || [], reconocimientos: d[3] || [],
+    /* P26: el Manual de Bienvenida sigue como «plantilla/versiones»; los demás documentos formativos van en «formacion» */
+    const todas = pl.data || [], bien = todas.find(x => x.clave === "manual_bienvenida_psicologos") || null, vs = d[0] || [];
+    const formacion = todas.filter(x => x !== bien).map(x => ({ plantilla: x, versiones: vs.filter(v => v.plantilla_id === x.id) }));
+    return { ok: true, plantilla: bien, versiones: vs.filter(v => v.plantilla_id === bien?.id), formacion, avance: d[1] || [], cuaderno: d[2] || [], reconocimientos: d[3] || [],
       avisos: d[4] || [], otrasPlantillas: otros, otrasVersiones: ov.data || [], psicologos: d[6] || [], yoCol: d[7] || null, cols: d[8] || [], uid: usuario.id }; },
   async acuRpc(fn, args){ const { data, error } = await sb.rpc(fn, args); if (error) fallo(error); return data; },
   async catRpc(fn, args){ const { data, error } = await sb.rpc(fn, args); if (error) fallo(error); return data; },
