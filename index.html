@@ -5643,7 +5643,7 @@ async function manAccion(a,b){
     if (a==="manReconocer"){ const d={}; MAN_DECL.forEach(([k])=>d[k]=!!$("#mdc_"+k)?.checked); if (Object.values(d).some(x=>!x)) return toast("Marca cada una de las declaraciones para continuar.");
       await rpc("man_reconocer",{p_version:v.id,p_declaraciones:d,p_comentario:catVal("mdcCom")||null}); toast("Gracias. Registramos tu reconocimiento de lectura."); return manCargar(); }
     if (a==="manAcomp"){ S.solForm={tipo:"apoyo", clave:crypto.randomUUID()}; S.solVer=null; S.view="misol"; render(); toast("Elige «Necesito apoyo» y cuéntanos qué acompañamiento necesitas."); return solCargar(); }
-    if (a==="manAvisar"){ if (!confirm("Se enviará un aviso dentro de la app a los psicólogos activos. ¿Continuar?")) return; const n=await rpc("man_avisar",{p_version:b.dataset.id}); toast(`Aviso enviado a ${n} psicólogos.`); return manCargar(); }
+    if (a==="manAvisar"){ const bien=acuPl()?.clave==="manual_bienvenida_psicologos"; if (!confirm(bien?"Se enviará un aviso dentro de la app a los psicólogos activos. ¿Continuar?":"Se enviará un aviso dentro de la app a las personas a quienes aplica este documento. ¿Continuar?")) return; const n=await rpc("man_avisar",{p_version:b.dataset.id}); toast(`Aviso enviado a ${n} ${bien?"psicólogos":"personas"}.`); return manCargar(); }
   }catch(e){ toast(e?.message||"No se pudo completar."); }
 }
 /* ====================================================================================
