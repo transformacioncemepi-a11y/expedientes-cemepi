@@ -548,3 +548,13 @@ details.plegable[open]>summary::before{transform:rotate(90deg)}
 .rd .rd-km{fill:none;stroke:var(--viz-1);stroke-width:2.5}.rd .rd-km-org{fill:none;stroke:var(--muted);stroke-width:1.5;stroke-dasharray:4 3}.rd .rd-refl{stroke:var(--line-strong);stroke-dasharray:2 3}
 .rd-leyenda i.rd-km-o{background:none;border-top:2px dashed var(--muted);height:0;width:16px;border-radius:0}
 .rd-cont details{margin-top:6px}.rd-cont summary{cursor:pointer;font-weight:600;color:var(--accent)}.rd-cont ul{margin:4px 0 0;padding-left:20px}
+/* P36 · Botones de sede (selección única, un clic) */
+.rd-sedes{align-items:center}
+.rd-leyenda{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent);flex-basis:100%;margin-bottom:2px}
+.rd-sede-btn{display:inline-flex;gap:6px;align-items:center;padding:6px 14px;border:1px solid var(--line-strong);border-radius:999px;background:var(--surface);color:var(--fg);font:inherit;font-size:14px;font-weight:600;cursor:pointer;min-height:40px}
+.rd-sede-btn:hover{border-color:var(--accent)}
+.rd-sede-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.rd-sede-btn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.rd-sede-btn[aria-pressed="true"] .status{color:inherit;opacity:.85}
+.rd-persona{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+@media (max-width:600px){.rd-sedes{display:grid;grid-template-columns:1fr 1fr;gap:6px}.rd-leyenda,.rd-sede-btn[data-s="*"]{grid-column:1/-1}.rd-sede-btn{justify-content:center;white-space:normal;text-align:center}}

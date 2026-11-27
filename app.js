@@ -5115,11 +5115,12 @@ const GUIAS = [
     "En «Herramientas para acompañar la continuidad» verás primero lo que tus datos sugieren mirar este mes, y después las herramientas de agenda y terapéuticas.",
     "Al final, el memorándum resume el mes y propone preguntas para reflexionar; puedes descargarlo en PDF.",
     "No es una evaluación ni un juicio clínico: describe actividad registrada para comprender tendencias y llevarlas a supervisión si lo deseas."]},
-  {t:"Consultar estadísticas por sede (elegir sedes, periodo y psicólogo)", si:()=>["superusuario","direccion","admin_sede"].includes(S.rol)||(S.api?.misRoles||[]).includes("coord_clinica"), pasos:[
+  {t:"Consultar estadísticas por sede (un clic por sede, periodo y psicólogo)", si:()=>["superusuario","direccion","admin_sede"].includes(S.rol)||(S.api?.misRoles||[]).includes("coord_clinica"), pasos:[
     "Entra a Mi espacio → «Estadísticas por sede» (si eres psicólogo(a) con Coordinación clínica, el botón se llama «Mis resultados»). Solo ves las sedes que te corresponden: la cuenta de sede y Coordinación clínica, su sede; la Dirección, las que el Superusuario le haya concedido.",
-    "En «Sedes» marca «Toda CEMEPI» (o «Todas mis sedes»), una sola sede o varias para compararlas. Las marcadas «(totales)» solo muestran cifras de la sede, sin resultados individuales.",
+    "En «Sede» pulsa un botón: las cifras cambian al momento y muestran solo esa sede. «Toda CEMEPI» (o «Todas mis sedes») muestra el consolidado y la comparativa entre sedes. El botón elegido queda resaltado. Las sedes marcadas «(totales)» solo muestran cifras de la sede, sin resultados individuales.",
     "Elige el periodo: 1, 3, 6 o 12 meses cerrados. El mes en curso no se suma al periodo; aparece aparte en el detalle mensual.",
-    "En «Psicólogo(a)» deja «Todos» para ver los totales de las sedes elegidas, o elige a una persona autorizada para ver sus resultados. Cada consulta individual queda en la bitácora.",
+    "En «Psicólogo(a)» aparecen solo los psicólogos activos adscritos a la sede elegida, aunque todavía no tengan citas; con «Buscar por nombre» filtras la lista. Deja «Todos los psicólogos activos» para ver los totales de la sede, o elige a una persona para ver sus resultados en esa sede. Con «Toda CEMEPI», sus resultados se consolidan y se desglosan por sede. Al cambiar de sede, la lista vuelve a «Todos». Cada consulta individual queda en la bitácora.",
+    "Los totales de una sede incluyen todos sus servicios válidos, también los de quienes ya no colaboran (no aparecen en la lista, pero sus citas se conservan). Si una persona no tiene actividad en el periodo, verás un aviso informativo: no significa bajo rendimiento.",
     "El «Resumen del periodo» muestra citas, consultantes únicos (sin duplicar entre sedes), nuevos, primeras y segundas sesiones, quinta sesión, procesos que alcanzaron 12, 33 y 66 sesiones, cancelaciones, reagendamientos, inasistencias, comisión generada y las variaciones de cada mes. Con varias sedes aparece la comparativa, con cada tasa calculada sobre los totales de su sede.",
     "Las horas efectivas de atención solo aparecen al elegir a un psicólogo de base: se comparan con la jornada de atención registrada en Asistencia (referencia: 46 h por semana).",
     "El memorándum indica el alcance, las sedes, el periodo y la fecha de actualización; descárgalo con «Descargar PDF». Describe actividad registrada: no evalúa la calidad clínica ni señala a personas."]},
@@ -6729,7 +6730,7 @@ function ayudaHtml(){
    Propuesta en diseno/RENDIMIENTO-P30-PROMPT-CONSOLIDADO.md (sin autorizar como módulo definitivo). Solo aparece si el servicio
    S.api.rendimiento existe (hoy, solo en el simulador). Reglas visibles (§3): base mínima 3, estable si el cambio es ≤10 % o ≤1,
    segunda sesión en 30 días, quinta en 90. Sin datos del consultante, sin rankings entre colegas, sin juicios clínicos. */
-const RD_ACC=new Set(["rendimiento","rdMes","rdPersona","rdPdf","rdDef","rdImpGuardar","rdImpCancelar","rdImpRevisar","rdPendOk","rdPer","rdAccAbrir","rdAccOtorgar","rdAccRevocar","rdResQuitar","rdResPoner"]);
+const RD_ACC=new Set(["rendimiento","rdSede","rdMes","rdPersona","rdPdf","rdDef","rdImpGuardar","rdImpCancelar","rdImpRevisar","rdPendOk","rdPer","rdAccAbrir","rdAccOtorgar","rdAccRevocar","rdResQuitar","rdResPoner"]);
 const rdVeEquipo=()=>["superusuario","direccion"].includes(S.rol)||(S.api?.misRoles||[]).includes("coord_clinica");
 const RD_DEF={
   nuevos:["Consultantes nuevos asignados","Expedientes que se te asignaron durante el mes.","+"],
@@ -6802,8 +6803,11 @@ function rdLectura(k, c, mesPrev){
   const favorable = sentido==="+" ? sube : !sube;
   return {i:sube?"↑":"↓", cls:favorable?"fav":"neu", t: favorable ? `${base}: favorable en este indicador` : `${base}`};
 }
+let rdTurno=0;
 async function rdCargar(id){
-  S.rd={...(S.rd||{}), cargando:true}; if (S.view==="rendimiento") render();
+  const turno=++rdTurno, vigente=()=>turno===rdTurno;
+  /* P36 · Mientras carga, se conservan los botones y se ocultan las cifras anteriores (nunca datos viejos bajo la sede nueva) */
+  S.rd={...(S.rd||{}), cargando:true, datos:null, sinDatos:false, error:null}; if (S.view==="rendimiento") render();
   /* Si la sesión aún se está preparando (por ejemplo, al abrir un enlace directo), espera hasta 15 s en lugar de fallar */
   for (let k=0; k<60 && !S.api?.rendimiento; k++) await new Promise(r=>setTimeout(r,250));
   if (!S.api?.rendimiento){ S.rd={error:"El tablero aún no está disponible. Recarga la página en unos segundos."}; if (S.view==="rendimiento") render(); return; }
@@ -6814,13 +6818,17 @@ async function rdCargar(id){
     if (misSedes.length){
       const nombres=misSedes.map(x=>x.sede), F={sedes:nombres, per:3, perfil:"", ...(prev.f||{})};
       F.sedes=F.sedes.filter(x=>nombres.includes(x)); if (!F.sedes.length) F.sedes=nombres.slice();
+      if (F.sedes.length>1 && F.sedes.length<nombres.length) F.sedes=nombres.slice();   /* P36: una sede o todas */
       if (id!==undefined) F.perfil=id||"";
       const psic = S.api.rendPsicologosVisibles ? await S.api.rendPsicologosVisibles(F.sedes).catch(()=>[]) : [];
+      if (!vigente()) return;
       const propio = S.rol==="psicologo" ? [{id:S.uid||"", nombre:"Mis propios resultados", sede:"", propio:true}].filter(x=>x.id) : [];
       if (F.perfil && ![...psic, ...propio].some(p=>p.id===F.perfil)) F.perfil="";
-      const todas=S.rol==="superusuario" && F.sedes.length===nombres.length;
+      const todasSel=F.sedes.length===nombres.length && nombres.length>1, todas=S.rol==="superusuario" && todasSel;
       const etiqueta = F.sedes.length===1 ? `Sede ${F.sedes[0]}` : todas ? "Toda CEMEPI" : `${F.sedes.length} sedes seleccionadas`;
-      const datos = await S.api.rendConsulta({sedes:F.sedes, per:F.per, perfil:F.perfil||null, etiqueta});
+      /* P36 · Con una sede elegida, la persona se consulta solo en esa sede; en «Toda CEMEPI», consolidado con desglose por sede */
+      const datos = await S.api.rendConsulta({sedes:F.sedes, per:F.per, perfil:F.perfil||null, sedesPersona:todasSel?null:F.sedes, etiqueta});
+      if (!vigente()) return;
       const base={misSedes, f:F, psic, propio, acc:prev.acc, accAbierto:prev.accAbierto};
       if (datos?.sinDatos){ S.rd={...base, sinDatos:true}; if (S.view==="rendimiento") render(); return; }
       const mesSel = prev.mes && datos.meses.includes(prev.mes) ? prev.mes : datos.meses[datos.meses.length-2];
@@ -6828,24 +6836,34 @@ async function rdCargar(id){
       if (S.view==="rendimiento") render(); return;
     }
     const datos = await S.api.rendimiento(id);
+    if (!vigente()) return;
     if (datos?.sinDatos){ S.rd={sinDatos:true}; if (S.view==="rendimiento") render(); return; }
     const mesSel = prev.mes && datos.meses.includes(prev.mes) ? prev.mes : datos.meses[datos.meses.length-2];
     S.rd={datos, mes:mesSel}; }
-  catch(e){ S.rd={...prev, cargando:false, datos:null, error:e?.message||"No se pudo cargar tu tablero."}; }
+  catch(e){ if (!vigente()) return; S.rd={...prev, cargando:false, datos:null, error:e?.message||"No se pudo cargar tu tablero."}; }
   if (S.view==="rendimiento") render();
 }
-/* P32 · Barra de filtros: sedes (todas, una o varias), periodo y psicólogo. Se cambia sin salir del módulo. */
+/* P36 · Barra de filtros: un botón por sede (selección única) o «Toda CEMEPI», periodo y psicólogos activos de lo elegido.
+   Un clic consulta de inmediato; al cambiar de sede el selector vuelve a «Todos los psicólogos activos». */
+function rdOpcionesPersona(lista, sel, filtro){
+  const q=norm(filtro||""), vis=q?lista.filter(p=>norm(p.nombre).includes(q)||p.id===sel):lista;
+  return `<option value="">Todos los psicólogos activos</option>${vis.map(p=>`<option value="${esc(p.id)}"${p.id===sel?" selected":""}>${esc(p.nombre)}${p.sede?" · "+esc(p.sede):""}${p.modalidad?" · "+esc(MOD_TXT[p.modalidad]||""):""}${p.reservado?" · resultados reservados":""}</option>`).join("")}`;
+}
 function rdFiltrosHtml(){
   const R=S.rd; if (!R?.misSedes?.length) return "";
-  const F=R.f, niv=Object.fromEntries(R.misSedes.map(x=>[x.sede,x.nivel])), todas=F.sedes.length===R.misSedes.length;
-  const lista=[...(R.propio||[]), ...(R.psic||[])];
+  const F=R.f, varias=R.misSedes.length>1, todasSel=varias&&F.sedes.length===R.misSedes.length, una=!todasSel?F.sedes[0]:"";
+  const nivUna=una?R.misSedes.find(x=>x.sede===una)?.nivel:null;
+  const lista=[...(R.propio||[]), ...(R.psic||[])], btn=(v,t,on,extra="")=>`<button type="button" class="rd-sede-btn" data-act="rdSede" data-s="${esc(v)}" aria-pressed="${on}">${t}${extra}</button>`;
   return `<section class="note rd-filtros" style="margin-bottom:14px" aria-label="Filtros de estadísticas"><div class="note-h"><h3>Estadísticas por sede</h3>${S.rol==="superusuario"?`<button class="btn sm" type="button" data-act="rdAccAbrir">${R.accAbierto?"Cerrar accesos al módulo":"Accesos al módulo"}</button>`:""}</div>
-    <fieldset class="rd-sedes"><legend>Sedes</legend>
-      <label class="rd-chk"><input type="checkbox" id="rdSedeTodas"${todas?" checked":""}> <b>${S.rol==="superusuario"?"Toda CEMEPI":"Todas mis sedes"}</b></label>
-      ${R.misSedes.map(x=>`<label class="rd-chk"><input type="checkbox" name="rdSedeSel" value="${esc(x.sede)}"${F.sedes.includes(x.sede)?" checked":""}> ${esc(x.sede)}${x.nivel===1?' <span class="status">(totales)</span>':""}</label>`).join("")}</fieldset>
+    <div class="rd-sedes" role="group" aria-label="Sede"><span class="rd-leyenda">Sede</span>
+      ${varias?btn("*", S.rol==="superusuario"?"Toda CEMEPI":"Todas mis sedes", todasSel):""}
+      ${R.misSedes.map(x=>btn(x.sede, esc(x.sede), !todasSel&&una===x.sede, x.nivel===1?' <span class="status">(totales)</span>':"")).join("")}</div>
     <div class="tabs" role="tablist" aria-label="Periodo" style="margin:8px 0">${[[1,"1 mes"],[3,"3 meses"],[6,"6 meses"],[12,"12 meses"]].map(([n,t])=>`<button class="tab" role="tab" type="button" data-act="rdPer" data-n="${n}" aria-selected="${+F.per===n}">${t}</button>`).join("")}</div>
-    ${lista.length?`<div class="datos"><div class="fld"><label for="rdPersona">Psicólogo(a)</label><select id="rdPersona"><option value="">Todos los psicólogos autorizados de las sedes elegidas</option>${lista.map(p=>`<option value="${esc(p.id)}"${p.id===F.perfil?" selected":""}>${esc(p.nombre)}${p.sede?" · "+esc(p.sede):""}${p.modalidad?" · "+esc(MOD_TXT[p.modalidad]||""):""}${p.reservado?" · resultados reservados":""}</option>`).join("")}</select></div></div>`:""}
-    <p class="status" style="margin:6px 0 0">Los totales suman los servicios válidos de cada sede sin duplicar citas; las tasas se recalculan sobre los totales (no se promedian porcentajes). Cada cita cuenta para la sede donde ocurrió y cada proceso para la sede donde empezó.${Object.values(niv).some(n=>n===1)?" En las sedes marcadas «totales» no se muestran resultados individuales.":""}${F.perfil&&F.perfil!==S.uid?" Cada consulta de resultados individuales queda registrada en la bitácora.":""}</p></section>`;
+    ${lista.length?`<div class="datos rd-persona"><div class="fld"><label for="rdPersona">Psicólogo(a)</label><select id="rdPersona">${rdOpcionesPersona(lista, F.perfil, R.buscar)}</select></div>
+      ${lista.length>6?`<div class="fld"><label for="rdBuscar">Buscar por nombre</label><input id="rdBuscar" type="search" autocomplete="off" placeholder="Escribe parte del nombre" value="${esc(R.buscar||"")}" data-sin-envio></div>`:""}</div>`
+      :nivUna===1?`<p class="status" style="margin:4px 0 0">En ${esc(una)} tu acceso es de totales de la sede: no incluye resultados individuales.</p>`
+      :`<p class="status" style="margin:4px 0 0">No hay psicólogos activos${una?" adscritos a "+esc(una):""} que puedas consultar individualmente. Los totales de la sede incluyen todos sus servicios válidos.</p>`}
+    <p class="status" style="margin:6px 0 0">La lista muestra a los psicólogos activos adscritos a la sede (también quienes aún no tienen citas en el periodo). Los totales de la sede suman todos sus servicios válidos, incluidos los de quienes ya no colaboran, sin duplicar citas; las tasas se recalculan sobre los totales. Cada cita cuenta para la sede donde ocurrió y cada proceso para la sede donde empezó.${una&&F.perfil?" Los resultados individuales se limitan a las citas de "+esc(una)+".":""}${F.perfil&&F.perfil!==S.uid?" Cada consulta de resultados individuales queda registrada en la bitácora.":""}</p></section>`;
 }
 /* P32 · Accesos al módulo (solo Superusuario, editable en la app): concesiones por sede con nivel 1 (totales) o 2 (individuales),
    denegaciones y resultados reservados. Reutiliza otorgar_acceso / revocar_acceso (motivo obligatorio, auditoría). */
@@ -7023,11 +7041,15 @@ function rdTarjeta(k, val, cmp, mesPrev, extra){
 }
 function rdHtml(){
   const R=S.rd, cab=t=>`<div class="phead">${migas()}<h1>📊 ${S.rol==="psicologo"?"Mi tablero de rendimiento":"Estadísticas por sede"}</h1></div><p class="status" style="margin:-6px 0 14px">${R?.misSedes?.length?"Estadísticas de las sedes y psicólogos autorizados: elige sedes, periodo y psicólogo sin salir del tablero.":"Visualiza tu actividad, continuidad terapéutica y evolución en los últimos tres meses."}</p>${t||""}`;
-  if (!R || R.cargando) return `<div class="wrap tablero rd" style="padding-block:24px">${cab()}${cargandoHtml?cargandoHtml("Preparando tu tablero…"):"<p class='status'>Preparando tu tablero…</p>"}</div>`;
   const imp = S.rol==="superusuario" && S.api?.rendCitasLote ? rdImpHtml() : "";
+  if (R?.cargando && R.misSedes?.length && R.f){   /* P36 · los botones siguen a la vista; las cifras anteriores no */
+    const F=R.f, todasSel=F.sedes.length===R.misSedes.length&&R.misSedes.length>1, quien=F.perfil?((R.psic||[]).find(p=>p.id===F.perfil)?.nombre||(F.perfil===S.uid?"tus resultados":"")):"";
+    const txt=`Consultando ${todasSel?(S.rol==="superusuario"?"Toda CEMEPI":"todas tus sedes"):"la sede "+F.sedes[0]}${quien?" · "+quien:""}…`;
+    return `<div class="wrap tablero rd" style="padding-block:24px">${cab()}${imp}${rdFiltrosHtml()}${cargandoHtml(esc(txt))}</div>`; }
+  if (!R || R.cargando) return `<div class="wrap tablero rd" style="padding-block:24px">${cab()}${cargandoHtml?cargandoHtml("Preparando tu tablero…"):"<p class='status'>Preparando tu tablero…</p>"}</div>`;
   const dirBox=rdFiltrosHtml()+(R.accAbierto&&S.rol==="superusuario"?rdAccesosHtml():"");
   if (R.error) return `<div class="wrap tablero rd" style="padding-block:24px">${cab()}${imp}<p class="banner bad">${esc(R.error)}</p></div>`;
-  if (R.sinDatos) return `<div class="wrap tablero rd" style="padding-block:24px">${cab()}${imp}${dirBox}<p class="banner" style="display:block">Aún no hay cifras importadas${R.misSedes?" para lo elegido":" para ti"}. ${S.rol==="superusuario"?"Importa el archivo de citas (arriba) para comenzar.":"Aparecerán cuando la Dirección importe el archivo del mes."}</p></div>`;
+  if (R.sinDatos) return `<div class="wrap tablero rd" style="padding-block:24px">${cab()}${imp}${dirBox}${R.f?.perfil?`<p class="banner" style="display:block"><b>Sin actividad registrada en este periodo${R.f.sedes.length===1&&R.misSedes.length>1?" en "+esc(R.f.sedes[0]):""}.</b> Es un dato informativo: no indica bajo rendimiento (puede tratarse de una incorporación reciente, vacaciones, otra sede o citas aún no importadas).</p>`:`<p class="banner" style="display:block">Aún no hay cifras importadas${R.misSedes?" para lo elegido":" para ti"}. ${S.rol==="superusuario"?"Importa el archivo de citas (arriba) para comenzar.":"Aparecerán cuando la Dirección importe el archivo del mes."}</p>`}</div>`;
   const D=R.datos, mes=R.mes, i=D.meses.indexOf(mes), mp=D.meses[i-1], enCurso=i===D.meses.length-1, base=D.persona.modalidad==="nomina";
   const v=k=>D.series[k][i], pv=k=>i>0?D.series[k][i-1]:null, cmp=k=>rdCambio(v(k), pv(k));
   const cer=D.meses.slice(-4,-1), ic=cer.map(m=>D.meses.indexOf(m)), serie=k=>ic.map(j=>D.series[k][j]);
@@ -7149,6 +7171,9 @@ async function rdAccion(a, b){
     await rdCargar(); return rdComparativas(); }
   if (a==="rdMes"){ S.rd.mes=b.dataset.m; S.rd.comp=null; S.rd.compSedes=null; render(); return rdComparativas(); }
   if (a==="rdPer"){ S.rd.f={...S.rd.f, per:+b.dataset.n}; return rdCargar(); }
+  if (a==="rdSede"){ const v=b.dataset.s, todas=S.rd.misSedes.map(x=>x.sede), sedes=v==="*"?todas:[v];
+    if (S.rd.f && sedes.join("|")===S.rd.f.sedes.join("|") && !S.rd.f.perfil) return;
+    S.rd.f={...S.rd.f, sedes, perfil:""}; S.rd.buscar=""; S.rd.comp=null; S.rd.compSedes=null; await rdCargar(); return rdComparativas(); }
   if (["rdAccAbrir","rdAccOtorgar","rdAccRevocar","rdResQuitar","rdResPoner"].includes(a)) return rdAccAccion(a, b);
   if (a==="rdPdf") return rdPdf();
   if (a==="rdImpGuardar") return rdImpGuardar();
@@ -7158,9 +7183,10 @@ async function rdAccion(a, b){
 }
 document.addEventListener("change", e=>{ const t=e.target; if (!S.rd?.f) { if (t?.id==="rdPersona") rdCargar(t.value); return; }
   if (t?.id==="rdPersona") return rdCargar(t.value);
-  if (t?.id==="rdSedeTodas"){ S.rd.f={...S.rd.f, sedes:t.checked?S.rd.misSedes.map(x=>x.sede):[S.rd.misSedes[0].sede], perfil:""}; return rdCargar(); }
-  if (t?.name==="rdSedeSel"){ const sel=[...document.querySelectorAll('input[name="rdSedeSel"]:checked')].map(x=>x.value);
-    if (!sel.length){ t.checked=true; return toast("Elige al menos una sede."); } S.rd.f={...S.rd.f, sedes:sel, perfil:""}; return rdCargar(); } });
+});
+/* P36 · Búsqueda por nombre en el selector de psicólogos (filtra las opciones sin volver a consultar) */
+document.addEventListener("input", e=>{ const t=e.target; if (t?.id!=="rdBuscar" || !S.rd?.f) return; S.rd.buscar=t.value;
+  const sel=document.getElementById("rdPersona"); if (sel) sel.innerHTML=rdOpcionesPersona([...(S.rd.propio||[]), ...(S.rd.psic||[])], S.rd.f.perfil, t.value); });
 
 /* ================= P31 · C1 · 🌱 Profundidad y continuidad de mis procesos =================
    Diseño aprobado (diseno/CONTINUIDAD-P31-PROPUESTA.md). Referencias 12 · 33 · 66+ = horizontes institucionales, no mínimos.

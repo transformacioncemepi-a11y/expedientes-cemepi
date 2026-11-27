@@ -974,7 +974,7 @@ const cemepi = {
     const c0 = new Date((E.corte || new Date().toISOString().slice(0, 10)) + "T12:00:00");
     const mes = k => { const d = new Date(c0.getFullYear(), c0.getMonth() - k, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; };
     const per_n = [1, 3, 6, 12].includes(+f.per) ? +f.per : 3;
-    const q = (d, h) => sb.rpc("rend_consulta", { p_sedes: f.perfil ? null : f.sedes, p_desde: d, p_hasta: h, p_perfil: f.perfil || null });
+    const q = (d, h) => sb.rpc("rend_consulta", { p_sedes: f.perfil ? (f.sedesPersona || null) : f.sedes,   /* P36 (090): persona en la sede elegida */ p_desde: d, p_hasta: h, p_perfil: f.perfil || null });
     const [w, per] = await Promise.all([q(mes(4), mes(0)), q(mes(per_n), mes(1))]);
     if (w.error) fallo(w.error); if (per.error) fallo(per.error);
     const W = w.data, P = per.data, corte = String(W.corte || "").slice(0, 10), fin = new Date(corte + "T12:00:00");
