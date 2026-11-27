@@ -1614,12 +1614,12 @@ function usuariosHtml(){
         <input id="eu-cedula" type="text" value="${esc(u.cedula||"")}" placeholder="Cédula profesional" aria-label="Cédula profesional" style="flex:1 1 120px">
         <input id="eu-tel" type="tel" value="${esc(u.telefono||"")}" placeholder="Teléfono" aria-label="Teléfono" style="flex:1 1 120px">
         <button class="btn sm primary" type="button" data-act="saveDatosUsr" data-id="${u.id}">Guardar datos</button></div></fieldset>
-      <fieldset><legend>Contraseña</legend><div class="usr-fila">
+      ${S.rol==="superusuario"?`<fieldset><legend>Contraseña</legend><div class="usr-fila">
         <input id="eu-pass" type="password" autocomplete="new-password" minlength="10" placeholder="Nueva contraseña (mínimo 10 caracteres)" aria-label="Nueva contraseña" style="flex:2 1 220px">
         <button class="btn sm" type="button" data-act="verPassUsr">Mostrar</button>
         <button class="btn sm" type="button" data-act="genPassUsr">Generar segura</button>
         <button class="btn sm primary" type="button" data-act="savePassUsr" data-id="${u.id}">Asignar contraseña</button></div>
-        <span class="status">Reemplaza la contraseña que la persona eligió. Compártela en persona o por un canal seguro (nunca junto con el correo en el mismo mensaje) y pídele que la cambie en <b>Mi perfil</b>. La bitácora registra quién la cambió, no la contraseña.</span></fieldset>
+        <span class="status">Reemplaza la contraseña que la persona eligió. Compártela en persona o por un canal seguro (nunca junto con el correo en el mismo mensaje) y pídele que la cambie en <b>Mi perfil</b>. La bitácora registra quién la cambió, no la contraseña.</span></fieldset>`:`<fieldset><legend>Contraseña</legend><span class="status">Solo el Superusuario asigna contraseñas. Para que la persona cree la suya, abre su ficha en Usuarios y permisos y usa «Enviar correo para poner contraseña» o «Generar enlace».</span></fieldset>`}
       <div><button class="btn sm" type="button" data-act="cancelUsr">Cerrar</button></div></div></td></tr>`
     : `<tr data-f data-rol="${esc(u.rol)}"><td>${datos(u)}</td><td>${u.rol==="psicologo"?modPill(u).replace(/^<br>/,""):`<span class="badge-rol">${esc(ROL_TXT[u.rol]||u.rol)}</span>`}<br><span class="status">${esc(u.sede||"Todas las sedes")}</span></td>
       <td><span class="pill estado-${u.estado}">${EST_TXT[u.estado]}</span> ${puedeGestionar(u)?`<button class="btn sm" type="button" data-act="editUsr" data-id="${u.id}">Editar cuenta</button>`:""}${u.id===S.uid?` <span class="status">(tú)</span>`:""}</td></tr>`;
@@ -5089,7 +5089,7 @@ const GUIAS = [
   {t:"Subir mi documentación", si:()=>S.rol!=="superusuario", pasos:["Entra a Documentación.","Elige el tipo de documento (INE, CURP, comprobante de domicilio, cédula, título, curso, diplomado…). En cursos y diplomados escribe la descripción.","Selecciona el PDF (máximo 10 MB) y pulsa Subir PDF.","Las etiquetas Falta / ✓ te indican qué documentos obligatorios te faltan."]},
   {t:"Confirmar que recibí el reglamento", si:()=>true, pasos:["Entra a Reglamento y léelo (tiene índice y buscador).","Pulsa Confirmo que lo recibí y lo leí. Queda registrada la fecha y hora."]},
   {t:"Autorizar una cuenta", si:()=>gestionaCuentas(), pasos:["Entra a Configuración → Usuarios y permisos → Altas y datos de cuentas. En Solicitudes pendientes aparece cada persona que pidió su cuenta.","Verifica que el nombre y la cédula correspondan a personal real.","Revisa el rol y la sede, y pulsa Autorizar (o Rechazar)."]},
-  {t:"Asignar o cambiar la contraseña de alguien", si:()=>gestionaCuentas(), pasos:["En Usuarios y permisos → Altas y datos de cuentas pulsa Editar cuenta junto a la persona.","En Contraseña escribe una o pulsa Generar segura, y pulsa Asignar contraseña.","Entrégala por un canal distinto al correo y pídele que la cambie en Mi perfil."]},
+  {t:"Asignar o cambiar la contraseña de alguien", si:()=>gestionaCuentas(), pasos:["Solo el Superusuario asigna contraseñas a otras cuentas (decisión del Director, 27/11/2026).","Superusuario: en Usuarios y permisos → Altas y datos de cuentas pulsa Editar cuenta junto a la persona. En Contraseña escribe una o pulsa Generar segura («Mostrar» la deja ver), y pulsa Asignar contraseña. Entrégala por un canal distinto al correo y pídele que la cambie en Mi perfil.","Dirección y cuenta de sede: abre la ficha de la persona en Usuarios y permisos y pulsa «Enviar correo para poner contraseña» o «Generar enlace»; la persona crea su propia contraseña."]},
   {t:"Completar y firmar contratos del personal", si:()=>veTodosContratos(), pasos:["Entra a Contratos y abre el contrato de la persona.","Registra fecha de alta ante el IMSS, salario y datos del empleador y guarda.","Cuando la persona firme, el superusuario pulsa Firmar por CEMEPI. Cualquier cambio posterior anula las firmas."]},
   {t:"Verificar documentación del personal", si:()=>veDocsTodos(), pasos:["Entra a Documentación y abre a la persona.","Pulsa Ver PDF y cotéjalo con el original.","Pulsa Verificar. Un documento verificado ya no lo puede borrar su titular."]},
   {t:"Respaldar la documentación del personal", si:()=>ES_DIR(), pasos:["Entra a Documentación y pulsa Descargar respaldo (ZIP).","Se descargan todos los PDF en carpetas por sede y persona, con un índice (indice.csv) que se abre en Excel.","Guarda el ZIP en un disco o carpeta segura de CEMEPI; contiene datos personales. Hazlo al menos una vez al mes.","Los respaldos automáticos de Supabase no incluyen los PDF: este ZIP es su único respaldo."]},
@@ -7421,6 +7421,7 @@ function rdImpHtml(){
     <p class="status" style="margin:0 0 6px">${nueva?"Es la primera importación: crea una frase de al menos 12 caracteres y guárdala en tu gestor de contraseñas. <b>Sin ella no se puede continuar la continuidad de los procesos</b> en importaciones futuras. No se guarda en la app.":"Escribe la frase de la llave. Solo se usa en esta computadora para calcular los seudónimos."}</p>
     <div class="datos"><div class="fld"><label for="rdLlave">Frase de la llave</label><input id="rdLlave" type="password" autocomplete="off" data-sin-envio minlength="12"></div>
       ${nueva?`<div class="fld"><label for="rdLlave2">Repite la frase</label><input id="rdLlave2" type="password" autocomplete="off" data-sin-envio></div>`:""}</div>
+    <div class="actions" style="justify-content:flex-start;margin-top:4px"><button class="btn sm" type="button" data-ver-llave aria-pressed="false">Mostrar la frase</button><span class="status">Presiona <b>Enter</b> en la frase para revisar los cambios.</span></div>
     <h4 style="margin:12px 0 4px">2 · Terapeutas del archivo</h4>
     <p class="status" style="margin:0 0 6px">Las equivalencias confirmadas se recuerdan. «sugerencia» significa que la app propone una cuenta por el nombre: revísala antes de continuar. Lo que dejes «sin cuenta» queda en pendientes de conciliación.</p>
     <div class="tbl-wrap" style="max-height:360px;overflow:auto"><table><thead><tr><th>Terapeuta en el archivo</th><th>Citas</th><th>Sede principal</th><th>Cuenta en la app</th></tr></thead>
@@ -7445,6 +7446,10 @@ document.addEventListener("change", async e=>{
     render(); return; }
   if (e.target?.dataset?.rdi!=null && S.rdImp?.res){ const t=S.rdImp.res.terapeutas[+e.target.dataset.rdi]; S.rdImp.asig[t.nombre]=e.target.value; }
 });
+/* Mostrar u ocultar la frase de la llave (solo el Superusuario ve esta pantalla) */
+document.addEventListener("click", e=>{ const b=e.target.closest?.("[data-ver-llave]"); if (!b) return;
+  const ver=b.getAttribute("aria-pressed")!=="true"; ["#rdLlave","#rdLlave2"].forEach(q=>{ const i=$(q); if (i) i.type=ver?"text":"password"; });
+  b.setAttribute("aria-pressed", String(ver)); b.textContent=ver?"Ocultar la frase":"Mostrar la frase"; });
 /* Enter en la frase de la llave = «Revisar cambios» (petición del Director) */
 document.addEventListener("keydown", e=>{ if (e.key==="Enter" && ["rdLlave","rdLlave2"].includes(e.target?.id) && !S.rdImp?.procesando && !S.rdImp?.dif){ e.preventDefault(); rdImpRevisar(); } });
 async function rdImpRevisar(){
