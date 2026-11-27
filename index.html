@@ -5458,7 +5458,7 @@ async function acuDocxAMd(buf){
 async function acuPdfAMd(buf){
   await libCargar("pdfjsw"); await libCargar("pdfjs");
   pdfjsLib.GlobalWorkerOptions.workerSrc=LIBS.pdfjsw.src;
-  const d=await pdfjsLib.getDocument({data:new Uint8Array(buf)}).promise; const lineas=[];
+  const d=await pdfjsLib.getDocument({data:new Uint8Array(buf), isEvalSupported:false}).promise;   /* P29: mitiga CVE-2024-4367 (pdf.js < 4.2.67); solo se extrae texto */ const lineas=[];
   for (let i=1;i<=d.numPages;i++){ const c=await (await d.getPage(i)).getTextContent(); let y=null, l="", h=0;
     for (const it of c.items){ const yy=Math.round(it.transform[5]); if (y!==null&&Math.abs(yy-y)>2){ lineas.push({t:l.trim(),y,h}); l=""; } if (y!==null&&Math.abs(yy-y)>h*1.8&&l==="") lineas.push({t:"",y:yy,h}); y=yy; h=Math.max(it.height||10,6); l+=it.str+(it.hasEOL?" ":""); }
     if (l.trim()) lineas.push({t:l.trim(),y,h}); lineas.push({t:"",y:0,h:0}); }
