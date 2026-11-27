@@ -7415,17 +7415,20 @@ function rdImpHtml(){
   const opts=t=>`<option value="">— Sin cuenta (queda pendiente) —</option><option value="__ignorar"${I.asig[t.nombre]==="__ignorar"?" selected":""}>Ignorar siempre</option>${I.psic.map(p=>`<option value="${esc(p.id)}"${I.asig[t.nombre]===p.id?" selected":""}>${esc(p.nombre)} · ${esc(p.sede||"")}</option>`).join("")}`;
   const conf=t=>{ const a=I.alias.find(x=>x.nombre_archivo===t.nombre); return a?(a.ignorar?"__ignorar":a.perfil_id||""):null; };
   const D=I.dif;
+  /* Variantes de escritura de la misma persona pueden ir a la misma cuenta: se permite y se señala */
+  const porCta={}; R.terapeutas.forEach(t=>{ const v=I.asig[t.nombre]; if (v&&v!=="__ignorar") (porCta[v]=porCta[v]||[]).push(t.nombre); });
+  const juntos=t=>{ const v=I.asig[t.nombre], l=v&&porCta[v]; return l&&l.length>1?` <span class="pill">misma cuenta que ${esc(l.filter(n=>n!==t.nombre).join(", "))}</span>`:""; };
   return `<section class="note" style="margin-bottom:14px">${tit}
     <p style="margin:0"><b>Archivo leído.</b> ${R.citas.length.toLocaleString("es-MX")} citas del ${esc(R.desde.split("-").reverse().join("/"))} al ${esc(R.hasta.split("-").reverse().join("/"))} · omitidas: ${Object.entries(R.omit).filter(([,n])=>n).map(([k,n])=>`${esc(k)} ${n}`).join(", ")||"ninguna"}.</p>
     <h4 style="margin:12px 0 4px">1 · Llave del seudónimo</h4>
     <p class="status" style="margin:0 0 6px">${nueva?"Es la primera importación: crea una frase de al menos 12 caracteres y guárdala en tu gestor de contraseñas. <b>Sin ella no se puede continuar la continuidad de los procesos</b> en importaciones futuras. No se guarda en la app.":"Escribe la frase de la llave. Solo se usa en esta computadora para calcular los seudónimos."}</p>
     <div class="datos"><div class="fld"><label for="rdLlave">Frase de la llave</label><input id="rdLlave" type="password" autocomplete="off" data-sin-envio minlength="12"></div>
       ${nueva?`<div class="fld"><label for="rdLlave2">Repite la frase</label><input id="rdLlave2" type="password" autocomplete="off" data-sin-envio></div>`:""}</div>
-    <div class="actions" style="justify-content:flex-start;margin-top:4px"><button class="btn sm" type="button" data-ver-llave aria-pressed="false">Mostrar la frase</button><span class="status">Presiona <b>Enter</b> en la frase para revisar los cambios.</span></div>
+    <div class="actions" style="justify-content:flex-start;margin-top:4px">${D?"":`<button class="btn primary" type="button" data-act="rdImpRevisar">Continuar ↵</button>`}<button class="btn sm" type="button" data-ver-llave aria-pressed="false">Mostrar la frase</button><span class="status">${D?"Llave verificada.":"Pulsa «Continuar» o presiona <b>Enter</b> en la frase para revisar los cambios."}</span></div>
     <h4 style="margin:12px 0 4px">2 · Terapeutas del archivo</h4>
-    <p class="status" style="margin:0 0 6px">Las equivalencias confirmadas se recuerdan. «sugerencia» significa que la app propone una cuenta por el nombre: revísala antes de continuar. Lo que dejes «sin cuenta» queda en pendientes de conciliación.</p>
+    <p class="status" style="margin:0 0 6px">Las equivalencias confirmadas se recuerdan. «sugerencia» significa que la app propone una cuenta por el nombre: revísala antes de continuar. Si una misma persona aparece escrita de dos formas, elige la misma cuenta en ambas («misma cuenta que…»); verifica que de verdad sea la misma persona. Lo que dejes «sin cuenta» queda en pendientes de conciliación.</p>
     <div class="tbl-wrap" style="max-height:360px;overflow:auto"><table><thead><tr><th>Terapeuta en el archivo</th><th>Citas</th><th>Sede principal</th><th>Cuenta en la app</th></tr></thead>
-      <tbody>${R.terapeutas.map((t,i)=>`<tr><td>${esc(t.nombre)}</td><td>${t.citas}</td><td>${esc(t.sede)}</td><td><select data-rdi="${i}" aria-label="Cuenta de ${esc(t.nombre)}">${opts(t)}</select>${conf(t)===null&&I.asig[t.nombre]?' <span class="pill">sugerencia</span>':""}</td></tr>`).join("")}</tbody></table></div>
+      <tbody>${R.terapeutas.map((t,i)=>`<tr><td>${esc(t.nombre)}</td><td>${t.citas}</td><td>${esc(t.sede)}</td><td><select data-rdi="${i}" aria-label="Cuenta de ${esc(t.nombre)}">${opts(t)}</select>${conf(t)===null&&I.asig[t.nombre]?' <span class="pill">sugerencia</span>':""}${juntos(t)}</td></tr>`).join("")}</tbody></table></div>
     ${D?`<h4 style="margin:12px 0 4px">3 · Cambios que se aplicarán</h4>
       <p style="margin:0">Nuevas: <b>${D.nuevas.toLocaleString("es-MX")}</b> · cambiaron: <b>${D.cambiadas.toLocaleString("es-MX")}</b> · sin cambio: ${D.iguales.toLocaleString("es-MX")} · ya no vienen en el archivo (quedarán «ausentes», no se borran): <b>${D.ausentes.toLocaleString("es-MX")}</b>.</p>
       <p class="status">Cada cambio queda en el historial. Las cifras se recalculan solo para los consultantes y meses afectados.</p>
@@ -7444,7 +7447,8 @@ document.addEventListener("change", async e=>{
         asig:Object.fromEntries(res.terapeutas.map(t=>[t.nombre, rdiEmparejar(t.nombre, psic, alias)]))}; }
     catch(err){ S.rdImp={error:err?.message||"No se pudo leer el archivo."}; }
     render(); return; }
-  if (e.target?.dataset?.rdi!=null && S.rdImp?.res){ const t=S.rdImp.res.terapeutas[+e.target.dataset.rdi]; S.rdImp.asig[t.nombre]=e.target.value; }
+  if (e.target?.dataset?.rdi!=null && S.rdImp?.res){ const t=S.rdImp.res.terapeutas[+e.target.dataset.rdi]; S.rdImp.asig[t.nombre]=e.target.value;
+    const f1=$("#rdLlave")?.value, f2=$("#rdLlave2")?.value; render(); if (f1!=null&&$("#rdLlave")) $("#rdLlave").value=f1; if (f2!=null&&$("#rdLlave2")) $("#rdLlave2").value=f2; }
 });
 /* Mostrar u ocultar la frase de la llave (solo el Superusuario ve esta pantalla) */
 document.addEventListener("click", e=>{ const b=e.target.closest?.("[data-ver-llave]"); if (!b) return;
@@ -7477,8 +7481,6 @@ async function rdRecalcularTodo(msg){
 }
 async function rdImpGuardar(){
   const I=S.rdImp, R=I.res, L=I.llave;
-  const vistos=new Set(), dup=Object.entries(I.asig).find(([,id])=>{ if (!id||id==="__ignorar") return false; if (vistos.has(id)) return true; vistos.add(id); return false; });
-  if (dup) return toast("Dos terapeutas del archivo están relacionados con la misma cuenta; revisa la tabla.");
   try{
     if (L.verifNueva) await S.api.rendLlave(L.salt, L.verifNueva);
     /* 1 · Equivalencias confirmadas (solo las que cambiaron) */
