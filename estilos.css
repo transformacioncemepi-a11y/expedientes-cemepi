@@ -3,21 +3,21 @@
 /* Layout: CEMEPI-blue app bar with the logo on top; below it, the patient roster (left) and the open file with folder tabs (right). One pane at a time on phones. */
 :root{
   --brand:#0560bd; --brand-deep:#044a93; --on-brand:#ffffff;
-  --bg:#f3f6fb; --surface:#ffffff; --sunk:#eaf0f8; --line:#d6e0ee; --line-strong:#b9c8dd; --fg:#0f2340; --muted:#5d6f8e;
+  --bg:#f3f6fb; --surface:#ffffff; --sunk:#eaf0f8; --line:#d6e0ee; --line-strong:#b9c8dd; --fg:#0f2340; --muted:#556682; --field-line:#768aa8;
   --sh-1:0 1px 2px rgba(15,35,64,.06),0 1px 1px rgba(15,35,64,.04); --sh-2:0 8px 24px rgba(15,35,64,.14);
   --accent:#0560bd; --accent-fg:#ffffff; --accent-soft:#dbe8f8;
-  --ok:#227a48; --ok-soft:#d9f0e2; --warn:#9c5f06; --warn-soft:#f7e9cf; --bad:#b3322a; --bad-soft:#f8dcd9;
+  --ok:#207344; --ok-soft:#d9f0e2; --warn:#945a05; --warn-soft:#f7e9cf; --bad:#b3322a; --bad-soft:#f8dcd9;
   --f-display:"Nunito","Nunito Sans",system-ui,sans-serif; --f-body:"Nunito Sans",system-ui,sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,monospace;
   --r:10px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --brand:#0a4f9a; --brand-deep:#083f7c; --on-brand:#ffffff;
-  --bg:#0b1424; --surface:#111d31; --sunk:#172741; --line:#24375a; --line-strong:#33507d; --fg:#e4ecf8; --muted:#97a9c6;
+  --bg:#0b1424; --surface:#111d31; --sunk:#172741; --line:#24375a; --line-strong:#33507d; --fg:#e4ecf8; --muted:#97a9c6; --field-line:#56739f;
   --accent:#6aa9f5; --accent-fg:#06182f; --accent-soft:#16325a; --sh-1:0 1px 2px rgba(0,0,0,.4); --sh-2:0 10px 28px rgba(0,0,0,.5);
   --ok:#6cc58b; --ok-soft:#163323; --warn:#e3a54a; --warn-soft:#382a12; --bad:#ef7f75; --bad-soft:#3d1d1b; color-scheme:dark}}
 :root[data-theme="dark"]{
   --brand:#0a4f9a; --brand-deep:#083f7c; --on-brand:#ffffff;
-  --bg:#0b1424; --surface:#111d31; --sunk:#172741; --line:#24375a; --line-strong:#33507d; --fg:#e4ecf8; --muted:#97a9c6;
+  --bg:#0b1424; --surface:#111d31; --sunk:#172741; --line:#24375a; --line-strong:#33507d; --fg:#e4ecf8; --muted:#97a9c6; --field-line:#56739f;
   --accent:#6aa9f5; --accent-fg:#06182f; --accent-soft:#16325a; --sh-1:0 1px 2px rgba(0,0,0,.4); --sh-2:0 10px 28px rgba(0,0,0,.5);
   --ok:#6cc58b; --ok-soft:#163323; --warn:#e3a54a; --warn-soft:#382a12; --bad:#ef7f75; --bad-soft:#3d1d1b; color-scheme:dark}
 *{box-sizing:border-box}
@@ -64,13 +64,13 @@ button,input,select,textarea{font:inherit;color:inherit}
 .phead h1{font:800 26px/1.2 var(--f-display);letter-spacing:-.01em;flex:1 1 240px;min-width:0;margin:0;text-wrap:balance}
 .phead > span{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .crumbs{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted)}
-.crumbs button{border:0;background:none;padding:0;font:inherit;color:var(--muted);cursor:pointer}
+.crumbs button{border:0;background:none;padding:0 2px;font:inherit;color:var(--muted);cursor:pointer;min-height:24px}
 .crumbs button:hover{color:var(--accent);text-decoration:underline}
 .crumbs .sep{opacity:.55}
 @media (max-width:560px){.phead h1{font-size:22px}}
 /* Fila de filtros y tablas ordenables (etapa 3) */
 .filtros{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.filtros select,.f-buscar input{height:38px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);padding:0 10px}
+.filtros select,.f-buscar input{height:38px;border:1px solid var(--field-line);border-radius:8px;background:var(--surface);padding:0 10px}
 .f-buscar{position:relative;flex:1 1 220px;max-width:360px}
 .f-buscar input{width:100%;padding-left:34px}
 .f-buscar svg{position:absolute;left:10px;top:10px;width:18px;height:18px;stroke:var(--muted);fill:none;stroke-width:2;pointer-events:none}
@@ -92,6 +92,10 @@ tr.f-oculta{display:none}
 :root[data-densidad="compacta"] .row{padding-block:7px}
 :root[data-densidad="compacta"] .nav-i{min-height:32px;padding-block:5px}
 :root[data-texto="grande"] .shell{zoom:1.12;height:calc(100% / 1.12)}
+:root[data-texto="muygrande"] .shell{zoom:1.25;height:calc(100% / 1.25)}
+/* En pantallas angostas se agranda el contenido y no la barra superior (que no cabría a 375 px) */
+@media (max-width:600px){:root[data-texto] .shell{zoom:1;height:100%}
+  :root[data-texto="grande"] :is(main,.roster){zoom:1.12}:root[data-texto="muygrande"] :is(main,.roster){zoom:1.25}}
 /* Modo privado: difumina en pantalla los datos de consultantes y datos personales del personal; se ven al pasar el cursor o con el foco */
 :root[data-privado="1"] :is(.apunte,.nota-nom,#list .row .n,#list .row .f,.head h2,.head .meta,.gsec textarea,.gsec input,.ci-texto,.note dd,td.res,.rev-hz q,.mat-x,
   .sens,#frmCtr :is(input,select),.ctr-doc,.ctr-firma-img,.firma-prev){filter:blur(6px);transition:filter .15s}
@@ -188,7 +192,7 @@ legend{font:700 12px var(--f-display);text-transform:uppercase;letter-spacing:.0
 .fld{display:flex;flex-direction:column;gap:4px;min-width:0}
 .fld.wide{grid-column:1/-1}
 .fld label{font-size:12px;font-weight:500;color:var(--muted)}
-.fld input,.fld select,.fld textarea{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+.fld input,.fld select,.fld textarea{width:100%;padding:7px 9px;border:1px solid var(--field-line);border-radius:6px;background:var(--bg)}
 .fld textarea{min-height:76px;resize:vertical;line-height:1.5}
 .apunte{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13.5px}
 .rev{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:10px;background:var(--bg)}
@@ -201,7 +205,7 @@ legend{font:700 12px var(--f-display);text-transform:uppercase;letter-spacing:.0
 .rev ul{margin:0;padding-left:20px}
 .modo-nota{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
 .modo-nota button{border:0;background:transparent;padding:6px 14px;font:inherit;font-size:13px;cursor:pointer;color:var(--fg)}
-.modo-nota button[aria-pressed="true"]{background:var(--accent,#2c5f5d);color:#fff}
+.modo-nota button[aria-pressed="true"]{background:var(--accent,#2c5f5d);color:var(--accent-fg,#fff)}
 .nom-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px 14px;align-items:end}
 .nom-campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px 16px}
 .nom-campos textarea{min-height:84px}
@@ -260,8 +264,9 @@ td.res{white-space:pre-wrap;min-width:220px}
 .toast{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:9px 14px;border-radius:var(--r);font-size:13px;opacity:0;transform:translateY(6px);transition:.2s;pointer-events:none}
 .toast.on{opacity:1;transform:none}
 .nav-sub{display:flex;flex-direction:column;gap:1px;margin:2px 0 4px}.nav-sub[hidden]{display:none}.nav-sub-l{font-size:11px;color:var(--muted);padding:6px 12px 2px;text-transform:uppercase;letter-spacing:.04em}.nav-mini{font-size:13px;padding-block:5px!important}
-.fav-btn{border:0;background:none;color:var(--brand);font-size:20px;line-height:1;cursor:pointer;padding:0 4px;vertical-align:middle}.fav-btn:focus-visible{outline:2px solid var(--brand);border-radius:6px}
-.btn-link{border:0;background:none;color:var(--brand);text-decoration:underline;cursor:pointer;padding:0;font:inherit}
+.fav-btn{border:0;background:none;color:var(--accent);font-size:20px;line-height:1;cursor:pointer;padding:0 4px;vertical-align:middle;min-width:28px;min-height:28px;display:inline-flex;align-items:center;justify-content:center}.fav-btn:focus-visible{outline:2px solid var(--brand);border-radius:6px}
+.linkbtn{border:0;background:none;color:var(--accent);text-decoration:underline;cursor:pointer;padding:2px 0;font:inherit;text-align:left;min-height:24px}
+.btn-link{min-height:24px;border:0;background:none;color:var(--accent);text-decoration:underline;cursor:pointer;padding:0;font:inherit}
 .rev-lista{display:grid;gap:10px}.rev-i{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface)}.rev-t{line-height:1.45}.rev-a{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}.rev-a input{flex:1;min-width:200px}
 #borEstado{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:60;background:var(--surface);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:12.5px;box-shadow:0 2px 8px rgba(10,20,40,.08);max-width:calc(100vw - 32px)}
 #borEstado.err{color:#b42318;border-color:#f1b5ae}
@@ -313,7 +318,7 @@ td.res{white-space:pre-wrap;min-width:220px}
 /* Módulo 06 · Mi espacio */
 .ctx{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px;background:var(--bg);flex:none}
 .ctx button{border:0;background:none;border-radius:999px;padding:4px 12px;font-weight:700;font-size:13px;color:var(--muted);cursor:pointer;white-space:nowrap}
-.ctx button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.ctx button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
 body.ctx-mi .nav-g.ges{display:none}
 .mi-fila{display:grid;grid-template-columns:minmax(140px,220px) minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
 .mi-fila:first-child{border-top:0}.mi-fila .v{min-width:0;overflow-wrap:anywhere}.mi-fila .k{color:var(--muted);font-weight:600}
@@ -464,3 +469,20 @@ article.note.nota-nueva{outline:2px solid var(--accent);outline-offset:2px}
   .appbar .ttl{flex:1 1 60%}
   .appbar .btn{padding:6px 10px;font-size:13px}
   .reg-tools{position:static}}
+
+/* P28 · Fase 2 · Sistema de diseño (2026-11-26)
+   Objetivos táctiles: en pantallas táctiles, acciones de al menos 44 px (botones pequeños 36 px; WCAG 2.5.8 pide 24 px). */
+@media (pointer:coarse){
+  .btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+  .btn.sm{min-height:36px}
+  .nav-i{min-height:44px}
+  .ctx button{min-height:32px}
+  .crumbs button{min-height:32px}
+}
+/* Estados de interfaz únicos: cargando y vacío (cargandoHtml(), vacioHtml() en index.html) */
+.est-carga{display:flex;align-items:center;gap:10px;color:var(--muted);margin:0;padding:6px 0}
+.est-carga .spin{width:16px;height:16px;border-radius:50%;border:2px solid var(--line-strong);border-top-color:var(--accent);animation:giro .9s linear infinite;flex:none}
+@keyframes giro{to{transform:rotate(360deg)}}
+.est-vacio{display:flex;flex-direction:column;gap:6px;align-items:flex-start;padding:14px;border:1px dashed var(--line-strong);border-radius:var(--r);background:var(--sunk)}
+.est-vacio b{font-family:var(--f-display)}
+@media (prefers-reduced-motion: reduce){.est-carga .spin{animation:none;border-top-color:var(--line-strong)}}

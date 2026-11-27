@@ -22,7 +22,7 @@
 try{ const d=document.documentElement, g=k=>localStorage.getItem("cemepi."+k);
   const t=g("tema"); if (t==="light"||t==="dark") d.dataset.theme=t;
   if (g("densidad")==="compacta") d.dataset.densidad="compacta";
-  if (g("texto")==="grande") d.dataset.texto="grande";
+  const tx=g("texto"); if (tx==="grande"||tx==="muygrande") d.dataset.texto=tx;
   if (g("privado")==="1") d.dataset.privado="1"; }catch(e){}</script>
 <link rel="icon" type="image/png" sizes="192x192" href="iconos/icono-192.png">
 <link rel="apple-touch-icon" href="iconos/apple-touch-icon.png">
@@ -189,6 +189,12 @@ const terOrden = () => [...S.terapeutas.values()].sort((a,b)=>(a.nombre||"").loc
 const miTerapeuta = () => S.uid ? [...S.terapeutas.values()].find(t=>t.uid===S.uid) : null;
 const terEtiqueta = t => t ? `${t.nombre||"Sin nombre"}${t.cedula?` · Céd. ${t.cedula}`:""}${t.activo===false?" · histórico (sin acceso)":""}` : "Sin terapeuta asignado";
 
+/* Tablas con desplazamiento: alcanzables con el teclado (WCAG 2.1.1). Solo atributos; no cambia contenido ni permisos. */
+new MutationObserver(()=>document.querySelectorAll(".tbl-wrap:not([tabindex])").forEach(w=>{ if (w.scrollWidth<=w.clientWidth+1) return; w.tabIndex=0; w.setAttribute("role","region");
+  if (!w.hasAttribute("aria-label")) w.setAttribute("aria-label","Tabla con desplazamiento horizontal"); })).observe(document.documentElement,{childList:true,subtree:true});
+/* Estados de interfaz únicos (P28 · Fase 2): usar en vistas nuevas y al rediseñar las existentes */
+const cargandoHtml=(t="Cargando…")=>`<p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>${esc(t)}</p>`;
+const vacioHtml=(titulo,detalle="",accion="")=>`<div class="est-vacio"><b>${esc(titulo)}</b>${detalle?`<span class="status">${esc(detalle)}</span>`:""}${accion}</div>`;
 function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(toast.h); toast.h=setTimeout(()=>t.classList.remove("on"),3200); }
 function errMsg(e){ if(e?.code==="quota_exceeded") return "Se alcanzó el límite de almacenamiento. Elimina registros antiguos para continuar.";
   if(e?.code==="invalid_argument") return "No tienes permiso para guardar cambios aquí."; return "No se pudo guardar. Revisa tu conexión e inténtalo de nuevo."; }
@@ -1424,7 +1430,7 @@ function bandejaSolHtml(){
   const cab=`<div class="phead">${migas()}<h1>Bandeja de solicitudes</h1>${S.rol==="superusuario"?`<div class="acts"><button class="btn" type="button" data-act="bsTipos">${S.bsTipos?"Ver la bandeja":"Tipos de solicitud"}</button></div>`:""}</div>
     <p class="status" style="margin:0 0 8px;max-width:72ch">Solicitudes en las que te toca actuar ahora: de las personas que te reportan, de tus sedes o de tu área. Nunca aparecen las tuyas.</p>`;
   const env=x=>`<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:12px">${cab}${x}</div>`;
-  if (!S.sol) return env(`<p class="status">Cargando…</p>`); if (S.sol.error) return env(`<div class="banner">No se pudo cargar la bandeja.</div>`);
+  if (!S.sol) return env(`<p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p>`); if (S.sol.error) return env(`<div class="banner">No se pudo cargar la bandeja.</div>`);
   if (S.bsTipos) return env(`<section class="note"><p class="status" style="margin:0 0 8px">Solo el Superusuario. Lo que cambies aquí queda en la bitácora. Reglas fijas: nadie resuelve lo propio y nada se aprueba solo.</p>
     <div class="tbl-wrap"><table><thead><tr><th>Tipo</th><th>La revisa</th><th>Plazo (días)</th><th>Activo</th><th></th></tr></thead><tbody>${(S.sol.tipos||[]).map(t=>`<tr><td><b>${esc(t.nombre)}</b></td>
       <td><select class="sel" id="tp-${t.clave}" data-noborrador>${[["rrhh","RR. HH."],["direccion","Dirección"],["jefe,rrhh","Jefe directo → RR. HH."],["sede,rrhh","Administración de sede → RR. HH."],["jefe","Jefe directo"]].map(([v,x])=>`<option value="${v}"${t.pasos.join(",")===v?" selected":""}>${x}</option>`).join("")}</select></td>
@@ -1565,7 +1571,7 @@ function perfilHtml(){
       <div class="fld" style="grid-column:1/-1"><label for="pf-nombre">Nombre completo, como aparecerá en la firma</label><input id="pf-nombre" type="text" value="${esc(pf.nombre||"")}" readonly aria-describedby="pfCorr"></div>
       <div class="fld"><label for="pf-cedula">Cédula profesional</label><input id="pf-cedula" type="text" value="${esc(pf.cedula||"")}" readonly aria-describedby="pfCorr"></div>
       <div class="fld"><label for="pf-tel">Teléfono</label><input id="pf-tel" data-k="telefono" type="tel" value="${esc(pf.telefono||"")}"></div>
-      <div class="fld"><label>Sede y rol</label><input type="text" value="${esc((S.miSede||"Todas las sedes")+" · "+(ROL_TXT[S.rol]||S.rol||"")+(S.rol==="psicologo"&&S.api?.modalidad?" · "+MOD_TXT[S.api.modalidad]:""))}" disabled></div>
+      <div class="fld"><label for="pfSedeRol">Sede y rol</label><input id="pfSedeRol" type="text" value="${esc((S.miSede||"Todas las sedes")+" · "+(ROL_TXT[S.rol]||S.rol||"")+(S.rol==="psicologo"&&S.api?.modalidad?" · "+MOD_TXT[S.api.modalidad]:""))}" disabled></div>
     </form>
     <p class="status" id="pfCorr" style="margin:0">Tu nombre y tu cédula aparecen en tus firmas y documentos, por eso se corrigen con una solicitud que revisa RR. HH. <button class="btn sm" type="button" data-act="solTipo" data-t="datos" data-c="nombre">Pedir corrección</button></p>
     <section class="firma-box">
@@ -1771,7 +1777,7 @@ async function cargarOrg(){
   catch(e){ S.org = {error: e?.message||"No se pudo cargar la información."}; }
   if (ORG_VISTAS.includes(S.view)) render();
 }
-const orgCargando = t => `<div class="wrap" style="padding-block:24px"><div class="phead">${migas()}<h1>${t}</h1></div><p class="status">Cargando…</p></div>`;
+const orgCargando = t => `<div class="wrap" style="padding-block:24px"><div class="phead">${migas()}<h1>${t}</h1></div><p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p></div>`;
 const orgError = t => `<div class="wrap" style="padding-block:24px"><div class="phead">${migas()}<h1>${t}</h1></div><div class="banner bad">No se pudo cargar: ${esc(S.org.error)}. Revisa tu conexión y vuelve a abrir la sección.</div></div>`;
 function orgAlcance(){
   if (orgSU()) return `<p class="status" style="margin:0">Superusuario: ves las ${S.org.sedes.length} sedes y todas las entidades fiscales.</p>`;
@@ -2271,7 +2277,7 @@ function segPagina(titulo, desc, acciones, cuerpo){
     <h2 style="margin:0;font-size:20px">${titulo}</h2>${desc?`<p class="status" style="margin:0">${desc}</p>`:""}${cuerpo}</div>`;
 }
 function seguridadHtml(){
-  if (!S.seg) return `<div class="wrap" style="padding-block:24px"><div class="phead">${migas()}<h1>${SEG_TIT()}</h1></div><p class="status">Cargando…</p></div>`;
+  if (!S.seg) return `<div class="wrap" style="padding-block:24px"><div class="phead">${migas()}<h1>${SEG_TIT()}</h1></div><p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p></div>`;
   if (S.seg.error) return `<div class="wrap" style="padding-block:24px"><div class="phead">${migas()}<h1>${SEG_TIT()}</h1></div><div class="banner bad">No se pudo cargar: ${esc(S.seg.error)}</div></div>`;
   if (!segTabsPermitidas().includes(S.segTab)) S.segTab=segTabsPermitidas()[0];
   const f={resumen:segResumen,usuarios:segUsuarios,roles:segRoles,matriz:segMatriz,sedes:segSedes,entidades:segEntidades,solicitudes:segSolicitudes,sesiones:segSesiones,auditoria:segAuditoria,config:segConfig}[S.segTab];
@@ -2524,7 +2530,7 @@ async function docsCargar(){ try{ S.dx=await S.api.docsDatos(); }catch(e){ S.dx=
 const docsPag=(acc,cuerpo)=>`<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px"><div class="phead">${migas()}<h1>Documentos y firmas</h1><span style="display:flex;gap:8px;flex-wrap:wrap">${acc||""}</span></div>${cuerpo}</div>`;
 
 function docsHtml(){
-  if (!S.dx) return docsPag("",`<p class="status">Cargando…</p>`);
+  if (!S.dx) return docsPag("",`<p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p>`);
   if (S.dx.error) return docsPag("",`<div class="banner bad">No se pudo cargar: ${esc(S.dx.error)}</div>`);
   if (S.dxVer) return docDetalleHtml();
   if (!DOC_TABS.some(t=>t[0]===S.dxTab)) S.dxTab="resumen";
@@ -2557,7 +2563,7 @@ function dxExpedientes(){ const cs=DX().colaboradores.filter(c=>c.estatus!=="baj
   if (S.dxExpFor!==S.dxCol){ S.dxExpFor=S.dxCol; S.dxExp=null; S.api.expedienteDocs(S.dxCol).then(r=>{ S.dxExp=r; },e=>{ S.dxExp={error:e?.message}; }).finally(()=>{ if (S.view==="docs"&&S.dxTab==="expedientes") render(); }); }
   const docs=DX().docs.filter(d=>d.colaborador_id===S.dxCol), ex=S.dxExp;
   return `<div class="filtros"><select id="dxCol" aria-label="Persona">${cs.map(c=>`<option value="${c.id}"${c.id===S.dxCol?" selected":""}>${esc(c.nombre)} · ${esc(dxSede(c.sede_principal_id)?.nombre||"")}</option>`).join("")}</select></div>
-  <div class="org-grid"><section class="note"><div class="note-h"><h3>Documentos obligatorios</h3></div>${!ex?`<p class="status">Cargando…</p>`:ex.error?`<p class="status">${esc(ex.error)}</p>`:
+  <div class="org-grid"><section class="note"><div class="note-h"><h3>Documentos obligatorios</h3></div>${!ex?`<p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p>`:ex.error?`<p class="status">${esc(ex.error)}</p>`:
     `<ul class="pend">${ex.map(r=>`<li><b>${esc(r.nombre)}</b> ${!r.doc_id?`<span class="pill estado-pendiente">Falta</span>`:r.verificado?`<span class="pill estado-activo">Verificado</span>`:`<span class="pill">${esc(DOC_EST[r.estado]?.[0]||r.estado)}</span>`}</li>`).join("")||`<li class="status">Su rol no tiene documentos obligatorios en este catálogo.</li>`}</ul>
      <p class="status" style="margin:0">La identificación, CURP, comprobante de domicilio, título y cédula en PDF siguen en Documentación del personal.</p>`}</section>
    <section class="note"><div class="note-h"><h3>Documentos de la persona (${docs.length})</h3></div><ul class="pend">${docs.map(d=>`<li><b>${esc(d.nombre)}</b> ${dxEstado(d)}<br><span class="status">${esc(d.folio||"Sin folio")}${d.vence?" · vence "+fmtDate(d.vence):""}</span> <button class="btn sm" type="button" data-act="docVer" data-id="${d.id}">Abrir</button></li>`).join("")||`<li class="status">Sin documentos.</li>`}</ul></section></div>`; }
@@ -2603,7 +2609,7 @@ function docDetalleHtml(){ const d=DX().docs.find(x=>x.id===S.dxVer); if (!d){ S
 
 /* ---------- Mis documentos: lo institucional de la persona (dentro de la vista de documentación) ---------- */
 function misDocsInstHtml(){
-  if (!S.dx){ if (!S.dxCargando){ S.dxCargando=true; docsCargar().finally(()=>{ S.dxCargando=false; }); } return `<section class="doc-sec"><h3 class="sec-h">Mis documentos organizacionales</h3><p class="status">Cargando…</p></section>`; }
+  if (!S.dx){ if (!S.dxCargando){ S.dxCargando=true; docsCargar().finally(()=>{ S.dxCargando=false; }); } return `<section class="doc-sec"><h3 class="sec-h">Mis documentos organizacionales</h3><p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p></section>`; }
   if (S.dx.error) return "";
   const porFirmar=dxPorFirmarHtml();
   const yo=DX().yo, mios=yo?DX().docs.filter(d=>d.colaborador_id===yo&&d.estado!=="archivado"):[];
@@ -3132,7 +3138,7 @@ function incVistaHtml(vista,v){ const ab=v.filter(ixAbierta), abrir=i=>`data-act
   return ""; }
 /* ---------- Tablero general ---------- */
 function incorporacionHtml(){
-  if (!S.ix) return incPag("Incorporación","",`<p class="status">Cargando…</p>`);
+  if (!S.ix) return incPag("Incorporación","",`<p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p>`);
   if (S.ix.error) return incPag("Incorporación","",`<div class="banner bad">No se pudo cargar: ${esc(S.ix.error)}</div>`);
   if (S.ixSel) return incDetalleHtml(IX().incs.find(i=>i.id===S.ixSel));
   const F=S.ixF||{}, todos=IX().incs.filter(i=>!ixEsMia(i)), gestor=S.rol==="superusuario"||(S.api?.rhNivel||0)>=2;
@@ -3232,7 +3238,7 @@ function incAsisHtml(i){ if (i.clase==="psicologo_comision") return `<p class="s
   const k=i.id; if (S.ixAsis?.[k]===undefined){ S.ixAsis=S.ixAsis||{}; S.ixAsis[k]=null; const h=asisHoy(), dsd=asisMas(h,-29);
     S.api.resumenAsistencia(dsd,h,null).then(r=>{ S.ixAsis[k]=r.find(x=>x.colaborador_id===i.colaborador_id)||{}; },()=>{ S.ixAsis[k]={sinAcceso:true}; }).finally(()=>render()); }
   const a=S.ixAsis[k];
-  return `<section class="note">${a===null?`<p class="status">Cargando…</p>`:a.sinAcceso?`<p class="status">No tienes acceso a la asistencia de esta persona.</p>`:`<dl class="dl-org"><dt>Últimos 30 días</dt><dd>${a.registrados_min?asisH(a.registrados_min)+" registradas":"Sin registros"}</dd><dt>Días incompletos</dt><dd>${a.dias_incompletos??"—"}</dd><dt>Días con permiso</dt><dd>${a.permisos_dias??"—"}</dd><dt>Incidencias por revisar</dt><dd>${a.incidencias_abiertas??"—"}</dd></dl>`}
+  return `<section class="note">${a===null?`<p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p>`:a.sinAcceso?`<p class="status">No tienes acceso a la asistencia de esta persona.</p>`:`<dl class="dl-org"><dt>Últimos 30 días</dt><dd>${a.registrados_min?asisH(a.registrados_min)+" registradas":"Sin registros"}</dd><dt>Días incompletos</dt><dd>${a.dias_incompletos??"—"}</dd><dt>Días con permiso</dt><dd>${a.permisos_dias??"—"}</dd><dt>Incidencias por revisar</dt><dd>${a.incidencias_abiertas??"—"}</dd></dl>`}
    <p class="status" style="margin:0">Solo como contexto: la asistencia no forma parte de la evaluación de competencias. ${S.asis?.config?.usar_horarios===false?"La puntualidad no aplica mientras no se usen horarios.":""}</p></section>`; }
 function incHistHtml(i){ const hs=(IX().historial||[]).filter(h=>h.inc_id===i.id);
   return `<div class="timeline">${hs.map(h=>`<div class="tl"><b>${INC_EST[h.estado]?.[0]||esc(h.estado)}</b><span>${fmtFH(h.fecha)}${h.motivo?" · "+esc(h.motivo):""}</span></div>`).join("")||`<p class="status">Sin cambios registrados.</p>`}</div>
@@ -3249,7 +3255,7 @@ function incCierreHtml(i){ if (i.clase==="psicologo_comision"||!ixActiva(i)&&!i.
    ${i.doc_confirmacion?`<div class="actions">${gest?`<button class="btn primary" type="button" data-act="incCarta" data-id="${i.id}">Generar la carta (PDF) y adjuntarla</button>`:""}<button class="btn" type="button" data-act="docVer" data-id="${i.doc_confirmacion}">Abrir la carta en Documentos y firmas</button></div>`:""}</section>`; }
 
 /* ---------- Mi proceso de contratación (tablero individual) ---------- */
-function miIncHtml(){ if (!S.ix) return incPag("Mi proceso de contratación","",`<p class="status">Cargando…</p>`); if (S.ix.error) return incPag("Mi proceso de contratación","",`<div class="banner bad">${esc(S.ix.error)}</div>`);
+function miIncHtml(){ if (!S.ix) return incPag("Mi proceso de contratación","",`<p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p>`); if (S.ix.error) return incPag("Mi proceso de contratación","",`<div class="banner bad">${esc(S.ix.error)}</div>`);
   const i=IX().incs.find(x=>ixEsMia(x)&&ixAbierta(x))||IX().incs.find(ixEsMia); if (!i) return incPag("Mi proceso de contratación","",`<p class="status">No tienes un proceso de incorporación en curso.</p>`);
   if (!ixActiva(i)) return incDetalleHtml(i); incAutos(i);
   const sig=ixTareas(i.id).filter(t=>!t.auto&&!["completada","cancelada"].includes(t.estado)).slice(0,4), pc=ixProximo(i), ret=ixEvals(i.id).filter(e=>e.cerrada&&e.evaluador==="jefe"&&e.plan_mejora), reu=(IX().reuniones||[]).filter(r=>r.inc_id===i.id&&r.compromiso&&!r.cumplido);
@@ -3402,7 +3408,7 @@ async function asisCargar(desde, hasta){
   if (["miasis","asistencia"].includes(S.view)) render();
   const b=$("#asjBtn"); if (b&&S.asis&&!S.asis.error) b.hidden=!asisSupervisa();
 }
-const asisEspera=t=>`<div class="wrap" style="padding-block:24px"><div class="phead">${migas()}<h1>${t}</h1></div><p class="status">Cargando…</p></div>`;
+const asisEspera=t=>`<div class="wrap" style="padding-block:24px"><div class="phead">${migas()}<h1>${t}</h1></div><p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p></div>`;
 const asisErr=t=>`<div class="wrap" style="padding-block:24px"><div class="phead">${migas()}<h1>${t}</h1></div><div class="banner bad">No se pudo cargar: ${esc(S.asis.error)}</div></div>`;
 const asisPag=(t,d,acc,cuerpo)=>`<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px"><div class="phead">${migas()}<h1>${t}</h1><span style="display:flex;gap:8px;flex-wrap:wrap">${acc||""}</span></div>${d?`<p class="status" style="margin:0">${d}</p>`:""}${cuerpo}</div>`;
 const asisApagado=()=>`<div class="banner">El control de asistencia aún no está activado. ${S.rol==="superusuario"?"Actívalo en Asistencia y jornadas → Configuración cuando lo decidas.":"La Dirección lo activará; mientras tanto no se registra nada."}</div>`;
@@ -3489,7 +3495,7 @@ function micalendarioHtml(){
     <p class="status" style="margin:0;max-width:75ch">Tus fechas en un solo lugar: ausencias autorizadas y en trámite, tu incorporación, firmas pendientes, vencimientos de tus documentos y comunicados. Es de solo lectura: cada fecha se cambia en su sección.</p>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn sm" type="button" data-act="calMes" data-d="-1" aria-label="Mes anterior">‹ Anterior</button><b style="text-transform:capitalize;min-width:12ch;text-align:center">${esc(tit)}</b><button class="btn sm" type="button" data-act="calMes" data-d="1" aria-label="Mes siguiente">Siguiente ›</button><button class="btn sm" type="button" data-act="calMes" data-d="0">Hoy</button></div>`;
   const env=x=>`<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:12px">${cab}${x}</div>`;
-  if (c.cargando||!c.items&&!c.error) return env(`<p class="status">Cargando…</p>`);
+  if (c.cargando||!c.items&&!c.error) return env(`<p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p>`);
   if (c.error) return env(`<div class="banner">No se pudo cargar tu calendario. <button class="btn sm" type="button" data-act="calMes" data-d="0">Reintentar</button></div>`);
   const dias={}; c.items.forEach(it=>{ const f0=it.fecha<`${m}-01`?`${m}-01`:it.fecha; (dias[f0]=dias[f0]||[]).push(it); });
   const ks=Object.keys(dias).sort();
@@ -3517,7 +3523,7 @@ function comunidadHtml(){
   const tabs=`<div class="tabs" role="tablist" aria-label="Comunidad">${[["com","Comunicados"],["faq","Preguntas frecuentes"],...(g?[["pub","Publicar y seguimiento"]]:[])].map(([k,x])=>`<button class="tab" role="tab" type="button" data-act="comTab" data-t="${k}" aria-selected="${t===k}">${x}</button>`).join("")}</div>`;
   if (t==="faq") return env(`${tabs}<section class="card">${FAQ.map(([q,r])=>`<details style="margin:6px 0"><summary><b>${esc(q)}</b></summary><p style="margin:6px 0 0;max-width:75ch">${esc(r)}</p></details>`).join("")}
     <p class="status" style="margin:12px 0 0">¿No encontraste tu respuesta? Revisa las guías en Ayuda o envía una solicitud de apoyo.</p></section>`);
-  if (!c) return env(`${tabs}<p class="status">Cargando…</p>`);
+  if (!c) return env(`${tabs}<p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p>`);
   if (c.error) return env(`${tabs}<div class="banner">No se pudo cargar. <button class="btn sm" type="button" data-act="comunidad">Reintentar</button></div>`);
   if (t==="com"){ const l=c.mios||[];
     return env(`${tabs}${l.length?l.map(x=>`<section class="card"><div class="note-h" style="align-items:flex-start"><div><h3 style="margin:0">${esc(x.titulo)}</h3><span class="status">${esc(x.folio||"")} · ${fechaTxt(x.publicado_en)}${x.vigente_hasta?` · vigente hasta el ${fechaTxt(x.vigente_hasta)}`:""}</span></div>
@@ -3543,7 +3549,7 @@ function comunidadHtml(){
       <p class="status" style="margin:8px 0 0">Solo llega a las sedes donde gestionas documentos. Cada persona recibe un aviso dentro de la app. El archivo es el mismo del documento: no se duplica.</p>
       <div class="actions"><button class="btn primary" type="button" data-act="comPublicar">Publicar</button></div></section>`:"";
   const seg=S.comSeg?`<section class="note"><div class="note-h"><h3>Seguimiento: ${esc(S.comSeg.titulo)}</h3><button class="btn sm" type="button" data-act="comSegCerrar">Cerrar</button></div>
-      ${S.comSeg.l?`<p style="margin:0 0 8px"><b>${S.comSeg.l.filter(x=>x.leido_en).length}</b> de ${S.comSeg.l.length} confirmaron lectura.</p><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Persona</th><th>Sede</th><th>Lectura</th></tr></thead><tbody>${S.comSeg.l.map(x=>`<tr><td class="sens">${esc(x.nombre)}</td><td>${esc(x.sede||"—")}</td><td>${x.leido_en?fechaTxt(x.leido_en):'<span class="pill estado-pendiente">Pendiente</span>'}</td></tr>`).join("")}</tbody></table></div>`:`<p class="status">Cargando…</p>`}</section>`:"";
+      ${S.comSeg.l?`<p style="margin:0 0 8px"><b>${S.comSeg.l.filter(x=>x.leido_en).length}</b> de ${S.comSeg.l.length} confirmaron lectura.</p><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Persona</th><th>Sede</th><th>Lectura</th></tr></thead><tbody>${S.comSeg.l.map(x=>`<tr><td class="sens">${esc(x.nombre)}</td><td>${esc(x.sede||"—")}</td><td>${x.leido_en?fechaTxt(x.leido_en):'<span class="pill estado-pendiente">Pendiente</span>'}</td></tr>`).join("")}</tbody></table></div>`:`<p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p>`}</section>`:"";
   const sedeN=id=>(S.sedesL||[]).find(s=>s.id===id)?.nombre||"Sede";
   const dest=x=>x.alcance==="todos"?(x.sedes.length?`Todas sus sedes (${x.sedes.length})`:"Toda la organización"):x.alcance==="roles"?ROL_COM.filter(r=>x.roles.includes(r[0])).map(r=>r[1]).join(", "):x.alcance==="entidad"?"Entidad fiscal":x.sedes.map(sedeN).join(", ");
   const lista=(c.todos||[]).filter(x=>x.publicado_por===S.uid||g);
@@ -3650,7 +3656,7 @@ function perfprofHtml(){
   const p=S.pp, t=S.ppTab||"pend", su=S.rol==="superusuario";
   const cab=`<div class="phead">${migas()}<h1>Perfiles profesionales</h1></div>`;
   const env=x=>`<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:12px">${cab}${x}</div>`;
-  if (!p) return env(`<p class="status">Cargando…</p>`);
+  if (!p) return env(`<p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p>`);
   if (p.error) return env(`<div class="banner">No se pudo cargar. <button class="btn sm" type="button" data-act="perfprof">Reintentar</button></div>`);
   const nombre=id=>(p.per||[]).find(x=>x.perfil_id===id)?.nombre||"Persona";
   const aviso=`<p class="status" style="margin:0;max-width:78ch">Verifica cada competencia contra el documento original o la constancia. <b>Verificar no habilita la atención de casos ni cambia permisos</b>: solo deja constancia de lo revisado. Nadie verifica lo propio.</p>`;
@@ -4133,7 +4139,7 @@ function catPersonaHtml(col, incrustada){
   const c=C(), x=c.cols.find(y=>y.id===col), pd=S.catPD, yo=col===c.yo;
   if (!x) return `<p class="status">Persona no encontrada. <button class="btn sm" type="button" data-act="catPerVolver">Volver</button></p>`;
   const cab=incrustada?"":`<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center"><h2 style="margin:0" class="sens">${esc(x.nombre)}${yo?" <span class=\"status\">(tú)</span>":""}</h2><button class="btn sm" type="button" data-act="catPerVolver">Volver a personas</button></div>`;
-  if (!pd||pd.col!==col||(!pd.brechas&&!pd.error)) return `${cab}<p class="status">Cargando…</p>`;
+  if (!pd||pd.col!==col||(!pd.brechas&&!pd.error)) return `${cab}<p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p>`;
   if (pd.error) return `${cab}<div class="banner">${esc(pd.error)}</div>`;
   const {asig,deriv}=catPerfilesDe(col), gestiona=c.edito||["superusuario","direccion"].includes(S.rol)||(S.api?.misRoles||[]).includes("rrhh");
   const a=pd.ali||{}, puedeEval=!yo&&(gestiona||catACargo().includes(col));
@@ -4202,7 +4208,7 @@ function incPerfilIdealHtml(i){
 /* Mi espacio → Mi información → Mi perfil ideal: qué se espera de mi función y cómo voy */
 async function miIdealCargar(){ if (!C()) await catCargar(); const yo=C()?.yo; if (yo&&(!S.catPD||S.catPD.col!==yo)) await catPerCargar(yo); else render(); }
 function miPerfilIdealHtml(){
-  const c=C(); if (!c) return `<section class="card"><p class="status" style="margin:0">Cargando…</p></section>`;
+  const c=C(); if (!c) return `<section class="card"><p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p></section>`;
   if (c.error) return `<div class="banner">No se pudo cargar el catálogo. <button class="btn sm" type="button" data-act="miTab" data-t="ideal">Reintentar</button></div>`;
   if (!c.yo) return `<div class="banner">Tu cuenta aún no está en el directorio de colaboradores.</div>`;
   const {asig,deriv}=catPerfilesDe(c.yo), ps=[...asig.map(a=>catPerf(a.perfil_id)),...deriv].filter(Boolean);
@@ -4427,8 +4433,8 @@ async function vacGCargar(sede, desde){
 }
 function asisVacaciones(){
   const F=S.asisF||{}, sedes=A().sedes.filter(s=>A().personas.some(p=>p.sede_id===s.id)), sede=F.sede||sedes[0]?.id, desde=S.vacDesde||asisHoy();
-  if (!S.vacG||S.vacG.sede!==sede||S.vacG.desde!==desde){ if (!S.vacG?.cargando) setTimeout(()=>vacGCargar(sede,desde),0); return `${asisFiltros(false)}<p class="status">Cargando…</p>`; }
-  if (S.vacG.cargando) return `${asisFiltros(false)}<p class="status">Cargando…</p>`;
+  if (!S.vacG||S.vacG.sede!==sede||S.vacG.desde!==desde){ if (!S.vacG?.cargando) setTimeout(()=>vacGCargar(sede,desde),0); return `${asisFiltros(false)}<p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p>`; }
+  if (S.vacG.cargando) return `${asisFiltros(false)}<p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p>`;
   if (S.vacG.error) return `${asisFiltros(false)}<div class="banner">${esc(S.vacG.error)}</div>`;
   const rh=S.rol==="superusuario"||(S.api?.rhNivel||0)>=2, per=new Date().getFullYear()+"", g=asisGente().filter(p=>p.aplica&&(!sede||p.sede_id===sede));
   const cob=S.vacG.cob||[];
@@ -4742,7 +4748,7 @@ document.addEventListener("change", e=>{ const t=e.target; if (S.view!=="segurid
 /* ---------- Código de verificación en Mi perfil (para todas las cuentas) ---------- */
 function mfaPerfilHtml(){
   const fs=S.mfaFs, alta=S.mfaAlta;
-  if (!fs) return `<section class="panel" id="mfaPerfil"><h3>Código de verificación (MFA)</h3><p class="status">Cargando…</p></section>`;
+  if (!fs) return `<section class="panel" id="mfaPerfil"><h3>Código de verificación (MFA)</h3><p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p></section>`;
   const ver=fs.filter(f=>f.status==="verified");
   return `<section class="panel" id="mfaPerfil"><h3>Código de verificación (MFA)</h3>
     <p class="status" style="margin:0">Opcional mientras la Dirección no lo active. Con tu código registrado, al entrar se te pedirá el número de 6 dígitos de tu aplicación de autenticación (Google o Microsoft Authenticator). Registra también un segundo dispositivo como respaldo.</p>
@@ -5338,7 +5344,7 @@ const culDocs=()=>(ACU()?.plantillas||[]).filter(p=>p.categoria==="cultura");
 const culDescarga=()=>["superusuario","direccion"].includes(S.rol);
 const culPublicada=pl=>(ACU()?.versiones||[]).find(v=>v.plantilla_id===pl?.id&&v.estado==="aprobada");
 function culDocHtml(){
-  const a=ACU(); if (!a){ acuCargar(); return `<section class="card"><p class="status" style="margin:0">Cargando…</p></section>`; }
+  const a=ACU(); if (!a){ acuCargar(); return `<section class="card"><p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p></section>`; }
   const docs=culDocs().filter(p=>culPublicada(p)); if (!a.ok||!docs.length) return `<section class="card"><p class="status" style="margin:0">El documento «CEMEPI SOMOS NOSOTROS — Principios y compromisos de nuestra comunidad» estará disponible aquí cuando la Dirección lo publique.</p></section>`;
   const pl=docs.find(p=>p.clave===S.culDoc)||docs.find(p=>p.clave==="cemepi_somos_nosotros")||docs[0], vs=a.versiones.filter(v=>v.plantilla_id===pl.id&&["aprobada","sustituida"].includes(v.estado)).sort((x,y)=>y.version-x.version);
   const v=vs.find(x=>x.id===S.culVer)||vs[0], actual=v.estado==="aprobada", secs=(v.contenido?.secciones||[]).filter(x=>!x.sistema), yo=a.perfiles.find(p=>p.id===S.uid)?.id||S.uid;
@@ -5470,7 +5476,7 @@ function manCambiadas(v){ const m=MAN(), ant=(m?.versiones||[]).filter(x=>x.vers
   if (!ant) return new Set(); const prev=Object.fromEntries(manUnidades(ant).map(s=>[s.unidad,s.texto])); return new Set(manUnidades(v).filter(s=>prev[s.unidad]!==s.texto).map(s=>s.unidad)); }
 function manIntegracionHtml(){
   const m=MAN(), cab=`<div class="phead">${migas()}<h1>Mi integración y desarrollo</h1></div>`, env=x=>`<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:12px">${cab}${x}</div>`;
-  if (!m) return env(`<p class="status">Cargando…</p>`);
+  if (!m) return env(`<p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p>`);
   if (!m.ok) return env(`<section class="card"><p class="status" style="margin:0">Disponible cuando se apliquen las migraciones 069–070.</p></section>`);
   /* P26: el Manual de Bienvenida es para psicólogos; «Formación» reúne los demás contenidos según a quién aplican */
   const esPsi=S.rol==="psicologo"||["superusuario","direccion"].includes(S.rol), v=esPsi?manVersion():null, docs=formDocs(), hayForm=docs.length||formNoAplica().length;
@@ -5598,7 +5604,7 @@ function manReconocerHtml(v,us,rev,rec){
 }
 /* Gestión: avance de integración (Personas → Acuerdos y documentos → Manual de Bienvenida) */
 function manAvanceHtml(){
-  const m=MAN(); if (!m) { manCargar(); return `<p class="status">Cargando…</p>`; } if (!m.ok) return `<section class="card"><p class="status" style="margin:0">Disponible cuando se apliquen las migraciones 069–070.</p></section>`;
+  const m=MAN(); if (!m) { manCargar(); return `<p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p>`; } if (!m.ok) return `<section class="card"><p class="status" style="margin:0">Disponible cuando se apliquen las migraciones 069–070.</p></section>`;
   const pl=acuPl(), esBien=!pl||pl.clave==="manual_bienvenida_psicologos", fd=esBien?null:FORM().find(d=>d.plantilla.id===pl.id);
   const v=esBien?manPublicada():formPublicada(fd); if (!v) return `<section class="card"><p style="margin:0">Publica primero una versión en «Contenido y versiones».</p></section>`;
   const dest=esBien?"psicologos":(formMeta(v).destinatarios||"psicologos"), aplica=p=>formDestAplica(dest,p.rol,p.modalidad);
@@ -5821,7 +5827,7 @@ function acuVersionTexto(v){ return (v?.contenido?.secciones||[]).map(x=>(x.titu
 function misAcuHtml(){
   const a=ACU(), cab=`<div class="phead">${migas()}<h1>Mis acuerdos y compromisos</h1></div>`;
   const env=x=>`<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:12px">${cab}${x}</div>`;
-  if (!a) return env(`<p class="status">Cargando…</p>`);
+  if (!a) return env(`<p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p>`);
   if (!a.ok) return env(`<section class="card"><p class="status" style="margin:0">Esta sección estará disponible cuando se apliquen las migraciones 058–059.</p></section>`);
   const pl=acuCarta(), mios=a.acuerdos.filter(x=>x.colaborador_id===a.yo), av=new Set(a.avance.filter(x=>x.colaborador_id===a.yo).map(x=>x.etapa));
   const sig=[1,2,3,4,5].find(e=>!av.has(e))||6, et=S.acuEtapa||sig;
@@ -5889,7 +5895,7 @@ function acuTermFormHtml(x, gest){ return `<div class="note" style="margin-top:8
 function acuPanelHtml(){
   const a=ACU(), cab=`<div class="phead">${migas()}<h1>Acuerdos profesionales</h1></div>`;
   const env=x=>`<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:12px">${cab}${x}</div>`;
-  if (!a) return env(`<p class="status">Cargando…</p>`);
+  if (!a) return env(`<p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p>`);
   if (!a.ok) return env(`<section class="card"><p class="status" style="margin:0">Disponible cuando se apliquen las migraciones 058–059.</p></section>`);
   const pl=acuPl(), ap=a.versiones.find(v=>v.plantilla_id===pl?.id&&v.estado==="aprobada"), cul=["cultura","manual"].includes(pl?.categoria), man=pl?.categoria==="manual";
   const tabs=man?[["plantilla","Contenido y versiones"],["integracion","Avance de integración"]]:cul?[["plantilla","Contenido y versiones"],["lecturas","Lecturas y alcance"]]:[["personas",pl?.modalidad==="comision"?"Psicólogos independientes":"Personas"],["plantilla","Plantilla y versiones"],["anexos","Anexos"],...(pl?.clave===ACU_CARTA?[["bloques","Bloques y autorizaciones"],["espacios","Matriz de espacios"],["config","Bloques y consultorios"],["contenidos","Formación previa"],["reflexiones","Reflexiones"]]:[]),["campanas","Campañas"]];
@@ -6698,7 +6704,7 @@ function ayudaHtml(){
     <section class="note"><div class="note-h"><h3>Guías paso a paso</h3></div>
       ${GUIAS.filter(g=>g.si()).map(g=>`<details class="guia"${S.ayudaGuia===g.t?" open id=\"guiaAbierta\"":""}><summary>${esc(g.t)}</summary><ol>${g.pasos.map(p=>`<li>${esc(p)}</li>`).join("")}</ol></details>`).join("")}</section>
     <section class="note"><div class="note-h"><h3>Qué puede hacer cada rol</h3></div>
-      <div class="tbl-wrap"><table class="matriz"><thead><tr><th>Módulo</th>${cols.map(c=>`<th${c===k?' class="yo"':""}>${esc(ROLES_INFO[c].n)}${c===k?" (tú)":""}</th>`).join("")}</tr></thead><tbody>
+      <div class="tbl-wrap" tabindex="0" role="region" aria-label="Tabla de acceso por rol y módulo"><table class="matriz"><thead><tr><th>Módulo</th>${cols.map(c=>`<th${c===k?' class="yo"':""}>${esc(ROLES_INFO[c].n)}${c===k?" (tú)":""}</th>`).join("")}</tr></thead><tbody>
       ${MATRIZ.map(([m,v])=>`<tr><th>${esc(m)}</th>${v.map((x,i)=>`<td${cols[i]===k?' class="yo"':""}>${esc(x)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
       <p class="status" style="margin:8px 0 0">El superusuario puede otorgar permisos adicionales: supervisión clínica de sede, administrar contratos y documentación del personal, y ver tiempo de uso.</p></section>
     <section class="note"><div class="note-h"><h3>Reglas de privacidad para todos</h3></div><ul style="margin:0">
@@ -6816,7 +6822,7 @@ function usoHtml(){
       <select id="usoSede" aria-label="Sede"><option value="">Todas las sedes</option>${SEDES.map(s=>`<option${s===S.usoSede?" selected":""}>${esc(s)}</option>`).join("")}</select>
       </span></div>
     <p class="status" style="margin:0">Tiempo activo en la app: solo cuenta mientras la app está abierta en pantalla y hubo actividad en los últimos 5 minutos. Solo el superusuario ve esta ventana.</p>
-    ${!S.uso?`<p class="status">Cargando…</p>`:`<div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Rol y sede</th><th>Tiempo activo</th><th style="width:30%"></th><th>Sesiones</th><th>Último uso</th></tr></thead><tbody>
+    ${!S.uso?`<p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p>`:`<div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Rol y sede</th><th>Tiempo activo</th><th style="width:30%"></th><th>Sesiones</th><th>Último uso</th></tr></thead><tbody>
       ${filas.map(u=>`<tr><td><b>${esc(u.nombre||"Sin nombre")}</b><br><span class="status">${esc(u.email||"")}</span></td>
         <td>${esc(ROL_TXT[u.rol]||u.rol)}<br><span class="status">${esc(u.sede||"Todas")}${u.estado!=="activo"?" · "+esc(EST_TXT[u.estado]||u.estado):""}</span></td>
         <td class="mono">${fmtDur(u.segundos)}</td><td><div class="uso-barra" style="width:${Math.round(100*(Number(u.segundos)||0)/max)}%"></div></td>
@@ -6843,7 +6849,7 @@ async function porLeerCargar(){
 }
 function porLeerHtml(){
   const cab=`<div class="phead">${migas()}<h1>Por leer y confirmar</h1></div>`, env=x=>`<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:12px">${cab}${x}</div>`;
-  if (!S.porLeer){ porLeerCargar(); return env(`<p class="status">Cargando…</p>`); }
+  if (!S.porLeer){ porLeerCargar(); return env(`<p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p>`); }
   const it=S.porLeer;
   return env(`<p class="status" style="margin:0;max-width:85ch">Todo lo que te pidieron leer o confirmar, en un solo lugar (comunicados, cultura, acuerdos y formación). Confirmar una lectura no es aceptar un contrato, salvo en los acuerdos, que se firman aparte con su propio proceso.</p>
     ${it.length?it.map(x=>`<section class="card" style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div><p class="status" style="margin:0">${esc(x.o)}${x.f?` · ${fechaTxt(x.f)}`:""}</p><b>${esc(x.t)}</b></div>
@@ -7054,7 +7060,7 @@ function consentHtml(p, ro){
   if (S.ciFor!==p.id){ S.ciFor=p.id; S.ciData=null; if (S.api) cargarConsent(p.id); }
   const d=S.ciData, menor=esMenor(p);
   const cab=`<h3 class="sec-h">Consentimiento informado</h3><p class="status" style="margin:4px 0 8px">La persona${menor?" (o, por ser menor de edad, su representante legal)":""} lo firma en tu dispositivo durante la sesión o desde el portal del consultante. Se guarda la firma, la fecha y el texto aceptado, sin nombres.</p>`;
-  if (!d) return `<section class="doc-sec">${cab}<p class="status" style="margin:0">Cargando…</p></section>`;
+  if (!d) return `<section class="doc-sec">${cab}<p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p></section>`;
   if (d.error) return `<section class="doc-sec">${cab}<p class="status" style="margin:0">${esc(d.error)}</p></section>`;
   const quien=x=>x.firmante==="representante"?`${x.parentesco||"representante"} (representante legal)`:"la persona consultante";
   const filas=d.filter(x=>x.estado!=="cancelado").map(x=>`<tr><td>${x.estado==="firmado"?`<span class="pill estado-activo">Firmado</span>`:x.estado==="pendiente"?`<span class="pill estado-pendiente">Pendiente en el portal</span>`:`<span class="pill estado-suspendido">Revocado</span>`}</td>
@@ -7150,7 +7156,7 @@ function portalHtml(p){
   if (S.portalFor!==p.id){ S.portalFor=p.id; S.portalData=null; S.codigoNuevo=null; if (S.api) cargarPortal(p.id); }
   const d=S.portalData;
   const cab=`<h3 class="sec-h">Portal del consultante</h3><p class="status" style="margin:4px 0 8px">El consultante entra en <b>${esc(urlPortal())}</b> con el folio, su fecha de nacimiento y un código que le entregas en persona. Solo ve los reportes y evaluaciones psicológicas <b>emitidos</b> que compartas; no necesita cuenta ni correo.</p>`;
-  if (!d) return `<section class="doc-sec">${cab}<p class="status" style="margin:0">Cargando…</p></section>`;
+  if (!d) return `<section class="doc-sec">${cab}<p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p></section>`;
   if (d.error) return `<section class="doc-sec">${cab}<p class="status" style="margin:0">${esc(d.error)}</p></section>`;
   const a=d.acceso, vig=a && !a.revocado && new Date(a.vence)>new Date();
   const codigo = S.codigoNuevo ? `<div class="banner" style="display:block"><b>Código de acceso: <span class="mono" style="font-size:20px;letter-spacing:.08em">${esc(S.codigoNuevo)}</span></b><br>Anótalo y entrégalo en persona al consultante${esMenor(p)?" o a su representante legal":""}. <b>No se vuelve a mostrar</b> y no se envía por WhatsApp ni Signal. Si se pierde, genera uno nuevo (el anterior deja de funcionar).</div>` : "";
@@ -7650,7 +7656,7 @@ function aplicarPref(k, v){
   const d=document.documentElement;
   if (k==="tema"){ if (v==="light"||v==="dark") d.dataset.theme=v; else delete d.dataset.theme; PREF.set("tema", v==="sistema"?null:v); }
   if (k==="densidad"){ if (v==="compacta") d.dataset.densidad="compacta"; else delete d.dataset.densidad; PREF.set("densidad", v==="compacta"?v:null); }
-  if (k==="texto"){ if (v==="grande") d.dataset.texto="grande"; else delete d.dataset.texto; PREF.set("texto", v==="grande"?v:null); }
+  if (k==="texto"){ const ok=v==="grande"||v==="muygrande"; if (ok) d.dataset.texto=v; else delete d.dataset.texto; PREF.set("texto", ok?v:null); }
   if (k==="privado"){ if (v) d.dataset.privado="1"; else delete d.dataset.privado; PREF.set("privado", v?"1":null); $("#btnPrivado").setAttribute("aria-pressed", !!v); }
 }
 $("#btnPrivado").setAttribute("aria-pressed", document.documentElement.dataset.privado==="1");
@@ -7668,7 +7674,7 @@ function preferenciasHtml(){
   return `<section class="note" id="apariencia"><div class="note-h"><h3>Apariencia y privacidad</h3><span class="by">Se guarda solo en este dispositivo.</span></div>
     <div class="fld"><span class="status" style="font-weight:700">Tema</span><div class="pref-op" role="radiogroup" aria-label="Tema">${op("pf-tema","sistema","Como el dispositivo",tema==="sistema")}${op("pf-tema","light","Claro",tema==="light")}${op("pf-tema","dark","Oscuro",tema==="dark")}</div></div>
     <div class="fld"><span class="status" style="font-weight:700">Densidad</span><div class="pref-op" role="radiogroup" aria-label="Densidad">${op("pf-densidad","comoda","Cómoda",den!=="compacta")}${op("pf-densidad","compacta","Compacta: más filas en pantalla",den==="compacta")}</div></div>
-    <div class="fld"><span class="status" style="font-weight:700">Tamaño del texto</span><div class="pref-op" role="radiogroup" aria-label="Tamaño del texto">${op("pf-texto","normal","Normal",tx!=="grande")}${op("pf-texto","grande","Grande",tx==="grande")}</div></div>
+    <div class="fld"><span class="status" style="font-weight:700">Tamaño del texto</span><div class="pref-op" role="radiogroup" aria-label="Tamaño del texto">${op("pf-texto","normal","Normal",tx==="normal")}${op("pf-texto","grande","Grande",tx==="grande")}${op("pf-texto","muygrande","Muy grande",tx==="muygrande")}</div></div>
     <div class="fld"><span class="status" style="font-weight:700">Modo privado</span><div class="pref-op"><label><input type="checkbox" id="pf-privado"${d.dataset.privado==="1"?" checked":""}> Ocultar datos sensibles en pantalla</label></div>
       <span class="status">Difumina iniciales, notas, textos de documentos y datos personales del personal mientras compartes pantalla o trabajas en un lugar con gente. Pasa el cursor sobre un dato para leerlo. También se activa con el ícono del ojo en la barra superior.</span></div>
   </section>`;
