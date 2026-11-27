@@ -4397,7 +4397,7 @@ function misVacHtml(){
       ?`<p class="banner" style="margin:0 0 6px">Tu saldo todavía no está registrado. RR. HH. lo confirmará; mientras tanto puedes solicitar tus fechas y se revisarán los días que te corresponden. Estar en proceso de contratación no te quita derechos.</p>`
       :`<div class="kpis"><div class="kpi"><span>Confirmados por RR. HH.</span><b>${vacNum(s.confirmados)}</b><small class="status">al ${fechaTxt(s.fecha_corte)}</small></div><div class="kpi"><span>Usados</span><b>${vacNum(s.usados)}</b></div><div class="kpi"><span>En trámite</span><b>${vacNum(s.en_tramite)}</b></div><div class="kpi"><span>Disponibles</span><b>${vacNum(s.disponibles)}</b></div></div>
        <p class="status" style="margin:4px 0 0">Usados y en trámite son un estimado (días laborables). Si algo no coincide, <button class="btn sm" type="button" data-act="solTipo" data-t="aclaracion_pago">pide una aclaración</button>.</p>`}
-    ${prox.length?`<ul class="pend" style="margin-top:8px">${prox.map(x=>`<li><b>${asisFechaTxt(x.fecha)}${x.fecha_fin?" a "+fmtDate(x.fecha_fin):""}</b> <span class="pill ${ASIS_SOL_EST[x.estado][1]}">${ASIS_SOL_EST[x.estado][0]}</span></li>`).join("")}</ul>`:""}</section>`;
+    ${prox.length?`<ul class="pend" style="margin-top:8px">${prox.map(x=>`<li><b>${asisFechaTxt(x.fecha)}${x.fecha_fin?" a "+fmtDate(x.fecha_fin):""}</b> <span class="pill ${ASIS_SOL_EST[x.estado][1]}">${ASIS_SOL_EST[x.estado][0]}</span></li>`).join("")}</ul>`:""}</section>${formOrientacionHtml("vacaciones")}`;
 }
 /* Extras del formulario según el tipo: saldo y demanda de la sede (vacaciones) o constancia (permisos) */
 async function slExtraPintar(){
@@ -4407,6 +4407,7 @@ async function slExtraPintar(){
     if (d&&h&&h>=d&&(new Date(h)-new Date(d))/864e5<=62){ try{ const c=await S.api.coberturaSede(d,h,null);
       cob=c.length?`<p style="margin:8px 0 4px"><b>Demanda en tu sede esos días</b> <span class="status">(sin nombres de otras personas)</span></p><div class="vac-cob">${c.map(x=>{ const aus=x.aprobadas+x.en_tramite, r=x.personas?aus/x.personas:0, n=r>=.5?["Muy alta","n2"]:r>=.25?["Alta","n1"]:["Normal","n0"];
         return `<span class="vac-d ${n[1]}"><b>${fechaTxt(x.dia).slice(0,5)}</b>${n[0]}</span>`; }).join("")}</div><p class="status" style="margin:4px 0 0">«Alta» no significa que se rechace: tu jefe lo revisa contigo y, si hace falta, te propone otras fechas. Nada se rechaza por temporada de forma automática.</p>`:""; }catch{} }
+    cob+=formDiciembreHtml(d,h);
     box.innerHTML=`${s.confirmados!=null?`<p class="status" style="margin:8px 0 0">Te quedan <b>${vacNum(s.disponibles)}</b> días disponibles (estimado). Estas fechas suman ${await S.api.vacDiasEstimados?.(d,h)??"—"} días laborables.</p>`:`<p class="status" style="margin:8px 0 0">Tu saldo aún no está registrado; RR. HH. revisará los días que te corresponden.</p>`}${cob}`;
   } else if (VAC_PERM.has(tipo)){
     box.innerHTML=`<div class="fld" style="margin-top:8px"><label for="slEvid">Constancia (opcional)</label><input id="slEvid" type="file" accept="application/pdf,image/png,image/jpeg" data-noborrador>
@@ -5600,7 +5601,7 @@ function manAvanceHtml(){
   const m=MAN(); if (!m) { manCargar(); return `<p class="status">Cargando…</p>`; } if (!m.ok) return `<section class="card"><p class="status" style="margin:0">Disponible cuando se apliquen las migraciones 069–070.</p></section>`;
   const pl=acuPl(), esBien=!pl||pl.clave==="manual_bienvenida_psicologos", fd=esBien?null:FORM().find(d=>d.plantilla.id===pl.id);
   const v=esBien?manPublicada():formPublicada(fd); if (!v) return `<section class="card"><p style="margin:0">Publica primero una versión en «Contenido y versiones».</p></section>`;
-  const dest=esBien?"psicologos":(formMeta(v).destinatarios||"psicologos"), aplica=p=>dest==="nomina"?(p.rol==="administrativo"||(p.rol==="psicologo"&&p.modalidad==="nomina")):dest==="todos"?true:p.rol==="psicologo";
+  const dest=esBien?"psicologos":(formMeta(v).destinatarios||"psicologos"), aplica=p=>formDestAplica(dest,p.rol,p.modalidad);
   const tot=manUnidades(v).length, avis=m.avisos.find(a=>a.version_id===v.id);
   const filas=m.psicologos.filter(p=>p.estado==="activo"&&aplica(p)).map(p=>{ const r=m.avance.filter(a=>a.perfil_id===p.id&&a.version_id===v.id).length, rc=m.reconocimientos.find(x=>x.perfil_id===p.id&&x.version_id===v.id), cs=m.cuaderno.filter(c=>c.perfil_id===p.id&&c.compartida);
     const f=m.cols.find(c=>c.perfil_id===p.id)?.fecha_incorporacion, dia=f?Math.floor((Date.now()-new Date(f+"T12:00:00"))/864e5)+1:null;
@@ -5611,7 +5612,7 @@ function manAvanceHtml(){
     :[["Personas a quienes aplica",filas.length],["Recorrido iniciado",ini],["Lecturas registradas",conc]];
   return `<div class="kpis">${kp.map(([n,x])=>`<div class="kpi"><span>${n}</span><b>${x}</b></div>`).join("")}</div>
     <p class="status" style="margin:4px 0 0">${esBien?"Para identificar necesidades de apoyo, no para calificar. Las reflexiones privadas no se muestran; solo lo que cada persona decide compartir. La integración también es responsabilidad de administración, coordinación, supervisión y Dirección."
-      :`Para saber quién ya conoce los lineamientos y a quién acompañar, no para calificar ni para decidir medidas. Aplica a: ${dest==="nomina"?"personal administrativo y psicólogos de nómina (no a independientes)":dest==="todos"?"todo el equipo":"psicólogos"}. Las prácticas no se registran.`}</p>
+      :`Para saber quién ya conoce los lineamientos y a quién acompañar, no para calificar ni para decidir medidas. Aplica a: ${FORM_DEST[dest]?FORM_DEST[dest]:dest==="todos"?"todo el equipo":"psicólogos"}. Las prácticas no se registran.`}</p>
     <section class="card">${avis?`<p class="status" style="margin:0">Aviso de la versión ${v.version} enviado el ${fechaTxt(avis.enviado_en)} a ${avis.destinatarios} ${esBien?"psicólogos":"personas"}.</p>`:(ACU()?.configuro?`<div class="actions" style="justify-content:flex-start"><button class="btn sm primary" type="button" data-act="manAvisar" data-id="${v.id}">${esBien?"Avisar a los psicólogos":"Avisar a las personas a quienes aplica"} de la versión ${v.version}</button></div>`:"")}
       <div class="tbl-wrap" style="margin-top:8px"><table class="tbl"><thead><tr><th>${esBien?"Psicólogo(a)":"Persona"}</th><th>Sede</th>${esBien?"<th>Ruta de integración</th>":""}<th>Unidades</th><th>${esBien?"Reconocimiento":"Lectura registrada"}</th>${esBien?"<th>Compartido</th>":""}</tr></thead><tbody>
       ${filas.map(x=>`<tr><td class="sens">${esc(x.p.nombre||"")}</td><td>${esc(x.p.sede||"—")}</td>${esBien?`<td>${seg(x.dia)}</td>`:""}<td>${x.r} de ${tot}</td><td>${x.rc?fechaTxt(x.rc.reconocido_en):"—"}</td>
@@ -5621,7 +5622,8 @@ function manAvanceHtml(){
       <li><b>Coordinación y supervisión clínica:</b> primeras sesiones acompañadas, revisión del encuadre y primera supervisión (semana 2); seguimiento clínico a 30, 60 y 90 días.</li>
       <li><b>RR. HH.:</b> plan de incorporación, persona de acompañamiento y atención de solicitudes de apoyo.</li>
       <li><b>Dirección:</b> revisión conjunta del día 30, propuestas y acuerdos de acompañamiento.</li></ul>
-      <p class="status" style="margin:6px 0 0">Tareas, reuniones y acompañante de cada persona: Personas → Incorporación. Solicitudes de acompañamiento: Bandeja de solicitudes (tipo «Necesito apoyo»).</p></section>`:`<section class="card"><p class="status" style="margin:0">Las solicitudes de permiso o de incapacidad se atienden en la Bandeja de solicitudes; los justificantes adjuntos tienen acceso restringido y no deben contener diagnósticos. La app no decide si una ausencia es injustificada ni aplica descuentos o medidas.</p></section>`}`;
+      <p class="status" style="margin:6px 0 0">Tareas, reuniones y acompañante de cada persona: Personas → Incorporación. Solicitudes de acompañamiento: Bandeja de solicitudes (tipo «Necesito apoyo»).</p></section>`:`<section class="card"><p class="status" style="margin:0">${pl.clave==="lineamientos_salud_equipo"?"Las solicitudes de permiso o de incapacidad se atienden en la Bandeja de solicitudes; los justificantes adjuntos tienen acceso restringido y no deben contener diagnósticos. La app no decide si una ausencia es injustificada ni aplica descuentos o medidas."
+      :"Las solicitudes se revisan de forma individual en Asistencia y jornadas, por una persona. La app no autoriza, rechaza ni condiciona solicitudes por haber registrado o no esta lectura."}</p></section>`}`;
 }
 async function manAccion(a,b){
   const rpc=(fn,args)=>S.api.acuRpc(fn,args), m=MAN(), v=manVersion();
@@ -5655,8 +5657,13 @@ const FORM=()=>(MAN()?.formacion||[]);
 const formPublicada=d=>(d?.versiones||[]).find(v=>v.estado==="aprobada");
 const formVersion=d=>formPublicada(d)||(["superusuario","direccion"].includes(S.rol)?[...(d?.versiones||[])].reverse().find(v=>v.estado==="borrador"):null);
 const formMeta=v=>v?.contenido?.formacion||{};
-function formAplica(v){ if (["superusuario","direccion"].includes(S.rol)) return true; const dest=formMeta(v).destinatarios||"psicologos", mod=S.api?.modalidad;
-  return dest==="todos"?["psicologo","administrativo"].includes(S.rol):dest==="nomina"?(S.rol==="administrativo"||(S.rol==="psicologo"&&mod==="nomina")):S.rol==="psicologo"; }
+/* Público de cada documento (misma regla que man_aplica en la base, 078/081) */
+const FORM_DEST={nomina:"personal administrativo y psicólogos de nómina (no a independientes)",base:"personal de base: administrativos, directivos y psicólogos de base (no a independientes)"};
+const formDestAplica=(dest,rol,mod)=>dest==="todos"?["psicologo","administrativo","direccion"].includes(rol):dest==="nomina"?(rol==="administrativo"||(rol==="psicologo"&&mod==="nomina"))
+  :dest==="base"?(["administrativo","direccion"].includes(rol)||(rol==="psicologo"&&mod==="nomina")):rol==="psicologo";
+/* formLeAplica: le corresponde a la persona; formAplica: además, la Dirección lo ve (vista previa y gestión) */
+const formLeAplica=v=>formDestAplica(formMeta(v).destinatarios||"psicologos",S.rol,S.api?.modalidad);
+function formAplica(v){ return ["superusuario","direccion"].includes(S.rol)||formLeAplica(v); }
 const formDocs=()=>FORM().map(d=>({d,v:formVersion(d)})).filter(x=>x.v&&formAplica(x.v));
 const formSalud=()=>formDocs().find(x=>x.d.plantilla.clave==="lineamientos_salud_equipo");
 /* Lo que no aplica (p. ej., independientes ante lineamientos de nómina): solo su nota, para orientar sin imponer reglas laborales */
@@ -5665,7 +5672,7 @@ const formNoAplica=()=>FORM().map(d=>({d,v:formPublicada(d)})).filter(x=>x.v&&!f
 function formTablaHtml(t){
   return `<section class="note" style="margin-top:8px"><div class="note-h"><h3>${esc(t.titulo)}</h3><span class="status">Documento, pág. ${t.pagina}</span></div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px">${t.filas.map(f=>`<div class="card" style="padding:10px">
-      <b>${esc(f[0])}</b><p style="margin:6px 0 0"><span class="status">${esc(t.columnas[1])}</span><br>${esc(f[1])}</p><p style="margin:6px 0 0"><span class="status">${esc(t.columnas[2])}</span><br>${esc(f[2])}</p></div>`).join("")}</div>
+      ${t.columnas.length===2?`<span class="status">${esc(t.columnas[0])}</span><br>`:""}<b>${esc(f[0])}</b>${f.slice(1).map((c,j)=>`<p style="margin:6px 0 0"><span class="status">${esc(t.columnas[j+1])}</span><br>${esc(c)}</p>`).join("")}</div>`).join("")}</div>
     ${t.nota?`<p class="status" style="margin:8px 0 0">${esc(t.nota)}</p>`:""}</section>`;
 }
 function formPracticaHtml(u,p,k){
@@ -5682,20 +5689,26 @@ function formLectorHtml(d,v){
       <button class="btn sm" type="button" data-act="formVolver">← Formación</button></div>
     <div style="height:6px;background:var(--line);border-radius:4px;margin-top:8px"><div style="height:6px;width:${pct}%;background:var(--accent,#0560BD);border-radius:4px"></div></div>
     <p class="status" style="margin:6px 0 0">Conocer → Comprender → Aplicar: lee cada unidad, resuelve las prácticas y, cuando lo necesites, encontrarás la guía en Mi asistencia y en Ayuda.</p></section>`;
-  const borr=pub?"":`<div class="banner">Vista previa de la versión ${v.version} en borrador: el personal todavía no la ve. Aplica a: ${esc({nomina:"personal de nómina (administrativos y psicólogos de base)",psicologos:"psicólogos",todos:"todo el equipo"}[meta.destinatarios||"psicologos"])}.</div>`;
+  const borr=pub?"":`<div class="banner">Vista previa de la versión ${v.version} en borrador: el personal todavía no la ve. Aplica a: ${esc({...FORM_DEST,psicologos:"psicólogos",todos:"todo el equipo"}[meta.destinatarios||"psicologos"])}.</div>`;
   const sel=`<div class="fld"><label for="formUnidadSel">Unidad</label><select id="formUnidadSel" data-form="1">${us.map(x=>`<option value="${x.unidad}" ${x===u?"selected":""}>${rev.has(x.unidad)?"✓ ":""}${esc(x.titulo)}</option>`).join("")}</select></div>`;
   const guia=(u.guia||[]).length?`<section class="card"><h3 style="margin:0">Guía de decisiones</h3><p class="status" style="margin:4px 0 0">Qué hacer, a quién avisar y qué documentación entregar. Lo resuelve una persona; la app no decide.</p>
       ${u.guia.map(g=>`<details style="margin-top:8px"><summary><b>${esc(g.t)}</b></summary><p style="margin:6px 0 0"><b>Qué hacer:</b> ${esc(g.que)}</p><p style="margin:4px 0 0"><b>A quién avisar:</b> ${esc(g.quien)}</p><p style="margin:4px 0 0"><b>Documentación:</b> ${esc(g.doc)}</p>
-        <p class="status" style="margin:4px 0 0">Documento, págs. ${esc(g.pags)}</p><div class="actions" style="justify-content:flex-start"><button class="btn sm" type="button" data-act="${esc(g.act)}">${esc(g.boton)}</button></div></details>`).join("")}</section>`:"";
+        <p class="status" style="margin:4px 0 0">Documento, ${String(g.pags).length>1?"págs.":"pág."} ${esc(g.pags)}</p>${g.act?`<div class="actions" style="justify-content:flex-start"><button class="btn sm" type="button" data-act="${esc(g.act)}">${esc(g.boton)}</button></div>`:""}</details>`).join("")}</section>`:"";
+  const refl=(u.reflexion||[]).length?`<section class="card"><h3 style="margin:0">Para reflexionar</h3><p class="status" style="margin:4px 0 0">Preguntas para ti; no se guardan ni se comparten. Si quieres, conversa tus respuestas con tu jefe directo o con RR. HH. al planear tus fechas.</p>
+      <ul style="margin:6px 0 0">${u.reflexion.map(q=>`<li style="margin:4px 0">${esc(q)}</li>`).join("")}</ul></section>`:"";
+  const ori=meta.original, com=ori?(S.formCom||[]).find(c=>c.titulo===ori.titulo):null;
+  if (ori&&S.formCom===undefined&&S.api?.misComunicados){ S.formCom=null; S.api.misComunicados().then(l=>{ S.formCom=l||[]; render(); }).catch(()=>{ S.formCom=[]; }); }
+  const orig=ori?`<section class="note"><p style="margin:0"><b>Documento original:</b> «${esc(ori.titulo)}» · ${esc(ori.fecha||"")} · ${ori.paginas||""} páginas. Cada cita de esta experiencia indica su página.</p>
+      ${com?`<div class="actions" style="justify-content:flex-start"><button class="btn sm" type="button" data-act="comunidad">Abrir el comunicado original (${esc(com.folio||"PDF")})</button></div>`:`<p class="status" style="margin:4px 0 0">El PDF original lo resguardan Dirección General y RR. HH.; cuando se publique como comunicado aparecerá en Comunidad.</p>`}</section>`:"";
   const conf=rec?`<section class="card"><p style="margin:0"><span class="pill estado-activo">Lectura registrada</span> el ${fechaTxt(rec.reconocido_en)} · versión ${v.version} · ${rec.unidades_revisadas} de ${rec.unidades_total} unidades.</p><p class="status" style="margin:6px 0 0">${esc(meta.nota_confirmacion||"")}</p></section>`
     :(rev.size===us.length&&pub?`<section class="card"><h3 style="margin:0">Confirmación de lectura</h3>${Object.entries(meta.textos_declaraciones||{}).map(([k,t])=>`<label style="display:flex;gap:6px;align-items:flex-start;margin-top:8px"><input type="checkbox" id="fdc_${k}"> ${esc(t)}</label>`).join("")}
       <p class="status" style="margin:6px 0 0">${esc(meta.nota_confirmacion||"")} No es una firma ni una certificación profesional.</p><div class="actions" style="justify-content:flex-start"><button class="btn primary" type="button" data-act="formReconocer" data-v="${v.id}">Registrar mi lectura</button></div></section>`:"");
   return `${borr}${cab}<section class="card">${sel}</section>
     <section class="card"><p class="status" style="margin:0">Unidad ${i+1} de ${us.length} · ${u.paginas.length>1?"páginas":"página"} ${u.paginas.join(", ")}</p><h2 style="margin:4px 0 0">${esc(u.titulo)}</h2><p style="margin:6px 0 0"><b>Intención:</b> ${esc(u.intencion||"")}</p>
       <div style="margin-top:8px">${acuTextoHtml(u.texto)}</div>${(u.tablas||[]).map(formTablaHtml).join("")}</section>
-    ${guia}${(u.practicas||[]).map((p,k)=>formPracticaHtml(u,p,k)).join("")}
+    ${refl}${guia}${(u.practicas||[]).map((p,k)=>formPracticaHtml(u,p,k)).join("")}
     <section class="card"><div class="actions" style="justify-content:flex-start;gap:6px">${rev.has(u.unidad)?`<span class="pill estado-activo">Unidad revisada</span>`:(pub?`<button class="btn primary" type="button" data-act="formRevisada" data-v="${v.id}" data-u="${u.unidad}">Marcar como revisada</button>`:`<span class="status">Vista previa: el avance se registra cuando la versión se publique.</span>`)}</div>
-      <div class="actions" style="justify-content:space-between;gap:6px;flex-wrap:wrap">${i>0?`<button class="btn sm" type="button" data-act="formUnidad" data-u="${us[i-1].unidad}">← Anterior</button>`:"<span></span>"}${i<us.length-1?`<button class="btn sm" type="button" data-act="formUnidad" data-u="${us[i+1].unidad}">Siguiente →</button>`:""}</div></section>${conf}`;
+      <div class="actions" style="justify-content:space-between;gap:6px;flex-wrap:wrap">${i>0?`<button class="btn sm" type="button" data-act="formUnidad" data-u="${us[i-1].unidad}">← Anterior</button>`:"<span></span>"}${i<us.length-1?`<button class="btn sm" type="button" data-act="formUnidad" data-u="${us[i+1].unidad}">Siguiente →</button>`:""}</div></section>${conf}${orig}`;
 }
 function formacionHtml(){
   const docs=formDocs();
@@ -5708,29 +5721,37 @@ function formacionHtml(){
         <div class="actions" style="justify-content:flex-start"><button class="btn ${rec?"":"primary"}" type="button" data-act="formAbrir" data-p="${d.plantilla.id}">${rec?"Volver a consultar":r?"Continuar":"Comenzar"}</button></div></section>`; }).join("")||`<section class="card"><p style="margin:0">No tienes contenidos de formación pendientes.</p></section>`}
     ${na.map(({v})=>`<section class="note"><p style="margin:0">${esc(formMeta(v).nota_independientes)}</p></section>`).join("")}`;
 }
-/* Momento APLICAR: orientación breve en Mi asistencia, leída de la versión publicada */
-function formOrientacionHtml(){
+/* Momento APLICAR: orientación breve en Mi asistencia, leída de la versión publicada. lugar: "permiso" (formulario de
+   permisos; por omisión, los lineamientos de salud) o "vacaciones" (Mis vacaciones). */
+const formLugar=v=>formMeta(v).orientacion_lugar||"permiso";
+function formOrientacionHtml(lugar="permiso"){
   if (!MAN()){ manCargar(); return ""; }
-  const x=formSalud(); if (!x||x.v.estado!=="aprobada"&&!["superusuario","direccion"].includes(S.rol)) return "";
-  const o=formMeta(x.v).orientacion||[]; if (!o.length) return "";
-  return `<section class="note"><div class="note-h"><h3>¿Consulta médica, malestar o incapacidad?</h3></div>
+  return formDocs().filter(x=>formLugar(x.v)===lugar&&(x.v.estado==="aprobada"||["superusuario","direccion"].includes(S.rol))&&(formMeta(x.v).orientacion||[]).length).map(x=>{ const m=formMeta(x.v), o=m.orientacion;
+    return `<section class="note"><div class="note-h"><h3>${esc(m.orientacion_titulo||"¿Consulta médica, malestar o incapacidad?")}</h3>${x.v.estado!=="aprobada"?`<span class="status">Vista previa (borrador)</span>`:""}</div>
     <ul style="margin:0">${o.map(z=>`<li style="margin:4px 0"><b>${esc(z.t)}:</b> ${esc(z.d)} <span class="status">→ ${esc(z.app)}</span></li>`).join("")}</ul>
-    <p class="status" style="margin:6px 0 0">No escribas diagnósticos. La solicitud la resuelve una persona; la app no decide pagos ni medidas. Fuente: Lineamientos laborales ante enfermedades, consultas médicas e incapacidades (nov. 2026).</p>
-    <div class="actions" style="justify-content:flex-start"><button class="btn sm" type="button" data-act="formAbrir" data-p="${x.d.plantilla.id}" data-u="f04">Ver la guía de decisiones</button></div></section>`;
+    <p class="status" style="margin:6px 0 0">${esc(m.orientacion_pie||"No escribas diagnósticos. La solicitud la resuelve una persona; la app no decide pagos ni medidas. Fuente: Lineamientos laborales ante enfermedades, consultas médicas e incapacidades (nov. 2026).")}</p>
+    <div class="actions" style="justify-content:flex-start"><button class="btn sm" type="button" data-act="formAbrir" data-p="${x.d.plantilla.id}" data-u="${esc(m.orientacion_unidad||"f04")}">${esc(m.orientacion_boton||"Ver la guía de decisiones")}</button></div></section>`; }).join("");
+}
+/* Aviso sereno al pedir vacaciones con días de diciembre (si el documento publicado lo define). Nunca bloquea ni rechaza. */
+function formDiciembreHtml(d,h){
+  const x=formDocs().find(y=>y.v.estado==="aprobada"&&formMeta(y.v).diciembre); if (!x||!d||!h) return "";
+  const z=formMeta(x.v).diciembre, mes=String(z.mes||12).padStart(2,"0"), toca=[...Array(Math.min(400,Math.round((new Date(h)-new Date(d))/864e5)+1))].some((_,i)=>asisMas(d,i).slice(5,7)===mes);
+  return toca?`<p class="status" style="margin:8px 0 0">${esc(z.texto)} <button class="btn sm" type="button" data-act="formAbrir" data-p="${x.d.plantilla.id}" data-u="${esc(formMeta(x.v).orientacion_unidad||"")}">Ver la propuesta</button></p>`:"";
 }
 /* Guía permanente en Ayuda: preguntas frecuentes desde la versión publicada (sin recorrer de nuevo el curso) */
 function ayudaSaludHtml(){
   if (!MAN()){ manCargar(); return ""; }
-  const x=formSalud(), na=formNoAplica().find(y=>y.d.plantilla.clave==="lineamientos_salud_equipo");
-  if (!x&&!na) return "";
-  if (!x) return `<section class="note" id="saludEquipo"><div class="note-h"><h3>Salud, consultas médicas e incapacidades</h3></div><p style="margin:0">${esc(formMeta(na.v).nota_independientes)}</p></section>`;
-  const v=x.v, us=manUnidades(v), guia=us.flatMap(u=>u.guia||[]), tablas=us.flatMap(u=>u.tablas||[]), vistas=new Set();
-  return `<section class="note" id="saludEquipo"><div class="note-h"><h3>Salud, consultas médicas e incapacidades</h3>${v.estado!=="aprobada"?`<span class="status">Vista previa (borrador)</span>`:""}</div>
-    <p style="margin:0;max-width:80ch">Respuestas rápidas tomadas de los Lineamientos de Dirección General y RR. HH. (noviembre 2026). Para el recorrido completo: Mi integración y desarrollo → Formación.</p>
-    ${guia.map(g=>`<details class="guia"><summary>${esc(g.t)}</summary><p style="margin:6px 0 0"><b>Qué hacer:</b> ${esc(g.que)}</p><p style="margin:4px 0 0"><b>A quién avisar:</b> ${esc(g.quien)} · <b>Documentación:</b> ${esc(g.doc)}</p><button class="btn sm" type="button" data-act="${esc(g.act)}">${esc(g.boton)}</button></details>`).join("")}
-    ${tablas.filter(t=>!vistas.has(t.titulo)&&vistas.add(t.titulo)).length?`<details class="guia"><summary>¿Qué se paga en cada caso? (cuadros del documento)</summary>${[...new Map(tablas.map(t=>[t.titulo,t])).values()].map(t=>`<p style="margin:8px 0 0"><b>${esc(t.titulo)}</b> <span class="status">pág. ${t.pagina}</span></p><ul style="margin:4px 0 0">${t.filas.map(f=>`<li><b>${esc(f[0])}:</b> ${esc(f[1])} ${esc(f[2])}</li>`).join("")}</ul>${t.nota?`<p class="status" style="margin:4px 0 0">${esc(t.nota)}</p>`:""}`).join("")}
-      <p class="status" style="margin:8px 0 0">Las reglas de pago están sujetas a las prestaciones legales y contractuales aplicables y a validación jurídica; la app no decide pagos ni medidas.</p></details>`:""}
-    <div class="actions" style="justify-content:flex-start;gap:6px"><button class="btn sm" type="button" data-act="formAbrir" data-p="${x.d.plantilla.id}">Abrir el recorrido completo</button></div></section>`;
+  const salud="lineamientos_salud_equipo", ya=new Set();
+  const una=(d,v,na)=>{ const m=formMeta(v), tit=m.ayuda_titulo||(d.plantilla.clave===salud?"Salud, consultas médicas e incapacidades":(m.titulo||d.plantilla.nombre)), id="ayuda_"+d.plantilla.clave.replace(/[^a-z0-9_]/g,"");
+    if (na) return `<section class="note" id="${id}"><div class="note-h"><h3>${esc(tit)}</h3></div><p style="margin:0">${esc(m.nota_independientes)}</p></section>`;
+    const us=manUnidades(v), guia=us.flatMap(u=>u.guia||[]), tablas=[...new Map(us.flatMap(u=>u.tablas||[]).map(t=>[t.titulo,t])).values()];
+    return `<section class="note" id="${id}"><div class="note-h"><h3>${esc(tit)}</h3>${v.estado!=="aprobada"?`<span class="status">Vista previa (borrador)</span>`:""}</div>
+    <p style="margin:0;max-width:80ch">${esc(m.ayuda_intro||"Respuestas rápidas tomadas de los Lineamientos de Dirección General y RR. HH. (noviembre 2026). Para el recorrido completo: Mi integración y desarrollo → Formación.")}</p>
+    ${guia.map(g=>`<details class="guia"><summary>${esc(g.t)}</summary><p style="margin:6px 0 0"><b>Qué hacer:</b> ${esc(g.que)}</p><p style="margin:4px 0 0"><b>A quién avisar:</b> ${esc(g.quien)} · <b>Documentación:</b> ${esc(g.doc)}</p>${g.act?`<button class="btn sm" type="button" data-act="${esc(g.act)}">${esc(g.boton)}</button>`:""}</details>`).join("")}
+    ${tablas.length?`<details class="guia"><summary>${esc(m.ayuda_tablas||"¿Qué se paga en cada caso? (cuadros del documento)")}</summary>${tablas.map(t=>`<p style="margin:8px 0 0"><b>${esc(t.titulo)}</b> <span class="status">pág. ${t.pagina}</span></p><ul style="margin:4px 0 0">${t.filas.map(f=>`<li><b>${esc(f[0])}:</b> ${f.slice(1).map(esc).join(" ")}</li>`).join("")}</ul>${t.nota?`<p class="status" style="margin:4px 0 0">${esc(t.nota)}</p>`:""}`).join("")}
+      <p class="status" style="margin:8px 0 0">${esc(m.ayuda_tablas_nota||"Las reglas de pago están sujetas a las prestaciones legales y contractuales aplicables y a validación jurídica; la app no decide pagos ni medidas.")}</p></details>`:""}
+    <div class="actions" style="justify-content:flex-start;gap:6px"><button class="btn sm" type="button" data-act="formAbrir" data-p="${d.plantilla.id}">Abrir el recorrido completo</button></div></section>`; };
+  return [...formDocs().map(x=>{ ya.add(x.d.plantilla.id); return una(x.d,x.v,false); }), ...formNoAplica().filter(y=>!ya.has(y.d.plantilla.id)).map(y=>una(y.d,y.v,true))].join("");
 }
 async function formAccion(a,b){
   const rpc=(fn,args)=>S.api.acuRpc(fn,args);
@@ -6814,7 +6835,7 @@ async function porLeerCargar(){
       .forEach(v=>it.push({o:"Cultura organizacional",t:(a.plantillas.find(p=>p.id===v.plantilla_id)?.nombre||"Documento")+` (versión ${v.version})`,f:v.creado_en,act:"raices",b:"Leer y confirmar"}));
     a.acuerdos.filter(x=>x.colaborador_id===a.yo&&["disponible_lectura","pendiente_firma_psicologo"].includes(x.estado))
       .forEach(x=>it.push({o:"Acuerdo profesional",t:(a.plantillas.find(p=>p.id===a.versiones.find(v=>v.id===x.plantilla_version_id)?.plantilla_id)?.nombre)||"Carta Compromiso",f:x.publicado_en,act:"misacuerdos",b:x.estado==="disponible_lectura"?"Leer":"Firmar"})); } }catch{}
-  try{ if (!MAN()) await manCargar(); formDocs().filter(x=>x.v.estado==="aprobada"&&!manReconocido(x.v)).forEach(x=>{ const us=manUnidades(x.v), r=manMisRevisadas(x.v).size;
+  try{ if (!MAN()) await manCargar(); formDocs().filter(x=>x.v.estado==="aprobada"&&formLeAplica(x.v)&&!manReconocido(x.v)).forEach(x=>{ const us=manUnidades(x.v), r=manMisRevisadas(x.v).size;
       it.push({o:"Formación",t:`${formMeta(x.v).titulo||x.d.plantilla.nombre} (${r} de ${us.length} unidades)`,f:x.v.creado_en,act:"formAbrir",p:x.d.plantilla.id,b:r?"Continuar":"Comenzar"}); }); }catch{}
   try{ if (S.rol==="psicologo"){ await manCargar(); const v=manPublicada(); if (v&&!manReconocido(v)){ const us=manUnidades(v), r=manMisRevisadas(v).size;
       it.push({o:"Manual de Bienvenida",t:`Reconocimiento de lectura (${r} de ${us.length} unidades)`,f:v.creado_en,act:"miintegracion",b:r?"Continuar":"Comenzar"}); } } }catch{}

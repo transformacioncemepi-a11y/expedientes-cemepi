@@ -778,7 +778,7 @@ const cemepi = {
       sb.from("man_avance").select("*"), sb.from("man_cuaderno").select("*").order("actualizado_en", { ascending: false }),
       sb.from("man_reconocimientos").select("*"), sb.from("man_avisos").select("*"),
       sb.from("acu_plantillas").select("id,clave,nombre,categoria").in("categoria", ["cultura", "servicios_profesionales_independientes"]),
-      sb.from("perfiles").select("id,nombre,rol,sede,estado,modalidad").in("rol", ["psicologo", "administrativo"]),
+      sb.from("perfiles").select("id,nombre,rol,sede,estado,modalidad").in("rol", ["psicologo", "administrativo", "direccion"]),
       sb.rpc("mi_colaborador"), sb.from("colaboradores").select("id,perfil_id,nombre,sede_principal_id,fecha_incorporacion")]);
     const d = q.map(r => r.error ? null : r.data);
     const otros = d[5] || [], oIds = otros.map(x => x.id);
