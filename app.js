@@ -7024,10 +7024,10 @@ function rdTarjeta(k, val, cmp, mesPrev, extra){
 function rdHtml(){
   const R=S.rd, cab=t=>`<div class="phead">${migas()}<h1>📊 ${S.rol==="psicologo"?"Mi tablero de rendimiento":"Estadísticas por sede"}</h1></div><p class="status" style="margin:-6px 0 14px">${R?.misSedes?.length?"Estadísticas de las sedes y psicólogos autorizados: elige sedes, periodo y psicólogo sin salir del tablero.":"Visualiza tu actividad, continuidad terapéutica y evolución en los últimos tres meses."}</p>${t||""}`;
   if (!R || R.cargando) return `<div class="wrap tablero rd" style="padding-block:24px">${cab()}${cargandoHtml?cargandoHtml("Preparando tu tablero…"):"<p class='status'>Preparando tu tablero…</p>"}</div>`;
-  const imp = S.rol==="superusuario" && S.api?.rendImportar ? rdImpHtml() : "";
+  const imp = S.rol==="superusuario" && S.api?.rendCitasLote ? rdImpHtml() : "";
   const dirBox=rdFiltrosHtml()+(R.accAbierto&&S.rol==="superusuario"?rdAccesosHtml():"");
   if (R.error) return `<div class="wrap tablero rd" style="padding-block:24px">${cab()}${imp}<p class="banner bad">${esc(R.error)}</p></div>`;
-  if (R.sinDatos) return `<div class="wrap tablero rd" style="padding-block:24px">${cab()}${imp}${dirBox}<p class="banner" style="display:block">Aún no hay cifras importadas${R.misSedes?" para lo elegido":" para ti"}. ${S.rol==="superusuario"?"Importa el archivo de ventas del mes para comenzar.":"Aparecerán cuando la Dirección importe el archivo del mes."}</p></div>`;
+  if (R.sinDatos) return `<div class="wrap tablero rd" style="padding-block:24px">${cab()}${imp}${dirBox}<p class="banner" style="display:block">Aún no hay cifras importadas${R.misSedes?" para lo elegido":" para ti"}. ${S.rol==="superusuario"?"Importa el archivo de citas (arriba) para comenzar.":"Aparecerán cuando la Dirección importe el archivo del mes."}</p></div>`;
   const D=R.datos, mes=R.mes, i=D.meses.indexOf(mes), mp=D.meses[i-1], enCurso=i===D.meses.length-1, base=D.persona.modalidad==="nomina";
   const v=k=>D.series[k][i], pv=k=>i>0?D.series[k][i-1]:null, cmp=k=>rdCambio(v(k), pv(k));
   const cer=D.meses.slice(-4,-1), ic=cer.map(m=>D.meses.indexOf(m)), serie=k=>ic.map(j=>D.series[k][j]);
