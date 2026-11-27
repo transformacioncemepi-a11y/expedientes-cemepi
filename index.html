@@ -1992,9 +1992,18 @@ function colaboradoresHtml(){
       ${fld("co-cuenta","Persona con cuenta en la app *","",{opts:[["","— Selecciona —"],...sinFicha.map(u=>[u.id,`${u.nombre||u.email}${u.sede?" · "+u.sede:""}`])],span:3,
         hint:"Solo aparecen las cuentas activas que aún no están en el directorio. Las cuentas compartidas de sede no son personas."})}</div>
       <div class="actions"><button class="btn primary" type="button" data-act="saveAgregarCol">Agregar</button><button class="btn" type="button" data-act="cancelOrg">Cancelar</button></div></form>` : "";
-  const filas=cols.map(c=>{ const ps=orgPuestosDe(c.id), alt=[...new Set(ps.filter(x=>!x.a.principal).map(x=>orgSede(x.a.sede_id)?.nombre).filter(Boolean))];
+  /* Separación (decisión del Director, 2026-11-27): personal de base frente a psicólogos independientes. Los independientes se rigen
+     por su Carta Compromiso: sin plaza, sin «Reporta a» y sin control de asistencia; están en el directorio porque la Carta lo requiere. */
+  const esIndep=c=>{ const u=(S.usuarios||[]).find(x=>x.id===c.perfil_id); return u?(u.rol==="psicologo"&&u.modalidad==="comision"):c.tipo_funcion==="Psicólogo independiente"; };
+  const base=cols.filter(c=>!esIndep(c)), indep=cols.filter(esIndep);
+  const filasInd=indep.map(c=>{ const sup=orgSuperior(c.id,"supervision_clinica"), sede=orgSede(c.sede_principal_id);
+    return `<tr data-f data-rol="indep" data-sede="${esc(sede?.nombre||"")}" data-estado="${COL_ESTATUS[c.estatus]||""}"><td><b>${esc(c.nombre)}</b><br><span class="status">Psicólogo(a) independiente</span></td>
+      <td>${sede?esc(sede.nombre):"—"}</td><td>${sup?orgNomCol(sup.de_id):"—"}</td>
+      <td><span class="pill ${COL_PILL[c.estatus]||""}">${COL_ESTATUS[c.estatus]||c.estatus}</span></td>
+      <td><button class="btn sm" type="button" data-act="verCol" data-id="${c.id}">Ver</button></td></tr>`; }).join("");
+  const filas=base.map(c=>{ const ps=orgPuestosDe(c.id), alt=[...new Set(ps.filter(x=>!x.a.principal).map(x=>orgSede(x.a.sede_id)?.nombre).filter(Boolean))];
     const jefe=orgSuperior(c.id), sup=orgSuperior(c.id,"supervision_clinica"), area=ps[0]?.pu?orgArea(ps[0].pu.area_id):null, sede=orgSede(c.sede_principal_id);
-    return `<tr data-f data-sede="${esc(sede?.nombre||"")}" data-estado="${COL_ESTATUS[c.estatus]||""}"><td><b>${esc(c.nombre)}</b>${c.tipo_funcion?`<br><span class="status">${esc(c.tipo_funcion)}</span>`:""}</td>
+    return `<tr data-f data-rol="base" data-sede="${esc(sede?.nombre||"")}" data-estado="${COL_ESTATUS[c.estatus]||""}"><td><b>${esc(c.nombre)}</b>${c.tipo_funcion?`<br><span class="status">${esc(c.tipo_funcion)}</span>`:""}</td>
       <td>${ps.map(x=>esc(x.pu?.nombre||"—")).join("<br>")||`<span class="status">Sin plaza</span>`}</td><td>${area?esc(area.nombre):"—"}</td>
       <td>${sede?esc(sede.nombre):"—"}${alt.length?`<br><span class="status">También: ${esc(alt.join(", "))}</span>`:""}</td>
       <td>${jefe?orgNomCol(jefe.de_id):ps.some(x=>x.pu?.codigo==="DG-01")?"—":`<span class="status">Sin registrar</span>`}</td><td>${sup?orgNomCol(sup.de_id):"—"}</td>
@@ -2002,9 +2011,15 @@ function colaboradoresHtml(){
       <td><button class="btn sm" type="button" data-act="verCol" data-id="${c.id}">Ver</button></td></tr>`; }).join("");
   return orgPagina("Colaboradores","Directorio laboral de la red: puesto, sede, a quién reporta y quién supervisa. No contiene expedientes clínicos de consultantes ni datos como CURP, NSS o salario (esos viven en Contratos y Documentación).",
     orgEditaCatalogo()&&sinFicha.length&&!S.orgEdit?`<button class="btn primary" type="button" data-act="agregarCol">+ Agregar desde una cuenta</button>`:"",
-    `${orgEditaCatalogo()&&sinFicha.length&&!S.orgEdit?`<div class="banner" role="status"><b>${sinFicha.length} cuenta${sinFicha.length===1?"":"s"} activa${sinFicha.length===1?"":"s"} sin registro en el directorio.</b> Sin su registro, esas personas no pueden usar asistencia, solicitudes, vacaciones, firmas ni su incorporación. Agrégalas con «+ Agregar desde una cuenta» (las cuentas de Administración de sede no son personas y no se agregan).</div>`:""}${agregar}${ver?fichaColHtml(ver)+revHistHtml(ver):""}${revPendHtml()}${barraFiltros("colaboradores",{ph:"Buscar persona o puesto",sedes:orgSedesVis().map(s=>s.nombre),estados:Object.values(COL_ESTATUS)})}
+    `${orgEditaCatalogo()&&sinFicha.length&&!S.orgEdit?`<div class="banner" role="status"><b>${sinFicha.length} cuenta${sinFicha.length===1?"":"s"} activa${sinFicha.length===1?"":"s"} sin registro en el directorio.</b> Sin su registro, esas personas no pueden usar asistencia, solicitudes, vacaciones, firmas ni su incorporación. Agrégalas con «+ Agregar desde una cuenta» (las cuentas de Administración de sede no son personas y no se agregan).</div>`:""}${agregar}${ver?fichaColHtml(ver)+revHistHtml(ver):""}${revPendHtml()}${barraFiltros("colaboradores",{ph:"Buscar persona o puesto",sedes:orgSedesVis().map(s=>s.nombre),roles:[["base","Personal de base"],["indep","Psicólogos independientes"]],estados:Object.values(COL_ESTATUS)})}
+    <h3 class="sec-h" style="margin:14px 0 4px">Personal de base <span class="status">(${base.length})</span></h3>
+    <p class="status" style="margin:0 0 6px">Administrativos, directivos y psicólogos de base: ocupan una plaza (puesto y área) y registran su asistencia.</p>
     <div class="tbl-wrap"><table><thead><tr><th>Colaborador</th><th>Puesto</th><th>Área</th><th>Sede</th><th>Reporta a</th><th>Supervisión clínica</th><th>Estatus</th><th></th></tr></thead><tbody>
-    ${filas||`<tr><td colspan="8" class="status">Aún no hay personas en el directorio de tus sedes.</td></tr>`}</tbody></table></div>`);
+    ${filas||`<tr><td colspan="8" class="status">Aún no hay personal de base en el directorio de tus sedes.</td></tr>`}</tbody></table></div>
+    <h3 class="sec-h" style="margin:18px 0 4px">Psicólogos independientes <span class="status">(${indep.length})</span></h3>
+    <p class="status" style="margin:0 0 6px">Su relación se rige por la Carta Compromiso: no ocupan plaza, no tienen jefe directo ni registran asistencia. Están en el directorio porque su Carta lo requiere.</p>
+    <div class="tbl-wrap"><table><thead><tr><th>Psicólogo(a)</th><th>Sede</th><th>Supervisión clínica</th><th>Estatus</th><th></th></tr></thead><tbody>
+    ${filasInd||`<tr><td colspan="5" class="status">No hay psicólogos independientes en el directorio de tus sedes.</td></tr>`}</tbody></table></div>`);
 }
 /* ---------- Avisos por cambio de sede o de puesto (migración 039) ----------
    Una persona revisa; nada cambia solo. Atienden: Superusuario y Directivos (sus sedes); capacitación también RR. HH. de la sede. */
