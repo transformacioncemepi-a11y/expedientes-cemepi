@@ -29,10 +29,25 @@ const avisar = tabla => (subs.get(tabla) || new Set()).forEach(f => f(true));   
 window.addEventListener("focus", () => subs.forEach(s => s.forEach(f => f())));
 setInterval(() => { if (!document.hidden) subs.forEach(s => s.forEach(f => f())); }, 60000);
 
+/* P28 · Fase 3: mensajes técnicos → mensajes claros que dicen qué hacer. Los mensajes en español de las funciones
+   de la base (raise exception) se conservan tal cual. El texto técnico original queda en la consola para soporte. */
+const amable = (c, m) => {
+  m = String(m || ""); const tx = (t) => { if (t !== m) console.warn("[CEMEPI] detalle técnico:", c, m); return t; };
+  if (/Failed to fetch|NetworkError|Load failed|network request failed|ERR_INTERNET/i.test(m)) return tx("No hay conexión con el servidor. Revisa tu internet e inténtalo de nuevo; lo que escribiste sigue en pantalla.");
+  if (/JWT expired|invalid JWT|refresh token|Auth session missing|not authenticated/i.test(m)) return tx("Tu sesión terminó. Vuelve a entrar para continuar.");
+  if (c === "42501" || /row-level security|permission denied|violates row/i.test(m)) return tx("No tienes permiso para hacer esto. Si crees que lo necesitas, pide apoyo en Mis solicitudes.");
+  if (c === "23505" || /duplicate key|unique constraint/i.test(m)) return tx("Ya existe un registro con esos datos.");
+  if (c === "23503" || /foreign key constraint/i.test(m)) return tx("Este registro está relacionado con otros y no se puede cambiar de esta forma.");
+  if (c === "23514" || /violates check constraint/i.test(m)) return tx("Algún dato no tiene el formato esperado. Revísalo e inténtalo de nuevo.");
+  if (c === "23502" || /null value in column/i.test(m)) return tx("Falta un dato obligatorio.");
+  if (c === "57014" || /statement timeout|timed out|timeout/i.test(m)) return tx("El servidor tardó demasiado en responder. Inténtalo de nuevo en un momento.");
+  if (/\b(does not exist|invalid input syntax|syntax error|could not|unexpected|undefined|is not a function|Cannot read)\b/i.test(m)) return tx("No se pudo completar. Inténtalo de nuevo; si sigue pasando, avisa a soporte.");
+  return m;
+};
 const err = e => {
   const c = String(e?.code || ""), m = e?.message || String(e);
   const permiso = c === "42501" || /row-level security|permission/i.test(m);
-  return { code: (permiso || c.startsWith("23")) ? "invalid_argument" : "unavailable", message: m };
+  return { code: (permiso || c.startsWith("23")) ? "invalid_argument" : "unavailable", message: amable(c, m) };
 };
 /* ---------- Edición simultánea (migración 038): número de versión de edición por registro ----------
    Se recuerda la versión con la que se abrió cada registro. Mientras la persona edita, no se actualiza
@@ -363,7 +378,7 @@ const downloads = {
   },
 };
 /* Funciones de administración: cuentas, sedes y tiempo de uso */
-const fallo = e => { throw { code: "invalid_argument", message: e?.message || String(e) }; };
+const fallo = e => { throw { code: "invalid_argument", message: amable(String(e?.code || ""), e?.message || String(e)) }; };
 const cemepi = {
   rol, sede: perfil.sede || "", nombre: perfil.nombre || "", uid: usuario.id, email: usuario.email, modalidad: perfil.modalidad || null,
   permisos: (permRows || []).map(r => r.permiso),

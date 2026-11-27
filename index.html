@@ -44,6 +44,7 @@ try{ const d=document.documentElement, g=k=>localStorage.getItem("cemepi."+k);
     <div id="navFav" class="nav-sub" hidden></div>
     <div id="navRec" class="nav-sub" hidden></div></nav>
   <nav class="nav-g" aria-label="Atención"><span class="nav-l">Atención</span>
+    <button class="nav-i" id="expBtn" type="button" data-act="expedientes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Expedientes</span></button>
     <button class="nav-i" id="terBtn" type="button" data-act="terapeutas"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/></svg><span>Terapeutas</span></button>
     <button class="nav-i" id="newBtn" type="button" data-act="new"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v6M9 15h6"/></svg><span>Nuevo expediente</span></button></nav>
   <nav class="nav-g ges" aria-label="Personas"><span class="nav-l">Personas</span>
@@ -65,12 +66,13 @@ try{ const d=document.documentElement, g=k=>localStorage.getItem("cemepi."+k);
     <button class="nav-i" id="miinfBtn" type="button" data-act="miinfo" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/><path d="M17 4h4M19 2v4"/></svg><span>Mi información</span></button>
     <button class="nav-i" id="misolBtn" type="button" data-act="misol" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h4l2 3h4l2-3h4M5 5h14l2 8v6H3v-6z"/></svg><span>Mis solicitudes</span></button>
     <button class="nav-i" id="micalBtn" type="button" data-act="micalendario" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Mi calendario</span></button>
-    <button class="nav-i" id="comuBtn" type="button" data-act="comunidad" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11v3a1 1 0 0 0 1 1h2l5 4V6L7 10H5a1 1 0 0 0-1 1z"/><path d="M16 9a3 3 0 0 1 0 6M18.5 6.5a6.5 6.5 0 0 1 0 11"/></svg><span>Comunidad</span></button>
-    <button class="nav-i" id="manBtn" type="button" data-act="miintegracion" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h5v18H6a2 2 0 0 1-2-2z"/><path d="M13 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"/></svg><span>Mi integración y desarrollo</span></button>
     <button class="nav-i" id="misacuBtn" type="button" data-act="misacuerdos" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v18H7z"/><path d="M10 8h4M10 12h4M10 16h2"/></svg><span>Mis acuerdos y compromisos</span></button>
-    <button class="nav-i" id="raiBtn" type="button" data-act="raices"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V11"/><path d="M12 11c0-4 3-7 7-7 0 4-3 7-7 7zM12 13c0-3-2.5-5.5-6-5.5 0 3.5 2.5 5.5 6 5.5z"/><path d="M7 21h10"/></svg><span>Cultura organizacional</span></button>
     <button class="nav-i" id="masBtn" type="button" data-act="miasis" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg><span>Mi asistencia</span></button>
     <button class="nav-i" id="miincBtn" type="button" data-act="miinc" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg><span>Mi proceso de contratación</span></button></nav>
+  <nav class="nav-g" aria-label="Comunidad y desarrollo"><span class="nav-l">Comunidad y desarrollo</span>
+    <button class="nav-i" id="manBtn" type="button" data-act="miintegracion" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h5v18H6a2 2 0 0 1-2-2z"/><path d="M13 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"/></svg><span>Mi integración y desarrollo</span></button>
+    <button class="nav-i" id="raiBtn" type="button" data-act="raices"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V11"/><path d="M12 11c0-4 3-7 7-7 0 4-3 7-7 7zM12 13c0-3-2.5-5.5-6-5.5 0 3.5 2.5 5.5 6 5.5z"/><path d="M7 21h10"/></svg><span>Cultura organizacional</span></button>
+    <button class="nav-i" id="comuBtn" type="button" data-act="comunidad" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11v3a1 1 0 0 0 1 1h2l5 4V6L7 10H5a1 1 0 0 0-1 1z"/><path d="M16 9a3 3 0 0 1 0 6M18.5 6.5a6.5 6.5 0 0 1 0 11"/></svg><span>Comunidad</span></button></nav>
   <nav class="nav-g ges" aria-label="Administración"><span class="nav-l">Administración</span>
     <button class="nav-i" id="tabBtn" type="button" data-act="tablero" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg><span>Tablero</span></button>
     <button class="nav-i" id="saludBtn" type="button" data-act="salud" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg><span>Salud integral</span></button>
@@ -192,10 +194,13 @@ const terEtiqueta = t => t ? `${t.nombre||"Sin nombre"}${t.cedula?` · Céd. ${t
 /* Tablas con desplazamiento: alcanzables con el teclado (WCAG 2.1.1). Solo atributos; no cambia contenido ni permisos. */
 new MutationObserver(()=>document.querySelectorAll(".tbl-wrap:not([tabindex])").forEach(w=>{ if (w.scrollWidth<=w.clientWidth+1) return; w.tabIndex=0; w.setAttribute("role","region");
   if (!w.hasAttribute("aria-label")) w.setAttribute("aria-label","Tabla con desplazamiento horizontal"); })).observe(document.documentElement,{childList:true,subtree:true});
+document.addEventListener("toggle", e=>{ const d=e.target; if (d?.dataset?.recuerda) try{ localStorage.setItem("cemepi."+d.dataset.recuerda, d.open?"abierto":"cerrado"); }catch{} }, true);
 /* Estados de interfaz únicos (P28 · Fase 2): usar en vistas nuevas y al rediseñar las existentes */
 const cargandoHtml=(t="Cargando…")=>`<p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>${esc(t)}</p>`;
 const vacioHtml=(titulo,detalle="",accion="")=>`<div class="est-vacio"><b>${esc(titulo)}</b>${detalle?`<span class="status">${esc(detalle)}</span>`:""}${accion}</div>`;
-function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(toast.h); toast.h=setTimeout(()=>t.classList.remove("on"),3200); }
+/* Avisos breves: duran según su largo (de 3.2 a 10 s) y no se cierran mientras el cursor o el foco están encima (P28 · Fase 3) */
+function toast(msg){ const t=$("#toast"), dur=Math.min(10000, 3200+55*String(msg||"").length); t.textContent=msg; t.classList.add("on"); clearTimeout(toast.h);
+  const cerrar=()=>{ if (t.matches(":hover,:focus-within")) { toast.h=setTimeout(cerrar,1500); return; } t.classList.remove("on"); }; toast.h=setTimeout(cerrar,dur); }
 function errMsg(e){ if(e?.code==="quota_exceeded") return "Se alcanzó el límite de almacenamiento. Elimina registros antiguos para continuar.";
   if(e?.code==="invalid_argument") return "No tienes permiso para guardar cambios aquí."; return "No se pudo guardar. Revisa tu conexión e inténtalo de nuevo."; }
 const fechaHora = t => new Date(t).toLocaleString("es-MX",{dateStyle:"medium",timeStyle:"short"});
@@ -806,7 +811,7 @@ const VISTA_TXT={inicio:"Inicio",porleer:"Por leer y confirmar",salud:"Salud int
 const ESTR_VISTAS=[["sedes","Sedes"],["entidades","Entidades fiscales"],["areas","Áreas"],["puestos","Puestos y funciones"],["vacantes","Vacantes"]];
 const VISTA_BTN={inicio:"iniBtn",salud:"saludBtn",terapeutas:"terBtn",contratos:"ctrBtn",documentacion:"docpBtn",reglamento:"regBtn",usuarios:"segBtn",permisos:"segBtn",seguridad:"segBtn",orgresumen:"resBtn",indicadores:"indBtn",organigrama:"ogBtn",colaboradores:"colBtn",supervision:"supBtn",sedes:"sedBtn",entidades:"sedBtn",areas:"sedBtn",puestos:"sedBtn",vacantes:"sedBtn",uso:"usoBtn",tablero:"tabBtn",miasis:"masBtn",asistencia:"asjBtn",docs:"docsBtn",incorporacion:"incBtn",miinc:"miincBtn",miinfo:"miinfBtn",misol:"misolBtn",bandejaSol:"bsolBtn",perfprof:"ppBtn",catalogo:"catBtn",micalendario:"micalBtn",comunidad:"comuBtn",raices:"raiBtn",misacuerdos:"misacuBtn",miintegracion:"manBtn",acuerdos:"acuBtn",ayuda:"ayudaBtn",perfil:"perfilBtn"};
 const GRUPO_VISTA={exp:"Atención",terapeutas:"Atención",colaboradores:"Personas",organigrama:"Personas",supervision:"Personas",incorporacion:"Personas",asistencia:"Personas",
-  docs:"Documentos",contratos:"Documentos",documentacion:"Documentos",reglamento:"Documentos",miasis:"Mi espacio",miinc:"Mi espacio",miinfo:"Mi espacio",misol:"Mi espacio",micalendario:"Mi espacio",comunidad:"Mi espacio",raices:"Mi espacio",misacuerdos:"Mi espacio",miintegracion:"Mi espacio",porleer:"Mi espacio",acuerdos:"Personas",bandejaSol:"Personas",perfprof:"Personas",catalogo:"Personas",
+  docs:"Documentos",contratos:"Documentos",documentacion:"Documentos",reglamento:"Documentos",miasis:"Mi espacio",miinc:"Mi espacio",miinfo:"Mi espacio",misol:"Mi espacio",micalendario:"Mi espacio",comunidad:"Comunidad y desarrollo",raices:"Comunidad y desarrollo",misacuerdos:"Mi espacio",miintegracion:"Comunidad y desarrollo",porleer:"Mi espacio",acuerdos:"Personas",bandejaSol:"Personas",perfprof:"Personas",catalogo:"Personas",
   tablero:"Administración",salud:"Administración",orgresumen:"Administración",indicadores:"Administración",uso:"Administración",
   sedes:"Configuración",entidades:"Configuración",areas:"Configuración",puestos:"Configuración",vacantes:"Configuración",seguridad:"Configuración",usuarios:"Configuración",permisos:"Configuración",
   ayuda:"Mi cuenta",perfil:"Mi cuenta"};
@@ -1088,7 +1093,7 @@ function render(){ borAntes(); renderVista(); vistaExtras(); if (typeof lexSubti
 function renderVista(){
   const d=$("#detail"); S.dirty=false; S.stale=false; S.editado=false; marcarNav(); document.body.classList.remove("menu-abierto");
   const p=S.pacientes.get(S.sel);
-  $("#app").classList.toggle("open", !!p || ["perfil","miinfo","misol","bandejaSol","perfprof","catalogo","micalendario","comunidad","raices","misacuerdos","miintegracion","acuerdos","terapeutas","usuarios","sedes","entidades","areas","puestos","vacantes","colaboradores","supervision","organigrama","seguridad","orgresumen","indicadores","uso","reglamento","contratos","permisos","documentacion","ayuda","tablero","salud","porleer","miasis","asistencia","docs","incorporacion","miinc"].includes(S.view));
+  $("#app").classList.toggle("open", !!p || ["perfil","miinfo","misol","bandejaSol","perfprof","catalogo","micalendario","comunidad","raices","misacuerdos","miintegracion","acuerdos","terapeutas","usuarios","sedes","entidades","areas","puestos","vacantes","colaboradores","supervision","organigrama","seguridad","orgresumen","indicadores","uso","reglamento","contratos","permisos","documentacion","ayuda","tablero","salud","porleer","miasis","asistencia","docs","incorporacion","miinc"].includes(S.view) || (S.view==="inicio" && !S.movLista));
   if (S.view==="perfil"){ d.innerHTML=perfilHtml(); activarPad(); return; }
   if (S.view==="terapeutas"){ d.innerHTML=terapeutasHtml(); return; }
   if (S.view==="usuarios"){ d.innerHTML=usuariosHtml(); return; }
@@ -1331,7 +1336,8 @@ function miHoyHtml(){
 function ctxAplicar(){
   const box=$("#ctxBox"); if (!box) return;
   /* «Usuarios y permisos» lo ven todos (sus solicitudes y sesiones): solo cuenta como gestión para quien administra cuentas */
-  const tieneGes=[...document.querySelectorAll("#side .nav-g.ges .nav-i")].some(b=>!b.hidden && (b.id!=="segBtn" || ["superusuario","direccion","admin_sede"].includes(S.rol)));
+  /* P28 · Fase 3: el selector solo aparece si «Gestión» aporta al menos 3 opciones; con menos, todo queda en un solo menú */
+  const tieneGes=[...document.querySelectorAll("#side .nav-g.ges .nav-i")].filter(b=>!b.hidden && (b.id!=="segBtn" || ["superusuario","direccion","admin_sede"].includes(S.rol))).length>=3;
   if (box.hidden!==!tieneGes) box.hidden=!tieneGes;
   let c="ges"; try{ c=localStorage.getItem("cemepi.ctx")||"ges"; }catch{}
   if (!tieneGes) c="ges";
@@ -1510,7 +1516,9 @@ function inicioHtml(){
   const pend = S.pend===undefined || S.pend===null ? `<p class="status" style="margin:0">Revisando tus pendientes…</p>`
     : S.pend.length ? `<ul class="pend">${S.pend.map(x=>`<li><div><b>${esc(x.t)}</b><br><span class="status">${esc(x.d)}</span></div><button class="btn sm primary" type="button" data-act="${x.act}">${esc(x.b)}</button></li>`).join("")}</ul>`
     : `<p style="margin:0">✓ Todo al día. No tienes pendientes.</p>`;
-  const pasos = esClinico() ? `<section class="note"><div class="note-h"><h3>${ES_SEDE()?"Cómo dar de alta a un consultante":"Cómo trabajar un expediente"}</h3></div>${ES_SEDE()?`<ol class="steps">
+  /* P28 · Fase 3: el instructivo se pliega cuando ya hay expedientes o la persona lo cerró (se recuerda en este dispositivo) */
+  const pasosAbierto = (()=>{ try{ return localStorage.getItem("cemepi.pasos"); }catch{ return null; } })()!=="cerrado" && S.pacientes.size<3;
+  const pasos = esClinico() ? `<details class="note plegable" data-recuerda="pasos"${pasosAbierto?" open":""}><summary><h3 style="display:inline">${ES_SEDE()?"Cómo dar de alta a un consultante":"Cómo trabajar un expediente"}</h3> <span class="status">(guía breve)</span></summary>${ES_SEDE()?`<ol class="steps">
       <li><b class="n">1</b><div><b>Abre el expediente</b> de un nuevo consultante de tu sede con sus iniciales, su fecha de nacimiento y la fecha de la primera sesión.</div></li>
       <li><b class="n">2</b><div><b>Asigna al terapeuta</b> que lo atenderá. Él registra las notas y los documentos clínicos.</div></li>
       <li><b class="n">3</b><div><b>Descarga la hoja administrativa</b> para los datos de contacto. Se resguarda aparte y no se envía por mensajería.</div></li></ol>`
@@ -1519,15 +1527,20 @@ function inicioHtml(){
       <li><b class="n">2</b><div><b>Registra tus notas</b> de cada sesión, solo con iniciales.</div></li>
       <li><b class="n">3</b><div><b>Elige un documento</b>: Claude lo redacta con tus notas; tú lo revisas, lo corriges y lo descargas en Word o PDF.</div></li>
       <li><b class="n">4</b><div><b>Si corresponde, compártelo</b> con el consultante desde Documentos (solo reportes y evaluaciones), con un código que le entregas en persona.</div></li></ol>`}
-    <div style="display:flex;gap:8px;flex-wrap:wrap">${S.canWrite?`<button class="btn primary" type="button" data-act="new">+ Nuevo expediente</button>`:""}<button class="btn" type="button" data-act="hoja">Hoja administrativa en blanco (Word)</button></div></section>` : "";
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${S.canWrite?`<button class="btn primary" type="button" data-act="new">+ Nuevo expediente</button>`:""}<button class="btn" type="button" data-act="hoja">Hoja administrativa en blanco (Word)</button></div></details>` : "";
+  /* «Continúa donde te quedaste»: formación empezada y no terminada (sin presión: solo un acceso directo) */
+  if (!MAN() && S.api?.manDatos) setTimeout(()=>manCargar(),0);
+  const seguir = MAN() ? formDocs().filter(x=>x.v.estado==="aprobada"&&formLeAplica(x.v)&&!manReconocido(x.v)).map(x=>({x,r:manMisRevisadas(x.v).size,n:manUnidades(x.v).length})).filter(y=>y.r>0&&y.r<y.n) : [];
+  const continuar = seguir.length ? `<section class="note"><div class="note-h"><h3>Continúa donde te quedaste</h3></div><ul class="pend">${seguir.map(({x,r,n})=>`<li><div><b>${esc(formMeta(x.v).titulo||x.d.plantilla.nombre)}</b><br><span class="status">${r} de ${n} unidades · puedes seguir cuando quieras</span></div><button class="btn sm primary" type="button" data-act="formAbrir" data-p="${x.d.plantilla.id}">Continuar</button></li>`).join("")}</ul></section>` : "";
   return `<div class="wrap" style="padding-block:24px;display:flex;flex-direction:column;gap:16px">
     ${tourHtml()}<section class="hola"><div><small>Mi espacio CEMEPI</small><h2>Hola${nombre?", "+esc(nombre):""}</h2>
       <p style="margin:4px 0 0"><span class="pill estado-activo">${esc(info.n||"")}</span>${S.miSede?` <span class="pill">${esc(S.miSede)}</span>`:""} ${esc(info.d||"")}</p>
       ${perms.length?`<p class="status" style="margin:6px 0 0">Permisos adicionales: ${esc(perms.join(" · "))}.</p>`:""}</div>
-      <button class="btn" type="button" data-act="ayuda">¿Qué puedo hacer?</button></section>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${esClinico()&&!ES_EMPLEADO()?`<button class="btn primary" type="button" data-act="expedientes">Ver expedientes</button>`:""}<button class="btn" type="button" data-act="ayuda">¿Qué puedo hacer?</button></div></section>
     ${miHoyHtml()}
     ${proxFechasHtml()}
     <section class="note"><div class="note-h"><h3>Pendientes</h3>${S.pend?`<button class="btn sm" type="button" data-act="refrescarPend">Actualizar</button>`:""}</div>${pend}</section>
+    ${continuar}
     ${S.pend?avisosHtml():""}
     ${pasos}
     <section><h3 class="sec-h">Accesos rápidos</h3><div class="fmt-grid">${ACCESOS().map(x=>`<article class="fmt"><div class="fmt-h"><b>${esc(x.t)}</b></div><p>${esc(x.d)}</p><button class="btn sm primary" type="button" data-act="${x.act}">Abrir</button></article>`).join("")}</div></section>
@@ -5195,7 +5208,7 @@ const GUIAS = [
   {t:"Mi autoevaluación", si:()=>!!S.rol, pasos:["En Mi espacio → Mi proceso de contratación → «Evaluaciones» pulsa «Autoevaluarme» cuando se abra el corte.","Responde las preguntas que quieras: qué aprendiste, en qué necesitas apoyo, qué recursos te faltan, tus fortalezas y tus compromisos.","Se guarda como borrador; cuando estés lista o listo, pulsa «Enviar autoevaluación». No escribas información íntima ni de consultantes."]},
   {t:"Iniciar un proceso de incorporación", si:()=>!!S.rol && (S.rol==="superusuario"||(S.api?.rhNivel||0)>=2), pasos:["En Personas → Incorporación pulsa «+ Iniciar proceso». Primero busca coincidencias para no duplicar a la persona.","Elige la situación: empieza, programado (aún no ingresa) o «ya trabaja en CEMEPI», que pide su fecha real de inicio.","Elige la plantilla publicada, las fechas, quién acompaña y los objetivos. Revisa el resumen y pulsa «Activar proceso».","Si ya trabajaba, en el plan usa «Ya la realizó antes» para registrar lo que consta, con fecha y nota: queda como «reconstruida».","En la ficha puedes pausar con motivo, reanudar y cambiar la fecha de inicio con vista previa (solo cambian las actividades pendientes)."]},
   {t:"Mi calendario", si:()=>!!S.rol, pasos:["Entra a Mi espacio → Mi calendario. Ves por mes tus ausencias autorizadas y en trámite, los cortes y compromisos de tu incorporación, las fechas límite para firmar, los vencimientos de tus documentos y los comunicados.","Es de solo lectura: cada fecha se cambia en su sección. Pulsa «Abrir» para ir ahí.","En Inicio verás tus próximas fechas de los siguientes 14 días."]},
-  {t:"Comunicados y confirmación de lectura", si:()=>!!S.rol, pasos:["Entra a Mi espacio → Comunidad → «Comunicados». Ahí están las circulares, políticas y oficios dirigidos a ti.","Pulsa «Abrir documento» para leerlo completo.","Si dice «Requiere confirmar lectura», al terminar pulsa «Confirmo que lo leí». Queda registrado con la fecha y no se puede deshacer.","En «Preguntas frecuentes» encuentras respuestas rápidas sobre la app."]},
+  {t:"Comunicados y confirmación de lectura", si:()=>!!S.rol, pasos:["Entra a Comunidad y desarrollo → Comunidad → «Comunicados». Ahí están las circulares, políticas y oficios dirigidos a ti.","Pulsa «Abrir documento» para leerlo completo.","Si dice «Requiere confirmar lectura», al terminar pulsa «Confirmo que lo leí». Queda registrado con la fecha y no se puede deshacer.","En «Preguntas frecuentes» encuentras respuestas rápidas sobre la app."]},
   {t:"Publicar un comunicado", si:()=>!!S.rol && (S.rol==="superusuario"||(S.api?.docNivel||0)>=2), pasos:["Primero publica el documento (política, circular u oficio) en Documentos y firmas: con su archivo, sus firmas completas y folio.","Entra a Comunidad → «Publicar y seguimiento» → «+ Publicar comunicado». Elige el documento, escribe un título y, si quieres, un resumen.","Elige a quién: sedes, tipos de usuario o todas tus sedes. Solo llega a las sedes donde gestionas documentos; Bosques de Santa Fe requiere autorización. El Superusuario puede publicar a toda la organización.","Marca «Requiere confirmar lectura» si cada persona debe confirmarlo, y opcionalmente una fecha de vigencia.","En «Seguimiento» ves quién confirmó. «Retirar» exige un motivo; las confirmaciones se conservan."]},
   {t:"Mi perfil profesional", si:()=>!!S.rol && (S.rol==="psicologo"||!!S.perfil?.cedula), pasos:["Entra a Mi espacio → Mi información → «Perfil profesional».","Agrega tu formación, enfoques, población que atiendes, evaluaciones e instrumentos y motivos de consulta. Puedes elegir de la lista o escribir uno que no esté.","Si tienes el documento (título, cédula, diplomado, constancia), súbelo primero en Mis documentos → Mis PDF personales y elígelo como respaldo.","Todo queda «Por verificar» hasta que la coordinación lo revise. Si cambias algo ya verificado, vuelve a revisión. Si te marcan «No verificada», verás qué falta.","Declarar una competencia no habilita por sí sola la atención de esos casos. Si quieres capacitarte en algo, usa «Necesito formación en…»."]},
   {t:"Verificar perfiles profesionales", si:()=>!!S.rol && (["superusuario","direccion"].includes(S.rol)||(S.perm&&[...S.perm].includes("supervision_clinica"))||(S.pp?.per||[]).length>0), pasos:["Entra a Personas → Perfiles profesionales. Ves a las personas de tu alcance (tu sede, tus supervisadas o, si eres Directivo, las sedes de CEMEPI, S.C.).","Pulsa «Revisar», coteja cada competencia con el documento original o la constancia y pulsa «Verificar». Si falta algo, «No verificada» y escribe qué falta: la persona lo verá.","«Buscar por competencia» sirve para orientar la asignación de casos (por ejemplo, quién atiende duelo en adolescentes). La asignación la decides tú, nunca la lista.","Verificar no habilita la atención de casos ni cambia permisos. Nadie verifica lo propio.","El Superusuario mantiene el catálogo de opciones en la pestaña «Catálogo»."]},
@@ -5216,9 +5229,9 @@ const GUIAS = [
   {t:"Buscar en la plataforma", si:()=>true, pasos:["Usa el buscador de la barra superior (o Ctrl K / ⌘ K). En el celular, toca la lupa.","Escribe iniciales, folio o fecha de nacimiento de un expediente, el nombre de una persona o terapeuta, o el nombre de una sección (por ejemplo, Contratos).","Muévete con las flechas y pulsa Enter, o toca el resultado. Solo aparece lo que tu rol puede ver."]},
   {t:"Cambiar la apariencia u ocultar datos sensibles", si:()=>true, pasos:["Entra a Mi perfil → Apariencia y privacidad.","Elige el tema (claro, oscuro o como el dispositivo), la densidad (cómoda o compacta) y el tamaño del texto. Se aplica al instante y se guarda en ese dispositivo.","Para compartir pantalla o trabajar en un lugar con gente, activa el Modo privado (o el ícono del ojo en la barra superior): los datos sensibles se ven borrosos y se leen al pasar el cursor."]},
   {t:"Instalar la app en mi celular o computadora", si:()=>true, pasos:["Android (Chrome): abre la app, pulsa Instalar app en el menú (o en el menú ⋮ del navegador, Instalar aplicación) y confirma.","iPhone o iPad (Safari): abre la app, pulsa el botón Compartir (cuadro con flecha) y elige Agregar a pantalla de inicio.","Computadora (Chrome o Edge): pulsa Instalar app o el ícono de instalar en la barra de direcciones.","La app instalada abre en su propia ventana con el ícono de CEMEPI. Tus datos siguen en el servidor seguro: no se guardan en el teléfono. Si pierdes el dispositivo, cambia tu contraseña en Mi perfil."]},
-  {t:"Consultar o proponer palabras en náhuatl", si:()=>!!S.rol, pasos:["Entra a Mi espacio → Raíces y comunidad → «Palabras (diccionario vivo)».","Cada palabra muestra su significado en español, su variante, sus fuentes y sus cautelas. Solo las aprobadas aparecen en la app, siempre junto al nombre en español.","Para proponer una, pulsa «+ Proponer una palabra» e indica su fuente (diccionario, investigación o una persona hablante). No inventes traducciones ni palabras compuestas.","La Dirección la verifica, la aprueba o la retira; cada cambio queda en el historial."]},
-  {t:"Explorar Raíces y comunidad", si:()=>!!S.rol, pasos:["Entra a Mi espacio → Raíces y comunidad.","En «Comunalidad CEMEPI» están los cuatro principios y lo que lo comunitario nunca justifica (trabajo sin pago, renuncia de derechos, subordinación ideológica, abusos).","En «Categorías culturales» cada concepto dice de qué pueblo y época viene, qué dicen las fuentes y cómo lo adapta CEMEPI.","Es lectura voluntaria: nadie es evaluado por estos contenidos."]},
-  {t:"Leer «CEMEPI somos nosotros»", si:()=>!!S.rol, pasos:["Entra a Mi espacio → Cultura organizacional → pestaña «CEMEPI somos nosotros».","Recorre los apartados con el índice y consulta versiones anteriores. La descarga en PDF está reservada al personal directivo.","Al terminar pulsa «Confirmo que leí este documento». Confirmar la lectura no es aceptar un contrato ni se usa para evaluarte.","Superusuario: «Editar documento» permite modificar, agregar o quitar apartados en cualquier momento; al guardar se publica como versión nueva y la anterior queda en el historial.","Para compartir una reflexión, duda o propuesta usa «Compartir una reflexión, duda o propuesta» (Mis solicitudes)."]},
+  {t:"Consultar o proponer palabras en náhuatl", si:()=>!!S.rol, pasos:["Entra a Comunidad y desarrollo → Cultura organizacional → «Palabras (diccionario vivo)».","Cada palabra muestra su significado en español, su variante, sus fuentes y sus cautelas. Solo las aprobadas aparecen en la app, siempre junto al nombre en español.","Para proponer una, pulsa «+ Proponer una palabra» e indica su fuente (diccionario, investigación o una persona hablante). No inventes traducciones ni palabras compuestas.","La Dirección la verifica, la aprueba o la retira; cada cambio queda en el historial."]},
+  {t:"Explorar la cultura organizacional", si:()=>!!S.rol, pasos:["Entra a Comunidad y desarrollo → Cultura organizacional.","En «Comunalidad CEMEPI» están los cuatro principios y lo que lo comunitario nunca justifica (trabajo sin pago, renuncia de derechos, subordinación ideológica, abusos).","En «Categorías culturales» cada concepto dice de qué pueblo y época viene, qué dicen las fuentes y cómo lo adapta CEMEPI.","Es lectura voluntaria: nadie es evaluado por estos contenidos."]},
+  {t:"Leer «CEMEPI somos nosotros»", si:()=>!!S.rol, pasos:["Entra a Comunidad y desarrollo → Cultura organizacional → pestaña «CEMEPI somos nosotros».","Recorre los apartados con el índice y consulta versiones anteriores. La descarga en PDF está reservada al personal directivo.","Al terminar pulsa «Confirmo que leí este documento». Confirmar la lectura no es aceptar un contrato ni se usa para evaluarte.","Superusuario: «Editar documento» permite modificar, agregar o quitar apartados en cualquier momento; al guardar se publica como versión nueva y la anterior queda en el historial.","Para compartir una reflexión, duda o propuesta usa «Compartir una reflexión, duda o propuesta» (Mis solicitudes)."]},
   {t:"Administrar documentos de cultura y acuerdos", si:()=>["superusuario","direccion"].includes(S.rol)||(S.api?.misRoles||[]).includes("rrhh"), pasos:["Entra a Personas → Acuerdos y documentos y elige el documento (o pulsa «+ Nuevo documento»).","En «Contenido y versiones» sube un archivo Word, Markdown o PDF: se convierte en un borrador que puedes previsualizar y editar (también agregar apartados).","Cultura: pulsa «Publicar»; en «Lecturas y alcance» solicita la confirmación de lectura y consulta el alcance por sede y rol. Acuerdos que se firman: revisión jurídica y aprobación antes de usarse.","Una versión publicada no se edita: los cambios crean una versión nueva y la anterior queda en el historial."]},
   {t:"Leer y aceptar mi Carta Compromiso", si:()=>S.rol==="psicologo"&&S.api?.modalidad==="comision", pasos:["Entra a Mi espacio → Mis acuerdos y compromisos → «Mi Carta Compromiso»: diez pasos con tu avance a la vista.","Confirma tus datos (nombre, cédula, domicilio e identificación ya registrada; no se pide RFC). Si un dato registrado tiene un error, pide su corrección en Mis solicitudes.","En «Mis bloques de colaboración» selecciona los bloques en los que propones colaborar y, si lo necesitas, una flexibilidad de hasta 60 minutos al inicio o al término (no en ambos). Envíala: queda pendiente de autorización.","Cuando la valoren, revisa tu anexo individual (incluidas las contrapropuestas) y acéptalo o regrésalo con comentarios.","Lee la Carta completa; si tienes dudas, pulsa «Tengo una duda o necesito solicitar una aclaración». Marca tú mismo cada declaración y tu consentimiento electrónico; después firma en Documentos → Documentación → Mis firmas pendientes.","Para cambiar tus bloques después, usa «Solicitud de modificación de bloques de colaboración». La formación previa (etapas 1 a 5) está en su propia pestaña."]},
   {t:"Administrar la Carta Compromiso y los acuerdos", si:()=>["superusuario","direccion"].includes(S.rol)||(S.api?.misRoles||[]).includes("rrhh"), pasos:["Entra a Personas → Acuerdos profesionales. En «Plantilla y versiones» la versión pasa por revisión jurídica (se registra asesor y conclusión) y aprobación de la Dirección; antes no se publica ni se firma nada.","En «Anexos» captura las condiciones económicas y operativas vigentes (con versión y vigencia). La Carta 2026 trae sus comisiones en la cláusula 23; la versión no se aprueba mientras haya condiciones pendientes de confirmar por la Dirección.","En «Bloques y autorizaciones» valora cada bloque y flexibilidad (autorizar, proponer horario alternativo, solicitar modificación o no autorizar), asigna consultorio y genera el anexo individual; la persona lo acepta. En «Matriz de espacios» ves la asignación por consultorio y en «Bloques y consultorios» configuras bloques, flexibilidad y consultorios.","En «Psicólogos independientes» pulsa «Generar», confirma que verificaste la modalidad real de la persona y revisa los datos faltantes; luego «Publicar para lectura».","Cuando la persona acepte, sube el documento a Documentos y firmas, envíalo a firma (psicólogo y representante) y vincúlalo; «Sincronizar firmas» actualiza el estado hasta «Firmado» y «Vigente». No hay sanciones automáticas."]},
@@ -5464,7 +5477,7 @@ async function manCargar(){
   /* Primer ingreso: un psicólogo sin avance llega una sola vez a su bienvenida */
   if (m?.ok&&S.rol==="psicologo"&&manPublicada()&&!m.avance.some(a=>a.perfil_id===m.uid)&&S.view==="inicio"){ let ya=false; try{ ya=sessionStorage.getItem("manBienvenida")==="1"; sessionStorage.setItem("manBienvenida","1"); }catch{}
     if (!ya){ S.view="miintegracion"; S.manTab="inicio"; } }
-  if (["miintegracion","acuerdos","ayuda","miasis"].includes(S.view)) render();
+  if (["miintegracion","acuerdos","ayuda","miasis"].includes(S.view)||(S.view==="inicio"&&!S.sel)) render();
 }
 const manPublicada=()=>MAN()?.versiones?.find(v=>v.estado==="aprobada");
 const manVersion=()=>manPublicada()||(["superusuario","direccion"].includes(S.rol)?[...(MAN()?.versiones||[])].reverse().find(v=>v.estado==="borrador"):null);
@@ -5673,7 +5686,7 @@ function formAplica(v){ return ["superusuario","direccion"].includes(S.rol)||for
 const formDocs=()=>FORM().map(d=>({d,v:formVersion(d)})).filter(x=>x.v&&formAplica(x.v));
 const formSalud=()=>formDocs().find(x=>x.d.plantilla.clave==="lineamientos_salud_equipo");
 /* Lo que no aplica (p. ej., independientes ante lineamientos de nómina): solo su nota, para orientar sin imponer reglas laborales */
-const formNoAplica=()=>FORM().map(d=>({d,v:formPublicada(d)})).filter(x=>x.v&&!formAplica(x.v)&&formMeta(x.v).nota_independientes);
+const formNoAplica=()=>S.rol!=="psicologo"?[]:FORM().map(d=>({d,v:formPublicada(d)})).filter(x=>x.v&&!formAplica(x.v)&&formMeta(x.v).nota_independientes);   /* la nota es para independientes */
 
 function formTablaHtml(t){
   return `<section class="note" style="margin-top:8px"><div class="note-h"><h3>${esc(t.titulo)}</h3><span class="status">Documento, pág. ${t.pagina}</span></div>
@@ -6644,7 +6657,7 @@ MANUALES.direccion.caps.push({t:"Perfiles de puesto y competencias", p:[
   "En Personas asignas perfiles (una persona puede tener varios), evalúas con evidencia y propones planes de desarrollo. Asignar un perfil no concede permisos: los accesos se deciden en Usuarios y permisos. Bosques de Santa Fe sigue restringida.",
   "La alineación con el perfil ideal es descriptiva: muestra su fórmula, la cobertura de evaluación y las competencias críticas pendientes; no decide contratación ni permanencia."]});
 MANUALES.direccion.caps.push({t:"Diccionario vivo y denominaciones en náhuatl", p:[
-  "En Mi espacio → Raíces y comunidad → «Palabras» revisas las propuestas: márcalas como verificadas cuando consten en una fuente (Gran Diccionario Náhuatl, INALI, especialistas o hablantes), apruébalas o retíralas con motivo. Cada edición queda en el historial.",
+  "En Comunidad y desarrollo → Cultura organizacional → «Palabras» revisas las propuestas: márcalas como verificadas cuando consten en una fuente (Gran Diccionario Náhuatl, INALI, especialistas o hablantes), apruébalas o retíralas con motivo. Cada edición queda en el historial.",
   "Una denominación solo aparece en la app si apruebas primero la palabra y después su aplicación; siempre se muestra debajo del título en español. No se traducen pantallas en masa.",
   "La traducción literal y la pronunciación se registran solo si las validó un especialista o una persona hablante."]});
 for (const k of ["admin_sede"]) MANUALES[k].caps.push({t:"Perfiles de puesto y evaluación de tu equipo", p:[
@@ -6655,8 +6668,8 @@ for (const k of Object.keys(MANUALES)) MANUALES[k].caps.splice(1,0,{t:"Nuestra c
   "Somos una organización circular, bidireccional y colaborativa, con responsabilidades claras: la autoridad es servicio, escucha y capacidad de generar condiciones para el desarrollo de los demás.",
   "Principios: "+CULTURA_PRINCIPIOS.map(([t])=>t.toLowerCase()).join("; ")+". Puedes leerlos completos en Ayuda → Nuestra cultura.",
   "La cultura se vive en conductas profesionales concretas: nadie es evaluado por sus creencias, opiniones ni vida privada.",
-  "El náhuatl siempre aparece junto a su español. En Raíces y comunidad → «Palabras» puedes consultar el diccionario vivo y proponer palabras con su fuente.",
-  "En Mi espacio → Raíces y comunidad puedes explorar, de forma voluntaria, la comunalidad que nos inspira y los cuatro principios: CEMEPI somos nosotros; lo comunitario por encima del aprovechamiento personal indebido; nuestra palabra también es nuestra contribución; cuidar lo que construimos juntos es cuidar nuestras posibilidades de desarrollo. Lo comunitario nunca justifica trabajo sin pago ni renuncia de derechos."]});
+  "El náhuatl siempre aparece junto a su español. En Cultura organizacional → «Palabras» puedes consultar el diccionario vivo y proponer palabras con su fuente.",
+  "En Comunidad y desarrollo → Cultura organizacional puedes explorar, de forma voluntaria, la comunalidad que nos inspira y los cuatro principios: CEMEPI somos nosotros; lo comunitario por encima del aprovechamiento personal indebido; nuestra palabra también es nuestra contribución; cuidar lo que construimos juntos es cuidar nuestras posibilidades de desarrollo. Lo comunitario nunca justifica trabajo sin pago ni renuncia de derechos."]});
 const manualDeRol = k => k==="psicologo_base"||k==="psicologo_ind"||k==="psicologo" ? "psicologo" : k==="superusuario" ? "direccion" : k;
 
 function manualHtml(k){
@@ -6898,7 +6911,7 @@ function expedienteHtml(p){
   const tabs=admin ? [] : [["notas",`Notas (${S.notas.length})`],["documentos",`Documentos (${S.docs.length})`]];
   const sedesOpc = ES_SEDE() ? [S.miSede] : SEDES;
   return `<div class="wrap"><div class="head">
-      <div><button class="btn sm back" type="button" data-act="back">← Expedientes</button></div>
+      <div><button class="btn sm back" type="button" data-act="expedientes">← Expedientes</button></div>
       ${migas()}
       <div class="head-top"><div style="min-width:0"><span class="mono" style="color:var(--accent);font-size:12px">${esc(p.folio||"")}</span><h2>${esc(f.nombre||"Sin iniciales")}</h2></div></div>
       <div class="meta"><span>Sede <b>${esc(f.sede||"Sin sede")}</b></span><span>Terapeuta <b>${esc(terEtiqueta(S.terapeutas.get(f.terapeutaId)))}</b></span><span>Edad <b>${e!==""?e+" años":"—"}</b></span><span>Primera sesión <b class="mono">${fmtDate(f.primeraSesion)}</b></span>${admin?"":`<span>Notas <b>${S.notas.length}</b></span>`}</div>
@@ -7549,7 +7562,9 @@ document.addEventListener("click", async ev => {
       S.expExport=null; render(); toast("Expediente exportado y registrado en la bitácora. Guárdalo en un lugar seguro."); }
     catch(e){ b.disabled=false; b.textContent="Generar PDF"; if (e?.code!=="declined"){ console.warn(e); toast(e?.message||"No se pudo generar el PDF."); } } return; }
   if (a==="hoja"){ const c=ctxOf(p); return descargar(`Hoja-administrativa-${p?.folio||"en-blanco"}.docx`, p?.folio||"", hojaAdminXml(c)); }
-  if (a==="back"){ S.ctl?.abort(); S.sel=null; S.view="inicio"; S.gen=null; S.pend=null; watch(); renderList(); render(); $("#detail").scrollTop=0; return; }
+  if (a==="back"||a==="expedientes"){ S.movLista=a==="expedientes"; S.ctl?.abort(); S.sel=null; S.view="inicio"; S.gen=null; S.pend=null; watch(); renderList(); render(); $("#detail").scrollTop=0;
+    if (a==="expedientes" && innerWidth>760) $("#q")?.focus();   /* en escritorio la lista ya está a la izquierda: se enfoca su buscador */
+    return; }
   if (a==="reload"){ S.gen=null; return render(); }
   if (a==="savePerfil"){
     const v=leerPerfilForm();
@@ -7694,8 +7709,13 @@ function gBuscar(q){
   if (gestionaCuentas()) (S.usuarios||[]).filter(u=>norm([u.nombre,u.email,u.cedula].join(" ")).includes(n)).slice(0,5)
     .forEach(u=>add("Personas", u.nombre||u.email, [u.rol==="psicologo"&&u.modalidad?MOD_TXT[u.modalidad]:ROL_TXT[u.rol], u.sede, EST_TXT[u.estado]].filter(Boolean).join(" · "),
       ()=>{ S.ft.usuarios={...(S.ft.usuarios||{}), q:u.nombre||u.email}; $("#usrBtn").click(); }));
-  GUIAS.filter(g=>g.si() && norm(g.t).includes(n)).slice(0,4).forEach(g=>add("Ayuda", g.t, "Guía paso a paso", ()=>{ $("#ayudaBtn").click();
+  /* P28 · Fase 3: la ayuda se encuentra también por lo que explica (pasos), no solo por su título */
+  /* coincide por inicio de palabra en textos largos («firma» no encuentra «confirmadas») */
+  const enTexto=t=>{ const w=norm(t); return n.includes(" ")?w.includes(n):w.split(/[^a-z0-9ñ]+/).some(x=>x.startsWith(n)); }, vistos=new Set();
+  GUIAS.filter(g=>g.si() && (norm(g.t).includes(n)||enTexto((g.pasos||[]).join(" "))) && !vistos.has(g.t) && vistos.add(g.t)).sort((a,b)=>(norm(b.t).includes(n))-(norm(a.t).includes(n))).slice(0,5).forEach(g=>add("Ayuda", g.t, "Guía paso a paso", ()=>{ $("#ayudaBtn").click();
     setTimeout(()=>{ const d=[...document.querySelectorAll("details.guia")].find(x=>x.querySelector("summary")?.textContent===g.t); if (d){ d.open=true; d.scrollIntoView({block:"center"}); } }, 60); }));
+  if (typeof formDocs==="function" && MAN()) formDocs().forEach(({d,v})=>manUnidades(v).flatMap(u=>u.guia||[]).filter(g=>enTexto(g.t+" "+g.que)&&!vistos.has(g.t)&&vistos.add(g.t)).slice(0,3)
+    .forEach(g=>add("Ayuda", g.t, formMeta(v).ayuda_titulo||formMeta(v).titulo||"Preguntas frecuentes", ()=>{ $("#ayudaBtn").click(); setTimeout(()=>$("#ayuda_"+d.plantilla.clave.replace(/[^a-z0-9_]/g,""))?.scrollIntoView({block:"start"}),80); })));
   return out;
 }
 function gPintar(){
@@ -7821,7 +7841,7 @@ render();
     $("#ctrBtn").hidden = !["superusuario","direccion","psicologo","administrativo","admin_sede"].includes(S.rol);
     if (ES_SEDE()){ S.sedeF=S.miSede; }
     /* Administrativo = empleado: sin expedientes ni directorio; solo lo suyo como trabajador */
-    if (ES_EMPLEADO()){ document.body.classList.add("solo-empleado"); $("#newBtn").hidden=true; $("#terBtn").hidden=true; }
+    if (ES_EMPLEADO()){ document.body.classList.add("solo-empleado"); $("#newBtn").hidden=true; $("#terBtn").hidden=true; $("#expBtn").hidden=true; }
     /* Rol siempre visible y etiquetas según lo que cada quien ve */
     const chip=$("#rolChip"); chip.textContent=`${S.api.nombre||S.api.email} · ${etiquetaRol()}${S.miSede?" · "+S.miSede:""}`; chip.title=S.api.email||""; chip.hidden=false;
     $("#avatarBtn").textContent=(S.api.nombre||S.api.email||"?").split(/[\s@.]+/).filter(Boolean).slice(0,2).map(x=>x[0].toUpperCase()).join("");
@@ -7835,7 +7855,7 @@ render();
     const miT=document.querySelector('.nav-g[aria-label="Mi espacio"]');
     if (!veTodosContratos()) miT.appendChild($("#ctrBtn"));
     if (!veDocsTodos()) miT.appendChild($("#docpBtn"));
-    if ($("#docsBtn").hidden && !veTodosContratos() && !veDocsTodos()) miT.appendChild($("#regBtn"));
+    if ($("#docsBtn").hidden && !veTodosContratos() && !veDocsTodos()) document.querySelector('.nav-g[aria-label="Comunidad y desarrollo"]').appendChild($("#regBtn"));
     navGrupos(); navExtras();
     S.pend=null; if (!S.sel) render();
   }
