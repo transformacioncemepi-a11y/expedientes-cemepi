@@ -7379,12 +7379,14 @@ function rdiFirma(o){ /* huella corta de los campos (FNV-1a doble): detecta si u
 function rdiCitas(cab, filas){
   const col=n=>cab.findIndex(h=>rdiNz(h)===rdiNz(n)), req=["id","Terapeuta","Cliente","Estatus","Fecha de cita","Motivo de cancelación","Sucursal","Comisión","Concepto","Creado el"];
   const faltan=req.filter(n=>col(n)<0); if (faltan.length) throw new Error("El archivo no tiene las columnas: "+faltan.join(", ")+". Exporta el archivo de ventas completo del sistema de citas.");
-  const C=Object.fromEntries([...req,"Hora"].map(n=>[n,col(n)])), out=[], omit={"otra sucursal":0,"fecha inválida":0,"estado desconocido":0,"sin id":0};
+  const C=Object.fromEntries([...req,"Hora"].map(n=>[n,col(n)])), out=[], omit={"otra sucursal":0,"fecha inválida":0,"fecha futura lejana (posible error de captura)":0,"estado desconocido":0,"sin id":0};
+  const lejos=(()=>{ const d=new Date(); d.setFullYear(d.getFullYear()+2); return d.toISOString().slice(0,10); })();
   for (const r of filas){
     if (r.length<cab.length-2) continue;
     const id=String(r[C["id"]]||"").trim(); if (!/^[A-Za-z0-9_-]{1,40}$/.test(id)){ omit["sin id"]++; continue; }
     const sede=rdiSede(r[C["Sucursal"]]); if (!sede){ omit["otra sucursal"]++; continue; }
     const fecha=String(r[C["Fecha de cita"]]||"").trim().slice(0,10); if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)||+fecha.slice(0,4)>2100){ omit["fecha inválida"]++; continue; }
+    if (fecha>lejos){ omit["fecha futura lejana (posible error de captura)"]++; continue; }
     const est=RDI_EST[rdiNz(r[C["Estatus"]])]; if (!est){ omit["estado desconocido"]++; continue; }
     const mot=rdiNz(r[C["Motivo de cancelación"]]); let estado=est, motivo=null;
     if (est==="cancelada"){ if (RDI_ERROR.has(mot)) estado="anulada"; else motivo=mot.startsWith("reagend")?"reagenda":mot==="cita abierta"?"abierta":"otro"; }
@@ -7443,6 +7445,8 @@ document.addEventListener("change", async e=>{
     render(); return; }
   if (e.target?.dataset?.rdi!=null && S.rdImp?.res){ const t=S.rdImp.res.terapeutas[+e.target.dataset.rdi]; S.rdImp.asig[t.nombre]=e.target.value; }
 });
+/* Enter en la frase de la llave = «Revisar cambios» (petición del Director) */
+document.addEventListener("keydown", e=>{ if (e.key==="Enter" && ["rdLlave","rdLlave2"].includes(e.target?.id) && !S.rdImp?.procesando && !S.rdImp?.dif){ e.preventDefault(); rdImpRevisar(); } });
 async function rdImpRevisar(){
   const I=S.rdImp, R=I.res, f1=($("#rdLlave")?.value||""), f2=$("#rdLlave2")?.value;
   if (f1.length<12) return toast("La frase de la llave debe tener al menos 12 caracteres.");
