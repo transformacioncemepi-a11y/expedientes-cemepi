@@ -5445,7 +5445,7 @@ function manUnidadesHtml(v,us,rev){
       <div class="fld" style="margin-top:6px"><label for="manCaso${k}">Tu respuesta (privada)</label><textarea id="manCaso${k}" rows="3" maxlength="5000"></textarea></div>
       <div class="actions" style="justify-content:flex-start"><button class="btn sm" type="button" data-act="manGuardar" data-q="${esc(c.pregunta)}" data-f="manCaso${k}">Guardar en mi Cuaderno</button></div>
       <details><summary>Ver retroalimentación formativa</summary><p style="margin:6px 0 0;max-width:80ch">${esc(c.retro)}</p></details></section>`).join("")}
-    ${(u.preguntas||[]).length?`<section class="card"><h3 style="margin:0">Para tu Cuaderno del Terapeuta</h3><p class="status" style="margin:4px 0 0">Tus respuestas son privadas. Puedes compartir alguna, si quieres, con quien acompaña tu integración.</p>
+    ${(u.preguntas||[]).length?`<section class="card"><h3 style="margin:0">Para tu Cuaderno del Terapeuta</h3><p class="status" style="margin:4px 0 0">Tus respuestas son privadas. Si compartes alguna, la verán RR. HH., la administración de tu sede y la Dirección.</p>
       ${u.preguntas.map((q,k)=>{ const prev=mias.find(c=>c.pregunta===q); return `<div class="fld" style="margin-top:8px"><label for="manQ${k}">${esc(q)}</label><textarea id="manQ${k}" rows="3" maxlength="5000">${esc(prev?.texto||"")}</textarea></div>
         <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="manQc${k}" ${prev?.compartida?"checked":""}> Compartir esta respuesta</label>
         <div class="actions" style="justify-content:flex-start"><button class="btn sm" type="button" data-act="manGuardar" data-q="${esc(q)}" data-f="manQ${k}" data-c="manQc${k}" data-id="${prev?.id||""}">${prev?"Actualizar":"Guardar"}</button></div>`; }).join("")}</section>`:""}
@@ -5567,7 +5567,7 @@ async function manAccion(a,b){
     if (a==="manGuardar"){ const txt=$("#"+b.dataset.f)?.value||""; if (!txt.trim()) return toast("Escribe algo antes de guardar.");
       await rpc("man_cuaderno_guardar",{p_id:b.dataset.id||null,p_version:v?.id||null,p_unidad:S.manTab==="unidades"?S.manU||null:null,p_tipo:b.dataset.tipo?catVal("cnTipo"):"reflexion",p_pregunta:b.dataset.q||null,p_texto:txt,p_compartida:!!(b.dataset.c&&$("#"+b.dataset.c)?.checked)});
       toast("Guardado en tu Cuaderno."); return manCargar(); }
-    if (a==="manCompartir"){ const c=m.cuaderno.find(x=>x.id===b.dataset.id); await rpc("man_cuaderno_guardar",{p_id:c.id,p_version:null,p_unidad:null,p_tipo:c.tipo,p_pregunta:null,p_texto:c.texto,p_compartida:!c.compartida}); toast(c.compartida?"Ahora es privada.":"Compartida con quien acompaña tu integración."); return manCargar(); }
+    if (a==="manCompartir"){ const c=m.cuaderno.find(x=>x.id===b.dataset.id); await rpc("man_cuaderno_guardar",{p_id:c.id,p_version:null,p_unidad:null,p_tipo:c.tipo,p_pregunta:null,p_texto:c.texto,p_compartida:!c.compartida}); toast(c.compartida?"Ahora es privada.":"Compartida: la verán RR. HH., la administración de tu sede y la Dirección."); return manCargar(); }
     if (a==="manBorrar"){ if (!confirm("¿Borrar esta entrada de tu Cuaderno?")) return; await rpc("man_cuaderno_borrar",{p_id:b.dataset.id}); toast("Entrada borrada."); return manCargar(); }
     if (a==="manBuscar"){ S.manQ=catVal("manQ"); return render(); }
     if (a==="manReconocer"){ const d={}; MAN_DECL.forEach(([k])=>d[k]=!!$("#mdc_"+k)?.checked); if (Object.values(d).some(x=>!x)) return toast("Marca cada una de las declaraciones para continuar.");
