@@ -5137,7 +5137,7 @@ const GUIAS = [
   {t:"Poner el código QR de asistencia en recepción", si:()=>S.rol==="superusuario"||S.rol==="admin_sede"||(S.api?.asisNivel||0)>=2, pasos:["En el equipo de recepción entra a Asistencia y jornadas → QR de sede y elige la sede.","Deja la pantalla abierta: el código cambia cada 30 segundos, así que una foto vieja no sirve.","Cada persona lo escanea con la cámara de su celular, entra con su cuenta y registra. No se guarda la ubicación de nadie."]},
   {t:"Activar o apagar el control de asistencia", si:()=>S.rol==="superusuario", pasos:["Entra a Asistencia y jornadas → Configuración.","Si decides usar horarios, enciende Usar horarios y créalos en Horarios y turnos; apagado, solo se registra entrada y salida.","Pulsa Activar el control y confirma: aplica en las 8 sedes a la vez. Puedes apagarlo igual."]},
   {t:"Registrar mi código de verificación (opcional)", si:()=>true, pasos:["Instala en tu celular Google Authenticator o Microsoft Authenticator.","Entra a Mi perfil → Código de verificación (MFA) y pulsa Activar código de verificación.","Escanea el código QR con la aplicación y escribe el número de 6 dígitos.","Desde entonces, al entrar se te pedirá ese número. Registra un segundo dispositivo como respaldo."]},
-  {t:"Buscar en la plataforma", si:()=>true, pasos:["Usa el buscador de la barra superior (o Ctrl K / ⌘ K). En el celular, toca la lupa.","Escribe iniciales, folio o fecha de nacimiento de un expediente, el nombre de una persona o terapeuta, o el nombre de una sección (por ejemplo, Contratos).","Muévete con las flechas y pulsa Enter, o toca el resultado. Solo aparece lo que tu rol puede ver."]},
+  {t:"Buscar en la plataforma", si:()=>true, pasos:["Usa el buscador de la barra superior (o Ctrl K / ⌘ K). En el celular, toca la lupa.","Escribe iniciales, folio o fecha de nacimiento de un expediente, el nombre de una persona o terapeuta, o el nombre de una sección (por ejemplo, Contratos).","También puedes escribir tu pregunta o lo que necesitas, con tus palabras: por ejemplo, «¿cómo pido vacaciones?», «olvidé mi clave», «no fui a trabajar porque estaba enfermo» o «¿cómo comparto un reporte?». Aparecen primero las guías de Ayuda que mejor responden.","Si ninguna guía responde tu pregunta, el buscador te ofrece abrir toda la Ayuda o escribir al equipo en Mis solicitudes («Problema con la app»).","Muévete con las flechas y pulsa Enter, o toca el resultado. Solo aparece lo que tu rol puede ver."]},
   {t:"Cambiar la apariencia u ocultar datos sensibles", si:()=>true, pasos:["Entra a Mi perfil → Apariencia y privacidad.","Elige el tema (claro, oscuro o como el dispositivo), la densidad (cómoda o compacta) y el tamaño del texto. Se aplica al instante y se guarda en ese dispositivo.","Para compartir pantalla o trabajar en un lugar con gente, activa el Modo privado (o el ícono del ojo en la barra superior): los datos sensibles se ven borrosos y se leen al pasar el cursor."]},
   {t:"Instalar la app en mi celular o computadora", si:()=>true, pasos:["Android (Chrome): abre la app, pulsa Instalar app en el menú (o en el menú ⋮ del navegador, Instalar aplicación) y confirma.","iPhone o iPad (Safari): abre la app, pulsa el botón Compartir (cuadro con flecha) y elige Agregar a pantalla de inicio.","Computadora (Chrome o Edge): pulsa Instalar app o el ícono de instalar en la barra de direcciones.","La app instalada abre en su propia ventana con el ícono de CEMEPI. Tus datos siguen en el servidor seguro: no se guardan en el teléfono. Si pierdes el dispositivo, cambia tu contraseña en Mi perfil."]},
   {t:"Consultar o proponer palabras en náhuatl", si:()=>!!S.rol, pasos:["Entra a Comunidad y desarrollo → Cultura organizacional → «Palabras (diccionario vivo)».","Cada palabra muestra su significado en español, su variante, sus fuentes y sus cautelas. Solo las aprobadas aparecen en la app, siempre junto al nombre en español.","Para proponer una, pulsa «+ Proponer una palabra» e indica su fuente (diccionario, investigación o una persona hablante). No inventes traducciones ni palabras compuestas.","La Dirección la verifica, la aprueba o la retira; cada cambio queda en el historial."]},
@@ -7653,6 +7653,48 @@ function preferenciasHtml(){
 }
 /* ---------- Buscador global (sistema visual, etapa 5) ----------
    Solo busca en lo que la persona ya puede ver: sus expedientes, secciones de su menú, terapeutas, personas a su cargo y guías de Ayuda. */
+/* Búsqueda de ayuda por pregunta o necesidad (decisión del Director, 2026-11-27). Código convencional, sin IA ni costo:
+   quita palabras de relleno, compara por raíz (primeras 5 letras: «cambio» = «cambiar»), suma sinónimos de uso diario
+   y ordena por relevancia (el título pesa más que los pasos). Ej.: «¿cómo cambio la dirección de una sede?», «olvidé mi clave». */
+const AY_VACIAS=new Set(("como que quien cual cuales donde cuando cuanto cuanta porque por para pero quiero quisiera necesito necesitaria ocupo puedo puede podria "+
+  "debo tengo tiene hay hago hacer hace haria se me mi mis tu tus su sus el la los las un una unos unas lo le les de del al a en con sin y o u e ni es son esta estan "+
+  "ser estar favor ayuda ayudame alguien algo ya aun aqui ahi este esto ese esa eso cosa no si saber sabe donde quisiera dar doy veo ver "+
+  "fui fue estaba estoy estuve tuve hice soy era nos nuestro nuestra mas muy bien mal hoy ayer manana tambien solo otra otro").split(" "));
+const AY_SIN={olvid:["contrasena","clave"], clave:["contrasena"], password:["contrasena"], entrar:["acceso","contrasena","cuenta"], acced:["acceso","contrasena"],
+  login:["acceso","contrasena"], sesion:["acceso","contrasena"], ubicac:["direccion","mapa","sede"], direcc:["sede","mapa"], llegar:["mapa","sede","direccion"],
+  sucurs:["sede"], horari:["horario","sede"], dia:["vacaciones"], descan:["vacaciones","permiso"], falta:["permiso","incidencia","justificar"], falte:["permiso","incidencia","justificar"],
+  falto:["permiso","incidencia","justificar"], ausen:["permiso","incidencia","justificar"], enferm:["permiso","incidencia","justificar"], retar:["incidencia","asistencia"],
+  tarde:["incidencia","asistencia"], checa:["asistencia","entrada"], checo:["asistencia","entrada"], marca:["asistencia","entrada"], llega:["entrada","asistencia"],
+  sueld:["pago","nomina"], borr:["eliminado","recuperar","anular"], error:["corregir","anular","recuperar"], equivoc:["corregir","anular"],
+  subo:["subir","documentacion"], ine:["documentacion","subir"], curp:["documentacion","subir"], comprob:["documentacion","comprobar"], firmo:["firmar","firma"],
+  trabaj:["asistencia","permiso"], vine:["permiso","incidencia","justificar"], pacie:["consultante","expediente"], client:["consultante"], usuar:["cuenta"], invit:["cuenta","autorizar"], regist:["cuenta","registrar"],
+  subir:["documentacion","archivo","subir"], carga:["subir","documentacion"], archiv:["documento","documentacion"], firma:["firma","firmar"], firme:["firma","firmar"],
+  report:["reporte","informe"], infor:["reporte","informacion"], elimin:["eliminado","recuperar","desactivar"], corrij:["corregir"],
+  cambi:["cambiar","editar","corregir"], modif:["cambiar","editar","corregir"], edita:["cambiar","corregir"], ocult:["borrador","ocultar"], quita:["ocultar","borrador","anular"],
+  celul:["instalar","app"], telef:["instalar","celular"], movil:["instalar","celular"], instal:["instalar","app"], oscur:["apariencia"], letra:["apariencia","texto"],
+  privac:["ocultar","sensibles"], jefe:["supervisar","reporta"], equip:["supervisar","equipo"], mapa:["mapa","sede"], portal:["portal","consultante"],
+  nahua:["nahuatl","palabras"], valor:["valores","cultura"], cultur:["cultura"], carta:["carta","compromiso"], acuer:["acuerdos","carta"], perfil:["perfil"], puest:["puesto","perfil"],
+  vacan:["vacaciones","vacante"], nuevo:["iniciar","abrir","alta"], nueva:["iniciar","abrir","alta"], expedi:["expediente"], consen:["consentimiento","firmar"],
+  comun:["comunicado","comunidad"], aviso:["comunicado","avisos"], qr:["codigo","asistencia"], codig:["codigo","verificacion"], segur:["seguridad","verificacion","acceso"]};
+/* Raíz: quita la terminación (cambio→cambi, contraseña→contrase, contrato→contrat) para no confundir palabras parecidas */
+const ayRaiz=w=>{ const n=w.length; return n<=4?w : n<=8?w.slice(0,Math.max(4,n-1)) : w.slice(0,n-2); };
+const ayCoincide=(x,v)=>v.length<=3?x===v:x.startsWith(v);
+/* Términos de la pregunta: cada uno con sus variantes (raíz + sinónimos). */
+function ayTerminos(q){
+  return norm(q).replace(/[¿?¡!.,;:()«»"']/g," ").split(/\s+/).filter(w=>w.length>1 && !AY_VACIAS.has(w)).map(w=>{
+    const v=new Set([ayRaiz(w)]); for (const [k,sin] of Object.entries(AY_SIN)) if (w.startsWith(k)) sin.forEach(x=>v.add(ayRaiz(x)));
+    return [...v]; });
+}
+/* Puntaje de un texto de ayuda: 3 por término en el título, 1 si solo está en los pasos; 0 si no alcanza la mitad de los términos. */
+function ayPuntaje(terms, titulo, cuerpo){
+  if (!terms.length) return 0;
+  const tk=t=>norm(t).split(/[^a-z0-9ñ]+/).filter(Boolean), T=tk(titulo), B=tk(cuerpo);
+  let pts=0, hits=0;
+  for (const vs of terms){ const enT=T.some(x=>vs.some(v=>ayCoincide(x,v))), enB=!enT && B.some(x=>vs.some(v=>ayCoincide(x,v)));
+    if (enT||enB){ hits++; pts+=enT?3:1; }
+    const nv=vs.filter(v=>T.some(x=>ayCoincide(x,v))).length; if (nv>1) pts+=nv-1; }   /* el título que coincide con más sinónimos de la necesidad gana */
+  return hits>=Math.max(1, Math.ceil(terms.length/2)) ? pts+hits : 0;
+}
 let gItems=[], gSel=-1;
 async function gPrecargar(){ if (gestionaCuentas() && !S.usuarios){ try{ S.usuarios=await S.api.usuarios(); }catch{} } }
 function gBuscar(q){
@@ -7671,10 +7713,19 @@ function gBuscar(q){
   /* Varias palabras: basta con que cada una aparezca (al inicio de alguna palabra), en cualquier orden. «ocultar sede» encuentra «…ocultarla del portal… sede». */
   const pals=n.split(/\s+/).filter(Boolean);
   const enTexto=t=>{ const w=norm(t); if (w.includes(n)) return true; const tk=w.split(/[^a-z0-9ñ]+/); return pals.every(q=>tk.some(x=>x.startsWith(q))); }, vistos=new Set();
-  GUIAS.filter(g=>g.si() && (norm(g.t).includes(n)||enTexto(g.t+" "+(g.pasos||[]).join(" "))) && !vistos.has(g.t) && vistos.add(g.t)).sort((a,b)=>(norm(b.t).includes(n))-(norm(a.t).includes(n))).slice(0,5).forEach(g=>add("Ayuda", g.t, "Guía paso a paso", ()=>{ $("#ayudaBtn").click();
+  /* Ayuda: por palabras exactas (como antes) o por pregunta o necesidad (ayTerminos/ayPuntaje), ordenada por relevancia */
+  const terms=ayTerminos(q);
+  GUIAS.filter(g=>{ try{ return g.si(); }catch{ return false; } }).map(g=>{ const cuerpo=(g.pasos||[]).join(" ");
+      const exacta=norm(g.t).includes(n)?100:(enTexto(g.t+" "+cuerpo)?50:0); return {g, p:exacta+ayPuntaje(terms, g.t, cuerpo)}; })
+    .filter(x=>x.p>0 && !vistos.has(x.g.t) && vistos.add(x.g.t)).sort((a,b)=>b.p-a.p).slice(0,5).map(x=>x.g).forEach(g=>add("Ayuda", g.t, "Guía paso a paso", ()=>{ $("#ayudaBtn").click();
     setTimeout(()=>{ const d=[...document.querySelectorAll("details.guia")].find(x=>x.querySelector("summary")?.textContent===g.t); if (d){ d.open=true; d.scrollIntoView({block:"center"}); } }, 60); }));
-  if (typeof formDocs==="function" && MAN()) formDocs().forEach(({d,v})=>manUnidades(v).flatMap(u=>u.guia||[]).filter(g=>enTexto(g.t+" "+g.que)&&!vistos.has(g.t)&&vistos.add(g.t)).slice(0,3)
+  if (typeof formDocs==="function" && MAN()) formDocs().forEach(({d,v})=>manUnidades(v).flatMap(u=>u.guia||[]).filter(g=>(enTexto(g.t+" "+g.que)||ayPuntaje(terms, g.t, g.que||"")>0)&&!vistos.has(g.t)&&vistos.add(g.t)).slice(0,3)
     .forEach(g=>add("Ayuda", g.t, formMeta(v).ayuda_titulo||formMeta(v).titulo||"Preguntas frecuentes", ()=>{ $("#ayudaBtn").click(); setTimeout(()=>$("#ayuda_"+d.plantilla.clave.replace(/[^a-z0-9_]/g,""))?.scrollIntoView({block:"start"}),80); })));
+  /* Pregunta sin respuesta en las guías: ofrecer la Ayuda completa y la vía para preguntar al equipo */
+  if (terms.length>=2 && !out.some(o=>o.g==="Ayuda")){
+    add("Ayuda", "Ver todas las guías de Ayuda", "No encontré una guía para tu pregunta", ()=>$("#ayudaBtn").click());
+    if (S.rol && S.rol!=="admin_sede") add("Ayuda", "Preguntar al equipo: Mis solicitudes", "Elige «Problema con la app» y describe lo que necesitas", ()=>{ const b=[...document.querySelectorAll("#side .nav-i")].find(x=>/Mis solicitudes/.test(x.textContent)); b?b.click():$("#ayudaBtn").click(); });
+  }
   return out;
 }
 function gPintar(){
