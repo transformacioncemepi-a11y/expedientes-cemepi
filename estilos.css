@@ -391,7 +391,7 @@ body.solo-empleado .roster{display:none!important}
 body.solo-empleado .app{grid-template-columns:1fr!important}
 .hola{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px}
 .hola small{color:var(--accent);font-weight:700;letter-spacing:.06em;text-transform:uppercase}
-.hola h2{margin:2px 0 0;font-size:24px}
+.hola h2,.hola h1.hola-t{margin:2px 0 0;font-size:24px}
 ul.pend{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 ul.pend li{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:8px;padding:8px 12px;background:var(--surface)}
 ul.pend.avisos li{border-left-color:var(--accent,#0560BD)}
@@ -492,3 +492,14 @@ details.plegable>summary::-webkit-details-marker{display:none}
 details.plegable>summary::before{content:"▸";color:var(--muted);transition:transform .15s}
 details.plegable[open]>summary::before{transform:rotate(90deg)}
 @media (prefers-reduced-motion: reduce){details.plegable>summary::before{transition:none}}
+/* P28 · Fase 6: a 320–360 px (WCAG 1.4.10, texto al 400 %) la barra superior cabe completa y el aviso no sale de la pantalla */
+@media (max-width:360px){
+  .topbar{gap:2px;padding-left:6px}
+  .topbar .ibtn{width:32px;height:32px}
+  .ctx{padding:2px}.ctx button{padding:4px 6px;font-size:11.5px}
+  .toast{left:8px;right:8px;max-width:none}
+}
+/* Enlace para saltar el menú: invisible hasta que recibe el foco del teclado (WCAG 2.4.1) */
+.saltar{position:absolute;left:8px;top:-60px;z-index:100;background:var(--accent);color:var(--accent-fg);padding:10px 14px;border-radius:8px;font-weight:700;text-decoration:none}
+.saltar:focus{top:8px}
+#detail:focus{outline:none}
