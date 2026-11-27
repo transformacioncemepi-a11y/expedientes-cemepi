@@ -678,13 +678,13 @@ function renderList(){
   el.innerHTML=grupos.map(s=>{ const g=arr.filter(p=>(p.ficha?.sede||"")===s); if(!g.length) return "";
     return `<div class="grupo"><span>${esc(s||"Sin sede")}</span><b>${g.length}</b></div>${porTerapeuta(g)}`; }).join("");
 }
-const VISTA_TXT={inicio:"Inicio",porleer:"Por leer y confirmar",salud:"Salud integral",exp:"Expediente",perfil:"Mi perfil",terapeutas:"Terapeutas",usuarios:"Usuarios y permisos",seguridad:"Usuarios y permisos",orgresumen:"Resumen organizacional",indicadores:"Indicadores",organigrama:"Organigrama",colaboradores:"Colaboradores",supervision:"Supervisión",sedes:"Sedes",entidades:"Entidades fiscales",areas:"Áreas",puestos:"Puestos y funciones",vacantes:"Vacantes",uso:"Tiempo de uso",tablero:"Tablero",miasis:"Mi asistencia",asistencia:"Asistencia y jornadas",docs:"Documentos y firmas",incorporacion:"Incorporación",miinc:"Mi proceso de contratación",miinfo:"Mi información",misol:"Mis solicitudes",micalendario:"Mi calendario",comunidad:"Comunidad",raices:"Cultura organizacional",misacuerdos:"Mis acuerdos y compromisos",miintegracion:"Mi integración y desarrollo",acuerdos:"Acuerdos y documentos",perfprof:"Perfiles profesionales",catalogo:"Perfiles de puesto y competencias",bandejaSol:"Bandeja de solicitudes",
+const VISTA_TXT={inicio:"Inicio",rendimiento:"Mis resultados",porleer:"Por leer y confirmar",salud:"Salud integral",exp:"Expediente",perfil:"Mi perfil",terapeutas:"Terapeutas",usuarios:"Usuarios y permisos",seguridad:"Usuarios y permisos",orgresumen:"Resumen organizacional",indicadores:"Indicadores",organigrama:"Organigrama",colaboradores:"Colaboradores",supervision:"Supervisión",sedes:"Sedes",entidades:"Entidades fiscales",areas:"Áreas",puestos:"Puestos y funciones",vacantes:"Vacantes",uso:"Tiempo de uso",tablero:"Tablero",miasis:"Mi asistencia",asistencia:"Asistencia y jornadas",docs:"Documentos y firmas",incorporacion:"Incorporación",miinc:"Mi proceso de contratación",miinfo:"Mi información",misol:"Mis solicitudes",micalendario:"Mi calendario",comunidad:"Comunidad",raices:"Cultura organizacional",misacuerdos:"Mis acuerdos y compromisos",miintegracion:"Mi integración y desarrollo",acuerdos:"Acuerdos y documentos",perfprof:"Perfiles profesionales",catalogo:"Perfiles de puesto y competencias",bandejaSol:"Bandeja de solicitudes",
   reglamento:"Reglamento",contratos:"Contratos",permisos:"Usuarios y permisos",documentacion:"Documentación",ayuda:"Ayuda"};
 /* Estructura de la organización: un solo botón con pestañas (2026-11-22) */
 const ESTR_VISTAS=[["sedes","Sedes"],["entidades","Entidades fiscales"],["areas","Áreas"],["puestos","Puestos y funciones"],["vacantes","Vacantes"]];
-const VISTA_BTN={inicio:"iniBtn",salud:"saludBtn",terapeutas:"terBtn",contratos:"ctrBtn",documentacion:"docpBtn",reglamento:"regBtn",usuarios:"segBtn",permisos:"segBtn",seguridad:"segBtn",orgresumen:"resBtn",indicadores:"indBtn",organigrama:"ogBtn",colaboradores:"colBtn",supervision:"supBtn",sedes:"sedBtn",entidades:"sedBtn",areas:"sedBtn",puestos:"sedBtn",vacantes:"sedBtn",uso:"usoBtn",tablero:"tabBtn",miasis:"masBtn",asistencia:"asjBtn",docs:"docsBtn",incorporacion:"incBtn",miinc:"miincBtn",miinfo:"miinfBtn",misol:"misolBtn",bandejaSol:"bsolBtn",perfprof:"ppBtn",catalogo:"catBtn",micalendario:"micalBtn",comunidad:"comuBtn",raices:"raiBtn",misacuerdos:"misacuBtn",miintegracion:"manBtn",acuerdos:"acuBtn",ayuda:"ayudaBtn",perfil:"perfilBtn"};
+const VISTA_BTN={inicio:"iniBtn",rendimiento:"rendBtn",salud:"saludBtn",terapeutas:"terBtn",contratos:"ctrBtn",documentacion:"docpBtn",reglamento:"regBtn",usuarios:"segBtn",permisos:"segBtn",seguridad:"segBtn",orgresumen:"resBtn",indicadores:"indBtn",organigrama:"ogBtn",colaboradores:"colBtn",supervision:"supBtn",sedes:"sedBtn",entidades:"sedBtn",areas:"sedBtn",puestos:"sedBtn",vacantes:"sedBtn",uso:"usoBtn",tablero:"tabBtn",miasis:"masBtn",asistencia:"asjBtn",docs:"docsBtn",incorporacion:"incBtn",miinc:"miincBtn",miinfo:"miinfBtn",misol:"misolBtn",bandejaSol:"bsolBtn",perfprof:"ppBtn",catalogo:"catBtn",micalendario:"micalBtn",comunidad:"comuBtn",raices:"raiBtn",misacuerdos:"misacuBtn",miintegracion:"manBtn",acuerdos:"acuBtn",ayuda:"ayudaBtn",perfil:"perfilBtn"};
 const GRUPO_VISTA={exp:"Atención",terapeutas:"Atención",colaboradores:"Personas",organigrama:"Personas",supervision:"Personas",incorporacion:"Desarrollo del personal",asistencia:"Personas",
-  docs:"Documentos",contratos:"Documentos",documentacion:"Documentos",reglamento:"Documentos",miasis:"Mi espacio",miinc:"Mi espacio",miinfo:"Mi espacio",misol:"Mi espacio",micalendario:"Mi espacio",comunidad:"Comunidad y desarrollo",raices:"Comunidad y desarrollo",misacuerdos:"Mi espacio",miintegracion:"Comunidad y desarrollo",porleer:"Mi espacio",acuerdos:"Desarrollo del personal",bandejaSol:"Personas",perfprof:"Desarrollo del personal",catalogo:"Desarrollo del personal",
+  docs:"Documentos",contratos:"Documentos",documentacion:"Documentos",reglamento:"Documentos",miasis:"Mi espacio",miinc:"Mi espacio",miinfo:"Mi espacio",misol:"Mi espacio",rendimiento:"Mi espacio",micalendario:"Mi espacio",comunidad:"Comunidad y desarrollo",raices:"Comunidad y desarrollo",misacuerdos:"Mi espacio",miintegracion:"Comunidad y desarrollo",porleer:"Mi espacio",acuerdos:"Desarrollo del personal",bandejaSol:"Personas",perfprof:"Desarrollo del personal",catalogo:"Desarrollo del personal",
   tablero:"Administración",salud:"Administración",orgresumen:"Administración",indicadores:"Administración",uso:"Administración",
   sedes:"Configuración",entidades:"Configuración",areas:"Configuración",puestos:"Configuración",vacantes:"Configuración",seguridad:"Configuración",usuarios:"Configuración",permisos:"Configuración",
   ayuda:"Mi cuenta",perfil:"Mi cuenta"};
@@ -937,7 +937,7 @@ const VISTA_AYUDA={
   colaboradores:()=>[null,"Consultar la organización"], organigrama:()=>[null,"Consultar la organización"], supervision:()=>[null,"Consultar la organización"],
   orgresumen:()=>[null,"Consultar la organización"], indicadores:()=>[null,"Consultar la organización"], sedes:()=>[null,S.rol==="superusuario"||S.rol==="direccion"?"Mostrar o cambiar la información de una sede en el portal del consultante":"Consultar la organización"],
   incorporacion:()=>[null,"Iniciar el proceso de una persona en contratación"], miinc:()=>[null,"Mi proceso de contratación"],
-  asistencia:()=>[null,"Supervisar la asistencia de mi equipo"], miasis:()=>[null,"Registrar mi entrada y salida"], miinfo:()=>[null,"Mi información y Mi espacio"], misol:()=>[null,"Hacer una solicitud"], bandejaSol:()=>[null,"Resolver solicitudes del equipo"], perfprof:()=>[null,"Verificar perfiles profesionales"], catalogo:()=>["Qué se espera de cada puesto: perfiles ideales, competencias con rúbrica de 5 niveles, brechas y planes de desarrollo. No concede permisos.","Consultar el perfil ideal de un puesto"], micalendario:()=>[null,"Mi calendario"], comunidad:()=>[null,"Comunicados y preguntas frecuentes"], raices:()=>[null,null], miintegracion:()=>[S.rol==="administrativo"?"Contenidos de formación para comprender cómo trabajamos y cuidarnos. No son exámenes ni contratos: avanza a tu ritmo.":"Tu bienvenida a CEMEPI: el manual en 20 unidades, tu Cuaderno del Terapeuta (privado), tu ruta de 90 días y a quién acudir. No es un examen ni un contrato.","Conocer CEMEPI y mi ruta de integración"], misacuerdos:()=>["Tu Carta Compromiso, sus anexos, la formación previa y tus dudas. Nada se firma sin que leas el documento completo.","Leer y aceptar mis acuerdos"], acuerdos:()=>["Plantilla versionada de la Carta Compromiso, bloques de colaboración y consultorios, anexos, acuerdos por persona, vigencias, campañas y reflexiones. La firma usa Documentos y firmas.","Administrar acuerdos profesionales"],
+  asistencia:()=>[null,"Supervisar la asistencia de mi equipo"], miasis:()=>[null,"Registrar mi entrada y salida"], miinfo:()=>[null,"Mi información y Mi espacio"], rendimiento:()=>[null,"Leer mi tablero de rendimiento"], misol:()=>[null,"Hacer una solicitud"], bandejaSol:()=>[null,"Resolver solicitudes del equipo"], perfprof:()=>[null,"Verificar perfiles profesionales"], catalogo:()=>["Qué se espera de cada puesto: perfiles ideales, competencias con rúbrica de 5 niveles, brechas y planes de desarrollo. No concede permisos.","Consultar el perfil ideal de un puesto"], micalendario:()=>[null,"Mi calendario"], comunidad:()=>[null,"Comunicados y preguntas frecuentes"], raices:()=>[null,null], miintegracion:()=>[S.rol==="administrativo"?"Contenidos de formación para comprender cómo trabajamos y cuidarnos. No son exámenes ni contratos: avanza a tu ritmo.":"Tu bienvenida a CEMEPI: el manual en 20 unidades, tu Cuaderno del Terapeuta (privado), tu ruta de 90 días y a quién acudir. No es un examen ni un contrato.","Conocer CEMEPI y mi ruta de integración"], misacuerdos:()=>["Tu Carta Compromiso, sus anexos, la formación previa y tus dudas. Nada se firma sin que leas el documento completo.","Leer y aceptar mis acuerdos"], acuerdos:()=>["Plantilla versionada de la Carta Compromiso, bloques de colaboración y consultorios, anexos, acuerdos por persona, vigencias, campañas y reflexiones. La firma usa Documentos y firmas.","Administrar acuerdos profesionales"],
   docs:()=>[null, dxPuedeGestionar()?"Agregar un documento a la biblioteca":"Firmar un documento"],
   contratos:()=>veTodosContratos()?["Contratos individuales del personal: captura, fecha de alta, salario y firmas.","Completar y firmar contratos del personal"]:(S.rol==="psicologo"&&S.api?.modalidad==="comision")?["Tu documento contractual es la Carta Compromiso para el Psicólogo Independiente.","Leer y aceptar mi Carta Compromiso"]:["Tu contrato individual de trabajo: captura tus datos y fírmalo con tu contraseña.","Firmar mi contrato"],
   documentacion:()=>veDocsTodos()?[null,"Verificar documentación del personal"]:[null,"Subir mi documentación"],
@@ -968,7 +968,7 @@ function render(){ borAntes(); renderVista(); vistaExtras();
 function renderVista(){
   const d=$("#detail"); S.dirty=false; S.stale=false; S.editado=false; marcarNav(); document.body.classList.remove("menu-abierto");
   const p=S.pacientes.get(S.sel);
-  $("#app").classList.toggle("open", !!p || ["perfil","miinfo","misol","bandejaSol","perfprof","catalogo","micalendario","comunidad","raices","misacuerdos","miintegracion","acuerdos","terapeutas","usuarios","sedes","entidades","areas","puestos","vacantes","colaboradores","supervision","organigrama","seguridad","orgresumen","indicadores","uso","reglamento","contratos","permisos","documentacion","ayuda","tablero","salud","porleer","miasis","asistencia","docs","incorporacion","miinc"].includes(S.view) || (S.view==="inicio" && !S.movLista));
+  $("#app").classList.toggle("open", !!p || ["perfil","rendimiento","miinfo","misol","bandejaSol","perfprof","catalogo","micalendario","comunidad","raices","misacuerdos","miintegracion","acuerdos","terapeutas","usuarios","sedes","entidades","areas","puestos","vacantes","colaboradores","supervision","organigrama","seguridad","orgresumen","indicadores","uso","reglamento","contratos","permisos","documentacion","ayuda","tablero","salud","porleer","miasis","asistencia","docs","incorporacion","miinc"].includes(S.view) || (S.view==="inicio" && !S.movLista));
   if (S.view==="perfil"){ d.innerHTML=perfilHtml(); activarPad(); return; }
   if (S.view==="terapeutas"){ d.innerHTML=terapeutasHtml(); return; }
   if (S.view==="usuarios"){ d.innerHTML=usuariosHtml(); return; }
@@ -980,6 +980,7 @@ function renderVista(){
   if (S.view==="seguridad"){ d.innerHTML=seguridadHtml(); return; }
   if (S.view==="miasis"){ d.innerHTML=miAsistenciaHtml(); return; }
   if (S.view==="miinfo"){ d.innerHTML=miInfoHtml(); return; }
+  if (S.view==="rendimiento"){ d.innerHTML=rdHtml(); return; }   /* P30 · demo */
   if (S.view==="misol"){ d.innerHTML=misSolHtml(); return; }
   if (S.view==="bandejaSol"){ d.innerHTML=bandejaSolHtml(); return; }
   if (S.view==="perfprof"){ d.innerHTML=perfprofHtml(); return; }
@@ -5105,6 +5106,46 @@ const GUIAS = [
     "En «Enlace al mapa (Google Maps)» pega la liga de Google Maps de la sede; el consultante la verá como el botón «Ver en el mapa».",
     "En «Mostrar en el portal del consultante» elige «Sí» para publicarla o «No (borrador)» para ocultarla del portal.",
     "Pulsa «Guardar sede». El cambio se ve la próxima vez que el consultante entre a su portal; en la lista de sedes aparece la etiqueta «En el portal» en las que están publicadas."]},
+  {t:"Leer mi tablero de rendimiento", si:()=>!!S.api?.rendimiento && !!S.rol && !["administrativo","admin_sede"].includes(S.rol), pasos:[
+    "Entra a Mi espacio → Mis resultados.",
+    "Elige el mes arriba. Las tarjetas muestran el valor, el cambio respecto al mes anterior y una frase breve; «¿Qué significa?» explica cada indicador.",
+    "Estable significa un cambio de 10 % o menos (o de una unidad); «sin base comparable» aparece cuando el mes anterior tiene menos de 3 eventos.",
+    "Las gráficas muestran tus citas, la continuidad (de la primera a la quinta sesión), los movimientos de agenda, las comisiones por estado y la tendencia general; «Ver datos» abre cada una en tabla.",
+    "«Salieron con su siguiente cita» muestra cuántas sesiones terminaron con la próxima cita ya agendada (a más tardar el mismo día).",
+    "En «Herramientas para acompañar la continuidad» verás primero lo que tus datos sugieren mirar este mes, y después las herramientas de agenda y terapéuticas.",
+    "Al final, el memorándum resume el mes y propone preguntas para reflexionar; puedes descargarlo en PDF.",
+    "No es una evaluación ni un juicio clínico: describe actividad registrada para comprender tendencias y llevarlas a supervisión si lo deseas."]},
+  {t:"Consultar estadísticas por sede (elegir sedes, periodo y psicólogo)", si:()=>["superusuario","direccion","admin_sede"].includes(S.rol)||(S.api?.misRoles||[]).includes("coord_clinica"), pasos:[
+    "Entra a Mi espacio → «Estadísticas por sede» (si eres psicólogo(a) con Coordinación clínica, el botón se llama «Mis resultados»). Solo ves las sedes que te corresponden: la cuenta de sede y Coordinación clínica, su sede; la Dirección, las que el Superusuario le haya concedido.",
+    "En «Sedes» marca «Toda CEMEPI» (o «Todas mis sedes»), una sola sede o varias para compararlas. Las marcadas «(totales)» solo muestran cifras de la sede, sin resultados individuales.",
+    "Elige el periodo: 1, 3, 6 o 12 meses cerrados. El mes en curso no se suma al periodo; aparece aparte en el detalle mensual.",
+    "En «Psicólogo(a)» deja «Todos» para ver los totales de las sedes elegidas, o elige a una persona autorizada para ver sus resultados. Cada consulta individual queda en la bitácora.",
+    "El «Resumen del periodo» muestra citas, consultantes únicos (sin duplicar entre sedes), nuevos, primeras y segundas sesiones, quinta sesión, procesos que alcanzaron 12, 33 y 66 sesiones, cancelaciones, reagendamientos, inasistencias, comisión generada y las variaciones de cada mes. Con varias sedes aparece la comparativa, con cada tasa calculada sobre los totales de su sede.",
+    "Las horas efectivas de atención solo aparecen al elegir a un psicólogo de base: se comparan con la jornada de atención registrada en Asistencia (referencia: 46 h por semana).",
+    "El memorándum indica el alcance, las sedes, el periodo y la fecha de actualización; descárgalo con «Descargar PDF». Describe actividad registrada: no evalúa la calidad clínica ni señala a personas."]},
+  {t:"Importar el archivo de citas y actualizar los indicadores", si:()=>S.rol==="superusuario", pasos:[
+    "Exporta del sistema de citas el archivo de ventas completo (el mismo de siempre). Puedes hacerlo cada día o cada semana: solo se aplica lo nuevo o lo que cambió.",
+    "Entra a Mi espacio → «Estadísticas por sede». En «Importar el archivo de citas» elige el archivo; se procesa en tu computadora.",
+    "Escribe la frase de la llave. La primera vez, crea una de al menos 12 caracteres, repítela y guárdala en tu gestor de contraseñas: sin ella no se puede continuar la continuidad de los procesos. La app no la guarda.",
+    "Revisa la tabla de terapeutas: las equivalencias confirmadas se recuerdan; «sugerencia» es una propuesta por nombre que debes revisar. Lo que dejes «sin cuenta» queda en pendientes de conciliación.",
+    "Pulsa «Revisar cambios»: verás cuántas citas son nuevas, cuántas cambiaron, cuántas siguen igual y cuántas ya no vienen en el archivo (quedan «ausentes», no se borran).",
+    "Pulsa «Aplicar cambios» y espera a que termine «Actualizando indicadores». Importar dos veces el mismo archivo no duplica nada.",
+    "En «Pendientes de conciliación» elige la cuenta de cada nombre (o «Ignorar») y pulsa «Confirmar»: sus citas se atribuyen y los indicadores se actualizan.",
+    "Arriba del tablero verás la fecha del último registro de cita, la de la última importación, la de actualización y la de corte. Las citas cuentan en el mes en que ocurrieron."]},
+  {t:"Conceder o quitar acceso a las estadísticas de rendimiento", si:()=>S.rol==="superusuario", pasos:[
+    "Entra a Mi espacio → «Estadísticas por sede» y pulsa «Accesos al módulo» (arriba de los filtros).",
+    "En «Conceder o denegar» elige a la persona, el acceso («Totales de la sede» o «Totales y resultados individuales»), las sedes (o «Todas las sedes») y, si quieres, la fecha de término. Escribe el motivo y pulsa «Guardar acceso».",
+    "La cuenta de sede y Coordinación clínica ven su propia sede sin concesión; para quitárselo, elige «Denegar» en esa sede.",
+    "Para retirar un acceso, pulsa «Revocar» en «Concesiones vigentes» y confirma. Surte efecto en la siguiente consulta de esa persona.",
+    "En «Resultados reservados» elige a un psicólogo(a), escribe el motivo y pulsa «Reservar resultados»: sus resultados individuales solo los verán el Superusuario y la propia persona; sus citas siguen sumando en los totales de su sede. «Quitar reserva» lo deshace.",
+    "Cada cambio queda en la auditoría con su motivo."]},
+  {t:"Cuidar la continuidad de mis consultantes (adherencia al proceso)", si:()=>!!S.rol && !["administrativo","admin_sede"].includes(S.rol), pasos:[
+    "Agenda la siguiente cita antes de terminar la sesión, el mismo día, y confirma que quede registrada en el sistema de la sede.",
+    "En la primera sesión construye con el consultante objetivos compartidos y explica cómo funciona el proceso: frecuencia, duración, política de cancelación (24 horas) y cómo cambiar una cita.",
+    "Cuida la alianza terapéutica y pide una retroalimentación breve al cerrar cada sesión.",
+    "Si necesita mover la cita, ofrece reagendar en lugar de cancelar; considera la modalidad en línea si el traslado es la dificultad.",
+    "Después de una inasistencia, que la sede haga un contacto breve y respetuoso para reagendar, sin datos clínicos en el mensaje.",
+    "Son sugerencias para reflexionar y llevar a supervisión; no sustituyen tu criterio clínico y respetan la autonomía del consultante. En Mis resultados verás cuáles conviene mirar primero cada mes."]},
   {t:"Consultar la organización", si:()=>(S.api?.orgNivel||0)>=1, pasos:["Entra a Administración → Resumen para ver sedes, personas, vacantes y alertas de las sedes que tienes autorizadas.","En Organigrama elige la vista (línea de reporte, área, sede, supervisión clínica o coordinación) y pulsa a una persona para ver su ficha.","En Supervisión registra a quién reporta cada persona; en Vacantes, quién ocupa cada plaza."]},
   {t:"Iniciar el proceso de una persona en contratación", si:()=>S.rol==="superusuario"||(S.api?.rhNivel||0)>=2, pasos:["Antes, en Personas → Supervisión registra a quién reporta (su jefe directo) y, si es psicólogo(a), quién le da supervisión clínica.","Entra a Desarrollo del personal → Incorporación y pulsa + Iniciar proceso.","Elige a la persona (si aún no tiene cuenta, déjala en preingreso e indica si es administrativo o psicólogo), las fechas, la duración y a su responsable, capacitador, mentor y supervisor.","El plan se arma con la ruta de su puesto y se puede personalizar. A los días 30, 60 y 90 se evalúa; al final el responsable recomienda y tú decides: confirmar, revisión adicional, suspender o concluir sin continuidad."]},
   {t:"Acompañar o evaluar a una persona en incorporación", si:()=>!!S.rol, pasos:["Entra a Desarrollo del personal → Incorporación y abre a la persona (también aparece en Pendientes de Inicio cuando toca).","Como capacitador(a) o responsable: completa sus actividades con retroalimentación o márcalas para refuerzo. Como mentor(a): registra reuniones con acuerdos y compromisos.","Como responsable o supervisor(a): cada evaluación se abre 10 días antes de su corte; califica cada criterio del 1 al 4 con evidencias y un plan de mejora, y ciérrala. Después de la del día 90 envía tu recomendación con una valoración escrita."]},
@@ -6684,6 +6725,776 @@ function ayudaHtml(){
       <li>No compartas tu contraseña. Cada acción importante queda en la bitácora.</li></ul></section>
   </div>`;
 }
+/* ================= P30 · Mis resultados · Mi tablero de rendimiento (DEMO con datos ficticios) =================
+   Propuesta en diseno/RENDIMIENTO-P30-PROMPT-CONSOLIDADO.md (sin autorizar como módulo definitivo). Solo aparece si el servicio
+   S.api.rendimiento existe (hoy, solo en el simulador). Reglas visibles (§3): base mínima 3, estable si el cambio es ≤10 % o ≤1,
+   segunda sesión en 30 días, quinta en 90. Sin datos del consultante, sin rankings entre colegas, sin juicios clínicos. */
+const RD_ACC=new Set(["rendimiento","rdMes","rdPersona","rdPdf","rdDef","rdImpGuardar","rdImpCancelar","rdImpRevisar","rdPendOk","rdPer","rdAccAbrir","rdAccOtorgar","rdAccRevocar","rdResQuitar","rdResPoner"]);
+const rdVeEquipo=()=>["superusuario","direccion"].includes(S.rol)||(S.api?.misRoles||[]).includes("coord_clinica");
+const RD_DEF={
+  nuevos:["Consultantes nuevos asignados","Expedientes que se te asignaron durante el mes.","+"],
+  primeras:["Primeras sesiones realizadas","Consultantes que tuvieron contigo su primera sesión realizada en el mes.","+"],
+  citas:["Citas realizadas","Citas con estado «realizada» en el mes. No incluye canceladas ni inasistencias.","+"],
+  horas:["Horas efectivas de atención","Suma de la duración de tus citas realizadas (solo personal de base). No incluye tiempo administrativo.","+"],
+  cancel:["Cancelaciones","Citas canceladas con anticipación por el consultante o por la agenda.","-"],
+  reagenda:["Reagendamientos","Citas que se movieron a otra fecha. Reagendar puede cuidar la continuidad: su cambio se lee como neutro.","="],
+  inasist:["Inasistencias","Citas no canceladas a las que el consultante no asistió.","-"],
+  seg_agendada:["Agendaron segunda sesión","De quienes tuvieron su primera sesión en el mes, cuántos agendaron una segunda en los 30 días siguientes.","+"],
+  seg_realizada:["Realizaron segunda sesión","De quienes tuvieron su primera sesión en el mes, cuántos asistieron a una segunda cita en los 30 días siguientes.","+"],
+  quinta:["Alcanzaron la quinta sesión","De quienes tuvieron su primera sesión en el mes, cuántos llegaron a la quinta sesión realizada en 90 días. Mientras no pasan los 90 días, el dato está «en observación».","+"],
+  comision:["Comisiones generadas","Importe calculado según los servicios elegibles y el esquema autorizado. Es distinto de una comisión validada o pagada.","+"],
+  variacion:["Variación de citas realizadas","Diferencia porcentual de citas realizadas respecto al mes anterior.","+"],
+  sig_cita:["Salieron con su siguiente cita","Sesiones realizadas en las que la siguiente cita ya quedó agendada a más tardar el mismo día de la sesión. No cuenta citas agendadas en días posteriores ni procesos que terminaron.","+"]};
+/* Herramientas para acompañar la continuidad (P30, petición del Director). Criterio por validar con Coordinación clínica:
+   sugerencias generales, plurales y no obligatorias; no sustituyen el criterio clínico ni la supervisión. */
+const RD_HERR={
+  agenda:[
+    ["mismo_dia","Agenda la siguiente cita antes de terminar la sesión, el mismo día, y confirma que quede registrada en el sistema de la sede."],
+    ["fijo","Cuando sea posible, acuerda un día y un horario fijos: la regularidad facilita la continuidad."],
+    ["encuadre","En la primera sesión recuerda la política de cancelación (aviso con 24 horas) y cómo cambiar una cita."],
+    ["recordatorio","Verifica que el consultante reciba el recordatorio un día antes por el canal habitual de la sede."],
+    ["reagendar","Si necesita mover la cita, ofrece reagendar en lugar de cancelar; si el traslado es la dificultad, considera la modalidad en línea."],
+    ["inasistencia","Después de una inasistencia, que la sede haga un contacto breve y respetuoso para reagendar, sin datos clínicos en el mensaje."]],
+  terapeuticas:[
+    ["objetivos","En la primera sesión construye con el consultante objetivos compartidos y explica cómo funciona el proceso (frecuencia, duración, qué esperar)."],
+    ["alianza","Cuida la alianza terapéutica: acuerdo en metas y tareas, y un vínculo de confianza. La investigación la asocia de forma consistente con la continuidad y los resultados."],
+    ["retro","Al cerrar la sesión, pide una retroalimentación breve (qué le sirvió, qué no). Ayuda a detectar a tiempo desacuerdos o dudas."],
+    ["avances","Cada 4 o 5 sesiones revisen juntos los avances y ajusten el plan."],
+    ["momentos","Anticipa los momentos de mayor abandono: después de la primera sesión y tras pausas como vacaciones; conversa abiertamente sobre dudas o el deseo de terminar."],
+    ["cierre","Si el consultante decide terminar, planea un cierre: respetar su autonomía también es cuidar el proceso."]]};
+/* Qué mirar primero este mes, según los datos (reglas visibles) */
+function rdHerrPrioridad(D, i){
+  const v=k=>D.series[k]?.[i], pv=k=>i>0?D.series[k]?.[i-1]:null, out=[];
+  if (v("sig_cita")!=null && v("citas")>=5 && v("sig_cita")/v("citas")<0.6) out.push(["mismo_dia",`${Math.round(v("sig_cita")/v("citas")*100)}% de tus sesiones salieron con su siguiente cita agendada.`]);
+  if (v("primeras")>=3 && v("seg_realizada")/v("primeras")<0.7) out.push(["objetivos",`${v("seg_realizada")} de ${v("primeras")} consultantes con primera sesión realizaron la segunda en 30 días.`]);
+  if (v("citas")>=5 && (v("inasist")/v("citas")>=0.1 || rdCambio(v("inasist"),pv("inasist")).e==="sube")) out.push(["inasistencia",`Hubo ${v("inasist")} inasistencias en el mes.`]);
+  if (v("citas")>=5 && v("reagenda")/v("citas")>=0.2) out.push(["reagendar",`Hubo ${v("reagenda")} reagendamientos en el mes.`]);
+  return out.slice(0,3);
+}
+function rdHerramientasHtml(D, i){
+  const txt=id=>[...RD_HERR.agenda,...RD_HERR.terapeuticas].find(x=>x[0]===id)?.[1]||"", pr=rdHerrPrioridad(D, i);
+  return `<section class="note rd-herr" style="margin-top:16px"><div class="note-h"><h3>🧭 Herramientas para acompañar la continuidad</h3></div>
+    ${pr.length?`<h4>Para este mes, conviene mirar primero</h4><ul>${pr.map(([id,dato])=>`<li><b>${esc(txt(id))}</b><br><span class="status">Por qué: ${esc(dato)}</span></li>`).join("")}</ul>`:`<p class="status" style="margin:0">Este mes no hay una señal particular en tus datos; las herramientas de abajo sirven como repaso.</p>`}
+    <details><summary>Aspectos de agenda (técnicos)</summary><ul>${RD_HERR.agenda.map(x=>`<li>${esc(x[1])}</li>`).join("")}</ul></details>
+    <details><summary>Herramientas terapéuticas</summary><ul>${RD_HERR.terapeuticas.map(x=>`<li>${esc(x[1])}</li>`).join("")}</ul></details>
+    <p class="status" style="margin:8px 0 0">Sugerencias generales para reflexionar y llevar a supervisión. No son indicaciones obligatorias ni sustituyen tu criterio clínico; ninguna corriente es obligatoria. La continuidad se cuida respetando la autonomía del consultante, sin presionarlo. Las sugerencias sobre alianza y retroalimentación tienen respaldo en investigación; las de agenda son prácticas organizacionales de CEMEPI (criterio por validar con Coordinación clínica).</p></section>`;
+}
+const rdMesTxt=m=>{ const [y,mm]=m.split("-"); return `${["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"][+mm-1]} ${y}`; };
+const rdMesCorto=m=>{ const [y,mm]=m.split("-"); return `${MES_TXT[+mm-1]} ${y.slice(2)}`; };
+const rdPesos=n=>"$"+Math.round(n||0).toLocaleString("es-MX");
+/* Comisiones por estado, sin doble conteo: «generada» = calculada y pendiente de validar; «validada» = pendiente de pago; «pagada». Total generado = las tres. */
+const rdComTotal=c=>c?(c.generada||0)+(c.validada||0)+(c.pagada||0):0;
+/* Regla de comparación (§3): sin base si el mes previo tiene menos de 3; estable si |Δ| ≤ 1 o ≤ 10 %; si no, sube o baja */
+function rdCambio(act, prev){
+  if (act==null || prev==null || prev<3) return {e:"nb"};
+  const d=act-prev, p=prev?d/prev:0;
+  if (Math.abs(d)<=1 || Math.abs(p)<=0.10) return {e:"est", d, p};
+  return {e:d>0?"sube":"baja", d, p};
+}
+const rdPct=p=>`${p>0?"+":""}${Math.round(p*100)}%`;
+function rdLectura(k, c, mesPrev){
+  const sentido=(RD_DEF[k]||[])[2]||"+", prev=rdMesTxt(mesPrev).split(" ")[0];
+  if (c.e==="obs") return {i:"·", cls:"nb", t:"En observación: la ventana de 90 días aún no cierra"};
+  if (c.e==="nb") return {i:"·", cls:"nb", t:"Sin base comparable con el mes anterior"};
+  if (c.e==="est") return {i:"=", cls:"est", t:`Estable respecto a ${prev}`};
+  const sube=c.e==="sube", base=`${sube?"Subió":"Bajó"} ${Math.abs(Math.round(c.p*100))}% respecto a ${prev}`;
+  if (sentido==="=") return {i:sube?"↑":"↓", cls:"neu", t:`${base}. Cambio neutro: reagendar puede cuidar la continuidad`};
+  const favorable = sentido==="+" ? sube : !sube;
+  return {i:sube?"↑":"↓", cls:favorable?"fav":"neu", t: favorable ? `${base}: favorable en este indicador` : `${base}`};
+}
+async function rdCargar(id){
+  S.rd={...(S.rd||{}), cargando:true}; if (S.view==="rendimiento") render();
+  /* Si la sesión aún se está preparando (por ejemplo, al abrir un enlace directo), espera hasta 15 s en lugar de fallar */
+  for (let k=0; k<60 && !S.api?.rendimiento; k++) await new Promise(r=>setTimeout(r,250));
+  if (!S.api?.rendimiento){ S.rd={error:"El tablero aún no está disponible. Recarga la página en unos segundos."}; if (S.view==="rendimiento") render(); return; }
+  const prev=S.rd||{};
+  try{
+    /* P32 · Estadísticas por sede: solo las sedes concedidas (el servidor vuelve a validar cada consulta) */
+    const misSedes = S.api.rendMisSedes ? await S.api.rendMisSedes() : [];
+    if (misSedes.length){
+      const nombres=misSedes.map(x=>x.sede), F={sedes:nombres, per:3, perfil:"", ...(prev.f||{})};
+      F.sedes=F.sedes.filter(x=>nombres.includes(x)); if (!F.sedes.length) F.sedes=nombres.slice();
+      if (id!==undefined) F.perfil=id||"";
+      const psic = S.api.rendPsicologosVisibles ? await S.api.rendPsicologosVisibles(F.sedes).catch(()=>[]) : [];
+      const propio = S.rol==="psicologo" ? [{id:S.uid||"", nombre:"Mis propios resultados", sede:"", propio:true}].filter(x=>x.id) : [];
+      if (F.perfil && ![...psic, ...propio].some(p=>p.id===F.perfil)) F.perfil="";
+      const todas=S.rol==="superusuario" && F.sedes.length===nombres.length;
+      const etiqueta = F.sedes.length===1 ? `Sede ${F.sedes[0]}` : todas ? "Toda CEMEPI" : `${F.sedes.length} sedes seleccionadas`;
+      const datos = await S.api.rendConsulta({sedes:F.sedes, per:F.per, perfil:F.perfil||null, etiqueta});
+      const base={misSedes, f:F, psic, propio, acc:prev.acc, accAbierto:prev.accAbierto};
+      if (datos?.sinDatos){ S.rd={...base, sinDatos:true}; if (S.view==="rendimiento") render(); return; }
+      const mesSel = prev.mes && datos.meses.includes(prev.mes) ? prev.mes : datos.meses[datos.meses.length-2];
+      S.rd={...base, datos, mes:mesSel};
+      if (S.view==="rendimiento") render(); return;
+    }
+    const datos = await S.api.rendimiento(id);
+    if (datos?.sinDatos){ S.rd={sinDatos:true}; if (S.view==="rendimiento") render(); return; }
+    const mesSel = prev.mes && datos.meses.includes(prev.mes) ? prev.mes : datos.meses[datos.meses.length-2];
+    S.rd={datos, mes:mesSel}; }
+  catch(e){ S.rd={...prev, cargando:false, datos:null, error:e?.message||"No se pudo cargar tu tablero."}; }
+  if (S.view==="rendimiento") render();
+}
+/* P32 · Barra de filtros: sedes (todas, una o varias), periodo y psicólogo. Se cambia sin salir del módulo. */
+function rdFiltrosHtml(){
+  const R=S.rd; if (!R?.misSedes?.length) return "";
+  const F=R.f, niv=Object.fromEntries(R.misSedes.map(x=>[x.sede,x.nivel])), todas=F.sedes.length===R.misSedes.length;
+  const lista=[...(R.propio||[]), ...(R.psic||[])];
+  return `<section class="note rd-filtros" style="margin-bottom:14px" aria-label="Filtros de estadísticas"><div class="note-h"><h3>Estadísticas por sede</h3>${S.rol==="superusuario"?`<button class="btn sm" type="button" data-act="rdAccAbrir">${R.accAbierto?"Cerrar accesos al módulo":"Accesos al módulo"}</button>`:""}</div>
+    <fieldset class="rd-sedes"><legend>Sedes</legend>
+      <label class="rd-chk"><input type="checkbox" id="rdSedeTodas"${todas?" checked":""}> <b>${S.rol==="superusuario"?"Toda CEMEPI":"Todas mis sedes"}</b></label>
+      ${R.misSedes.map(x=>`<label class="rd-chk"><input type="checkbox" name="rdSedeSel" value="${esc(x.sede)}"${F.sedes.includes(x.sede)?" checked":""}> ${esc(x.sede)}${x.nivel===1?' <span class="status">(totales)</span>':""}</label>`).join("")}</fieldset>
+    <div class="tabs" role="tablist" aria-label="Periodo" style="margin:8px 0">${[[1,"1 mes"],[3,"3 meses"],[6,"6 meses"],[12,"12 meses"]].map(([n,t])=>`<button class="tab" role="tab" type="button" data-act="rdPer" data-n="${n}" aria-selected="${+F.per===n}">${t}</button>`).join("")}</div>
+    ${lista.length?`<div class="datos"><div class="fld"><label for="rdPersona">Psicólogo(a)</label><select id="rdPersona"><option value="">Todos los psicólogos autorizados de las sedes elegidas</option>${lista.map(p=>`<option value="${esc(p.id)}"${p.id===F.perfil?" selected":""}>${esc(p.nombre)}${p.sede?" · "+esc(p.sede):""}${p.modalidad?" · "+esc(MOD_TXT[p.modalidad]||""):""}${p.reservado?" · resultados reservados":""}</option>`).join("")}</select></div></div>`:""}
+    <p class="status" style="margin:6px 0 0">Los totales suman los servicios válidos de cada sede sin duplicar citas; las tasas se recalculan sobre los totales (no se promedian porcentajes). Cada cita cuenta para la sede donde ocurrió y cada proceso para la sede donde empezó.${Object.values(niv).some(n=>n===1)?" En las sedes marcadas «totales» no se muestran resultados individuales.":""}${F.perfil&&F.perfil!==S.uid?" Cada consulta de resultados individuales queda registrada en la bitácora.":""}</p></section>`;
+}
+/* P32 · Accesos al módulo (solo Superusuario, editable en la app): concesiones por sede con nivel 1 (totales) o 2 (individuales),
+   denegaciones y resultados reservados. Reutiliza otorgar_acceso / revocar_acceso (motivo obligatorio, auditoría). */
+const RD_NIVEL={1:"Totales de la sede",2:"Totales y resultados individuales"};
+function rdAccesosHtml(){
+  const A=S.rd?.acc; if (!A) return `<section class="note" style="margin-bottom:14px"><div class="note-h"><h3>Accesos al módulo</h3></div>${cargandoHtml("Cargando concesiones…")}</section>`;
+  if (A.error) return `<section class="note" style="margin-bottom:14px"><div class="note-h"><h3>Accesos al módulo</h3></div><p class="banner bad">${esc(A.error)}</p></section>`;
+  const gente=A.usuarios.filter(u=>u.estado==="activo"&&u.rol!=="superusuario"), psic=A.usuarios.filter(u=>u.rol==="psicologo"&&u.estado==="activo"), nom=id=>A.usuarios.find(u=>u.id===id)?.nombre||"—";
+  return `<section class="note rd-acc" style="margin-bottom:14px"><div class="note-h"><h3>Accesos al módulo de rendimiento</h3></div>
+    <p class="status" style="margin:0 0 8px">Sin concesión, cada psicólogo ve solo lo suyo. La cuenta de sede y Coordinación clínica ven su propia sede (totales e individuales); para quitarlo, concede «Denegar». La Dirección solo ve lo que se le conceda aquí. Cada cambio pide motivo y queda en la auditoría.</p>
+    <h4 style="margin:8px 0 4px">Concesiones vigentes</h4>
+    ${A.lista.length?`<div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Sede</th><th>Acceso</th><th>Vigencia</th><th>Motivo</th><th></th></tr></thead><tbody>${A.lista.map(x=>`<tr><td>${esc(x.nombre)} <span class="status">${esc(ROL_TXT[x.rol]||x.rol)}</span></td><td>${x.alcance==="global"?"Todas las sedes":x.alcance==="sede"?esc(x.sede||"—"):"Entidad fiscal"}</td><td>${x.efecto==="denegar"?"<b>Denegado</b>":esc(RD_NIVEL[x.nivel]||"Nivel "+x.nivel)}</td><td>${esc(String(x.desde).split("-").reverse().join("/"))}${x.hasta?" al "+esc(String(x.hasta).split("-").reverse().join("/")):" · sin fecha de término"}</td><td>${esc(x.motivo)}</td><td><button class="btn sm" type="button" data-act="rdAccRevocar" data-id="${esc(x.id)}">Revocar</button></td></tr>`).join("")}</tbody></table></div>`:`<p class="status">Aún no hay concesiones.</p>`}
+    <h4 style="margin:12px 0 4px">Conceder o denegar</h4>
+    <div class="datos">
+      <div class="fld"><label for="raUser">Persona</label><select id="raUser"><option value="">— Elige —</option>${gente.map(u=>`<option value="${esc(u.id)}">${esc(u.nombre||u.email)} · ${esc(ROL_TXT[u.rol]||u.rol)} · ${esc(u.sede||"")}</option>`).join("")}</select></div>
+      <div class="fld"><label for="raNivel">Acceso</label><select id="raNivel"><option value="1">Totales de la sede</option><option value="2">Totales y resultados individuales</option><option value="denegar">Denegar</option></select></div>
+      <div class="fld"><label for="raHasta">Hasta (opcional)</label><input id="raHasta" type="date"></div>
+      <div class="fld" style="grid-column:1/-1"><span class="lbl">Sedes</span><div>${A.sedes.map(x=>`<label class="rd-chk"><input type="checkbox" name="raSede" value="${esc(x.id)}"> ${esc(x.nombre)}</label>`).join("")}<label class="rd-chk"><input type="checkbox" id="raTodas"> <b>Todas las sedes (incluye las futuras)</b></label></div></div>
+      <div class="fld" style="grid-column:1/-1"><label for="raMotivo">Motivo (queda en la auditoría)</label><input id="raMotivo" type="text" maxlength="300" placeholder="Ej.: seguimiento de productividad de las sedes de la zona norte" data-sin-envio></div></div>
+    <div class="actions"><button class="btn primary" type="button" data-act="rdAccOtorgar">Guardar acceso</button></div>
+    <h4 style="margin:12px 0 4px">Resultados reservados</h4>
+    <p class="status" style="margin:0 0 6px">Los resultados individuales de una persona reservada solo los ven el Superusuario y ella misma; sus citas siguen sumando en los totales de su sede.</p>
+    ${A.reservas.length?`<ul>${A.reservas.map(r=>`<li><b>${esc(nom(r.perfil_id))}</b> · ${esc(r.motivo)} <button class="btn sm" type="button" data-act="rdResQuitar" data-id="${esc(r.perfil_id)}">Quitar reserva</button></li>`).join("")}</ul>`:`<p class="status">Nadie tiene resultados reservados.</p>`}
+    <div class="datos"><div class="fld"><label for="rrUser">Psicólogo(a)</label><select id="rrUser"><option value="">— Elige —</option>${psic.filter(u=>!A.reservas.some(r=>r.perfil_id===u.id)).map(u=>`<option value="${esc(u.id)}">${esc(u.nombre)} · ${esc(u.sede||"")}</option>`).join("")}</select></div>
+      <div class="fld"><label for="rrMotivo">Motivo</label><input id="rrMotivo" type="text" maxlength="300" data-sin-envio></div></div>
+    <div class="actions"><button class="btn" type="button" data-act="rdResPoner">Reservar resultados</button></div></section>`;
+}
+async function rdAccCargar(){
+  try{ const [lista, usuarios, sedes, reservas]=await Promise.all([S.api.rendAccesos(), S.api.usuarios(), S.api.sedes(false), S.api.rendReservas()]);
+    S.rd.acc={lista, usuarios, sedes, reservas}; }
+  catch(e){ S.rd.acc={error:e?.message||"No se pudieron cargar los accesos."}; }
+  if (S.view==="rendimiento") render();
+}
+async function rdAccAccion(a, b){
+  const v=id=>(document.getElementById(id)?.value||"").trim();
+  if (a==="rdAccAbrir"){ S.rd.accAbierto=!S.rd.accAbierto; S.rd.acc=null; render(); if (S.rd.accAbierto) await rdAccCargar(); return; }
+  const listo=async msg=>{ toast(msg); S.rd.acc=null; render(); await rdAccCargar(); await rdCargar(); };
+  try{
+    if (a==="rdAccOtorgar"){ const u=v("raUser"), n=v("raNivel"), m=v("raMotivo"), hasta=v("raHasta")||null, todas=document.getElementById("raTodas")?.checked,
+        sedes=[...document.querySelectorAll('input[name="raSede"]:checked')].map(x=>x.value);
+      if (!u) return toast("Elige a la persona."); if (!todas&&!sedes.length) return toast("Marca al menos una sede."); if (m.length<5) return toast("Escribe el motivo (5 caracteres o más).");
+      const base={user:u, efecto:n==="denegar"?"denegar":"permitir", modulo:"rendimiento", nivel:n==="denegar"?0:+n, especiales:[], hasta, motivo:m};
+      if (todas) await S.api.otorgarAcceso({...base, alcance:"global", alcance_id:null}); else for (const id of sedes) await S.api.otorgarAcceso({...base, alcance:"sede", alcance_id:id});
+      return listo("Acceso guardado. Surte efecto en la siguiente consulta de esa persona."); }
+    if (a==="rdAccRevocar"){ if (!arm(b,"rdrev"+b.dataset.id,"¿Revocar?")) return; armed=null; await S.api.revocarAcceso(b.dataset.id,"Revocado desde Accesos al módulo de rendimiento"); return listo("Acceso revocado."); }
+    if (a==="rdResPoner"){ const u=v("rrUser"), m=v("rrMotivo"); if (!u) return toast("Elige a la persona."); if (m.length<5) return toast("Escribe el motivo (5 caracteres o más).");
+      await S.api.rendReservar(u, true, m); return listo("Resultados reservados."); }
+    if (a==="rdResQuitar"){ if (!arm(b,"rdres"+b.dataset.id,"¿Quitar?")) return; armed=null; await S.api.rendReservar(b.dataset.id, false, ""); return listo("Reserva retirada."); }
+  }catch(e){ toast(e?.message||"No se pudo guardar."); }
+}
+/* P35 · Estado de los datos: distingue la fecha de la cita, la de la importación, la de actualización y la de corte */
+function rdEstadoHtml(D){
+  const mc=D.meses?.[D.meses.length-1], pend=D.pendientes>0;
+  return `<section class="note rd-estado" style="margin:0 0 12px" aria-label="Estado de los datos"><p style="margin:0"><b>${esc(rdMesTxt(mc).toUpperCase())} — MES EN CURSO</b> · datos sujetos a actualización.</p>
+    <p class="status" style="margin:4px 0 0">Último registro de cita realizada: <b>${esc(D.ultima_cita||"—")}</b> · Última importación: <b>${esc(D.ultima_importacion||"—")}</b> · Indicadores actualizados: <b>${esc(D.actualizado||"—")}</b> · Corte: <b>${esc(String(D.corte||"").split("-").reverse().join("/"))}</b>.</p>
+    ${pend?`<p class="banner" style="display:block;margin:6px 0 0" role="status"><b>Actualizando…</b> ${D.pendientes.toLocaleString("es-MX")} consultantes aún por recalcular; estas cifras no son definitivas.</p>`:""}
+    <p class="status" style="margin:4px 0 0">Las citas se cuentan en el mes en que ocurrieron, no en el que se cargaron. Sin nombres, teléfonos ni correos de consultantes.</p></section>`;
+}
+/* P32 · Resumen del periodo elegido (meses cerrados): totales, consultantes únicos, horas y variaciones mensuales */
+function rdPeriodoHtml(D){
+  const P=D.periodo; if (!P) return "";
+  const sum=k=>(P.series[k]||[]).reduce((x,y)=>x+Number(y||0),0), com=(P.comision||[]).reduce((x,y)=>x+Number(y||0),0), C=D.continuidad||{}, A=C.alcanzaron||{};
+  const pc=(a,b)=>b?Math.round(a/b*100)+"%":"—", rango=P.meses.length===1?rdMesTxt(P.meses[0]):`${rdMesTxt(P.meses[0])} a ${rdMesTxt(P.meses[P.meses.length-1])}`;
+  const citas=sum("citas"), prog=citas+sum("cancel")+sum("inasist");
+  /* Horas efectivas: solo personal de base, contra la jornada de atención registrada en Asistencia (referencia: 46 h por semana) */
+  const base=!D.tipo && D.persona?.modalidad==="nomina", horas=citas*50/60, dias=P.meses.reduce((x,m)=>{ const [y,mo]=m.split("-").map(Number); return x+new Date(y,mo,0).getDate(); },0), sem=dias/7;
+  const horasTxt = !base ? "" : `<div class="rd-card"><small>Horas efectivas de atención</small><b>${horas.toFixed(1)} h</b><span class="status">${P.jornada_h?`${pc(horas, P.jornada_h*sem)} de la jornada de atención registrada en Asistencia (${P.jornada_h} h por semana × ${sem.toFixed(1)} semanas)`:"Sin jornada registrada en Asistencia"}. Referencia: 46 h por semana. Estimadas con 50 min por sesión (duración por validar).</span></div>`;
+  /* Variaciones mensuales: cada mes contra el anterior (el primero, contra el mes previo si está en la ventana) */
+  const ser=k=>P.meses.map((m,j)=>Number(P.series[k][j]||0)), prevDe=(k,m)=>{ const j=D.meses.indexOf(m); return j>0?Number(D.series[k][j-1]||0):null; };
+  const vari=k=>{ const v=ser(k); return P.meses.map((m,j)=>{ const a=v[j], b=j?v[j-1]:prevDe(k,m); return b==null?"—":`${a-b>0?"+":""}${a-b}${b?` (${a-b>0?"+":""}${Math.round((a-b)/b*100)}%)`:""}`; }); };
+  const vc=vari("citas"), vn=vari("nuevos");
+  const card=(t,v,x)=>`<div class="rd-card"><small>${t}</small><b>${v}</b><span class="status">${x||""}</span></div>`;
+  const PS=P.por_sede, comp=PS?`<div class="tbl-wrap" style="margin-top:12px"><table><caption class="status" style="text-align:left">Comparativa entre las sedes elegidas · ${esc(rango)}. Cada tasa se calcula con los totales de su sede. No hay una «mejor» sede: la demanda, los horarios y el tipo de servicios son distintos.</caption>
+      <thead><tr><th>Sede</th><th>Citas realizadas</th><th>Consultantes únicos</th><th>Nuevos</th><th>2.ª sesión / primeras</th><th>Quinta / primeras</th><th>Salieron con siguiente cita</th><th>Cancelaciones</th><th>Reagendamientos</th><th>Inasistencias</th><th>Terapeutas (prom.)</th><th>Citas por terapeuta al mes</th><th>Comisión generada</th></tr></thead>
+      <tbody>${Object.entries(PS).sort((a,b)=>a[0].localeCompare(b[0])).map(([se,x])=>{ const pr=x.citas+x.cancel+x.inasist; return `<tr><td><b>${esc(se)}</b></td><td>${x.citas}</td><td>${x.unicos}</td><td>${x.nuevos}</td><td>${pc(x.seg_realizada,x.primeras)}</td><td>${pc(x.quinta,x.primeras)}</td><td>${pc(x.sig_cita,x.citas)}</td><td>${pc(x.cancel,pr)}</td><td>${x.reagenda}</td><td>${pc(x.inasist,pr)}</td><td>${x.terapeutas_prom??"—"}</td><td>${x.terapeutas_prom?(x.citas/x.terapeutas_prom/P.meses.length).toFixed(1):"—"}</td><td>${rdPesos(x.comision)}</td></tr>`; }).join("")}</tbody></table></div>`:"";
+  return `<section class="note rd-periodo" style="margin-bottom:14px"><div class="note-h"><h3>Resumen del periodo · ${esc(rango)}</h3></div>
+    <p class="status" style="margin:0 0 8px">${esc(D.persona?.nombre||"")} · ${P.meses.length} ${P.meses.length===1?"mes cerrado":"meses cerrados"} · actualizado el ${esc(D.actualizado||"—")}. El mes en curso no se suma al periodo.${(()=>{ const k=(P.series.citas||[]).findIndex(x=>Number(x)>0); return k>0?` Hay cifras importadas desde ${rdMesTxt(P.meses[k])}; los meses anteriores aparecen en cero.`:""; })()}</p>
+    <div class="rd-cards">
+      ${card("Citas programadas", sum("programadas").toLocaleString("es-MX"), `${sum("confirmadas").toLocaleString("es-MX")} siguen confirmadas (aún no realizadas)`)}
+      ${card("Citas realizadas", citas.toLocaleString("es-MX"), `${D.tipo&&P.terapeutas?`${Math.round(P.terapeutas.reduce((x,y)=>x+y,0)/P.meses.length)} terapeutas con citas al mes en promedio`:""}`)}
+      ${card("Consultantes únicos atendidos", (P.unicos||0).toLocaleString("es-MX"), "Personas distintas con al menos una cita realizada; no se duplican entre sedes ni terapeutas.")}
+      ${card("Consultantes nuevos asignados", sum("nuevos").toLocaleString("es-MX"))}
+      ${card("Primeras sesiones", sum("primeras").toLocaleString("es-MX"))}
+      ${card("Segundas sesiones (en 30 días)", sum("seg_realizada").toLocaleString("es-MX"), `${pc(sum("seg_realizada"), sum("primeras"))} de las primeras`)}
+      ${card("Llegaron a la quinta sesión (en 90 días)", sum("quinta").toLocaleString("es-MX"), `${pc(sum("quinta"), sum("primeras"))} de las primeras · los meses recientes siguen en observación`)}
+      ${card("Procesos que alcanzaron 12 · 33 · 66 sesiones", `${A["12"]??"—"} · ${A["33"]??"—"} · ${A["66"]??"—"}`, "Procesos iniciados desde febrero de 2026 (acumulado, no solo del periodo). Son referencias, no metas.")}
+      ${horasTxt}
+      ${card("Cancelaciones", sum("cancel").toLocaleString("es-MX"), `${pc(sum("cancel"), prog)} de las citas programadas`)}
+      ${card("Reagendamientos", sum("reagenda").toLocaleString("es-MX"), "Se leen como neutros: pueden cuidar la continuidad.")}
+      ${card("Inasistencias", sum("inasist").toLocaleString("es-MX"), `${pc(sum("inasist"), prog)} de las citas programadas`)}
+      ${card("Comisión generada", rdPesos(com), "Calculada por las citas realizadas; el estado de validación y pago no está en los datos.")}</div>
+    <details style="margin-top:10px"${P.meses.length>1?" open":""}><summary>Variaciones mensuales absolutas y porcentuales</summary>
+      <div class="tbl-wrap"><table><thead><tr><th>Mes</th><th>Citas realizadas</th><th>Cambio</th><th>Nuevos</th><th>Cambio</th><th>Comisión generada</th></tr></thead>
+      <tbody>${P.meses.map((m,j)=>`<tr><td>${rdMesTxt(m)}</td><td>${ser("citas")[j]}</td><td>${vc[j]}</td><td>${ser("nuevos")[j]}</td><td>${vn[j]}</td><td>${rdPesos(P.comision[j])}</td></tr>`).join("")}</tbody></table></div></details>
+    ${comp}</section>`;
+}
+/* Barras verticales con valor encima (citas por mes) */
+function rdBarras(meses, vals, etiqueta){
+  const W=320, H=170, L=8, B=26, T=22, n=vals.length, cw=(W-2*L)/n, bw=Math.min(54, cw*0.55), max=Math.max(1,...vals);
+  const y=v=>T+(H-T-B)*(1-v/max);
+  const g=vals.map((v,i)=>{ const x=L+i*cw+(cw-bw)/2, yy=y(v);
+    return `<path class="bar" d="M${x},${H-B} V${yy+4} Q${x},${yy} ${x+4},${yy} H${x+bw-4} Q${x+bw},${yy} ${x+bw},${yy+4} V${H-B} Z"/>
+      <text class="rd-val" x="${x+bw/2}" y="${yy-6}" text-anchor="middle">${v}</text>
+      <text x="${x+bw/2}" y="${H-8}" text-anchor="middle">${rdMesCorto(meses[i])}</text>`; }).join("");
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(etiqueta)}: ${meses.map((m,i)=>`${rdMesTxt(m)} ${vals[i]}`).join(", ")}"><line class="grid" x1="${L}" x2="${W-L}" y1="${H-B}" y2="${H-B}"/>${g}</svg>`;
+}
+/* Barras agrupadas con patrones distintos (agenda): el color no es la única diferencia */
+function rdAgrupadas(meses, series){
+  const W=320, H=170, L=8, B=26, T=18, n=meses.length, k=series.length, cw=(W-2*L)/n, bw=Math.min(18,(cw*0.75)/k);
+  const max=Math.max(1,...series.flatMap(s=>s.v)), y=v=>T+(H-T-B)*(1-v/max);
+  const defs=`<defs><pattern id="rdRayas" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" class="rd-s2"/><line x1="0" y1="0" x2="0" y2="6" class="rd-raya"/></pattern>
+    <pattern id="rdPuntos" width="6" height="6" patternUnits="userSpaceOnUse"><rect width="6" height="6" class="rd-s3"/><circle cx="3" cy="3" r="1.3" class="rd-punto"/></pattern></defs>`;
+  const g=meses.map((m,i)=>{ const x0=L+i*cw+(cw-bw*k)/2;
+    return series.map((s,j)=>{ const x=x0+j*bw, yy=y(s.v[i]);
+      return `<rect x="${x+1}" y="${yy}" width="${bw-2}" height="${H-B-yy}" ${s.fill.startsWith("url")?`fill="${s.fill}"`:`class="${s.cls}"`} rx="2"/><text class="rd-val" x="${x+bw/2}" y="${yy-4}" text-anchor="middle">${s.v[i]}</text>`; }).join("")
+      + `<text x="${L+i*cw+cw/2}" y="${H-8}" text-anchor="middle">${rdMesCorto(m)}</text>`; }).join("");
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Movimientos de agenda por mes: ${meses.map((m,i)=>`${rdMesTxt(m)}: ${series.map(s=>`${s.n} ${s.v[i]}`).join(", ")}`).join("; ")}">${defs}<line class="grid" x1="${L}" x2="${W-L}" y1="${H-B}" y2="${H-B}"/>${g}</svg>`;
+}
+/* Barras apiladas de comisiones por estado (pagada abajo; potencial arriba, rayado) */
+function rdApiladas(meses, filas){
+  const W=320, H=180, L=8, B=26, T=10, n=meses.length, cw=(W-2*L)/n, bw=Math.min(54,cw*0.55);
+  const est=[["pagada","rd-c1",""],["validada","rd-c2",""],["generada","rd-c3",""],["potencial","rd-c4","url(#rdRayasC)"]];
+  const max=Math.max(1,...filas.map(f=>est.reduce((a,[k])=>a+(f[k]||0),0))), esc2=v=>(H-T-B)*v/max;
+  const defs=`<defs><pattern id="rdRayasC" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" class="rd-c4"/><line x1="0" y1="0" x2="0" y2="6" class="rd-raya"/></pattern></defs>`;
+  const g=filas.map((f,i)=>{ let yb=H-B; const x=L+i*cw+(cw-bw)/2;
+    return est.map(([k,cls,pat])=>{ const h=esc2(f[k]||0); yb-=h; return h?`<rect x="${x}" y="${yb}" width="${bw}" height="${h}" ${pat?`fill="${pat}" stroke="var(--line-strong)" stroke-width="1"`:`class="${cls}"`}/>`:""; }).join("")
+      + `<text x="${x+bw/2}" y="${H-8}" text-anchor="middle">${rdMesCorto(meses[i])}</text>`; }).join("");
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Comisiones por mes y estado: ${filas.map((f,i)=>`${rdMesTxt(meses[i])}: pagada ${rdPesos(f.pagada)}, validada ${rdPesos(f.validada)}, generada ${rdPesos(f.generada)}, potencial ${rdPesos(f.potencial)}`).join("; ")}">${defs}<line class="grid" x1="${L}" x2="${W-L}" y1="${H-B}" y2="${H-B}"/>${g}</svg>`;
+}
+/* Tendencia general (§3): último mes cerrado contra el promedio de los dos anteriores, en citas y segunda sesión realizada */
+function rdTendencia(D){
+  const cer=D.meses.slice(0,-1), i=cer.length-1;
+  if (cer.length<3) return {e:"insuf", t:"Datos insuficientes", r:"Se necesitan al menos tres meses cerrados con datos."};
+  const prom=k=>(D.series[k][i-1]+D.series[k][i-2])/2, cmp=k=>{ const a=D.series[k][i], b=prom(k); if (b<3) return "nb"; const p=(a-b)/b; return Math.abs(a-b)<=1||Math.abs(p)<=0.10?"est":(p>0?"sube":"baja"); };
+  const c=cmp("citas"), s=cmp("seg_realizada");
+  if (c==="nb" || s==="nb") return {e:"insuf", t:"Datos insuficientes", r:"Alguno de los dos indicadores tiene menos de 3 eventos en promedio."};
+  /* crece: una sube y la otra no baja; disminuye: una baja y la otra no sube; en otro caso, estable */
+  const e = ((c==="sube"&&s!=="baja")||(s==="sube"&&c!=="baja")) ? "crece" : ((c==="baja"&&s!=="sube")||(s==="baja"&&c!=="sube")) ? "baja" : "est";
+  const txt={crece:"Crecimiento", est:"Estabilidad", baja:"Disminución"}[e], palabra={sube:"subieron", baja:"bajaron", est:"se mantuvieron estables"};
+  return {e, t:txt, r:`Regla: se compara ${rdMesTxt(cer[i])} con el promedio de ${rdMesTxt(cer[i-2]).split(" ")[0]} y ${rdMesTxt(cer[i-1]).split(" ")[0]}. Citas realizadas: ${D.series.citas[i]} contra ${prom("citas").toFixed(1)} (${palabra[c]}). Segunda sesión realizada: ${D.series.seg_realizada[i]} contra ${prom("seg_realizada").toFixed(1)} (${palabra[s]}).`};
+}
+/* Memorándum con reglas (sin IA): síntesis, lo que se mantiene o creció y preguntas para reflexionar */
+function rdMemorandum(D, mes){
+  const i=D.meses.indexOf(mes), p=D.meses[i-1], v=k=>D.series[k][i], pv=k=>p?D.series[k][i-1]:null, enCurso=i===D.meses.length-1;
+  const cam=k=>rdCambio(v(k), pv(k)), tz=rdTendencia(D), crece=[], reflex=[];
+  const nom={citas:"las citas realizadas", seg_realizada:"las segundas sesiones realizadas", primeras:"las primeras sesiones", quinta:"los consultantes que llegaron a la quinta sesión"};
+  for (const k of ["citas","primeras","seg_realizada","quinta"]){ if (k==="quinta" && D.quinta_obs?.[i]) continue; const c=cam(k); if (c.e==="sube") crece.push(`${nom[k]} aumentaron (${rdPct(c.p)})`); else if (c.e==="est") crece.push(`${nom[k]} se mantuvieron estables`); }
+  const prim=v("primeras"), seg=v("seg_realizada");
+  if (prim>=3 && seg/prim<0.6) reflex.push("¿Qué te ayuda a acordar con cada consultante la siguiente cita al terminar la primera sesión?");
+  if (cam("cancel").e==="sube" || cam("inasist").e==="sube") reflex.push("¿Hay algún horario o día en el que se concentren las cancelaciones o inasistencias? Puedes conversarlo en supervisión o con tu sede.");
+  if (cam("reagenda").e==="sube") reflex.push("Los reagendamientos aumentaron; ¿te están ayudando a sostener la continuidad de tus procesos?");
+  if (!reflex.length) reflex.push("¿Qué te gustaría sostener del trabajo de este mes? ¿Qué te gustaría llevar a supervisión?");
+  const sede=D.tipo==="sede";
+  const sint=[`En ${rdMesTxt(mes)}${enCurso?" (mes en curso)":""} ${sede?(D.persona.nombre==="Todas las sedes"?"las sedes registraron":"la sede registró"):"registraste"} ${v("citas")} citas realizadas, ${v("primeras")} primeras sesiones y ${v("nuevos")} consultantes nuevos asignados.`,
+    p?(()=>{ const c=cam("citas"), mp=rdMesTxt(p).split(" ")[0], tus=sede?"las":"tus", Tus=sede?"Las":"Tus"; return c.e==="nb"?`No hay base suficiente para comparar con ${mp}.`:c.e==="est"?`${Tus} citas realizadas se mantuvieron estables respecto a ${mp}.`:`Respecto a ${mp}, ${tus} citas realizadas ${c.e==="sube"?"aumentaron":"disminuyeron"} ${Math.abs(Math.round(c.p*100))}%.`; })():"",
+    `Tendencia de los últimos tres meses cerrados: ${tz.t.toLowerCase()}.`,
+    D.comisiones&&D.comisiones[i]?.sin_estado?`Comisión generada (calculada) del mes: ${rdPesos(rdComTotal(D.comisiones[i]))}; el estado de validación y pago no está en los datos.`:
+    D.comisiones?`Comisiones del mes: ${rdPesos(rdComTotal(D.comisiones[i]))} generadas en total; ${rdPesos(D.comisiones[i].pagada)} pagadas, ${rdPesos(D.comisiones[i].validada)} validadas pendientes de pago y ${rdPesos(D.comisiones[i].generada)} pendientes de validación.`:""].filter(Boolean);
+  const herr=rdHerrPrioridad(D, i).map(([id])=>[...RD_HERR.agenda,...RD_HERR.terapeuticas].find(x=>x[0]===id)[1]);
+  const C=D.continuidad, contTxt=C?`Continuidad de ${sede?"los":"tus"} procesos (iniciados desde febrero): ${C.procesos} procesos, ${C.activos} activos; la mitad sigue hasta la sesión ${C.mediana_km??"—"} (CEMEPI: ${D.continuidad_org?.mediana_km??"—"}).`:"";
+  const alerta=C?.alerta?.estado==="roja"?{t:"ALERTA IMPORTANTE — CONTINUIDAD TERAPÉUTICA POR REVISAR", x:`Durante el periodo analizado se identifica una proporción relevante de procesos finalizados o interrumpidos antes de alcanzar la referencia institucional de 12 sesiones (${rdPct1(C.alerta.tasa)}; esperado para tu tipo de casos: ${rdPct1(C.alerta.esperada)}; ${C.alerta.n} procesos). Este resultado merece revisar las condiciones que pueden estar influyendo en la continuidad: el encuentro inicial, la construcción del vínculo terapéutico, los acuerdos de seguimiento, la disponibilidad de citas y las circunstancias de los consultantes. El indicador no permite atribuir por sí solo la situación al desempeño clínico del profesional.${C.alerta.vista_previa?" (Vista previa: se activará cuando exista el motivo de cierre.)":""}`}:null;
+  const etapa=C?RD_ETAPAS.find(e=>e[0]===rdEtapaFoco(C)):null;
+  /* P32 · el memorándum refleja los filtros aplicados: alcance, sedes, periodo y fecha de actualización */
+  const P=D.periodo, sp=k=>P?(P.series[k]||[]).reduce((x,y)=>x+Number(y||0),0):0, rango=P?(P.meses.length===1?rdMesTxt(P.meses[0]):`${rdMesTxt(P.meses[0])} a ${rdMesTxt(P.meses[P.meses.length-1])}`):"";
+  const perTxt=P?`Periodo de ${rango}: ${sp("citas").toLocaleString("es-MX")} citas realizadas, ${(P.unicos||0).toLocaleString("es-MX")} consultantes únicos atendidos, ${sp("nuevos").toLocaleString("es-MX")} consultantes nuevos y ${rdPesos((P.comision||[]).reduce((x,y)=>x+Number(y||0),0))} de comisión generada.`:"";
+  const filtros=D.consolidada?`Alcance: ${D.tipo?`${D.persona.nombre} (${D.persona.sede})`:`${D.persona.nombre} · ${D.persona.sede||""}`}. Periodo del resumen: ${rango}. Detalle mensual: ${rdMesTxt(mes)}. Datos con corte al ${String(D.corte||"").split("-").reverse().join("/")}, actualizados el ${D.actualizado||"—"}.`:"";
+  return {filtros, sint:[perTxt, ...sint, contTxt].filter(Boolean), crece, reflex:[...reflex, ...(etapa?etapa[2]:[])], herr, alerta, alcance:"Este memorándum describe actividad registrada en la agenda. No evalúa la calidad clínica ni el desempeño profesional, y no sustituye la supervisión."};
+}
+function rdTarjeta(k, val, cmp, mesPrev, extra){
+  const def=RD_DEF[k], l=rdLectura(k, cmp, mesPrev);
+  return `<div class="rd-card"><small>${esc(def[0])}</small><b>${val}</b>
+    <span class="rd-tend ${l.cls}"><span aria-hidden="true">${l.i}</span> ${!["nb","est","obs"].includes(cmp.e)?`${cmp.d>0?"+":cmp.d<0?"-":""}${k==="comision"?rdPesos(Math.abs(cmp.d)):Math.abs(typeof cmp.d==="number"&&!Number.isInteger(cmp.d)?+cmp.d.toFixed(1):cmp.d)} · `:""}${esc(l.t)}</span>
+    ${extra?`<span class="status">${extra}</span>`:""}
+    <details class="rd-def"><summary>¿Qué significa?</summary><p>${esc(def[1])}</p></details></div>`;
+}
+function rdHtml(){
+  const R=S.rd, cab=t=>`<div class="phead">${migas()}<h1>📊 ${S.rol==="psicologo"?"Mi tablero de rendimiento":"Estadísticas por sede"}</h1></div><p class="status" style="margin:-6px 0 14px">${R?.misSedes?.length?"Estadísticas de las sedes y psicólogos autorizados: elige sedes, periodo y psicólogo sin salir del tablero.":"Visualiza tu actividad, continuidad terapéutica y evolución en los últimos tres meses."}</p>${t||""}`;
+  if (!R || R.cargando) return `<div class="wrap tablero rd" style="padding-block:24px">${cab()}${cargandoHtml?cargandoHtml("Preparando tu tablero…"):"<p class='status'>Preparando tu tablero…</p>"}</div>`;
+  const imp = S.rol==="superusuario" && S.api?.rendImportar ? rdImpHtml() : "";
+  const dirBox=rdFiltrosHtml()+(R.accAbierto&&S.rol==="superusuario"?rdAccesosHtml():"");
+  if (R.error) return `<div class="wrap tablero rd" style="padding-block:24px">${cab()}${imp}<p class="banner bad">${esc(R.error)}</p></div>`;
+  if (R.sinDatos) return `<div class="wrap tablero rd" style="padding-block:24px">${cab()}${imp}${dirBox}<p class="banner" style="display:block">Aún no hay cifras importadas${R.misSedes?" para lo elegido":" para ti"}. ${S.rol==="superusuario"?"Importa el archivo de ventas del mes para comenzar.":"Aparecerán cuando la Dirección importe el archivo del mes."}</p></div>`;
+  const D=R.datos, mes=R.mes, i=D.meses.indexOf(mes), mp=D.meses[i-1], enCurso=i===D.meses.length-1, base=D.persona.modalidad==="nomina";
+  const v=k=>D.series[k][i], pv=k=>i>0?D.series[k][i-1]:null, cmp=k=>rdCambio(v(k), pv(k));
+  const cer=D.meses.slice(-4,-1), ic=cer.map(m=>D.meses.indexOf(m)), serie=k=>ic.map(j=>D.series[k][j]);
+  const demo = D.demo===false
+    ? (D.consolidada?rdEstadoHtml(D):`<p class="banner" style="display:block;margin:0 0 12px"><b>Datos reales agregados.</b> ${esc(D.fuente||"")}. Solo cifras por psicólogo y mes: sin nombres, teléfonos ni correos de consultantes.</p>`)
+    : `<p class="banner" style="display:block;margin:0 0 12px"><b>Demo con datos ficticios.</b> Ningún dato corresponde a personas reales. La agenda de citas y el esquema de comisiones aún no existen en la app; este tablero muestra cómo se vería.</p>`;
+  const tipoTxt=m=>MOD_TXT[m]||"Tipo sin registrar en la app";
+  const dir = dirBox;
+  /* Pestañas: los tres últimos meses cerrados y el mes en curso (los anteriores solo sirven de base de comparación) */
+  const meses=`<div class="tabs" role="tablist" aria-label="Mes" style="margin-bottom:12px">${D.meses.slice(-4).map(m=>`<button class="tab" role="tab" type="button" data-act="rdMes" data-m="${m}" aria-selected="${m===mes}">${rdMesTxt(m)}${m===D.meses[D.meses.length-1]?" (en curso)":""}</button>`).join("")}</div>`;
+  const quintaObs=D.quinta_obs?.[i], comi=D.comisiones?.[i], comiPrev=D.comisiones?.[i-1];
+  const tarjetas=[
+    rdTarjeta("nuevos", v("nuevos"), cmp("nuevos"), mp), rdTarjeta("primeras", v("primeras"), cmp("primeras"), mp), rdTarjeta("citas", v("citas"), cmp("citas"), mp),
+    D.series.sig_cita?rdTarjeta("sig_cita", `${v("sig_cita")}<span class="rd-obs" style="background:var(--accent-soft);color:var(--accent)">${v("citas")?Math.round(v("sig_cita")/v("citas")*100):0}%</span>`, cmp("sig_cita"), mp, D.tipo==="sede"?"de las sesiones realizadas":"de tus sesiones realizadas"):"",
+    base&&!D.sin_horas?rdTarjeta("horas", v("horas").toFixed(1)+" h", rdCambio(v("horas"), pv("horas")), mp):"",
+    rdTarjeta("cancel", v("cancel"), cmp("cancel"), mp), rdTarjeta("reagenda", v("reagenda"), cmp("reagenda"), mp), rdTarjeta("inasist", v("inasist"), cmp("inasist"), mp),
+    rdTarjeta("seg_agendada", v("seg_agendada"), cmp("seg_agendada"), mp), rdTarjeta("seg_realizada", v("seg_realizada"), cmp("seg_realizada"), mp),
+    rdTarjeta("quinta", quintaObs?`${v("quinta")}<span class="rd-obs">en observación</span>`:v("quinta"), quintaObs?{e:"obs"}:cmp("quinta"), mp, ""),
+    comi?rdTarjeta("comision", rdPesos(rdComTotal(comi)), rdCambio(rdComTotal(comi), rdComTotal(comiPrev)), mp, comi.sin_estado?"Calculada. Estado de validación y pago: sin datos.":`Pagado: ${rdPesos(comi.pagada)} · validado: ${rdPesos(comi.validada)} · por validar: ${rdPesos(comi.generada)}.`):`<div class="rd-card"><small>Comisiones generadas</small><b>—</b><span class="status">Pendiente de configuración (esquema autorizado).</span></div>`,
+    (()=>{ const c=cmp("citas"); return `<div class="rd-card"><small>${RD_DEF.variacion[0]}</small><b>${c.e==="nb"?"—":rdPct(c.p)}</b><span class="rd-tend ${rdLectura("citas",c,mp).cls}">${esc(rdLectura("citas",c,mp).t)}</span><details class="rd-def"><summary>¿Qué significa?</summary><p>${esc(RD_DEF.variacion[1])}</p></details></div>`; })()
+  ].join("");
+  /* B · evolución de citas */
+  const vc=serie("citas"), dif=vc.map((x,j)=>j?x-vc[j-1]:null), tz=rdTendencia(D);
+  const evol=`<div class="tb-card"><h4>Citas realizadas · últimos tres meses</h4>${rdBarras(cer, vc, "Citas realizadas por mes")}
+    <p class="rd-cambios">${cer.slice(1).map((m,j)=>{ const a=vc[j+1], b=vc[j]; return `<span>${rdMesCorto(cer[j])} → ${rdMesCorto(m)}: <b>${a-b>0?"+":""}${a-b}</b>${b?` (${rdPct((a-b)/b)})`:""}</span>`; }).join("")}</p>
+    <p class="rd-interp">${(()=>{ /* Solo citas: último mes cerrado contra el promedio de los dos anteriores (misma regla del §3) */
+      const pr=(vc[0]+vc[1])/2, c=rdCambio(vc[2], pr);
+      const T=D.tipo==="sede"?"Las":"Tus";
+      return c.e==="nb"?"Aún no hay datos suficientes para una tendencia.":c.e==="sube"?`${T} citas realizadas muestran una tendencia de crecimiento durante los últimos tres meses.`:c.e==="baja"?`${T} citas realizadas disminuyeron respecto al promedio de los dos meses anteriores; puede deberse a muchos factores (vacaciones, altas, temporada).`:`${T} citas realizadas se mantienen estables respecto al promedio de los dos meses anteriores.`; })()}</p>
+    <details><summary>Ver datos</summary><table><thead><tr><th>Mes</th><th>Citas</th><th>Cambio</th></tr></thead><tbody>${cer.map((m,j)=>`<tr><td>${rdMesTxt(m)}</td><td>${vc[j]}</td><td>${dif[j]==null?"—":(dif[j]>0?"+":"")+dif[j]}</td></tr>`).join("")}</tbody></table></details></div>`;
+  /* C · continuidad (cohorte del mes elegido) */
+  const etapas=[["nuevos","Nuevos asignados"],["primeras","Primera sesión"],["seg_agendada","Segunda agendada"],["seg_realizada","Segunda realizada"],["quinta","Quinta sesión"]];
+  const maxE=Math.max(1,v("nuevos"),v("primeras"));
+  const cont=`<div class="tb-card"><h4>Continuidad terapéutica · ${rdMesTxt(mes)}</h4>
+    <ol class="rd-flujo">${etapas.map(([k,t],j)=>{ const n=v(k), ant=j?v(etapas[j-1][0]):null, pc=ant?Math.round(n/ant*100):null;
+      return `<li><span class="rd-et">${t}${k==="quinta"&&quintaObs?' <span class="rd-obs">en observación</span>':""}</span><span class="rd-barra"><span style="width:${Math.max(2,Math.round(n/maxE*100))}%"></span></span><span class="rd-n"><b>${n}</b>${pc!=null?` · ${pc}% de la etapa anterior`:""}</span></li>`; }).join("")}</ol>
+    <p class="rd-interp">Muestra en qué etapa se concentra la continuidad o la pérdida. No es un juicio sobre la calidad clínica: la continuidad depende del consultante, del motivo de consulta y de muchos otros factores.</p></div>`;
+  /* D · agenda */
+  const ag=[{n:"Cancelaciones",k:"cancel",cls:"rd-s1",fill:""},{n:"Reagendamientos",k:"reagenda",cls:"rd-s2",fill:"url(#rdRayas)"},{n:"Inasistencias",k:"inasist",cls:"rd-s3",fill:"url(#rdPuntos)"}].map(s=>({...s,v:serie(s.k)}));
+  const agenda=`<div class="tb-card"><h4>Movimientos de agenda · últimos tres meses</h4>${rdAgrupadas(cer, ag.map(s=>({...s,fill:s.fill||"var(--viz-1)"})))}
+    <p class="rd-leyenda"><span><i class="rd-s1"></i>Cancelaciones</span><span><i class="rd-s2 rayas"></i>Reagendamientos</span><span><i class="rd-s3 puntos"></i>Inasistencias</span></p>
+    <p class="rd-interp">No son equivalentes: una cancelación avisa con anticipación, un reagendamiento mueve la cita y una inasistencia ocurre sin aviso. ${ag.map(s=>{ const c=rdCambio(s.v[2],s.v[1]); return `${s.n}: ${c.e==="nb"?"sin base":c.e==="est"?"estable":c.e==="sube"?"aumentó":"disminuyó"}`; }).join(" · ")}.</p>
+    <details><summary>Ver datos</summary><table><thead><tr><th>Mes</th>${ag.map(s=>`<th>${s.n}</th>`).join("")}</tr></thead><tbody>${cer.map((m,j)=>`<tr><td>${rdMesTxt(m)}</td>${ag.map(s=>`<td>${s.v[j]}</td>`).join("")}</tr>`).join("")}</tbody></table></details></div>`;
+  /* E · comisiones */
+  const fc=D.comisiones?ic.map(j=>D.comisiones[j]):null;
+  const sinEst=fc&&fc.every(x=>x.sin_estado);
+  const comis=`<div class="tb-card"><h4>💰 Comisiones</h4>${fc&&sinEst?`${rdBarras(cer, fc.map(rdComTotal).map(Math.round), "Comisión generada (pesos)").replace(/>(\d+)<\/text>/g,(x,n)=>`>${rdPesos(+n)}</text>`)}
+      <p class="rd-interp">Comisión <b>generada</b> (calculada) por las citas realizadas. El archivo no indica cuánto está validado o pagado, así que no se presenta como ingreso recibido.</p>
+      <details><summary>Ver datos</summary><table><thead><tr><th>Mes</th><th>Generada</th></tr></thead><tbody>${cer.map((m,j)=>`<tr><td>${rdMesTxt(m)}</td><td>${rdPesos(rdComTotal(fc[j]))}</td></tr>`).join("")}</tbody></table></details>`
+    : fc?`${rdApiladas(cer, fc)}
+      <p class="rd-leyenda"><span><i class="rd-c1"></i>Pagada</span><span><i class="rd-c2"></i>Validada (por pagar)</span><span><i class="rd-c3"></i>Generada (por validar)</span><span><i class="rd-c4 rayas"></i>Potencial (agendada)</span></p>
+      <p class="rd-interp">Solo lo <b>pagado</b> es un ingreso recibido. Lo validado está aprobado y pendiente de pago; lo generado está calculado y pendiente de validación; lo potencial corresponde a citas agendadas que aún no se realizan. Cada parte se cuenta una sola vez.</p>
+      <details><summary>Ver datos</summary><table><thead><tr><th>Mes</th><th>Potencial</th><th>Generada</th><th>Validada</th><th>Pagada</th></tr></thead><tbody>${cer.map((m,j)=>`<tr><td>${rdMesTxt(m)}</td>${["potencial","generada","validada","pagada"].map(k=>`<td>${rdPesos(fc[j][k])}</td>`).join("")}</tr>`).join("")}</tbody></table></details>`
+    :`<p class="status">Pendiente de configuración: se mostrará cuando exista el esquema de comisiones autorizado y su validación.</p>`}</div>`;
+  /* F · tendencia */
+  const tend=`<div class="tb-card rd-tz ${tz.e}"><h4>📈 Tendencia general de mi rendimiento</h4><p class="rd-tz-et">${esc(tz.t)}</p><p class="status" style="margin:0">${esc(tz.r)}</p><p class="status" style="margin:0">No es una conclusión sobre ti como persona ni como profesional: resume actividad y continuidad registradas.</p></div>`;
+  /* Memorándum */
+  const M=rdMemorandum(D, mes);
+  const memo=`<section class="note rd-memo" style="margin-top:16px"><div class="note-h"><h3>Memorándum de ${rdMesTxt(mes)}</h3><button class="btn sm" type="button" data-act="rdPdf">Descargar PDF</button></div>
+    ${M.filtros?`<p class="status" style="margin:0 0 6px">${esc(M.filtros)}</p>`:""}<p>${M.sint.map(esc).join(" ")}</p>
+    ${M.alerta?`<div class="rd-alerta" style="margin:8px 0"><p class="rd-alerta-t"><span aria-hidden="true">🔴</span> ${esc(M.alerta.t)}</p><p style="margin:0">${esc(M.alerta.x)}</p></div>`:""}
+    ${M.crece.length?`<h4>Lo que se mantiene o creció</h4><ul>${M.crece.map(t=>`<li>${esc(t.charAt(0).toUpperCase()+t.slice(1))}.</li>`).join("")}</ul>`:""}
+    <h4>Para reflexionar</h4><ul>${M.reflex.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>
+    ${M.herr.length?`<h4>Herramientas sugeridas para este mes</h4><ul>${M.herr.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`:""}
+    <p class="status">${esc(M.alcance)}</p></section>`;
+  return `<div class="wrap tablero rd" style="padding-block:24px">${cab()}${imp}${demo}${dir}${D.reservado&&S.rol==="superusuario"?`<p class="banner" style="display:block">Resultados reservados: solo el Superusuario y la propia persona los ven.</p>`:""}${rdPeriodoHtml(D)}
+    ${D.periodo?`<h3 style="margin:18px 0 6px">Detalle mensual</h3>`:""}<p style="margin:0 0 8px"><b>${esc(D.persona.nombre)}</b> · ${D.tipo==="sede"?`${D.terapeutas?.[i]??"—"} terapeutas con citas en ${esc(rdMesTxt(mes))}`:`${esc(D.persona.sede)} · ${esc(tipoTxt(D.persona.modalidad))}`}</p>${meses}
+    ${enCurso?`<p class="status" style="margin:0 0 10px">Mes en curso: las cifras cambiarán hasta su cierre.</p>`:""}
+    <section aria-label="Resumen del mes"><div class="rd-cards">${tarjetas}</div></section>
+    <div class="tb-grid" style="margin-top:14px">${evol}${cont}${agenda}${comis}${tend}</div>${rdContinuidadHtml(D)}${rdHerramientasHtml(D, i)}${memo}</div>`;
+}
+/* Vista de Dirección: comparativas agregadas por sede y por tipo de colaboración (sin rankings de personas) */
+function rdComparativasHtml(){
+  const C=S.rd?.comp; if (!C) return `<section class="note" style="margin-top:16px"><div class="note-h"><h3>Comparativas</h3></div><p class="status">Calculando…</p></section>`;
+  const tabla=(t,filas)=>`<div class="tb-card"><h4>${t}</h4><table><thead><tr><th>Grupo</th><th>Psicólogos</th><th>Citas realizadas</th><th>Segunda sesión / primeras</th></tr></thead>
+    <tbody>${filas.map(f=>`<tr><td>${esc(f.g)}</td><td>${f.n}</td><td>${f.citas}</td><td>${f.prim?Math.round(f.seg/f.prim*100)+"%":"—"}</td></tr>`).join("")}</tbody></table></div>`;
+  return `<section style="margin-top:16px"><h3 style="margin:0 0 4px">Indicadores consolidados · ${rdMesTxt(S.rd.mes)}</h3><p class="status" style="margin:0 0 10px">Agregados por grupo; no se ordena ni se compara a las personas entre sí. Bosques de Santa Fe solo con acceso individual.</p>
+    <div class="tb-grid">${tabla("Por sede", C.sede)}${tabla("Por tipo de colaboración", C.tipo)}</div></section>`;
+}
+/* Productividad general por sede (petición del Director): misma lógica para todas las sedes visibles */
+function rdComparaSedesHtml(){
+  const C=S.rd?.compSedes; if (!C) return `<section class="note" style="margin-top:16px"><div class="note-h"><h3>Comparativa entre sedes</h3></div>${cargandoHtml("Calculando…")}</section>`;
+  const pc=(a,b)=>b?Math.round(a/b*100)+"%":"—";
+  return `<section style="margin-top:16px"><h3 style="margin:0 0 4px">Comparativa entre sedes · ${rdMesTxt(S.rd.mes)}</h3><p class="status" style="margin:0 0 10px">Totales de todos los terapeutas por sede. No hay una «mejor» sede: la demanda, los horarios y el tipo de servicios son distintos.</p>
+    <div class="tbl-wrap"><table><thead><tr><th>Sede</th><th>Terapeutas</th><th>Citas realizadas</th><th>Citas por terapeuta</th><th>Nuevos</th><th>2.ª sesión / primeras</th><th>Salieron con siguiente cita</th><th>Cancelaciones</th><th>Inasistencias</th><th>Comisión generada</th><th>Mediana de permanencia</th></tr></thead>
+    <tbody>${C.map(x=>`<tr><td><b>${esc(x.sede)}</b></td><td>${x.ter}</td><td>${x.citas}</td><td>${x.ter?(x.citas/x.ter).toFixed(1):"—"}</td><td>${x.nuevos}</td><td>${pc(x.seg,x.prim)}</td><td>${pc(x.sig,x.citas)}</td><td>${pc(x.cancel,x.citas+x.cancel+x.inasist)}</td><td>${pc(x.inasist,x.citas+x.cancel+x.inasist)}</td><td>${rdPesos(x.com)}</td><td>${x.km??"—"}</td></tr>`).join("")}</tbody></table></div></section>`;
+}
+async function rdComparativas(){ /* P32–P35: la comparativa entre sedes viene en la consulta consolidada */ }
+async function rdPdf(){
+  const D=S.rd.datos, mes=S.rd.mes, M=rdMemorandum(D, mes);
+  if (!(await libLista("pdf"))) return toast("No se pudo preparar el PDF. Revisa tu conexión.");
+  const dl=await window.claude?.use?.("downloads"); if (!dl) return toast("La descarga no está disponible en esta vista.");
+  const {PDFDocument, StandardFonts, rgb}=PDFLib, pdf=await PDFDocument.create(); pdf.setTitle("Memorándum de rendimiento"); pdf.setAuthor(CEMEPI_NOMBRE); pdf.setLanguage("es-MX");
+  const font=await pdf.embedFont(StandardFonts.Helvetica), bold=await pdf.embedFont(StandardFonts.HelveticaBold), b64=await logoB64(), logo=b64?await pdf.embedPng(Uint8Array.from(atob(b64),c=>c.charCodeAt(0))):null;
+  const W=612,H=792,Mg=54,CW=W-2*Mg,FS=11,LH=13.8, azul=rgb(0.02,0.376,0.741), tinta=rgb(0.06,0.14,0.25), gris=rgb(0.33,0.41,0.54);
+  let page=pdf.addPage([W,H]), y=H-Mg; const espacio=h=>{ if (y-h<Mg){ page=pdf.addPage([W,H]); y=H-Mg; } };
+  const parrafo=(t,o={})=>{ const fo=o.b?bold:font, sz=o.size||FS, x0=o.x||Mg, ancho=CW-(x0-Mg); const pal=limpiarPdf(t).split(/ +/).filter(Boolean), ls=[]; let a=[];
+    for (const w of pal){ if (fo.widthOfTextAtSize([...a,w].join(" "),sz)<=ancho||!a.length) a.push(w); else { ls.push(a); a=[w]; } } if (a.length) ls.push(a);
+    ls.forEach((ws,k)=>{ espacio(LH); y-=LH; if (k===ls.length-1||ws.length<2){ page.drawText(ws.join(" "),{x:x0,y,size:sz,font:fo,color:o.color||tinta}); return; }
+      const an=ws.map(w=>fo.widthOfTextAtSize(w,sz)), gap=(ancho-an.reduce((p,q)=>p+q,0))/(ws.length-1); let xx=x0; ws.forEach((w,j)=>{ page.drawText(w,{x:xx,y,size:sz,font:fo,color:o.color||tinta}); xx+=an[j]+gap; }); }); y-=4; };
+  if (logo) page.drawImage(logo,{x:Mg,y:y-42,width:48,height:42});
+  y-=15; page.drawText(limpiarPdf(CEMEPI_NOMBRE),{x:Mg+58,y,size:13,font:bold,color:azul}); y-=14; page.drawText("Memorándum de rendimiento · uso interno",{x:Mg+58,y,size:8.5,font,color:gris});
+  y-=26; pdfContacto(page, font, y, W, Mg, gris); y-=8; page.drawLine({start:{x:Mg,y},end:{x:W-Mg,y},thickness:1.5,color:azul});
+  y-=26; const tit=limpiarPdf(`MEMORÁNDUM DE ${rdMesTxt(mes).toUpperCase()}`); page.drawText(tit,{x:(W-bold.widthOfTextAtSize(tit,12))/2,y,size:12,font:bold,color:azul}); y-=6;
+  parrafo(M.filtros||`${D.persona.nombre} · ${D.persona.sede} · ${MOD_TXT[D.persona.modalidad]||""}`,{size:10,color:gris});
+  parrafo(M.sint.join(" "));
+  if (M.alerta){ espacio(LH*3); y-=6; parrafo(M.alerta.t,{b:true,color:rgb(0.70,0.16,0.16)}); parrafo(M.alerta.x); }
+  if (M.crece.length){ espacio(LH*2); y-=6; parrafo("Lo que se mantiene o creció",{b:true,color:azul}); M.crece.forEach(t=>parrafo("- "+t.charAt(0).toUpperCase()+t.slice(1)+".",{x:Mg+10})); }
+  espacio(LH*2); y-=6; parrafo("Para reflexionar",{b:true,color:azul}); M.reflex.forEach(t=>parrafo("- "+t,{x:Mg+10}));
+  if (M.herr.length){ espacio(LH*2); y-=6; parrafo("Herramientas sugeridas para este mes",{b:true,color:azul}); M.herr.forEach(t=>parrafo("- "+t,{x:Mg+10})); }
+  y-=8; parrafo(M.alcance,{size:9,color:gris});
+  if (D.demo){ y-=4; parrafo("Documento de demostración con datos ficticios.",{size:9,color:gris}); }
+  else if (D.fuente){ y-=4; parrafo(`Fuente: ${D.fuente}.`,{size:9,color:gris}); }
+  await dl.save({filename:`Memorandum-rendimiento-${D.tipo?(D.persona.nombre==="Toda CEMEPI"?"CEMEPI":D.persona.sede.split(", ").length>1?"varias-sedes":"sede-"+D.persona.sede):"persona"}-${mes}.pdf`.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g,"-"), data:await pdf.save()}); toast("Memorándum descargado.");
+}
+async function rdAccion(a, b){
+  if (a==="rendimiento"){ S.view="rendimiento"; render();
+    if (S.rol==="superusuario" && S.api?.rendPendientes) Promise.all([S.api.rendPendientes(), S.api.rendPsicologos()]).then(([p,ps])=>{ S.rdPend=p; S.rdPsic=ps; if (S.view==="rendimiento") render(); }).catch(()=>{});
+    await rdCargar(); return rdComparativas(); }
+  if (a==="rdMes"){ S.rd.mes=b.dataset.m; S.rd.comp=null; S.rd.compSedes=null; render(); return rdComparativas(); }
+  if (a==="rdPer"){ S.rd.f={...S.rd.f, per:+b.dataset.n}; return rdCargar(); }
+  if (["rdAccAbrir","rdAccOtorgar","rdAccRevocar","rdResQuitar","rdResPoner"].includes(a)) return rdAccAccion(a, b);
+  if (a==="rdPdf") return rdPdf();
+  if (a==="rdImpGuardar") return rdImpGuardar();
+  if (a==="rdImpRevisar") return rdImpRevisar();
+  if (a==="rdPendOk") return rdPendOk(b);
+  if (a==="rdImpCancelar"){ S.rdImp=null; return render(); }
+}
+document.addEventListener("change", e=>{ const t=e.target; if (!S.rd?.f) { if (t?.id==="rdPersona") rdCargar(t.value); return; }
+  if (t?.id==="rdPersona") return rdCargar(t.value);
+  if (t?.id==="rdSedeTodas"){ S.rd.f={...S.rd.f, sedes:t.checked?S.rd.misSedes.map(x=>x.sede):[S.rd.misSedes[0].sede], perfil:""}; return rdCargar(); }
+  if (t?.name==="rdSedeSel"){ const sel=[...document.querySelectorAll('input[name="rdSedeSel"]:checked')].map(x=>x.value);
+    if (!sel.length){ t.checked=true; return toast("Elige al menos una sede."); } S.rd.f={...S.rd.f, sedes:sel, perfil:""}; return rdCargar(); } });
+
+/* ================= P31 · C1 · 🌱 Profundidad y continuidad de mis procesos =================
+   Diseño aprobado (diseno/CONTINUIDAD-P31-PROPUESTA.md). Referencias 12 · 33 · 66+ = horizontes institucionales, no mínimos.
+   Alerta roja RELATIVA (embudo ajustado por tipo de servicio, n ≥ 10, > 99.8 %); «en seguimiento» si solo un periodo > 95 %.
+   Sin motivo de cierre registrado, la alerta individual se muestra como vista previa. Nunca juzga al profesional. */
+const RD_ETAPAS=[
+  ["primera","La primera sesión",["¿La primera entrevista permitió comprender el motivo de consulta y lo que la persona espera?","¿Quedó acordada la siguiente cita antes de salir?","¿Se explicó cómo trabajaremos y cuánto podría durar, sin prometer una cifra?"]],
+  ["temprana","Entre la primera y la quinta sesión",["¿Hubo dificultades de horario, costo o traslado? ¿La sede puede ofrecer alternativas (en línea, otro horario)?","¿La frecuencia acordada es sostenible para la persona?","¿Cómo está participando el consultante en el proceso?"]],
+  ["media","Entre la quinta y la duodécima sesión",["¿Han revisado juntos los objetivos y los cambios experimentados?","¿Qué obstáculos podrían estar apareciendo?","Si la persona siente que ya está bien, ¿se planeó un cierre?"]],
+  ["extensa","En procesos más extensos",["¿Cuándo fue la última revisión conjunta de objetivos?","¿El proceso sigue beneficiando y fortaleciendo la autonomía del consultante?","¿Hay riesgo de dependencia innecesaria? ¿Cuáles son las posibilidades de cierre y seguimiento?"]]];
+const rdPct1=x=>x==null?"—":`${Math.round(x*100)}%`;
+function rdEtapaFoco(C){ const t=C.dist.reduce((a,d)=>a+d.act+d.cer,0)||1, uno=(C.dist[0].act+C.dist[0].cer)/t, temp=(C.dist[1].act+C.dist[1].cer)/t;
+  return uno>=0.3?"primera":temp>=0.3?"temprana":"media"; }
+function rdAlertaHtml(C, D){
+  const a=C.alerta||{}, prev=a.vista_previa?`<p class="rd-prev">Vista previa: esta lectura se convertirá en alerta cuando exista el motivo de cierre de cada proceso (folio CEMEPI en el sistema de citas).</p>`:"";
+  const datos=a.n?`Procesos resueltos: ${a.n} · terminaron antes de 12 sin motivo registrado: ${a.f} (${rdPct1(a.tasa)}) · esperado para tu tipo de casos: ${rdPct1(a.esperada)} · límite: ${rdPct1(a.l998)}.`:"";
+  const dif=a.n?` Diferencia: ${a.tasa>a.esperada?"+":""}${Math.round((a.tasa-a.esperada)*1000)/10} puntos respecto a lo esperado.`:"";
+  if (a.estado==="roja" && D?.tipo==="sede") return `<div class="rd-alerta" role="alert"><p class="rd-alerta-t"><span aria-hidden="true">🔴</span> CONTINUIDAD POR REVISAR EN LA SEDE (revisión organizacional)</p>
+    <p>En esta sede, la proporción de procesos que terminan antes de la referencia de 12 sesiones está por encima de lo esperado para su tipo de casos.${esc(dif)}</p>
+    <p>Con volúmenes grandes, diferencias moderadas resultan estadísticamente claras: conviene mirar la magnitud. Sugiere revisar como organización la primera atención, la disponibilidad de horarios, los recordatorios, el seguimiento de inasistencias y la asignación de casos. <b>No señala a ninguna persona.</b></p>
+    <p class="status" style="margin:0">${esc(datos)}</p>${prev}</div>`;
+  if (a.estado==="roja") return `<div class="rd-alerta" role="alert"><p class="rd-alerta-t"><span aria-hidden="true">🔴</span> ALERTA IMPORTANTE — CONTINUIDAD TERAPÉUTICA POR REVISAR</p>
+    <p>Durante el periodo analizado se identifica una proporción relevante de procesos finalizados o interrumpidos antes de alcanzar la referencia institucional de 12 sesiones, por encima de lo esperado para tu tipo de casos.</p>
+    <p>Este resultado merece revisar las condiciones que pueden estar influyendo en la continuidad, incluyendo el encuentro inicial, la construcción del vínculo terapéutico, los acuerdos de seguimiento, la disponibilidad de citas y las circunstancias de los consultantes. <b>El indicador no permite atribuir por sí solo la situación al desempeño clínico del profesional.</b> Es una invitación a revisarlo en supervisión con Coordinación clínica; no genera sanciones ni cambios de remuneración.</p>
+    <p class="status" style="margin:0">${esc(datos)}</p>${prev}</div>`;
+  if (a.estado==="revisar") return `<div class="rd-aviso"><p style="margin:0"><b>En seguimiento.</b> En este periodo, la proporción de procesos que terminaron antes de 12 sesiones está por encima de lo esperado (límite del 95 %).${esc(dif)} Si se repite en el siguiente trimestre, se activará la alerta de continuidad por revisar.</p><p class="status" style="margin:4px 0 0">${esc(datos)}</p>${prev}</div>`;
+  if (a.estado==="general") return `<div class="rd-aviso"><p style="margin:0"><b>Vista general.</b> Las alertas de continuidad se leen por psicólogo y por sede; aquí se muestra el conjunto.</p></div>`;
+  if (a.estado==="volumen") return `<div class="rd-aviso"><p style="margin:0"><b>Volumen insuficiente para comparar.</b> Se necesitan al menos 10 procesos resueltos; mientras tanto, la lectura es solo descriptiva.</p></div>`;
+  return `<div class="rd-aviso ok"><p style="margin:0"><b>Dentro de lo esperado</b> para tu tipo de casos.</p><p class="status" style="margin:4px 0 0">${esc(datos)}</p>${prev}</div>`;
+}
+function rdDistHtml(C){
+  const max=Math.max(1,...C.dist.map(d=>d.act+d.cer));
+  return `<div class="tb-card"><h4>Procesos según sesiones acumuladas</h4>
+    <ul class="rd-dist">${C.dist.map(d=>`<li><span class="rd-et">${esc(d.g)} ${d.g==="1"?"sesión":"sesiones"}${["12–32","33–65","66+"].includes(d.g)?` <span class="rd-ref">${d.g==="12–32"?"alcanzó la referencia breve":d.g==="33–65"?"alcanzó la referencia intermedia":"alcanzó la referencia extensa"}</span>`:""}</span>
+      <span class="rd-apil" aria-hidden="true"><span class="a" style="width:${d.act/max*100}%"></span><span class="c" style="width:${d.cer/max*100}%"></span></span>
+      <span class="rd-n">${d.act+d.cer} · ${d.act} activos · ${d.cer} cerrados</span></li>`).join("")}</ul>
+    <p class="rd-leyenda"><span><i class="rd-s1"></i>Activos</span><span><i class="rd-c4 rayas"></i>Cerrados o interrumpidos</span></p>
+    <p class="rd-interp">Los grupos son hitos cuantitativos: no indican la modalidad del tratamiento ni si se cumplieron los objetivos.</p></div>`;
+}
+function rdKmHtml(C, org){
+  const W=320,H=180,L=30,B=24,T=10,K=40, x=k=>L+(W-L-8)*(k-1)/(K-1), y=v=>T+(H-T-B)*(1-v);
+  const linea=S=>S.slice(0,K).map((v,i)=>`${i?"L":"M"}${x(i+1).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  const ref=(k,t)=>`<line class="rd-refl" x1="${x(k)}" x2="${x(k)}" y1="${T}" y2="${H-B}"/><text x="${x(k)+3}" y="${T+10}">${t}</text>`;
+  return `<div class="tb-card"><h4>Curva de permanencia de mis procesos</h4>
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Porcentaje de procesos que siguen en cada sesión. Mediana de permanencia: ${C.mediana_km??"sin dato"} sesiones; CEMEPI: ${org?.mediana_km??"sin dato"}.">
+      <line class="grid" x1="${L}" x2="${W-8}" y1="${H-B}" y2="${H-B}"/><line class="grid" x1="${L}" x2="${W-8}" y1="${y(.5)}" y2="${y(.5)}"/>
+      <text x="2" y="${y(1)+4}">100%</text><text x="6" y="${y(.5)+4}">50%</text><text x="10" y="${H-B+4}">0%</text>
+      ${ref(12,"12")}${ref(33,"33")}
+      ${org?.km?`<path d="${linea(org.km)}" class="rd-km-org"/>`:""}<path d="${linea(C.km)}" class="rd-km"/>
+      ${[1,5,12,20,33,40].map(k=>`<text x="${x(k)}" y="${H-8}" text-anchor="middle">${k}</text>`).join("")}</svg>
+    <p class="rd-leyenda"><span><i class="rd-s1"></i>Mis procesos</span><span><i class="rd-km-o"></i>CEMEPI</span><span>│ 12 y 33: referencias institucionales · 66+ queda fuera del periodo observable</span></p>
+    <p class="rd-interp">La mitad de tus procesos sigue hasta la sesión <b>${C.mediana_km??"—"}</b> (CEMEPI: ${org?.mediana_km??"—"}). Los procesos activos cuentan como «en curso», no como cerrados.</p>
+    <details><summary>Ver datos</summary><p class="status">Sesión: % que sigue — ${C.km.slice(0,15).map((v,i)=>`${i+1}: ${Math.round(v*100)}%`).join(" · ")}</p></details></div>`;
+}
+function rdHitosHtml(C){
+  const pct=h=>h&&(h.alc+h.fue)?Math.round(h.alc/(h.alc+h.fue)*100)+"%":"—", fila=(m,h)=>`<td>${pct(h)}</td><td class="status">${h.alc} de ${h.alc+h.fue}${h.obs?` · ${h.obs} en observación`:""}</td>`;
+  return `<div class="tb-card"><h4>Hitos de continuidad por cohorte</h4>
+    <table><thead><tr><th>Iniciaron en</th><th>2.ª sesión</th><th></th><th>5.ª sesión</th><th></th></tr></thead>
+      <tbody>${C.hitos.map(h=>`<tr><td>${rdMesTxt(h.cohorte)}</td>${fila(h.cohorte,h.r2)}${fila(h.cohorte,h.r5)}</tr>`).join("")}</tbody></table>
+    <table style="margin-top:8px"><thead><tr><th>Iniciaron en</th><th>12 sesiones</th><th></th></tr></thead>
+      <tbody>${C.h12.map(h=>`<tr><td>${rdMesTxt(h.cohorte)}</td>${fila(h.cohorte,h.r12)}</tr>`).join("")}</tbody></table>
+    <p class="rd-interp">Porcentaje entre procesos con resultado conocido. «En observación»: aún sin tiempo suficiente según su frecuencia; no cuentan como interrupción.</p></div>`;
+}
+function rdContinuidadHtml(D){
+  const C=D.continuidad; if (!C) return "";
+  const foco=rdEtapaFoco(C);
+  return `<section class="note rd-cont" style="margin-top:16px"><div class="note-h"><h3>🌱 Profundidad y continuidad de ${D.tipo==="sede"?(D.persona.nombre==="Todas las sedes"?"los procesos de todas las sedes":"los procesos de la sede"):"mis procesos"}</h3></div>
+    <p class="status" style="margin:0 0 8px">${esc((D.continuidad_org?.periodo)||"Procesos iniciados desde febrero de 2026")}. Referencias institucionales: <b>12</b> (breve) · <b>33</b> (intermedia) · <b>66+</b> (extensa). Son horizontes de estudio, no mínimos ni metas: la duración adecuada depende de cada persona, y terminar porque se alcanzaron los objetivos también es un buen resultado.</p>
+    ${rdAlertaHtml(C, D)}
+    <div class="rd-cards" style="margin-top:10px">
+      <div class="rd-card"><small>Procesos</small><b>${C.procesos}</b><span class="status">${C.activos} activos · ${C.cerrados} cerrados</span></div>
+      <div class="rd-card"><small>Mediana de permanencia</small><b>${C.mediana_km??"—"}</b><span class="status">sesiones (CEMEPI: ${D.continuidad_org?.mediana_km??"—"})</span></div>
+      <div class="rd-card"><small>Sesiones por proceso cerrado</small><b>${C.prom_cer??"—"}</b><span class="status">promedio · mediana ${C.med_cer??"—"}</span></div>
+      <div class="rd-card"><small>En observación para 12</small><b>${C.obs12??"—"}</b><span class="status">sin tiempo suficiente todavía</span></div></div>
+    <div class="tb-grid" style="margin-top:12px">${rdDistHtml(C)}${rdKmHtml(C, D.continuidad_org)}${rdHitosHtml(C)}</div>
+    <h4 style="margin:14px 0 4px">Para reflexionar, por etapa del proceso</h4>
+    ${RD_ETAPAS.map(([k,t,qs])=>`<details${k===foco?" open":""}><summary>${esc(t)}${k===foco?' <span class="rd-obs" style="background:var(--accent-soft);color:var(--accent)">mirar primero</span>':""}</summary><ul>${qs.map(q=>`<li>${esc(q)}</li>`).join("")}</ul></details>`).join("")}
+    <p class="status" style="margin:8px 0 0">La cantidad de sesiones no mide calidad, mejoría ni competencia profesional. No se recomienda prolongar un proceso para alcanzar 33 o 66 sesiones.</p></section>`;
+}
+
+/* ================= P31 · C2 · Importar ventas del mes (solo Superusuario) =================
+   El archivo se lee y se procesa AQUÍ, en el navegador. Los consultantes se identifican solo en memoria con un número
+   que se descarta al terminar: nunca se envían ni se guardan su nombre, celular o correo (decisión del Director, 2026-11-27).
+   Al servidor solo llegan cifras por psicólogo y mes, la lectura de continuidad y la curva agregada de CEMEPI. */
+const RDI_ERROR=new Set(["equivocacion fecha","cita duplicada terapeuta","equivocacion nombre consultante","cita duplicada admin"]);
+const rdiNz=s=>String(s??"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/\s+/g," ").trim();
+const rdiDia=iso=>Math.round(Date.UTC(+iso.slice(0,4), +iso.slice(5,7)-1, +iso.slice(8,10))/864e5);
+const rdiMes=iso=>iso.slice(0,7);
+function rdiSede(s){ const n=rdiNz(s);
+  if (n.includes("international")) return null; if (n.includes("victoria")) return "Victoria"; if (n.includes("iztacalco")) return "Iztacalco";
+  if (n.includes("lindavista")) return "Lindavista"; if (n.includes("insurgentes")) return "Insurgentes"; if (n.includes("guadalupe")) return "Calzada de Guadalupe";
+  if (n.includes("bosques")||n.includes("santa fe")) return "Bosques de Santa Fe"; if (n.includes("reforma")) return "Reforma"; if (n.includes("atizapan")) return "Atizapán"; return null; }
+function rdiTipo(c){ const n=rdiNz(c);
+  if (n.includes("pareja")) return "pareja"; if (n.includes("familiar")) return "familiar"; if (n.includes("infan")||n.includes("adoles")) return "infantil-adolescente";
+  if (n.includes("online")||n.includes("on line")||n.includes("linea")) return "en línea"; if (n.includes("beca")||n.includes("convenio")||n.includes("mms")) return "beca/convenio"; return "individual/otro"; }
+async function rdiLeer(file){ const buf=new Uint8Array(await file.arrayBuffer());
+  const enc = buf[0]===0xFF&&buf[1]===0xFE ? "utf-16le" : buf[0]===0xFE&&buf[1]===0xFF ? "utf-16be" : "utf-8";
+  return new TextDecoder(enc).decode(buf).replace(/^﻿/,""); }
+function rdiParse(txt){ /* texto separado por tabuladores (o comas) con comillas */
+  const sep=(txt.split("\n",1)[0].includes("\t"))?"\t":",", filas=[]; let f=[], v="", q=false;
+  for (let i=0;i<txt.length;i++){ const ch=txt[i];
+    if (q){ if (ch==='"'){ if (txt[i+1]==='"'){ v+='"'; i++; } else q=false; } else v+=ch; continue; }
+    if (ch==='"') q=true; else if (ch===sep){ f.push(v); v=""; } else if (ch==="\n"){ f.push(v.replace(/\r$/,"")); filas.push(f); f=[]; v=""; } else v+=ch; }
+  if (v||f.length){ f.push(v); filas.push(f); }
+  const cab=filas.shift()||[]; return {cab, filas}; }
+function rdiCalcular(cab, filas, hoyIso){
+  const col=n=>cab.findIndex(h=>rdiNz(h)===rdiNz(n)), req=["Terapeuta","Cliente","Estatus","Fecha de cita","Motivo de cancelación","Sucursal","Comisión","Concepto","Creado el"];
+  const faltan=req.filter(n=>col(n)<0); if (faltan.length) throw new Error("El archivo no tiene las columnas: "+faltan.join(", ")+".");
+  const C=Object.fromEntries(req.map(n=>[n,col(n)])), hoy=rdiDia(hoyIso), excl={"otra sucursal":0,"fecha inválida o futura lejana":0,"error de captura":0};
+  const idCli=new Map(); let usadas=0;   /* consultante → número, solo en memoria */
+  const T=new Map(), par=new Map(), SX=new Map();   /* SX: totales por sede (todos los terapeutas), petición del Director */
+  const nuevoM=()=>({nuevos:0,primeras:0,citas:0,cancel:0,reagenda:0,inasist:0,seg_agendada:0,seg_realizada:0,quinta:0,sig_cita:0,comision:0});
+  for (const r of filas){
+    if (r.length<cab.length-2) continue;
+    const sede=rdiSede(r[C["Sucursal"]]); if (!sede){ excl["otra sucursal"]++; continue; }
+    const fe=String(r[C["Fecha de cita"]]||"").trim().slice(0,10); if (!/^\d{4}-\d{2}-\d{2}$/.test(fe)||+fe.slice(0,4)>2100){ excl["fecha inválida o futura lejana"]++; continue; }
+    const est=String(r[C["Estatus"]]||"").trim(), mot=rdiNz(r[C["Motivo de cancelación"]]);
+    if (est==="Cancelada" && RDI_ERROR.has(mot)){ excl["error de captura"]++; continue; }
+    const t=String(r[C["Terapeuta"]]||"").trim(); if (!t) continue;
+    const ck=rdiNz(r[C["Cliente"]]); if (!idCli.has(ck)) idCli.set(ck, idCli.size); const cid=idCli.get(ck);
+    const crIso=String(r[C["Creado el"]]||"").trim().slice(0,10), cr=/^\d{4}-\d{2}-\d{2}$/.test(crIso)?rdiDia(crIso):null;
+    const com=Number(String(r[C["Comisión"]]||"0").replace(/,/g,""))||0, conc=String(r[C["Concepto"]]||""), d=rdiDia(fe), m=rdiMes(fe);
+    usadas++;
+    let X=T.get(t); if (!X){ X={sedes:{},m:{}}; T.set(t,X); } X.sedes[sede]=(X.sedes[sede]||0)+1;
+    const M=X.m[m]||(X.m[m]=nuevoM());
+    let Z=SX.get(sede); if (!Z){ Z={m:{},ter:{}}; SX.set(sede,Z); } const MS=Z.m[m]||(Z.m[m]=nuevoM());
+    for (const Q of [M,MS]){
+      if (est==="Realizada" && d<=hoy){ Q.citas++; Q.comision+=com; } else if (est==="Inasistencia") Q.inasist++;
+      else if (est==="Cancelada" && mot.startsWith("reagend")) Q.reagenda++; else if (est==="Cancelada" && mot!=="cita abierta") Q.cancel++; }
+    if (est==="Realizada" && d<=hoy) (Z.ter[m]||(Z.ter[m]=new Set())).add(t);
+    const k=t+"\u0001"+cid; (par.get(k)||par.set(k,[]).get(k)).push({d,iso:fe,est,re:mot.startsWith("reagend"),cr,gar:rdiNz(conc).includes("garant"),tipo:rdiTipo(conc),sede});
+  }
+  idCli.clear();   /* se descarta la relación consultante → número */
+  /* P32 · código ALEATORIO por consultante, válido solo en esta importación: permite contar consultantes únicos sin duplicar entre sedes */
+  const codAl=new Map(), cod=cid=>{ if (!codAl.has(cid)){ const b=new Uint8Array(9); crypto.getRandomValues(b); codAl.set(cid, [...b].map(x=>x.toString(16).padStart(2,"0")).join("")); } return codAl.get(cid); };
+  const reg=[];   /* registro disociado por proceso (sin nombre, celular, correo ni fechas exactas) */
+  const inc=(t,m,k,se)=>{ const X=T.get(t); const M=X.m[m]||(X.m[m]=nuevoM()); M[k]++;
+    if (se){ const Z=SX.get(se); const MS=Z.m[m]||(Z.m[m]=nuevoM()); MS[k]++; } };
+  const isoDe=d=>new Date(d*864e5).toISOString().slice(0,10), procs=[];
+  let minMes="9999-99"; for (const ev of par.values()) for (const e of ev) if (e.iso.slice(0,7)<minMes) minMes=e.iso.slice(0,7);
+  const ini=(()=>{ const [y,mo]=minMes.split("-").map(Number); const x=new Date(Date.UTC(y,mo,1)); return Math.round(x.getTime()/864e5); })();   /* primer día del mes siguiente al inicio del archivo */
+  for (const [k,ev] of par){ const [t,cidTxt]=k.split("\u0001"); ev.sort((a,b)=>a.d-b.d);
+    inc(t, rdiMes(ev[0].iso), "nuevos", ev[0].sede);
+    const real=ev.filter(e=>e.est==="Realizada"&&e.d<=hoy);
+    if (real.length){ const f1=real[0].d, m1=rdiMes(real[0].iso), s1=real[0].sede; inc(t,m1,"primeras",s1);
+      if (ev.some(e=>e.d>f1&&e.d<=f1+30&&!(e.est==="Cancelada"&&!e.re))) inc(t,m1,"seg_agendada",s1);
+      if (real.length>=2&&real[1].d<=f1+30) inc(t,m1,"seg_realizada",s1);
+      if (real.length>=5&&real[4].d<=f1+90) inc(t,m1,"quinta",s1);
+      ev.forEach((e,i)=>{ if (e.est==="Realizada"&&e.d<=hoy&&ev.slice(i+1).some(x=>x.d>e.d&&x.cr!=null&&x.cr<=e.d)) inc(t,rdiMes(e.iso),"sig_cita",e.sede); }); }
+    /* Continuidad (P31): sin «Garantía de satisfacción», procesos que empiezan después del inicio del archivo */
+    const ec=ev.filter(e=>!e.gar), rc=ec.filter(e=>e.est==="Realizada"&&e.d<=hoy);
+    let pc=null;
+    if (rc.length && ec[0].d>=ini){ const gaps=rc.slice(1).map((e,i)=>e.d-rc[i].d).sort((a,b)=>a-b);
+      pc={t, n:rc.length, f1:rc[0].d, f1iso:rc[0].iso, activo: ec.some(e=>e.d>hoy&&e.est==="Confirmada")||hoy-rc[rc.length-1].d<=30,
+        frec: gaps.length>=2?gaps[Math.floor((gaps.length-1)/2)]:null, tipo:rc[0].tipo, sede:rc[0].sede}; procs.push(pc); }
+    if (real.length){ const mm={}; real.forEach(e=>{ const m=rdiMes(e.iso); (mm[m]||(mm[m]={}))[e.sede]=(mm[m][e.sede]||0)+1; });
+      reg.push({t, p:pc, cod:cod(+cidTxt), sede:(pc||real[0]).sede, mes:rdiMes((pc?pc.f1iso:real[0].iso)), dias:hoy-(pc?pc.f1:real[0].d), n:pc?pc.n:real.length,
+        activo:pc?pc.activo:(ev.some(e=>e.d>hoy&&e.est==="Confirmada")||hoy-real[real.length-1].d<=30), cont:!!pc, tipo:(pc||real[0]).tipo, meses:mm}); }
+  }
+  codAl.clear();
+  par.clear();
+  /* Ventanas, curva de permanencia, hitos y alerta relativa (diseno/CONTINUIDAD-P31-PROPUESTA.md §3–4) */
+  const med=a=>{ const s=[...a].sort((x,y)=>x-y); return s.length?(s.length%2?s[(s.length-1)/2]:(s[s.length/2-1]+s[s.length/2])/2):null; };
+  const frT={}; procs.forEach(p=>{ if (p.frec) (frT[p.t]||(frT[p.t]=[])).push(p.frec); }); procs.forEach(p=>{ p.int=p.frec||med(frT[p.t]||[])||14; });
+  const estado=(p,R)=>p.n>=R?"alc":!p.activo?"fue":(hoy-p.f1<Math.max(30,R*p.int*1.5)?"obs":"act");
+  const km=ps=>{ const S=[1]; let s=1; for (let k=1;k<40;k++){ const r=ps.filter(p=>p.n>=k).length, f=ps.filter(p=>p.n===k&&!p.activo).length; if (!r) break; s*=1-f/r; S.push(+s.toFixed(4)); } return S; };
+  const tasa=ps=>{ const f=ps.filter(p=>estado(p,12)==="fue").length, a=ps.filter(p=>p.n>=12).length; return [f,f+a]; };
+  const base=procs.filter(p=>p.f1<=hoy-150), [f0,n0]=tasa(base), p0=n0?f0/n0:0.9, pt={};
+  [...new Set(base.map(p=>p.tipo))].forEach(ti=>{ const [a,b]=tasa(base.filter(p=>p.tipo===ti)); pt[ti]=b?a/b:p0; });
+  const mesesAtras=n=>{ const h=new Date(hoy*864e5); const x=new Date(Date.UTC(h.getUTCFullYear(), h.getUTCMonth()-n, 1)); return x.toISOString().slice(0,7); };
+  const G=[["1",1,1],["2–4",2,4],["5–11",5,11],["12–32",12,32],["33–65",33,65],["66+",66,1e9]];
+  const cont=ps=>{ const cer=ps.filter(p=>!p.activo).map(p=>p.n), S=km(ps), mk=S.findIndex(v=>v<=0.5), coh=m=>ps.filter(p=>p.f1iso.slice(0,7)===m);
+    const hito=(m,R)=>{ const c=coh(m), e={alc:0,fue:0,obs:0}; c.forEach(p=>{ const x=estado(p,R); e[x==="act"?"obs":x]++; }); return {n:c.length,...e}; };
+    const b=ps.filter(p=>p.f1<=hoy-150), [f,n]=tasa(b); let alerta={n:0,estado:"volumen",vista_previa:true};
+    if (n){ const esp=b.filter(p=>["fue","alc"].includes(estado(p,12))).reduce((x,p)=>x+(pt[p.tipo]??p0),0)/n, sd=Math.sqrt(esp*(1-esp)/n), l95=esp+1.96*sd, l998=esp+3.09*sd, o=f/n;
+      alerta={n,f,tasa:+o.toFixed(4),esperada:+esp.toFixed(4),l95:+Math.min(l95,1).toFixed(4),l998:+Math.min(l998,1).toFixed(4),estado:n<10?"volumen":o>l998?"roja":o>l95?"revisar":"dentro",vista_previa:true}; }
+    return {procesos:ps.length, activos:ps.filter(p=>p.activo).length, cerrados:cer.length, prom_cer:cer.length?+(cer.reduce((x,y)=>x+y,0)/cer.length).toFixed(1):null, med_cer:med(cer),
+      mediana_km:mk>=0?mk+1:null, dist:G.map(([g,lo,hi])=>({g, act:ps.filter(p=>p.n>=lo&&p.n<=hi&&p.activo).length, cer:ps.filter(p=>p.n>=lo&&p.n<=hi&&!p.activo).length})), km:S,
+      hitos:[3,2,1].map(k=>mesesAtras(k)).map(m=>({cohorte:m, r2:hito(m,2), r5:hito(m,5)})), h12:[8,7,6].map(k=>mesesAtras(k)).map(m=>({cohorte:m, r12:hito(m,12)})),
+      alerta, obs12:ps.filter(p=>estado(p,12)==="obs").length}; };
+  const orgKm=km(procs), omk=orgKm.findIndex(v=>v<=0.5);
+  const meses=[...new Set([...T.values()].flatMap(X=>Object.keys(X.m)))].filter(m=>m<=rdiMes(hoyIso)).sort();
+  const ter=[...T.entries()].map(([t,X])=>({nombre:t, sede:Object.entries(X.sedes).sort((a,b)=>b[1]-a[1])[0][0],
+      citas:Object.values(X.m).reduce((x,M)=>x+M.citas,0), mensual:Object.fromEntries(Object.entries(X.m).filter(([m])=>m<=rdiMes(hoyIso)).map(([m,M])=>[m,{...M, comision:Math.round(M.comision*100)/100}])),
+      continuidad:cont(procs.filter(p=>p.t===t))})).sort((a,b)=>b.citas-a.citas);
+  const sedes=[...SX.entries()].map(([se,Z])=>({sede:se, mensual:Object.fromEntries(Object.entries(Z.m).filter(([m])=>m<=rdiMes(hoyIso)).map(([m,M])=>[m,{...M, comision:Math.round(M.comision*100)/100, terapeutas:Z.ter[m]?Z.ter[m].size:0}])),
+      continuidad:cont(procs.filter(p=>p.sede===se))})).sort((a,b)=>a.sede.localeCompare(b.sede));
+  const procesos=reg.map(r=>({t:r.t, cod:r.cod, sede:r.sede, mes:r.mes, dias:r.dias, n:r.n, activo:r.activo, cont:r.cont, int:Math.round((r.p?r.p.int:(med(frT[r.t]||[])||14))*10)/10, tipo:r.tipo, meses:r.meses}));
+  return {corte:hoyIso, meses, filas:usadas, excluidas:excl, terapeutas:ter, sedes, procesos,
+    org:{km:orgKm, mediana_km:omk>=0?omk+1:null, base_t12:+p0.toFixed(4), periodo:`Procesos iniciados desde ${rdMesTxt(isoDe(ini).slice(0,7))}`}};
+}
+function rdiEmparejar(nombre, psic, alias){
+  const a=alias.find(x=>x.nombre_archivo===nombre); if (a) return a.ignorar?"__ignorar":(a.perfil_id||"");
+  const tk=new Set(rdiNz(nombre).replace(/psic\.?/g,"").split(" ").filter(Boolean));
+  const c=psic.filter(p=>{ const pk=rdiNz(p.nombre).replace(/psic\.?/g,"").split(" ").filter(Boolean); const comun=pk.filter(x=>tk.has(x)).length; return comun>=Math.min(3,pk.length)||(pk.length<=3&&comun>=2); });
+  return c.length===1?c[0].id:"";
+}
+/* ================= P35 · Importación por diferencias (solo Superusuario) =================
+   El archivo se procesa AQUÍ. Cada cita se reconoce por su id del sistema de citas: importar de nuevo actualiza, no duplica.
+   El consultante viaja solo como SEUDÓNIMO: huella HMAC con una llave derivada de una frase que solo conoce el Superusuario
+   (la frase y la llave nunca se guardan ni se envían; en la base solo hay una sal y una comprobación). Decisión D1 del Director. */
+const RDI_EST={realizada:"realizada",confirmada:"confirmada",inasistencia:"inasistencia",cancelada:"cancelada"};
+const rdiHex=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");
+async function rdiLlave(frase, saltHex){
+  const enc=new TextEncoder(), base=await crypto.subtle.importKey("raw", enc.encode(frase), "PBKDF2", false, ["deriveKey"]);
+  const salt=Uint8Array.from(saltHex.match(/../g).map(h=>parseInt(h,16)));
+  const key=await crypto.subtle.deriveKey({name:"PBKDF2", salt, iterations:210000, hash:"SHA-256"}, base, {name:"HMAC", hash:"SHA-256", length:256}, false, ["sign"]);
+  const verif=rdiHex(await crypto.subtle.sign("HMAC", key, enc.encode("cemepi-verificador-rendimiento")));
+  return {key, verif};
+}
+function rdiFirma(o){ /* huella corta de los campos (FNV-1a doble): detecta si una cita cambió */
+  const s=[o.cod,o.ter,o.sede,o.fecha,o.hora,o.estado,o.motivo,o.tipo,o.garantia?1:0,o.comision,o.creado].join("|");
+  let a=0x811c9dc5, b=0x01000193^0x5bd1e995; for (let i=0;i<s.length;i++){ const c=s.charCodeAt(i); a=Math.imul(a^c,0x01000193)>>>0; b=Math.imul(b^c,0x5bd1e995)>>>0; }
+  return a.toString(16).padStart(8,"0")+b.toString(16).padStart(8,"0"); }
+/* Filas del archivo → citas normalizadas. «ck» (nombre normalizado del consultante) solo vive en memoria hasta calcular el seudónimo. */
+function rdiCitas(cab, filas){
+  const col=n=>cab.findIndex(h=>rdiNz(h)===rdiNz(n)), req=["id","Terapeuta","Cliente","Estatus","Fecha de cita","Motivo de cancelación","Sucursal","Comisión","Concepto","Creado el"];
+  const faltan=req.filter(n=>col(n)<0); if (faltan.length) throw new Error("El archivo no tiene las columnas: "+faltan.join(", ")+". Exporta el archivo de ventas completo del sistema de citas.");
+  const C=Object.fromEntries([...req,"Hora"].map(n=>[n,col(n)])), out=[], omit={"otra sucursal":0,"fecha inválida":0,"estado desconocido":0,"sin id":0};
+  for (const r of filas){
+    if (r.length<cab.length-2) continue;
+    const id=String(r[C["id"]]||"").trim(); if (!/^[A-Za-z0-9_-]{1,40}$/.test(id)){ omit["sin id"]++; continue; }
+    const sede=rdiSede(r[C["Sucursal"]]); if (!sede){ omit["otra sucursal"]++; continue; }
+    const fecha=String(r[C["Fecha de cita"]]||"").trim().slice(0,10); if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)||+fecha.slice(0,4)>2100){ omit["fecha inválida"]++; continue; }
+    const est=RDI_EST[rdiNz(r[C["Estatus"]])]; if (!est){ omit["estado desconocido"]++; continue; }
+    const mot=rdiNz(r[C["Motivo de cancelación"]]); let estado=est, motivo=null;
+    if (est==="cancelada"){ if (RDI_ERROR.has(mot)) estado="anulada"; else motivo=mot.startsWith("reagend")?"reagenda":mot==="cita abierta"?"abierta":"otro"; }
+    const conc=String(r[C["Concepto"]]||""), hora=String(C["Hora"]>=0?r[C["Hora"]]||"":"").trim(), cr=String(r[C["Creado el"]]||"").trim().slice(0,10);
+    /* Seudónimo por nombre normalizado (sin acentos, mayúsculas ni espacios dobles). No se usa el celular: 118 consultantes tienen más de uno
+       registrado y su proceso se partiría. El celular y el correo no se leen. */
+    out.push({id, ck:rdiNz(r[C["Cliente"]]), ter:String(r[C["Terapeuta"]]||"").trim().slice(0,160)||"(sin terapeuta)", sede, fecha, hora:/^\d{1,2}:\d{2}$/.test(hora)?hora:"",
+      estado, motivo, tipo:rdiTipo(conc), garantia:rdiNz(conc).includes("garant"), comision:Math.max(0,Number(String(r[C["Comisión"]]||"0").replace(/,/g,""))||0),
+      creado:/^\d{4}-\d{2}-\d{2}$/.test(cr)?cr:""}); }
+  return {citas:out, omit};
+}
+function rdImpHtml(){
+  const I=S.rdImp||{}, tit=`<div class="note-h"><h3>Importar el archivo de citas</h3></div>`;
+  const intro=`<p class="status" style="margin:0 0 8px">Elige el archivo de ventas que se exporta del sistema de citas. Se procesa <b>en esta computadora</b> y solo se envía lo nuevo o lo que cambió desde la última importación. Del consultante viaja solo un seudónimo; su nombre, celular y correo nunca se envían ni se guardan.</p>
+    <div class="fld"><label for="rdImpArchivo">Archivo de ventas (.csv o .txt)</label><input id="rdImpArchivo" type="file" accept=".csv,.txt,text/csv,text/plain,text/tab-separated-values"></div>`;
+  const pend=S.rdPend?.length?`<section class="note" style="margin-bottom:14px"><div class="note-h"><h3>Pendientes de conciliación (${S.rdPend.length})</h3></div>
+      <p class="status" style="margin:0 0 8px">Citas cuyo terapeuta del archivo aún no tiene una cuenta confirmada. Suman en el total de su sede, pero no se atribuyen a nadie hasta que elijas su cuenta.</p>
+      <div class="tbl-wrap"><table><thead><tr><th>Nombre en el archivo</th><th>Citas</th><th>Sedes</th><th>Cuenta</th><th></th></tr></thead><tbody>${S.rdPend.map((p,i)=>`<tr><td>${esc(p.nombre)}</td><td>${p.citas}</td><td>${esc((p.sedes||[]).join(", "))}</td>
+        <td><select id="rdPendSel${i}" aria-label="Cuenta de ${esc(p.nombre)}"><option value="">— Elige —</option><option value="__ignorar">Ignorar (no tiene cuenta)</option>${(S.rdPsic||[]).map(x=>`<option value="${esc(x.id)}">${esc(x.nombre)} · ${esc(x.sede||"")}</option>`).join("")}</select></td>
+        <td><button class="btn sm" type="button" data-act="rdPendOk" data-i="${i}">Confirmar</button></td></tr>`).join("")}</tbody></table></div></section>`:"";
+  if (I.guardando) return `<section class="note" style="margin-bottom:14px">${tit}${cargandoHtml(esc(I.guardando))}<p class="status">No cierres esta ventana hasta que termine.</p></section>`;
+  if (I.procesando) return `<section class="note" style="margin-bottom:14px">${tit}${cargandoHtml(esc(I.procesando===true?"Procesando el archivo en esta computadora…":I.procesando))}</section>`;
+  if (I.error) return `<section class="note" style="margin-bottom:14px">${tit}${intro}<p class="banner bad">${esc(I.error)}</p></section>${pend}`;
+  if (!I.res) return `<section class="note" style="margin-bottom:14px">${tit}${intro}</section>${pend}`;
+  const R=I.res, L=I.llave||{}, nueva=!L.verif;
+  const opts=t=>`<option value="">— Sin cuenta (queda pendiente) —</option><option value="__ignorar"${I.asig[t.nombre]==="__ignorar"?" selected":""}>Ignorar siempre</option>${I.psic.map(p=>`<option value="${esc(p.id)}"${I.asig[t.nombre]===p.id?" selected":""}>${esc(p.nombre)} · ${esc(p.sede||"")}</option>`).join("")}`;
+  const conf=t=>{ const a=I.alias.find(x=>x.nombre_archivo===t.nombre); return a?(a.ignorar?"__ignorar":a.perfil_id||""):null; };
+  const D=I.dif;
+  return `<section class="note" style="margin-bottom:14px">${tit}
+    <p style="margin:0"><b>Archivo leído.</b> ${R.citas.length.toLocaleString("es-MX")} citas del ${esc(R.desde.split("-").reverse().join("/"))} al ${esc(R.hasta.split("-").reverse().join("/"))} · omitidas: ${Object.entries(R.omit).filter(([,n])=>n).map(([k,n])=>`${esc(k)} ${n}`).join(", ")||"ninguna"}.</p>
+    <h4 style="margin:12px 0 4px">1 · Llave del seudónimo</h4>
+    <p class="status" style="margin:0 0 6px">${nueva?"Es la primera importación: crea una frase de al menos 12 caracteres y guárdala en tu gestor de contraseñas. <b>Sin ella no se puede continuar la continuidad de los procesos</b> en importaciones futuras. No se guarda en la app.":"Escribe la frase de la llave. Solo se usa en esta computadora para calcular los seudónimos."}</p>
+    <div class="datos"><div class="fld"><label for="rdLlave">Frase de la llave</label><input id="rdLlave" type="password" autocomplete="off" data-sin-envio minlength="12"></div>
+      ${nueva?`<div class="fld"><label for="rdLlave2">Repite la frase</label><input id="rdLlave2" type="password" autocomplete="off" data-sin-envio></div>`:""}</div>
+    <h4 style="margin:12px 0 4px">2 · Terapeutas del archivo</h4>
+    <p class="status" style="margin:0 0 6px">Las equivalencias confirmadas se recuerdan. «sugerencia» significa que la app propone una cuenta por el nombre: revísala antes de continuar. Lo que dejes «sin cuenta» queda en pendientes de conciliación.</p>
+    <div class="tbl-wrap" style="max-height:360px;overflow:auto"><table><thead><tr><th>Terapeuta en el archivo</th><th>Citas</th><th>Sede principal</th><th>Cuenta en la app</th></tr></thead>
+      <tbody>${R.terapeutas.map((t,i)=>`<tr><td>${esc(t.nombre)}</td><td>${t.citas}</td><td>${esc(t.sede)}</td><td><select data-rdi="${i}" aria-label="Cuenta de ${esc(t.nombre)}">${opts(t)}</select>${conf(t)===null&&I.asig[t.nombre]?' <span class="pill">sugerencia</span>':""}</td></tr>`).join("")}</tbody></table></div>
+    ${D?`<h4 style="margin:12px 0 4px">3 · Cambios que se aplicarán</h4>
+      <p style="margin:0">Nuevas: <b>${D.nuevas.toLocaleString("es-MX")}</b> · cambiaron: <b>${D.cambiadas.toLocaleString("es-MX")}</b> · sin cambio: ${D.iguales.toLocaleString("es-MX")} · ya no vienen en el archivo (quedarán «ausentes», no se borran): <b>${D.ausentes.toLocaleString("es-MX")}</b>.</p>
+      <p class="status">Cada cambio queda en el historial. Las cifras se recalculan solo para los consultantes y meses afectados.</p>
+      <div class="actions"><button class="btn primary" type="button" data-act="rdImpGuardar"${D.nuevas+D.cambiadas+D.ausentes?"":" disabled"}>Aplicar ${(D.nuevas+D.cambiadas).toLocaleString("es-MX")} cambios</button><button class="btn" type="button" data-act="rdImpCancelar">Cancelar</button></div>`
+     :`<div class="actions"><button class="btn primary" type="button" data-act="rdImpRevisar">Revisar cambios</button><button class="btn" type="button" data-act="rdImpCancelar">Cancelar</button></div>`}
+  </section>${pend}`;
+}
+document.addEventListener("change", async e=>{
+  if (e.target?.id==="rdImpArchivo" && e.target.files?.[0]){ const f=e.target.files[0]; S.rdImp={procesando:true}; render();
+    try{ const txt=await rdiLeer(f), {cab,filas}=rdiParse(txt), hoyIso=today();
+      const res=rdiCalcular(cab, filas, hoyIso), C=rdiCitas(cab, filas);
+      if (!C.citas.length) throw new Error("El archivo no tiene citas válidas.");
+      const fechas=C.citas.map(c=>c.fecha).sort();
+      const [psic, alias, llave]=await Promise.all([S.api.rendPsicologos(), S.api.rendAlias(), S.api.rendLlave()]);
+      S.rdImp={res:{...C, terapeutas:res.terapeutas, desde:fechas[0], hasta:fechas[fechas.length-1], corte:hoyIso}, psic, alias, llave,
+        asig:Object.fromEntries(res.terapeutas.map(t=>[t.nombre, rdiEmparejar(t.nombre, psic, alias)]))}; }
+    catch(err){ S.rdImp={error:err?.message||"No se pudo leer el archivo."}; }
+    render(); return; }
+  if (e.target?.dataset?.rdi!=null && S.rdImp?.res){ const t=S.rdImp.res.terapeutas[+e.target.dataset.rdi]; S.rdImp.asig[t.nombre]=e.target.value; }
+});
+async function rdImpRevisar(){
+  const I=S.rdImp, R=I.res, f1=($("#rdLlave")?.value||""), f2=$("#rdLlave2")?.value;
+  if (f1.length<12) return toast("La frase de la llave debe tener al menos 12 caracteres.");
+  if (f2!=null && f1!==f2) return toast("Las dos frases no coinciden.");
+  S.rdImp={...I, procesando:"Calculando seudónimos en esta computadora…"}; render();
+  try{
+    let L=I.llave||{}; const salt=L.salt||rdiHex(crypto.getRandomValues(new Uint8Array(16)));
+    const {key, verif}=await rdiLlave(f1, salt);
+    if (L.verif && L.verif!==verif) throw new Error("La frase no coincide con la llave registrada. Sin la frase correcta no se puede continuar la continuidad de los procesos.");
+    const enc=new TextEncoder(), memo=new Map();
+    for (const c of R.citas){ if (c.cod) continue; let h=memo.get(c.ck); if (!h){ h=rdiHex(await crypto.subtle.sign("HMAC", key, enc.encode(c.ck))).slice(0,32); memo.set(c.ck,h); } c.cod=h; delete c.ck; c.firma=rdiFirma(c); }
+    memo.clear();   /* se descarta la relación consultante → seudónimo */
+    const fir=await S.api.rendFirmas(), ids=new Set(R.citas.map(c=>c.id));
+    let nuevas=0, cambiadas=0, iguales=0; R.citas.forEach(c=>{ const f=fir[c.id]; if (f==null) nuevas++; else if (f!==c.firma) cambiadas++; else iguales++; });
+    const ausentes=Object.keys(fir).filter(id=>!ids.has(id)&&!String(fir[id]).endsWith("!")).length;   /* aproximado: el servidor solo marca las del rango de fechas del archivo */
+    S.rdImp={...I, procesando:null, llave:{...L, salt, verifNueva:L.verif?null:verif}, fir, dif:{nuevas, cambiadas, iguales, ausentes}};
+  }catch(e){ S.rdImp={...I, procesando:null, error:e?.message||"No se pudo revisar."}; }
+  render();
+}
+async function rdRecalcularTodo(msg){
+  for (let k=0;k<400;k++){ const q=await S.api.rendRecalcular(600); if (!q) return;
+    if (S.rdImp) { S.rdImp={...S.rdImp, guardando:`${msg} Quedan ${q.toLocaleString("es-MX")} consultantes por actualizar…`}; render(); } }
+}
+async function rdImpGuardar(){
+  const I=S.rdImp, R=I.res, L=I.llave;
+  const vistos=new Set(), dup=Object.entries(I.asig).find(([,id])=>{ if (!id||id==="__ignorar") return false; if (vistos.has(id)) return true; vistos.add(id); return false; });
+  if (dup) return toast("Dos terapeutas del archivo están relacionados con la misma cuenta; revisa la tabla.");
+  try{
+    if (L.verifNueva) await S.api.rendLlave(L.salt, L.verifNueva);
+    /* 1 · Equivalencias confirmadas (solo las que cambiaron) */
+    for (const t of R.terapeutas){ const v=I.asig[t.nombre]||"", a=I.alias.find(x=>x.nombre_archivo===t.nombre), antes=a?(a.ignorar?"__ignorar":a.perfil_id||""):"";
+      if (v!==antes && v) await S.api.rendConciliar(t.nombre, v==="__ignorar"?null:v, v==="__ignorar"); }
+    /* 2 · Solo lo nuevo o lo que cambió, por lotes */
+    const env=R.citas.filter(c=>I.fir[c.id]!==c.firma), Lt=2500;
+    const imp=await S.api.rendImportarInicio(R.corte, R.citas.length, true);
+    for (let k=0;k<env.length;k+=Lt){ S.rdImp={...I, guardando:`Enviando cambios: ${Math.min(k+Lt,env.length).toLocaleString("es-MX")} de ${env.length.toLocaleString("es-MX")}…`}; render();
+      await S.api.rendCitasLote(imp, env.slice(k,k+Lt)); }
+    /* 3 · Cierre: lo que ya no viene queda «ausente»; 4 · recálculo de lo afectado */
+    const fin=await S.api.rendImportarFin(imp, R.citas.map(c=>c.id), R.desde, R.hasta);
+    S.rdImp={...I, guardando:"Actualizando indicadores…"}; render();
+    await rdRecalcularTodo("Actualizando indicadores.");
+    S.rdImp=null; toast(`Importación aplicada: ${env.length.toLocaleString("es-MX")} citas nuevas o cambiadas y ${fin?.ausentes||0} ausentes.`);
+    S.rdPend=await S.api.rendPendientes().catch(()=>[]); S.rd=null; render(); await rdCargar();
+  }catch(e){ S.rdImp={...I, guardando:null}; toast(e?.message||"No se pudo guardar. Puedes repetir la importación: no se duplica nada."); render(); }
+}
+async function rdPendOk(b){
+  const i=+b.dataset.i, p=S.rdPend[i], v=$("#rdPendSel"+i)?.value; if (!v) return toast("Elige la cuenta o «Ignorar».");
+  try{ await S.api.rendConciliar(p.nombre, v==="__ignorar"?null:v, v==="__ignorar"); S.rdImp={...(S.rdImp||{}), guardando:"Actualizando indicadores…"}; render();
+    await rdRecalcularTodo("Actualizando indicadores."); S.rdImp=null; S.rdPend=await S.api.rendPendientes(); toast("Equivalencia confirmada."); render(); await rdCargar(); }
+  catch(e){ S.rdImp=null; toast(e?.message||"No se pudo guardar."); render(); }
+}
+
 /* ================= Tablero de indicadores (Dirección) ================= */
 const TB_PER = [["30","Últimos 30 días"],["90","Últimos 3 meses"],["180","Últimos 6 meses"],["365","Últimos 12 meses"],["anio","Este año"]];
 const MES_TXT = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
@@ -7283,6 +8094,7 @@ document.addEventListener("click", async ev => {
   if (a==="usuarios"){ S.view="usuarios"; S.usrEdit=null; S.usuarios=null; render(); return cargarAdmin("usuarios"); }
   if (ORG_ACCIONES.has(a)) return orgAccion(a, b);   /* Módulo 01 · Organización */
   if (MI_ACC.has(a)) return miAccion(a, b);
+  if (RD_ACC.has(a)) return rdAccion(a, b);   /* P30 · Mis resultados (demo) */
   if (COM_ACC.has(a)) return comAccion(a, b);   /* Módulo 06 · Calendario y comunidad */
   if (PP_ACC.has(a)) return ppAccion(a, b);   /* Módulo 06 · Perfil profesional */
   if (CAT_ACC.has(a)) return catAccion(a, b);
@@ -7839,6 +8651,14 @@ render();
     $("#masBtn").hidden = !S.rol || S.rol==="admin_sede";
     $("#miinfBtn").hidden = !S.rol || S.rol==="admin_sede";   /* Módulo 06 · Mi espacio */
     $("#misolBtn").hidden = !S.rol || S.rol==="admin_sede";
+    /* P30–P31: «Mis resultados» solo para quien tiene cifras (o el equipo, o el Superusuario que importa) */
+    $("#rendBtn").hidden = true;
+    if (S.api?.rendimiento && S.rol){
+      /* P32: quien no es psicólogo llega aquí solo por sus sedes (cuenta de sede o concesión): el botón se llama «Estadísticas por sede» */
+      const ver=()=>{ $("#rendBtn").hidden=false; if (S.rol!=="psicologo"){ $("#rendBtn").lastChild.textContent="Estadísticas por sede"; VISTA_TXT.rendimiento="Estadísticas por sede"; } };
+      if (S.rol==="superusuario") ver();
+      else if (!S.api.rendTengoDatos){ if (S.rol==="psicologo") ver(); }
+      else Promise.all([S.api.rendTengoDatos().catch(()=>false), S.api.rendMisSedes?S.api.rendMisSedes().then(e=>e.length>0).catch(()=>false):false]).then(([a,b])=>{ if (a||b) ver(); }); }
     $("#micalBtn").hidden = !S.rol; $("#comuBtn").hidden = !S.rol;   /* Módulo 06 · P5 */
     if (S.rol){ solCargar().catch(()=>{}); notifCargar().catch(()=>{}); setInterval(()=>{ if (!document.hidden) notifCargar().catch(()=>{}); }, 120000); }
     if (S.rol && S.api.recorrido) S.api.recorrido().then(r=>{ S.tour=r||{}; if (S.view==="inicio") render(); }).catch(()=>{});

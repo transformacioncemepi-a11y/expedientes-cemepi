@@ -947,6 +947,50 @@ const cemepi = {
     if (r.error || c.error) return { ok: false }; return { ok: true, resumen: r.data || [], config: c.data || [] }; },
   async iaConfigGuardar(clave, valor){ const { error } = await sb.rpc("ia_config_guardar", { p_clave: clave, p_valor: valor }); if (error) fallo(error); },
   async resumenUso(desde){ const { data, error } = await sb.rpc("resumen_uso", { p_desde: desde.toISOString() }); if (error) fallo(error); return data || []; },
+  /* ===== P30–P31 · Mis resultados (087): solo cifras; el servidor filtra por permisos (RLS) ===== */
+  async rendTengoDatos(){ const { count } = await sb.from("rend_mensual").select("perfil_id", { count: "exact", head: true }).eq("perfil_id", usuario.id); return (count || 0) > 0; },
+  /* P35: el tablero propio también sale del motor único (rend_consulta), con los últimos 3 meses cerrados */
+  async rendimiento(id){ return this.rendConsulta({ perfil: id || usuario.id, per: 3, etiqueta: "" }); },
+  async rendPsicologos(){ const { data, error } = await sb.from("perfiles").select("id,nombre,sede,modalidad,estado").eq("rol", "psicologo").order("nombre"); if (error) fallo(error); return data || []; },
+  async rendAlias(){ const { data } = await sb.from("rend_alias").select("nombre_archivo,perfil_id,ignorar"); return data || []; },
+  /* P35 · importación por diferencias (solo Superusuario; el servidor lo valida) */
+  async rendLlave(salt, verif){ const { data, error } = await sb.rpc("rend_llave", { p_salt: salt || null, p_verif: verif || null }); if (error) fallo(error); return data || {}; },
+  async rendFirmas(){ const { data, error } = await sb.rpc("rend_firmas"); if (error) fallo(error); return data || {}; },
+  async rendImportarInicio(corte, filas, completo){ const { data, error } = await sb.rpc("rend_importar_inicio", { p_corte: corte, p_filas: filas, p_completo: completo }); if (error) fallo(error); return data; },
+  async rendCitasLote(imp, lote){ const { data, error } = await sb.rpc("rend_citas_lote", { p_imp: imp, p_lote: lote }); if (error) fallo(error); return data; },
+  async rendImportarFin(imp, ids, desde, hasta){ const { data, error } = await sb.rpc("rend_importar_fin", { p_imp: imp, p_ids: ids, p_desde: desde, p_hasta: hasta }); if (error) fallo(error); return data; },
+  async rendRecalcular(max){ const { data, error } = await sb.rpc("rend_recalcular", { p_max: max || 200 }); if (error) fallo(error); return data || 0; },
+  async rendPendientes(){ const { data, error } = await sb.rpc("rend_pendientes"); if (error) fallo(error); return data || []; },
+  async rendConciliar(nombre, perfil, ignorar){ const { data, error } = await sb.rpc("rend_conciliar", { p_nombre: nombre, p_perfil: perfil || null, p_ignorar: !!ignorar }); if (error) fallo(error); return data; },
+  async rendMisSedes(){ const { data, error } = await sb.rpc("rend_mis_sedes"); if (error) return []; return data || []; },
+  async rendPsicologosVisibles(sedes){ const { data, error } = await sb.rpc("rend_psicologos_visibles", { p_sedes: sedes }); if (error) fallo(error); return data || []; },
+  async rendAccesos(){ const { data, error } = await sb.rpc("rend_accesos"); if (error) fallo(error); return data || []; },
+  async rendReservas(){ const { data, error } = await sb.from("rend_reservas").select("perfil_id,motivo,creado_en"); if (error) fallo(error); return data || []; },
+  async rendReservar(perfil, reservar, motivo){ const { error } = await sb.rpc("rend_reservar", { p_perfil: perfil, p_reservar: reservar, p_motivo: motivo || "" }); if (error) fallo(error); },
+  /* f = {sedes[], per (1·3·6·12 meses cerrados), perfil, etiqueta} → la misma forma «D» del tablero + el resumen del periodo.
+     Ventana del detalle mensual: los 5 meses que terminan en el mes del corte. Periodo: los «per» meses cerrados anteriores al mes del corte. */
+  async rendConsulta(f){
+    const est = await sb.rpc("rend_estado_publico"); const E = est.data || {};
+    const c0 = new Date((E.corte || new Date().toISOString().slice(0, 10)) + "T12:00:00");
+    const mes = k => { const d = new Date(c0.getFullYear(), c0.getMonth() - k, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; };
+    const per_n = [1, 3, 6, 12].includes(+f.per) ? +f.per : 3;
+    const q = (d, h) => sb.rpc("rend_consulta", { p_sedes: f.perfil ? null : f.sedes, p_desde: d, p_hasta: h, p_perfil: f.perfil || null });
+    const [w, per] = await Promise.all([q(mes(4), mes(0)), q(mes(per_n), mes(1))]);
+    if (w.error) fallo(w.error); if (per.error) fallo(per.error);
+    const W = w.data, P = per.data, corte = String(W.corte || "").slice(0, 10), fin = new Date(corte + "T12:00:00");
+    if (!W.series?.citas?.some(x => x > 0) && !P.series?.citas?.some(x => x > 0)) return { sinDatos: true, persona: W.persona || {} };
+    const obs = W.meses.map(mm => { const [y, mo] = mm.split("-").map(Number); return new Date(y, mo, 0).getTime() + 90 * 864e5 > fin.getTime(); });
+    const fh = x => x ? new Date(x).toLocaleString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+    const act = fh(W.actualizado);
+    return { demo: false, tipo: f.perfil ? undefined : "sede", consolidada: true, actualizado: act, corte,
+      ultima_importacion: fh(W.ultima_importacion), ultima_cita: W.ultima_cita ? String(W.ultima_cita).split("-").reverse().join("/") : "—", pendientes: W.pendientes || 0,
+      fuente: `Citas del sistema de citas con corte al ${corte.split("-").reverse().join("/")}; indicadores actualizados el ${act} (${f.perfil ? "cifras de la persona" : "totales de todos los terapeutas de las sedes elegidas, sin nombres"}; sin datos de consultantes)`,
+      persona: f.perfil ? (W.persona || {}) : { nombre: f.etiqueta, sede: f.sedes.join(", "), modalidad: null }, reservado: !!W.reservado,
+      terapeutas: W.terapeutas, meses: W.meses, series: W.series, quinta_obs: obs, sin_horas: true,
+      comisiones: W.comision.map(g => ({ generada: Math.round(Number(g) || 0), validada: 0, pagada: 0, potencial: 0, sin_estado: true })),
+      continuidad: W.continuidad, continuidad_org: W.org || null, por_sede_persona: W.por_sede_persona || null,
+      periodo: { n: per_n, meses: P.meses, series: P.series, comision: P.comision, terapeutas: P.terapeutas, unicos: P.unicos, por_sede: P.por_sede || null, jornada_h: P.jornada_atencion_h ?? null } }; },
+  async rendImportarProcesos(imp, lote, primero){ const { data, error } = await sb.rpc("rend_importar_procesos", { p_imp: imp, p_lote: lote, p_primero: primero }); if (error) fallo(error); return data; },
 };
 /* Redacción con Claude desde la función de Supabase "redactar" (la clave de la API vive en Supabase, no aquí).
    Si la función no está configurada, la app sigue en modo copiar/pegar con claude.ai. */
