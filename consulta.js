@@ -1,4 +1,6 @@
 /* Portal del consultante. Antes vivía en línea dentro de consulta.html; se separó (P29) para quitar 'unsafe-inline' de la CSP. */
+/* iPhone/iPad: nombre fijo «CEMEPIAPP» al fijar el portal en la pantalla de inicio. */
+if (/iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) document.title = "CEMEPIAPP";
 document.addEventListener("submit", e => { if (e.target.matches?.("form[data-sin-envio]")) e.preventDefault(); }, true);
 const { createClient } = window.supabase;   /* versión fija con huella verificada (SRI), cargada en <head> */
 const NOTA = "Nota aclaratoria; El presente documento se elabora con fines exclusivamente de orientación, con base en lo observado y valorado durante el proceso terapéutico. No constituye un dictamen psicológico, peritaje, ni documento con alcances forenses o judiciales. Sus alcances se limitan a la comprensión terapéutica del momento actual de la consultante y pueden modificarse de acuerdo con la continuidad del proceso terapéutico y la evolución observada";

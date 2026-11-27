@@ -2,6 +2,13 @@
 /* Formularios que nunca se envían por sí solos (antes onsubmit="return false") e imágenes que se ocultan si fallan (antes onerror): */
 document.addEventListener("submit", e => { if (e.target.matches?.("form[data-sin-envio]")) e.preventDefault(); }, true);
 document.addEventListener("error", e => { const t = e.target; if (t?.matches?.("img[data-ocultar-si-falla]")) t.hidden = true; }, true);
+/* Logotipo para Word y PDF: se lee de iconos/logo.png (antes iba incrustado en el HTML; P29 · V1). Vacío si no se puede leer. */
+/* iPhone/iPad: el título queda fijo en «CEMEPIAPP» para que el ícono de la pantalla de inicio siempre lleve ese nombre (decisión del Director, 2026-11-27). */
+const ES_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+let logoB64Cache;
+async function logoB64(){ if (logoB64Cache) return logoB64Cache;
+  try{ const r=await fetch("iconos/logo.png"); if (!r.ok) return ""; const b=new Uint8Array(await r.arrayBuffer()); let s="";
+    for (let i=0;i<b.length;i+=0x8000) s+=String.fromCharCode(...b.subarray(i,i+0x8000)); return (logoB64Cache=btoa(s)); }catch(e){ return ""; } }
 (() => {
 const $ = s => document.querySelector(s);
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -371,7 +378,7 @@ async function docxBlob(folio, cuerpoXml, extras=[], etiqueta, sinNota=false){
   zip.file("[Content_Types].xml", types); zip.file("_rels/.rels", rels);
   zip.file("word/document.xml", doc); zip.file("word/styles.xml", styles); zip.file("word/footer1.xml", footer);
   zip.file("word/_rels/document.xml.rels", docRels);
-  zip.file("word/media/logo.png", (document.querySelector("#logoApp")?.src||"").split(",")[1]||"", {base64:true});
+  zip.file("word/media/logo.png", (await logoB64())||"", {base64:true});
   if (firmaB64) zip.file("word/media/firma.png", firmaB64, {base64:true});
   for (const e of extras) zip.file(`word/media/${e.file}`, e.b64, {base64:true});
   return zip.generateAsync({type:"blob"});
@@ -416,7 +423,7 @@ async function pdfExpediente(p, finalidad, generado){
   const pdf=await PDFDocument.create();
   pdf.setTitle(`Expediente ${p.folio}`); pdf.setAuthor(CEMEPI_NOMBRE); pdf.setLanguage("es-MX");
   const font=await pdf.embedFont(StandardFonts.Helvetica), bold=await pdf.embedFont(StandardFonts.HelveticaBold);
-  const b64=(document.querySelector("#logoApp")?.src||"").split(",")[1], logo=b64?await pdf.embedPng(Uint8Array.from(atob(b64), ch=>ch.charCodeAt(0))):null;
+  const b64=(await logoB64()), logo=b64?await pdf.embedPng(Uint8Array.from(atob(b64), ch=>ch.charCodeAt(0))):null;
   const W=612, H=792, M=54, CW=W-2*M, FS=11, LH=13.8, azul=rgb(0.02,0.376,0.741), tinta=rgb(0.06,0.14,0.25), gris=rgb(0.33,0.41,0.54), rojo=rgb(0.776,0.157,0.157), linea=rgb(0.72,0.78,0.87);
   const nota=envolver(NOTA_ACLARATORIA, font, 7, CW), pieH=nota.length*8.6, BASE=26+pieH+18;
   let page, y;
@@ -506,7 +513,7 @@ async function pdfEditable(g, c){
   const pdf = await PDFDocument.create();
   pdf.setTitle(t.titulo); pdf.setAuthor(CEMEPI_NOMBRE); pdf.setLanguage("es-MX");
   const font = await pdf.embedFont(StandardFonts.Helvetica), bold = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const b64 = (document.querySelector("#logoApp")?.src||"").split(",")[1];
+  const b64 = (await logoB64());
   const logo = b64 ? await pdf.embedPng(Uint8Array.from(atob(b64), ch=>ch.charCodeAt(0))) : null;
   const form = pdf.getForm();
   const W=612, H=792, M=54, CW=W-2*M, FS=11, LH=13.8;
@@ -957,7 +964,7 @@ function vistaExtras(){
 }
 function render(){ borAntes(); renderVista(); vistaExtras();
   /* P28 · Fase 6: el título de la pestaña dice dónde está la persona (WCAG 2.4.2); los lectores de pantalla lo anuncian */
-  try{ const t=S.sel&&S.view==="exp"?"Expediente":(VISTA_TXT[S.view]||"Inicio"); const nt=`${t} · Tonalli CEMEPI`; if (document.title!==nt) document.title=nt; }catch{} if (typeof lexSubtitulo==="function") lexSubtitulo(); borDespues(); }
+  try{ const t=S.sel&&S.view==="exp"?"Expediente":(VISTA_TXT[S.view]||"Inicio"); const nt=ES_IOS?"CEMEPIAPP":`${t} · Tonalli CEMEPI`; if (document.title!==nt) document.title=nt; }catch{} if (typeof lexSubtitulo==="function") lexSubtitulo(); borDespues(); }
 function renderVista(){
   const d=$("#detail"); S.dirty=false; S.stale=false; S.editado=false; marcarNav(); document.body.classList.remove("menu-abierto");
   const p=S.pacientes.get(S.sel);
@@ -7047,7 +7054,7 @@ async function pdfConsentimiento(p, x){
   const {PDFDocument, StandardFonts, rgb} = PDFLib;
   const pdf=await PDFDocument.create(); pdf.setTitle("Consentimiento informado"); pdf.setAuthor(CEMEPI_NOMBRE); pdf.setLanguage("es-MX");
   const font=await pdf.embedFont(StandardFonts.Helvetica), bold=await pdf.embedFont(StandardFonts.HelveticaBold);
-  const b64=(document.querySelector("#logoApp")?.src||"").split(",")[1], logo=b64?await pdf.embedPng(Uint8Array.from(atob(b64), ch=>ch.charCodeAt(0))):null;
+  const b64=(await logoB64()), logo=b64?await pdf.embedPng(Uint8Array.from(atob(b64), ch=>ch.charCodeAt(0))):null;
   const W=612, H=792, M=54, CW=W-2*M, FS=11, LH=13.8, azul=rgb(0.02,0.376,0.741), tinta=rgb(0.06,0.14,0.25), gris=rgb(0.33,0.41,0.54), rojo=rgb(0.776,0.157,0.157);
   const nota=envolver(NOTA_ACLARATORIA, font, 7, CW), pieH=nota.length*8.6, BASE=26+pieH+18; let page, y;
   const nueva=()=>{ page=pdf.addPage([W,H]); y=H-M; }, espacio=h=>{ if (y-h<BASE) nueva(); };

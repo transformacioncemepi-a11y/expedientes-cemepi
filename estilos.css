@@ -344,7 +344,7 @@ img{max-width:100%}
 .login{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:var(--bg);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .login-card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px 24px;display:flex;flex-direction:column;gap:14px;box-shadow:0 10px 30px rgba(5,96,189,.08)}
 .login-card .marca{display:flex;align-items:center;gap:12px}
-.login-card .marca img{width:52px;border-radius:8px}
+.login-card .marca img{width:52px;height:auto;border-radius:8px}
 .login-card h1{font:800 20px var(--f-display);color:var(--accent);margin:0}
 .login-card small{color:var(--muted)}
 .login-card form{display:flex;flex-direction:column;gap:12px}
