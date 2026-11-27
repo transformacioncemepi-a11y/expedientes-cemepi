@@ -116,6 +116,9 @@ try{ const d=document.documentElement, g=k=>localStorage.getItem("cemepi."+k);
   <span class="sesion" id="sesionInfo" hidden></span>
   <button class="avatar" id="avatarBtn" type="button" data-act="perfil" title="Mi perfil" aria-label="Mi perfil"></button>
 </header>
+<dialog class="dlg-firma" id="dlgTexto" aria-labelledby="dtT" aria-describedby="dtD"><form method="dialog" id="dtForm" novalidate><h3 id="dtT" style="margin:0 0 6px"></h3><p class="status" id="dtD" style="margin:0 0 8px"></p>
+  <div class="fld"><label for="dtTxt">Escribe aquí</label><textarea id="dtTxt" rows="3" data-noborrador></textarea><span class="status" id="dtC" aria-live="polite"></span></div>
+  <p class="banner" id="dtE" role="alert" hidden></p><div class="actions"><button class="btn" type="button" id="dtCancel">Cancelar</button><button class="btn primary" type="submit">Aceptar</button></div></form></dialog>
 <dialog class="dlg-firma" id="dlgNotif" aria-labelledby="ntT"><h3 id="ntT" style="margin:0 0 8px">Notificaciones</h3><div class="body"></div>
   <div class="actions"><button class="btn" type="button" data-act="notifLeidas">Marcar todas como leídas</button><button class="btn" type="button" data-act="notifCerrar">Cerrar</button></div></dialog>
 <div class="app" id="app">
@@ -196,6 +199,17 @@ const terEtiqueta = t => t ? `${t.nombre||"Sin nombre"}${t.cedula?` · Céd. ${t
 new MutationObserver(()=>document.querySelectorAll(".tbl-wrap:not([tabindex])").forEach(w=>{ if (w.scrollWidth<=w.clientWidth+1) return; w.tabIndex=0; w.setAttribute("role","region");
   if (!w.hasAttribute("aria-label")) w.setAttribute("aria-label","Tabla con desplazamiento horizontal"); })).observe(document.documentElement,{childList:true,subtree:true});
 document.addEventListener("toggle", e=>{ const d=e.target; if (d?.dataset?.recuerda) try{ localStorage.setItem("cemepi."+d.dataset.recuerda, d.open?"abierto":"cerrado"); }catch{} }, true);
+/* P28 · Fase 4: cuadro propio para escribir un motivo o una nota, en lugar del await pedirTexto() del navegador.
+   Accesible (etiqueta, contador, error en texto), valida el mínimo de caracteres sin cerrar y devuelve el texto o null si se cancela. */
+function pedirTexto(msg){
+  const d=$("#dlgTexto"), [t,...resto]=String(msg||"").split("\n"), min=+(String(msg).match(/(\d+) caracteres o más/)?.[1]||1), tx=$("#dtTxt");
+  $("#dtT").textContent=t.replace(/\s*\(\d+ caracteres o más\)\s*/,"").trim(); $("#dtD").textContent=resto.join(" ").trim()||(min>1?`Escribe al menos ${min} caracteres.`:"");
+  tx.value=""; $("#dtE").hidden=true; const cont=()=>{ $("#dtC").textContent=min>1?`${tx.value.trim().length} de ${min} caracteres como mínimo`:""; }; cont(); tx.oninput=cont;
+  return new Promise(res=>{ let hecho=false; const fin=v=>{ if (hecho) return; hecho=true; d.close(); res(v); };
+    $("#dtForm").onsubmit=e=>{ e.preventDefault(); const v=tx.value.trim(); if (v.length<min){ $("#dtE").textContent=`Escribe al menos ${min} caracteres para continuar.`; $("#dtE").hidden=false; tx.focus(); return; } fin(v); };
+    $("#dtCancel").onclick=()=>fin(null); d.oncancel=e=>{ e.preventDefault(); fin(null); };
+    d.showModal(); tx.focus(); });
+}
 /* Estados de interfaz únicos (P28 · Fase 2): usar en vistas nuevas y al rediseñar las existentes */
 const cargandoHtml=(t="Cargando…")=>`<p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>${esc(t)}</p>`;
 const vacioHtml=(titulo,detalle="",accion="")=>`<div class="est-vacio"><b>${esc(titulo)}</b>${detalle?`<span class="status">${esc(detalle)}</span>`:""}${accion}</div>`;
@@ -1541,7 +1555,7 @@ function inicioHtml(){
     ${miHoyHtml()}
     ${proxFechasHtml()}
     <section class="note"><div class="note-h"><h3>Pendientes</h3>${S.pend?`<button class="btn sm" type="button" data-act="refrescarPend">Actualizar</button>`:""}</div>${pend}</section>
-    ${continuar}
+    ${continuar}${formRepasoInvHtml()}
     ${S.pend?avisosHtml():""}
     ${pasos}
     <section><h3 class="sec-h">Accesos rápidos</h3><div class="fmt-grid">${ACCESOS().map(x=>`<article class="fmt"><div class="fmt-h"><b>${esc(x.t)}</b></div><p>${esc(x.d)}</p><button class="btn sm primary" type="button" data-act="${x.act}">Abrir</button></article>`).join("")}</div></section>
@@ -3596,7 +3610,7 @@ async function comAccion(a,b){
       await S.api.publicarComunicado(c); S.comForm=null; S.editado=false; toast("Comunicado publicado."); return comCargar(); }
     if (a==="comSeg"){ const x=(S.com?.todos||[]).find(c=>c.id===id); S.comSeg={id, titulo:x?.titulo||""}; render(); S.comSeg.l=await S.api.comunicadoSeguimiento(id); return render(); }
     if (a==="comSegCerrar"){ S.comSeg=null; return render(); }
-    if (a==="comRetirar"){ const m=prompt("¿Por qué se retira el comunicado? (10 caracteres o más)\nYa no aparecerá a sus destinatarios; las confirmaciones de lectura se conservan."); if (m==null) return;
+    if (a==="comRetirar"){ const m=await pedirTexto("¿Por qué se retira el comunicado? (10 caracteres o más)\nYa no aparecerá a sus destinatarios; las confirmaciones de lectura se conservan."); if (m==null) return;
       if (m.trim().length<10) return toast("Explica el motivo (10 caracteres o más)."); await S.api.retirarComunicado(id, m.trim()); toast("Comunicado retirado."); return comCargar(); }
   }catch(e){ toast(e?.message||"No se pudo completar."); }
 }
@@ -4318,11 +4332,11 @@ async function catAccion(a,b){
     if (a==="catSelBuscar"){ S.selQ=$("#selQ")?catVal("selQ"):S.selQ; S.selP=$("#selP")?catVal("selP"):S.selP; S.selT=$("#selT")?catVal("selT"):S.selT; S.selF=$("#selF")?catVal("selF"):S.selF; return render(); }
     if (a==="catSelGuia") return catSelGuia(b.dataset.id);
     if (a==="catSelIA") return catSelIA(b.dataset.id);
-    if (a==="catSelEstado"){ const e=b.dataset.e; let nota=null; if (e==="retirada"){ nota=prompt("Motivo del retiro (10 caracteres o más):"); if (!nota) return; }
+    if (a==="catSelEstado"){ const e=b.dataset.e; let nota=null; if (e==="retirada"){ nota=await pedirTexto("Motivo del retiro (10 caracteres o más):"); if (!nota) return; }
       await rpc("sel_estado",{p_tabla:b.dataset.tb,p_id:b.dataset.id,p_estado:e,p_nota:nota}); toast(e==="validada"?"Validado.":e==="retirada"?"Retirado.":"Vuelve a propuesta."); return catCargar(); }
     if (a==="catVBuscar"){ S.catVq=catVal("catVq"); S.catVt=catVal("catVt")||"valor"; S.catVu=$("#catVu")?catVal("catVu"):""; return render(); }
     if (a==="catNodoEstado"){ const k=b.dataset.id, e=b.dataset.e; let nota=null;
-      if (e==="retirada"){ nota=prompt("Motivo del retiro (10 caracteres o más):"); if (!nota) return; }
+      if (e==="retirada"){ nota=await pedirTexto("Motivo del retiro (10 caracteres o más):"); if (!nota) return; }
       await rpc("grafo_estado_nodo",{p_clave:k,p_estado:e,p_nota:nota}); toast(e==="validada"?"Validado.":e==="retirada"?"Retirado; sus relaciones también.":"Vuelve a propuesta."); return catCargar(); }
     if (a==="catTab"){ S.catTab=b.dataset.t; S.catNodo=null; S.catSel=null; S.catPer=null; S.catNuevo=null; S.catDicEd=null; return render(); }
     if (a==="catBuscar"){ if ($("#catQ")) S.catQ=catVal("catQ"); if ($("#catFam")) S.catFam=catVal("catFam");
@@ -4358,7 +4372,7 @@ async function catAccion(a,b){
       S.editado=false; toast("Guardado en el borrador."); return catCargar(); }
     if (a==="catCompQuitar"){ const x=c.pcomps.find(z=>z.id===id); if (!confirm(`¿Quitar ${x.competencia} del borrador?`)) return;
       await rpc("quitar_competencia_perfil",{p_version:x.version_id,p_competencia:x.competencia}); toast("Quitada del borrador."); return catCargar(); }
-    if (a==="catPublicar"){ const m=prompt("Motivo del cambio (10 caracteres o más). La versión vigente pasará al historial."); if (m===null) return;
+    if (a==="catPublicar"){ const m=await pedirTexto("Motivo del cambio (10 caracteres o más). La versión vigente pasará al historial."); if (m===null) return;
       if (m.trim().length<10) return toast("Escribe el motivo (10 caracteres o más)."); await rpc("publicar_version_perfil",{p_version:id,p_motivo:m.trim()});
       S.catVerBor=false; toast("Versión publicada."); return catCargar(); }
     if (a==="catDescartar"){ if (!confirm("¿Descartar el borrador? Se pierden sus cambios; la versión vigente no cambia.")) return;
@@ -4382,7 +4396,7 @@ async function catAccion(a,b){
     if (a==="catAsignar"){ const pf=catVal("capPerf"); if (!pf) return toast("Elige un perfil.");
       await rpc("asignar_perfil",{p_col:id,p_perfil:pf,p_principal:!!$("#capPrin")?.checked,p_motivo:catVal("capMot")||null});
       S.editado=false; toast("Perfil asignado. No cambia permisos de acceso."); await catCargar(); return catPerCargar(id); }
-    if (a==="catTerminar"){ const m=prompt("¿Por qué termina este perfil? (10 caracteres o más)"); if (m===null) return; if (m.trim().length<10) return toast("Escribe el motivo (10 caracteres o más).");
+    if (a==="catTerminar"){ const m=await pedirTexto("¿Por qué termina este perfil? (10 caracteres o más)"); if (m===null) return; if (m.trim().length<10) return toast("Escribe el motivo (10 caracteres o más).");
       await rpc("terminar_perfil",{p_id:id,p_motivo:m.trim()}); toast("Perfil terminado. Sus evaluaciones se conservan."); await catCargar(); return catPerCargar(S.catPer); }
     if (a==="catEval"){ S.catEvalF={col:S.catPD?.col||S.catPer, comp:id}; S.catAccF=null; render(); return $("#ceEst")?.focus(); }
     if (a==="catEvalGuardar"){ const f=S.catEvalF, est=catVal("ceEst"), niv=catVal("ceNiv"), evi=catVal("ceEvi"), yo=f.col===c.yo;
@@ -4395,7 +4409,7 @@ async function catAccion(a,b){
       await rpc("guardar_accion_desarrollo",{p_id:null,p_col:f.col,p_comp:f.comp,p_objetivo:catVal("caObj"),p_actividad:catVal("caAct"),p_responsable:null,p_mentor:catVal("caMen")||null,p_recursos:catVal("caRec")||null,p_fecha_revision:catVal("caFec")||null,p_resultado_esperado:catVal("caRes")||null,p_evidencia:null});
       S.catAccF=null; S.editado=false; toast("Acción de desarrollo guardada."); await catCargar(); return catPerCargar(f.col); }
     if (a==="catAccEstado"){ const t=b.dataset.t; let res=null;
-      if (t!=="en_curso"){ res=prompt(t==="completada"?"¿Qué se logró? (10 caracteres o más)":"¿Por qué se cancela? (10 caracteres o más)"); if (res===null) return; if (res.trim().length<10) return toast("Escribe el resultado (10 caracteres o más)."); }
+      if (t!=="en_curso"){ res=await pedirTexto(t==="completada"?"¿Qué se logró? (10 caracteres o más)":"¿Por qué se cancela? (10 caracteres o más)"); if (res===null) return; if (res.trim().length<10) return toast("Escribe el resultado (10 caracteres o más)."); }
       await rpc("estado_accion_desarrollo",{p_id:id,p_estado:t,p_resultado:res?res.trim():null}); toast("Acción actualizada."); await catCargar(); return S.catPD?.col?catPerCargar(S.catPD.col):render(); }
   }catch(e){ toast(e?.message||"No se pudo completar."); }
 }
@@ -5336,7 +5350,7 @@ async function lexAccion(a,b){
       await rpc("proponer_palabra",{p_palabra:v("lxP"),p_variante:v("lxV"),p_significado:v("lxS"),p_fuentes:lines("lxF"),p_categoria:v("lxC"),p_contexto:v("lxX")||null,p_relacion:"traduccion"});
       S.lexProp=false; S.editado=false; toast("Propuesta enviada. La Dirección la verificará."); return lexCargar(); }
     if (a==="lexEstado"){ const t=b.dataset.t; let nota=null;
-      if (t==="retirada"){ nota=prompt("¿Por qué se retira? (10 caracteres o más)"); if (nota===null) return; if (nota.trim().length<10) return toast("Escribe el motivo (10 caracteres o más)."); }
+      if (t==="retirada"){ nota=await pedirTexto("¿Por qué se retira? (10 caracteres o más)"); if (nota===null) return; if (nota.trim().length<10) return toast("Escribe el motivo (10 caracteres o más)."); }
       if (t==="aprobada"&&!confirm("¿Aprobar esta palabra? Podrá mostrarse en la app, siempre junto a su español.")) return;
       await rpc("estado_palabra",{p_id:id,p_estado:t,p_nota:nota}); S.lexAb=id; toast("Estado actualizado."); return lexCargar(); }
     if (a==="lexEditar"){ S.lexEd=id; S.lexProp=false; render(); return $("#leS")?.focus(); }
@@ -5699,7 +5713,7 @@ function formPracticaHtml(u,p,k){
   const sel=S.formPract?.[u.unidad+":"+k], op=sel!=null?p.opciones[sel]:null;
   return `<section class="card"><p class="status" style="margin:0">Práctica · sin calificación, puedes repetirla</p><p style="margin:6px 0 0"><b>Situación:</b> ${esc(p.situacion)}</p><p style="margin:4px 0 0"><b>${esc(p.pregunta)}</b></p>
     <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">${p.opciones.map((o,i)=>`<button class="btn${sel===i?(o.ok?" primary":""):""}" type="button" style="text-align:left;white-space:normal;height:auto;padding:8px 12px" data-act="formPract" data-k="${u.unidad}:${k}" data-i="${i}" aria-pressed="${sel===i}">${esc(o.t)}</button>`).join("")}</div>
-    ${op?`<div class="banner${op.ok?" ok-b":""}" style="margin-top:8px"><b>${op.ok?"Buena elección.":"Revisa esta explicación."}</b> ${esc(op.retro)}</div><div class="actions" style="justify-content:flex-start"><button class="btn sm" type="button" data-act="formPractReset" data-k="${u.unidad}:${k}">Intentar de nuevo</button></div>`:""}</section>`;
+    ${op?`<div class="banner${op.ok?" ok-b":""}" id="retro_${esc(String(u.unidad+"_"+k).replace(/[^a-zA-Z0-9_]/g,"_"))}" tabindex="-1" role="status" style="margin-top:8px"><b>${op.ok?"Buena elección.":"Revisa esta explicación."}</b> ${esc(op.retro)}</div><div class="actions" style="justify-content:flex-start"><button class="btn sm" type="button" data-act="formPractReset" data-k="${u.unidad}:${k}">Intentar de nuevo</button></div>`:""}</section>`;
 }
 function formLectorHtml(d,v){
   const meta=formMeta(v), us=manUnidades(v), rev=manMisRevisadas(v), rec=manReconocido(v), u=us.find(x=>x.unidad===S.formU)||us.find(x=>!rev.has(x.unidad))||us[0], i=us.indexOf(u);
@@ -5707,7 +5721,7 @@ function formLectorHtml(d,v){
   const cab=`<section class="card"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:flex-start"><div><h2 style="margin:0">${esc(meta.titulo||d.plantilla.nombre)}</h2>
       <p style="margin:4px 0 0">${esc(meta.subtitulo||"")}</p><p class="status" style="margin:4px 0 0">${meta.minutos?`Duración aproximada: ${esc(meta.minutos)} minutos · `:""}${rev.size} de ${us.length} unidades · versión ${v.version}</p></div>
       <button class="btn sm" type="button" data-act="formVolver">← Formación</button></div>
-    <div style="height:6px;background:var(--line);border-radius:4px;margin-top:8px"><div style="height:6px;width:${pct}%;background:var(--accent,#0560BD);border-radius:4px"></div></div>
+    <div role="progressbar" aria-label="Avance del recorrido" aria-valuemin="0" aria-valuemax="${us.length}" aria-valuenow="${rev.size}" aria-valuetext="${rev.size} de ${us.length} unidades" style="height:6px;background:var(--line);border-radius:4px;margin-top:8px"><div style="height:6px;width:${pct}%;background:var(--accent,#0560BD);border-radius:4px"></div></div>
     <p class="status" style="margin:6px 0 0">Conocer → Comprender → Aplicar: lee cada unidad, resuelve las prácticas y, cuando lo necesites, encontrarás la guía en Mi asistencia y en Ayuda.</p></section>`;
   const borr=pub?"":`<div class="banner">Vista previa de la versión ${v.version} en borrador: el personal todavía no la ve. Aplica a: ${esc({...FORM_DEST,psicologos:"psicólogos",todos:"todo el equipo"}[meta.destinatarios||"psicologos"])}.</div>`;
   const sel=`<div class="fld"><label for="formUnidadSel">Unidad</label><select id="formUnidadSel" data-form="1">${us.map(x=>`<option value="${x.unidad}" ${x===u?"selected":""}>${rev.has(x.unidad)?"✓ ":""}${esc(x.titulo)}</option>`).join("")}</select></div>`;
@@ -5724,17 +5738,53 @@ function formLectorHtml(d,v){
     :(rev.size===us.length&&pub?`<section class="card"><h3 style="margin:0">Confirmación de lectura</h3>${Object.entries(meta.textos_declaraciones||{}).map(([k,t])=>`<label style="display:flex;gap:6px;align-items:flex-start;margin-top:8px"><input type="checkbox" id="fdc_${k}"> ${esc(t)}</label>`).join("")}
       <p class="status" style="margin:6px 0 0">${esc(meta.nota_confirmacion||"")} No es una firma ni una certificación profesional.</p><div class="actions" style="justify-content:flex-start"><button class="btn primary" type="button" data-act="formReconocer" data-v="${v.id}">Registrar mi lectura</button></div></section>`:"");
   return `${borr}${cab}<section class="card">${sel}</section>
-    <section class="card"><p class="status" style="margin:0">Unidad ${i+1} de ${us.length} · ${u.paginas.length>1?"páginas":"página"} ${u.paginas.join(", ")}</p><h2 style="margin:4px 0 0">${esc(u.titulo)}</h2><p style="margin:6px 0 0"><b>Intención:</b> ${esc(u.intencion||"")}</p>
+    <section class="card"><p class="status" style="margin:0">Unidad ${i+1} de ${us.length} · ${u.paginas.length>1?"páginas":"página"} ${u.paginas.join(", ")}</p><h2 id="formUH" tabindex="-1" style="margin:4px 0 0">${esc(u.titulo)}</h2><p class="status" style="margin:6px 0 0">1 · Descubrir y comprender</p><p style="margin:4px 0 0"><b>Intención:</b> ${esc(u.intencion||"")}</p>
       <div style="margin-top:8px">${acuTextoHtml(u.texto)}</div>${(u.tablas||[]).map(formTablaHtml).join("")}</section>
-    ${refl}${guia}${(u.practicas||[]).map((p,k)=>formPracticaHtml(u,p,k)).join("")}
+    ${(u.practicas||[]).length?`<p class="status" style="margin:0">2 · Practicar: elige una respuesta y lee por qué. No se califica ni se guarda.</p>`:""}${(u.practicas||[]).map((p,k)=>formPracticaHtml(u,p,k)).join("")}
+    ${refl||guia?`<p class="status" style="margin:0">3 · ${guia?"Aplicar en CEMEPI":"Reflexionar"}</p>`:""}${refl}${guia}
     <section class="card"><div class="actions" style="justify-content:flex-start;gap:6px">${rev.has(u.unidad)?`<span class="pill estado-activo">Unidad revisada</span>`:(pub?`<button class="btn primary" type="button" data-act="formRevisada" data-v="${v.id}" data-u="${u.unidad}">Marcar como revisada</button>`:`<span class="status">Vista previa: el avance se registra cuando la versión se publique.</span>`)}</div>
-      <div class="actions" style="justify-content:space-between;gap:6px;flex-wrap:wrap">${i>0?`<button class="btn sm" type="button" data-act="formUnidad" data-u="${us[i-1].unidad}">← Anterior</button>`:"<span></span>"}${i<us.length-1?`<button class="btn sm" type="button" data-act="formUnidad" data-u="${us[i+1].unidad}">Siguiente →</button>`:""}</div></section>${conf}${orig}`;
+      <div class="actions" style="justify-content:space-between;gap:6px;flex-wrap:wrap">${i>0?`<button class="btn sm" type="button" data-act="formUnidad" data-u="${us[i-1].unidad}">← Anterior</button>`:"<span></span>"}<button class="btn sm" type="button" data-act="formDespues">Continuar después</button>${i<us.length-1?`<button class="btn sm" type="button" data-act="formUnidad" data-u="${us[i+1].unidad}">Siguiente →</button>`:""}</div></section>${conf}${rec?formRepasoTarjeta(d,v):""}${orig}`;
+}
+/* P28 · Fase 4: repaso breve y opcional (práctica de recuperación). Elige hasta 3 situaciones de las unidades; no se guarda ni se califica.
+   Invitaciones a los 7 y a los 30 días de terminar, solo si la persona las activa (en este dispositivo) y siempre con «Ahora no». */
+const REP_LS=k=>{ try{ return localStorage.getItem("cemepi."+k); }catch{ return null; } }, REP_SET=(k,v)=>{ try{ v==null?localStorage.removeItem("cemepi."+k):localStorage.setItem("cemepi."+k,v); }catch{} };
+function formRepasoTarjeta(d,v){ const on=REP_LS("repaso."+d.plantilla.id)==="1", hay=manUnidades(v).some(u=>(u.practicas||[]).length);
+  return hay?`<section class="card"><h3 style="margin:0">Repasar</h3><p style="margin:6px 0 0">Recordar lo aprendido de vez en cuando ayuda a que se quede. Es breve (2 o 3 situaciones), voluntario y no se califica.</p>
+    <div class="actions" style="justify-content:flex-start;gap:6px"><button class="btn primary" type="button" data-act="formRepasar" data-p="${d.plantilla.id}">Repasar ahora</button></div>
+    <label style="display:flex;gap:6px;align-items:flex-start;margin-top:6px"><input type="checkbox" data-repaso-aviso="${d.plantilla.id}"${on?" checked":""}> Invitarme a repasar a los 7 y a los 30 días (solo en este dispositivo; puedes quitarlo cuando quieras)</label></section>`:""; }
+function formRepasoHtml(x){
+  const r=S.formRepaso, it=r.items[r.i], u=manUnidades(x.v).find(z=>z.unidad===it.u), p=u?.practicas?.[it.k], meta=formMeta(x.v);
+  if (r.fin||!p) return `<section class="card"><h2 style="margin:0">Repaso terminado</h2><p style="margin:6px 0 0">Gracias por tomarte este momento. Lo que recordaste queda contigo: el repaso no se guarda ni se califica.</p>
+    <div class="actions" style="justify-content:flex-start;gap:6px"><button class="btn" type="button" data-act="formRepasar" data-p="${x.d.plantilla.id}">Otro repaso</button><button class="btn primary" type="button" data-act="formVolver">Volver a Formación</button></div></section>`;
+  return `<section class="card"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><div><h2 id="formUH" tabindex="-1" style="margin:0">Repaso breve · ${esc(meta.titulo||x.d.plantilla.nombre)}</h2>
+    <p class="status" style="margin:4px 0 0">Situación ${r.i+1} de ${r.items.length} · de la ${esc(u.titulo)}</p></div><button class="btn sm" type="button" data-act="formVolver">Salir</button></div></section>
+    ${formPracticaHtml(u,p,"r"+r.i+"_"+it.k)}
+    <div class="actions" style="justify-content:flex-start;gap:6px"><button class="btn primary" type="button" data-act="formRepasoSig">${r.i<r.items.length-1?"Siguiente situación →":"Terminar el repaso"}</button></div>`;
+}
+/* Logros privados: rutas terminadas (solo la persona los ve; no hay puntos, rachas ni comparaciones) */
+function formLogrosHtml(){
+  const ls=[...formDocs().map(({d,v})=>({t:formMeta(v).titulo||d.plantilla.nombre, r:manReconocido(v)})).filter(z=>z.r),
+    ...(typeof manPublicada==="function"&&manPublicada()&&manReconocido(manPublicada())?[{t:"Manual de Bienvenida",r:manReconocido(manPublicada())}]:[])];
+  return ls.length?`<section class="note"><div class="note-h"><h3>Mis logros</h3><span class="status">Privados: solo tú los ves</span></div>
+    <ul class="pend">${ls.map(z=>`<li><div><b>✓ ${esc(z.t)}</b><br><span class="status">Ruta completada el ${fechaTxt(z.r.reconocido_en)}</span></div></li>`).join("")}</ul>
+    <p class="status" style="margin:6px 0 0">Reconocen tu aprendizaje, no se comparan ni se usan para evaluar a nadie.</p></section>`:"";
+}
+/* Invitación a repasar en Inicio (solo si la persona la activó) */
+function formRepasoInvHtml(){
+  if (!MAN()) return ""; const hoy=Date.now();
+  const xs=formDocs().map(({d,v})=>{ const r=manReconocido(v); if (!r||REP_LS("repaso."+d.plantilla.id)!=="1") return null;
+    const dias=(hoy-new Date(r.reconocido_en))/864e5, ven=dias>=30&&dias<45?"30":dias>=7&&dias<14?"7":null;
+    return ven&&REP_LS("repasoVisto."+d.plantilla.id+"."+ven)!=="1"?{d,v,ven}:null; }).filter(Boolean);
+  return xs.length?`<section class="note"><div class="note-h"><h3>¿Un repaso breve?</h3></div><ul class="pend">${xs.map(({d,v,ven})=>`<li><div><b>${esc(formMeta(v).titulo||d.plantilla.nombre)}</b><br><span class="status">Dos o tres situaciones, sin calificación. Lo activaste tú; puedes quitarlo en Formación.</span></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm primary" type="button" data-act="formRepasar" data-p="${d.plantilla.id}" data-ven="${ven}">Repasar</button><button class="btn sm" type="button" data-act="formRepasoNo" data-p="${d.plantilla.id}" data-ven="${ven}">Ahora no</button></div></li>`).join("")}</ul></section>`:"";
 }
 function formacionHtml(){
   const docs=formDocs();
+  if (S.formRepaso){ const x=docs.find(y=>y.d.plantilla.id===S.formRepaso.p); if (x) return formRepasoHtml(x); S.formRepaso=null; }
   if (S.formDoc){ const x=docs.find(y=>y.d.plantilla.id===S.formDoc); if (x) return formLectorHtml(x.d,x.v); S.formDoc=null; }
   const na=formNoAplica();
   return `<section class="card"><h2 style="margin:0">Formación</h2><p style="margin:6px 0 0;max-width:80ch">Contenidos breves para comprender cómo trabajamos y cuidarnos. No son exámenes: avanza a tu ritmo; tu progreso se guarda y puedes volver cuando lo necesites.</p></section>
+    ${formLogrosHtml()}
     ${docs.map(({d,v})=>{ const meta=formMeta(v), us=manUnidades(v), r=manMisRevisadas(v).size, rec=manReconocido(v);
       return `<section class="card"><h3 style="margin:0">${esc(meta.titulo||d.plantilla.nombre)}</h3><p style="margin:4px 0 0">${esc(meta.subtitulo||"")}</p>
         <p class="status" style="margin:4px 0 0">${r} de ${us.length} unidades${meta.minutos?` · ${esc(meta.minutos)} minutos`:""}${rec?" · Lectura registrada":""}${v.estado!=="aprobada"?" · Borrador (vista previa)":""}</p>
@@ -5776,19 +5826,29 @@ function ayudaSaludHtml(){
 async function formAccion(a,b){
   const rpc=(fn,args)=>S.api.acuRpc(fn,args);
   try{
-    if (a==="formAbrir"){ S.view="miintegracion"; S.manTab="formacion"; S.formDoc=b.dataset.p||null; S.formU=b.dataset.u||null; render(); window.scrollTo?.(0,0); if (!MAN()) await manCargar(); return; }
-    if (a==="formVolver"){ S.formDoc=null; S.formU=null; render(); return window.scrollTo?.(0,0); }
-    if (a==="formUnidad"){ S.formU=b.dataset.u; render(); return window.scrollTo?.(0,0); }
-    if (a==="formPract"){ S.formPract=S.formPract||{}; S.formPract[b.dataset.k]=+b.dataset.i; return render(); }
-    if (a==="formPractReset"){ if (S.formPract) delete S.formPract[b.dataset.k]; return render(); }
+    const enfocar=sel=>setTimeout(()=>$(sel)?.focus({preventScroll:false}),30);   /* el foco del teclado no se pierde al volver a dibujar */
+    if (a==="formAbrir"){ S.view="miintegracion"; S.manTab="formacion"; S.formRepaso=null; S.formDoc=b.dataset.p||null; S.formU=b.dataset.u||null; render(); window.scrollTo?.(0,0); if (!MAN()) await manCargar(); return enfocar("#formUH"); }
+    if (a==="formVolver"){ S.formDoc=null; S.formU=null; S.formRepaso=null; render(); return window.scrollTo?.(0,0); }
+    if (a==="formDespues"){ S.formDoc=null; S.formU=null; render(); window.scrollTo?.(0,0); return toast("Tu avance está guardado. Puedes continuar cuando quieras desde Formación o desde Inicio."); }
+    if (a==="formUnidad"){ S.formU=b.dataset.u; render(); window.scrollTo?.(0,0); return enfocar("#formUH"); }
+    if (a==="formPract"){ S.formPract=S.formPract||{}; S.formPract[b.dataset.k]=+b.dataset.i; render(); return enfocar("#retro_"+String(b.dataset.k).replace(/[^a-zA-Z0-9_]/g,"_").replace(/:/g,"_")); }
+    if (a==="formPractReset"){ if (S.formPract) delete S.formPract[b.dataset.k]; render(); return enfocar(`[data-k="${b.dataset.k}"][data-i="0"]`); }
+    if (a==="formRepasar"){ const x=formDocs().find(y=>y.d.plantilla.id===b.dataset.p); if (!x) return;
+      if (b.dataset.ven) REP_SET("repasoVisto."+b.dataset.p+"."+b.dataset.ven,"1");
+      const todos=manUnidades(x.v).flatMap(u=>(u.practicas||[]).map((_,k)=>({u:u.unidad,k}))).sort(()=>Math.random()-.5).slice(0,3);
+      S.view="miintegracion"; S.manTab="formacion"; S.formDoc=null; S.formRepaso={p:b.dataset.p,items:todos,i:0}; S.formPract={}; render(); window.scrollTo?.(0,0); return enfocar("#formUH"); }
+    if (a==="formRepasoSig"){ const r=S.formRepaso; if (!r) return; if (r.i<r.items.length-1) r.i++; else r.fin=true; render(); window.scrollTo?.(0,0); return enfocar(r.fin?"main h2":"#formUH"); }
+    if (a==="formRepasoNo"){ REP_SET("repasoVisto."+b.dataset.p+"."+b.dataset.ven,"1"); render(); return toast("De acuerdo. Puedes repasar cuando quieras desde Formación."); }
     if (a==="formRevisada"){ await rpc("man_marcar",{p_version:b.dataset.v,p_unidad:b.dataset.u}); toast("Unidad revisada. Tu avance queda guardado.");
-      const x=formDocs().find(y=>y.v.id===b.dataset.v), us=x?manUnidades(x.v):[], i=us.findIndex(u=>u.unidad===b.dataset.u); if (us[i+1]) S.formU=us[i+1].unidad; return manCargar(); }
+      const x=formDocs().find(y=>y.v.id===b.dataset.v), us=x?manUnidades(x.v):[], i=us.findIndex(u=>u.unidad===b.dataset.u); if (us[i+1]) S.formU=us[i+1].unidad; await manCargar(); return enfocar("#formUH"); }
     if (a==="formReconocer"){ const x=formDocs().find(y=>y.v.id===b.dataset.v), d={}; Object.keys(formMeta(x?.v).textos_declaraciones||{}).forEach(k=>d[k]=!!$("#fdc_"+k)?.checked);
       if (!Object.keys(d).length||Object.values(d).some(z=>!z)) return toast("Marca la confirmación para registrar tu lectura.");
       await rpc("man_reconocer",{p_version:b.dataset.v,p_declaraciones:d,p_comentario:null}); toast("Gracias. Registramos tu lectura."); S.porLeer=null; return manCargar(); }
   }catch(e){ toast(e?.message||"No se pudo completar."); }
 }
-const FORM_ACC=new Set(["formAbrir","formVolver","formUnidad","formPract","formPractReset","formRevisada","formReconocer"]);
+const FORM_ACC=new Set(["formAbrir","formVolver","formUnidad","formPract","formPractReset","formRevisada","formReconocer","formDespues","formRepasar","formRepasoSig","formRepasoNo"]);
+document.addEventListener("change", e=>{ const p=e.target?.dataset?.repasoAviso; if (!p) return; REP_SET("repaso."+p, e.target.checked?"1":null);
+  toast(e.target.checked?"Listo: te invitaremos a repasar a los 7 y a los 30 días, solo en este dispositivo.":"Invitaciones a repasar desactivadas."); });
 document.addEventListener("change", e=>{ if (e.target?.dataset?.form&&e.target.id==="formUnidadSel"){ S.formU=e.target.value; render(); } });
 
 const MAN_ACC=new Set(["miintegracion","manTab","manAbrir","manRevisada","manGuardar","manCompartir","manBorrar","manBuscar","manReconocer","manAcomp","manAvisar"]);
@@ -6407,7 +6467,7 @@ async function dispAccion(a,b){
   if (a==="acuTermAviso"){ await rpc("acu_aviso_terminacion",{p_id:id,p_quien:catVal("tmQuien")||"psicologo",p_fecha_aviso:catVal("tmFecha")||null,p_motivo:catVal("tmMotivo")}); S.acuTerm=null; toast("Aviso de terminación registrado. Nada se interrumpe automáticamente."); return acuCargar(); }
   if (a==="acuTermForm"){ S.acuTerm=id; return render(); }
   if (a==="acuTermPaso"){ await rpc("acu_terminacion_paso",{p_id:id,p_paso:b.dataset.p,p_hecho:b.dataset.h==="1"}); return acuCargar(); }
-  if (a==="acuPendiente"){ const nota=prompt("¿Cómo quedó confirmada esta condición? (10 caracteres o más)"); if (!nota) return; await rpc("acu_resolver_pendiente",{p_version:id,p_clave:b.dataset.k,p_nota:nota}); toast("Condición confirmada."); return acuCargar(); }
+  if (a==="acuPendiente"){ const nota=await pedirTexto("¿Cómo quedó confirmada esta condición? (10 caracteres o más)"); if (!nota) return; await rpc("acu_resolver_pendiente",{p_version:id,p_clave:b.dataset.k,p_nota:nota}); toast("Condición confirmada."); return acuCargar(); }
 }
 const DISP_ACC=["acuPaso","acuMiTab","acuMisDatos","dispMod","dispModNo","dispGuardar","dispEnviar","dispRetirar","dispAxAceptar","dispAxRegresar","dispVer","dispVerCerrar","dispDecidir","dispDevolver",
   "dispGenerarAnexo","dispFiltrar","dispCfgVer","dispBloque","dispCfgGuardar","dispConsEd","dispConsNo","dispConsGuardar","acuAceptarDecl","acuTermAviso","acuTermForm","acuTermPaso","acuPendiente"];
@@ -6461,7 +6521,7 @@ async function acuAccion(a,b){
     if (a==="acuReflex"){ const t=catVal("rf_"+id); await rpc("acu_reflexionar",{p_caso:id,p_respuesta:t}); toast("Reflexión guardada."); return acuCargar(); }
     if (a==="acuLeer"){ S.acuLeer=id; render(); const dv=$("#acuDoc"), bt=$("#acuLeidoBtn"); if (dv&&bt){ const chk=()=>{ if (dv.scrollTop+dv.clientHeight>=dv.scrollHeight-24) bt.disabled=false; }; dv.addEventListener("scroll",chk); chk(); } return; }
     if (a==="acuLeido"){ await rpc("acu_lectura",{p_id:id}); toast("Lectura completa registrada."); return acuCargar(); }
-    if (a==="acuDuda"){ const m=prompt("Escribe tu duda (10 caracteres o más). RR. HH. te responderá antes de que aceptes:"); if (!m) return;
+    if (a==="acuDuda"){ const m=await pedirTexto("Escribe tu duda (10 caracteres o más). RR. HH. te responderá antes de que aceptes:"); if (!m) return;
       await rpc("acu_transicion",{p_id:id,p_estado:"pendiente_aclaraciones",p_motivo:m}); toast("Tu duda quedó registrada."); return acuCargar(); }
     if (a==="acuAceptar"){ await rpc("acu_aceptar",{p_id:id,p_consiento_electronico:!!$("#acuC1_"+id)?.checked,p_acepto:!!$("#acuC2_"+id)?.checked}); toast("Aceptación registrada. Continúa con la firma."); return acuCargar(); }
     if (a==="acuSinc"){ const e=await rpc("acu_sincronizar",{p_id:id}); toast("Estado: "+(ACU_EST[e]?.[0]||e)); return acuCargar(); }
@@ -6480,7 +6540,7 @@ async function acuAccion(a,b){
     if (a==="acuGenerar"){ S.acuGen=id; S.acuVer=null; return render(); }
     if (a==="acuGenerarOk"){ const nid=await rpc("acu_generar",{p_col:S.acuGen,p_version:catVal("agVer"),p_lugar:catVal("agLugar"),p_anexos:[...document.querySelectorAll(".agAnx:checked")].map(x=>x.value),p_modalidad_verificada:!!$("#agMod")?.checked,p_campana:null});
       S.acuGen=null; S.acuVer=nid; toast("Carta generada. Revisa los datos faltantes antes de publicarla."); return acuCargar(); }
-    if (a==="acuTrans"){ const e=b.dataset.e; let m=null; if (["cancelado","concluido"].includes(e)||(e==="disponible_lectura"&&d.acuerdos.find(x=>x.id===id)?.estado==="pendiente_aclaraciones")){ m=prompt(e==="disponible_lectura"?"Respuesta a la aclaración (10 caracteres o más):":"Motivo (10 caracteres o más):"); if (!m) return; }
+    if (a==="acuTrans"){ const e=b.dataset.e; let m=null; if (["cancelado","concluido"].includes(e)||(e==="disponible_lectura"&&d.acuerdos.find(x=>x.id===id)?.estado==="pendiente_aclaraciones")){ m=await pedirTexto(e==="disponible_lectura"?"Respuesta a la aclaración (10 caracteres o más):":"Motivo (10 caracteres o más):"); if (!m) return; }
       await rpc("acu_transicion",{p_id:id,p_estado:e,p_motivo:m}); toast("Estado actualizado: "+ACU_EST[e][0]); return acuCargar(); }
     if (a==="acuRecordar"){ await rpc("acu_recordar",{p_id:id}); toast("Recordatorio enviado dentro de la app."); return acuCargar(); }
     if (a==="acuVincular"){ const doc=catVal("acuDoc"); if (!doc) return toast("Elige el documento."); await rpc("acu_vincular_doc",{p_id:id,p_doc:doc}); toast("Documento vinculado."); return acuCargar(); }
@@ -6490,8 +6550,8 @@ async function acuAccion(a,b){
     if (a==="acuVGuardar"){ const v=acuVer(id), sec=(v.contenido.secciones||[]).map((x,i)=>({...x,titulo:catVal("vs_t"+i),texto:$("#vs_x"+i)?.value||""}));
       await rpc("acu_guardar_version",{p_plantilla:acuPl().clave,p_contenido:{...v.contenido,secciones:sec},p_fuente:null,p_resumen:catVal("vs_res")||null}); S.acuEdit=null; toast("Borrador guardado."); return acuCargar(); }
     if (a==="acuVEstado"){ const e=b.dataset.e; let nota=null, ases=null;
-      if (e==="pendiente_aprobacion"){ ases=prompt("¿Quién realizó la revisión jurídica? (asesor o despacho)"); if (!ases) return; nota=prompt("Conclusión de la revisión jurídica (10 caracteres o más):"); if (!nota) return; }
-      if (["borrador","retirada"].includes(e)){ nota=prompt("Motivo (10 caracteres o más):"); if (!nota) return; }
+      if (e==="pendiente_aprobacion"){ ases=await pedirTexto("¿Quién realizó la revisión jurídica? (asesor o despacho)"); if (!ases) return; nota=await pedirTexto("Conclusión de la revisión jurídica (10 caracteres o más):"); if (!nota) return; }
+      if (["borrador","retirada"].includes(e)){ nota=await pedirTexto("Motivo (10 caracteres o más):"); if (!nota) return; }
       if (e==="aprobada"&&!confirm("¿Aprobar esta versión de la plantilla? A partir de ahora podrá publicarse y firmarse. La versión aprobada anterior quedará sustituida.")) return;
       await rpc("acu_estado_version",{p_version:id,p_estado:e,p_nota:nota,p_asesor:ases}); toast("Plantilla: "+ACU_VEST[e][0]); return acuCargar(); }
     if (a==="acuAnexoNuevo"){ S.acuAnx=true; return render(); }
