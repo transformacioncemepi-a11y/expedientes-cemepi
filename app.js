@@ -5124,6 +5124,16 @@ const GUIAS = [
     "El «Resumen del periodo» muestra citas, consultantes únicos (sin duplicar entre sedes), nuevos, primeras y segundas sesiones, quinta sesión, procesos que alcanzaron 12, 33 y 66 sesiones, cancelaciones, reagendamientos, inasistencias, comisión generada y las variaciones de cada mes. Con varias sedes aparece la comparativa, con cada tasa calculada sobre los totales de su sede.",
     "Las horas efectivas de atención solo aparecen al elegir a un psicólogo de base: se comparan con la jornada de atención registrada en Asistencia (referencia: 46 h por semana).",
     "El memorándum indica el alcance, las sedes, el periodo y la fecha de actualización; descárgalo con «Descargar PDF». Describe actividad registrada: no evalúa la calidad clínica ni señala a personas."]},
+  {t:"Ver primeras citas, asistencia y continuidad por etapas (cohortes)", si:()=>["superusuario","direccion","admin_sede","psicologo"].includes(S.rol)||(S.api?.misRoles||[]).includes("coord_clinica"), pasos:[
+    "Entra a Mi espacio → «Estadísticas por sede» (psicólogo(a): «Mi tablero de rendimiento»). La sección «Primeras citas y continuidad» aparece después del resumen del periodo y usa la misma sede, psicólogo(a) y periodo que elegiste arriba.",
+    "Pestaña «Cohortes de consultantes nuevos»: consultantes cuya primera cita fue en el periodo y cómo avanzaron hasta hoy. Verás, en este orden: agendados, asistieron a su primera sesión (con el porcentaje de asistencia inicial, su numerador y su denominador), tercera, quinta y décima sesión, y más de diez. Son acumulativos: no se suman entre sí.",
+    "Un consultante nuevo cuenta una sola vez aunque reagende su primera cita. «Asistió» significa que tuvo su primera sesión dentro de los 30 días siguientes a esa cita; quienes asistieron después se informan aparte. Las citas futuras o sin resultado son «pendientes» y quedan fuera del porcentaje.",
+    "Cada nivel cuenta lo que le corresponde: «Toda CEMEPI», todo el proceso; una sede, solo las sesiones en esa sede; un psicólogo(a), solo las sesiones que atendió. Si el consultante siguió con otro terapeuta o en otra sede, aparece como «continuó en otro lugar», nunca como interrupción. Quien recibe un proceso a mitad de camino no lo suma como nuevo.",
+    "El embudo muestra cada etapa con su cantidad, el porcentaje acumulado y el porcentaje desde la etapa anterior. «En observación» son procesos que siguen activos: sus cifras todavía pueden crecer. En «Cohortes por mes» comparas los meses de inicio.",
+    "«📊 ¿En qué etapa necesitamos fortalecer la continuidad?» compara cada etapa con CEMEPI en las mismas cohortes. «Conviene revisar» aparece solo si la diferencia va más allá del margen estadístico y hay al menos 10 casos; con menos verás «Información insuficiente». Los factores que se listan son hipótesis para explorar, no causas comprobadas.",
+    "Pestaña «Hitos del periodo»: cuántos procesos llegaron a la sesión 3, 5, 10 y 11 en cada mes, aunque hayan empezado antes. No se calculan tasas aquí, para no mezclar criterios.",
+    "Con «Incluir el mes en curso (datos parciales)» agregas el mes abierto. La fecha de corte es la del último servicio importado; la fecha de procesamiento, la del último recálculo.",
+    "El memorándum (y su PDF) incluye un párrafo de continuidad y, si alguna etapa conviene revisarse, recomendaciones para explorar en supervisión y los factores administrativos, económicos y organizacionales. Si una etapa cambió desde tu última consulta, verás «Hay cifras nuevas». Una interrupción nunca se atribuye automáticamente al psicólogo(a)."]},
   {t:"Importar el archivo de citas y actualizar los indicadores", si:()=>S.rol==="superusuario", pasos:[
     "Exporta del sistema de citas el archivo de ventas completo (el mismo de siempre). Puedes hacerlo cada día o cada semana: solo se aplica lo nuevo o lo que cambió.",
     "Entra a Mi espacio → «Estadísticas por sede». En «Importar el archivo de citas» elige el archivo; se procesa en tu computadora.",
@@ -6730,7 +6740,7 @@ function ayudaHtml(){
    Propuesta en diseno/RENDIMIENTO-P30-PROMPT-CONSOLIDADO.md (sin autorizar como módulo definitivo). Solo aparece si el servicio
    S.api.rendimiento existe (hoy, solo en el simulador). Reglas visibles (§3): base mínima 3, estable si el cambio es ≤10 % o ≤1,
    segunda sesión en 30 días, quinta en 90. Sin datos del consultante, sin rankings entre colegas, sin juicios clínicos. */
-const RD_ACC=new Set(["rendimiento","rdSede","rdMes","rdPersona","rdPdf","rdDef","rdImpGuardar","rdImpCancelar","rdImpRevisar","rdPendOk","rdPer","rdAccAbrir","rdAccOtorgar","rdAccRevocar","rdResQuitar","rdResPoner"]);
+const RD_ACC=new Set(["rendimiento","rdSede","rdLente","rdAbierto","rdMes","rdPersona","rdPdf","rdDef","rdImpGuardar","rdImpCancelar","rdImpRevisar","rdPendOk","rdPer","rdAccAbrir","rdAccOtorgar","rdAccRevocar","rdResQuitar","rdResPoner"]);
 const rdVeEquipo=()=>["superusuario","direccion"].includes(S.rol)||(S.api?.misRoles||[]).includes("coord_clinica");
 const RD_DEF={
   nuevos:["Consultantes nuevos asignados","Expedientes que se te asignaron durante el mes.","+"],
@@ -6827,9 +6837,10 @@ async function rdCargar(id){
       const todasSel=F.sedes.length===nombres.length && nombres.length>1, todas=S.rol==="superusuario" && todasSel;
       const etiqueta = F.sedes.length===1 ? `Sede ${F.sedes[0]}` : todas ? "Toda CEMEPI" : `${F.sedes.length} sedes seleccionadas`;
       /* P36 · Con una sede elegida, la persona se consulta solo en esa sede; en «Toda CEMEPI», consolidado con desglose por sede */
-      const datos = await S.api.rendConsulta({sedes:F.sedes, per:F.per, perfil:F.perfil||null, sedesPersona:todasSel?null:F.sedes, etiqueta});
+      const datos = await S.api.rendConsulta({sedes:F.sedes, per:F.per, perfil:F.perfil||null, sedesPersona:todasSel?null:F.sedes, etiqueta, abierto:!!F.abierto});
       if (!vigente()) return;
-      const base={misSedes, f:F, psic, propio, acc:prev.acc, accAbierto:prev.accAbierto};
+      if (datos && !datos.sinDatos) datos.cohNuevo=rdCohCambio(`${F.perfil||"-"}|${F.sedes.join(",")}|${F.per}|${F.abierto?1:0}`, datos.cohortes);
+      const base={misSedes, f:F, psic, propio, acc:prev.acc, accAbierto:prev.accAbierto, lente:prev.lente};
       if (datos?.sinDatos){ S.rd={...base, sinDatos:true}; if (S.view==="rendimiento") render(); return; }
       const mesSel = prev.mes && datos.meses.includes(prev.mes) ? prev.mes : datos.meses[datos.meses.length-2];
       S.rd={...base, datos, mes:mesSel};
@@ -6837,9 +6848,10 @@ async function rdCargar(id){
     }
     const datos = await S.api.rendimiento(id);
     if (!vigente()) return;
+    if (datos && !datos.sinDatos) datos.cohNuevo=rdCohCambio(`propio|${id||""}`, datos.cohortes);
     if (datos?.sinDatos){ S.rd={sinDatos:true}; if (S.view==="rendimiento") render(); return; }
     const mesSel = prev.mes && datos.meses.includes(prev.mes) ? prev.mes : datos.meses[datos.meses.length-2];
-    S.rd={datos, mes:mesSel}; }
+    S.rd={datos, mes:mesSel, lente:prev.lente}; }
   catch(e){ if (!vigente()) return; S.rd={...prev, cargando:false, datos:null, error:e?.message||"No se pudo cargar tu tablero."}; }
   if (S.view==="rendimiento") render();
 }
@@ -7030,7 +7042,7 @@ function rdMemorandum(D, mes){
   const P=D.periodo, sp=k=>P?(P.series[k]||[]).reduce((x,y)=>x+Number(y||0),0):0, rango=P?(P.meses.length===1?rdMesTxt(P.meses[0]):`${rdMesTxt(P.meses[0])} a ${rdMesTxt(P.meses[P.meses.length-1])}`):"";
   const perTxt=P?`Periodo de ${rango}: ${sp("citas").toLocaleString("es-MX")} citas realizadas, ${(P.unicos||0).toLocaleString("es-MX")} consultantes únicos atendidos, ${sp("nuevos").toLocaleString("es-MX")} consultantes nuevos y ${rdPesos((P.comision||[]).reduce((x,y)=>x+Number(y||0),0))} de comisión generada.`:"";
   const filtros=D.consolidada?`Alcance: ${D.tipo?`${D.persona.nombre} (${D.persona.sede})`:`${D.persona.nombre} · ${D.persona.sede||""}`}. Periodo del resumen: ${rango}. Detalle mensual: ${rdMesTxt(mes)}. Datos con corte al ${String(D.corte||"").split("-").reverse().join("/")}, actualizados el ${D.actualizado||"—"}.`:"";
-  return {filtros, sint:[perTxt, ...sint, contTxt].filter(Boolean), crece, reflex:[...reflex, ...(etapa?etapa[2]:[])], herr, alerta, alcance:"Este memorándum describe actividad registrada en la agenda. No evalúa la calidad clínica ni el desempeño profesional, y no sustituye la supervisión."};
+  return {filtros, sint:[perTxt, ...sint, contTxt].filter(Boolean), crece, reflex:[...reflex, ...(etapa?etapa[2]:[])], herr, alerta, coh:rdCohMemo(D), alcance:"Este memorándum describe actividad registrada en la agenda. No evalúa la calidad clínica ni el desempeño profesional, y no sustituye la supervisión."};
 }
 function rdTarjeta(k, val, cmp, mesPrev, extra){
   const def=RD_DEF[k], l=rdLectura(k, cmp, mesPrev);
@@ -7038,6 +7050,82 @@ function rdTarjeta(k, val, cmp, mesPrev, extra){
     <span class="rd-tend ${l.cls}"><span aria-hidden="true">${l.i}</span> ${!["nb","est","obs"].includes(cmp.e)?`${cmp.d>0?"+":cmp.d<0?"-":""}${k==="comision"?rdPesos(Math.abs(cmp.d)):Math.abs(typeof cmp.d==="number"&&!Number.isInteger(cmp.d)?+cmp.d.toFixed(1):cmp.d)} · `:""}${esc(l.t)}</span>
     ${extra?`<span class="status">${extra}</span>`:""}
     <details class="rd-def"><summary>¿Qué significa?</summary><p>${esc(def[1])}</p></details></div>`;
+}
+/* ================= P37 · Primeras citas y continuidad por etapas (cohortes de consultantes nuevos) =================
+   Diseño aprobado: diseno/DISENO-P37-COHORTES-CONTINUIDAD.md (D1–D6). Datos de rend_cohortes (091): solo conteos, sin seudónimos.
+   Cada nivel cuenta lo que le corresponde: CEMEPI todo el proceso, la sede sus sesiones y el psicólogo las que atendió;
+   lo que siguió en otro lugar aparece como transferencia, nunca como interrupción. Las tasas solo con ≥10 casos resueltos (D3). */
+const rdPc=(n,d)=>d?`${Math.round(n/d*100)}%`:"—";
+const RD_COH_EST={dentro:["Dentro de lo esperado","ok"],revisar:["Conviene revisar","warn"],insuficiente:["Información insuficiente","neutro"],sin_referencia:["Sin referencia suficiente de CEMEPI","neutro"],general:["Total de CEMEPI","neutro"],informativo:["Informativo","neutro"]};
+function rdCohEstado(e){ return e.et==="E"&&e.estado==="revisar"?"informativo":e.estado; }   /* tras 10 sesiones, dejar de asistir puede ser un cierre logrado: no se marca */
+/* D4 · «Hay cifras nuevas»: compara con la última consulta de esta misma vista en este navegador (comodidad personal, sin datos de nadie) */
+function rdCohCambio(clave, C){
+  if (!C||C.error||!C.etapas) return false; const ahora=C.etapas.map(e=>({et:e.et, es:rdCohEstado(e), t:e.tasa, n:e.alc+e.sin}));
+  let antes=null; try{ antes=JSON.parse(localStorage.getItem("rdCoh:"+clave)||"null"); }catch(e){}
+  try{ localStorage.setItem("rdCoh:"+clave, JSON.stringify(ahora)); }catch(e){}
+  if (!Array.isArray(antes)) return false;
+  return ahora.some(x=>{ const y=antes.find(z=>z.et===x.et); return y && (y.es!==x.es || (x.n>=10 && x.t!=null && y.t!=null && Math.abs(x.t-y.t)>=0.05)); });
+}
+function rdCohRango(C){ const m=C.meses||[]; return m.length===1?rdMesTxt(m[0]):`${rdMesTxt(m[0])} a ${rdMesTxt(m[m.length-1])}`; }
+function rdCohortesHtml(D){
+  const C=D.cohortes; if (!C) return "";
+  if (C.error) return S.rol==="superusuario"?`<p class="status" style="margin:12px 0">Primeras citas y continuidad: la sección aparecerá cuando se active en la base de datos (migración 091).</p>`:"";
+  const E=C.embudo||{}, ter=C.nivel==="ter", lente=S.rd?.lente||"coh", F=S.rd?.f, corte=String(C.corte||"").slice(0,10).split("-").reverse().join("/");
+  const den=(E.asistieron||0)+(E.cancelo||0)+(E.no_asistio||0)+(E.reagendo||0);
+  const etapas=[["Primera cita agendada",E.agendados],["Primera sesión realizada",E.primera],["Tercera sesión alcanzada",E.h3],["Quinta sesión alcanzada",E.h5],["Décima sesión alcanzada",E.h10],["Más de diez sesiones",E.h11]];
+  const cab=`<div class="note-h"><h3>Primeras citas y continuidad</h3><div class="tabs" role="tablist" aria-label="Forma de análisis">
+      <button class="tab" role="tab" type="button" data-act="rdLente" data-l="coh" aria-selected="${lente==="coh"}">Cohortes de consultantes nuevos</button>
+      <button class="tab" role="tab" type="button" data-act="rdLente" data-l="hit" aria-selected="${lente==="hit"}">Hitos del periodo</button></div></div>
+    <p class="status" style="margin:0 0 6px">${lente==="coh"?`Consultantes cuya primera cita fue en <b>${esc(rdCohRango(C))}</b> y su evolución hasta el corte`:`Sesiones número 3, 5, 10 y 11 que ocurrieron en <b>${esc(rdCohRango(C))}</b>, aunque el proceso haya empezado antes`}. Fecha de corte de los datos (último servicio importado): ${esc(corte)} (procesado el ${esc(C.actualizado_txt||"—")}).${C.antes_ini?` Las cohortes válidas empiezan en ${esc(rdMesTxt(String(C.ini).slice(0,7)))}: antes no hay historia suficiente para saber quién era nuevo.`:""}${C.mes_abierto?" Incluye el mes en curso: datos parciales.":""}</p>
+    ${F?`<p style="margin:0 0 8px"><button class="btn sm" type="button" data-act="rdAbierto" aria-pressed="${!!F.abierto}">${F.abierto?"Quitar el mes en curso":"Incluir el mes en curso (datos parciales)"}</button></p>`:""}
+    ${D.cohNuevo?`<p class="banner" style="display:block;margin:0 0 8px"><b>Hay cifras nuevas desde tu última consulta.</b> Una etapa cambió de estado o su tasa se movió 5 puntos o más: conviene preparar un nuevo memorándum.</p>`:""}`;
+  if (lente==="hit"){
+    const H=C.hitos||{}, M=C.meses||[];
+    return `<section class="note rd-coh" style="margin-top:16px" aria-label="Primeras citas y continuidad">${cab}
+      <div class="rd-tabla-scroll"><table class="rd-coh-tabla"><thead><tr><th>Mes</th><th>3.ª sesión</th><th>5.ª sesión</th><th>10.ª sesión</th><th>11.ª sesión</th></tr></thead>
+      <tbody>${M.map((m,j)=>`<tr><td>${esc(rdMesTxt(m))}</td>${["s3","s5","s10","s11"].map(k=>`<td>${(H[k]||[])[j]??0}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
+      <p class="status">Cuenta procesos (no citas) que alcanzaron ese número de sesión en el mes${ter?" con esta persona":C.nivel==="sede"?" dentro de la sede":""}. Son conteos de actividad: aquí no se calculan tasas, para no mezclarlos con la evolución de las cohortes. Solo se cuentan procesos observados desde su inicio.</p></section>`;
+  }
+  const tarj=(t,n,extra)=>`<div class="rd-card"><small>${t}</small><b>${(n??0).toLocaleString("es-MX")}</b>${extra?`<span class="status">${extra}</span>`:""}</div>`;
+  const tarjetas=[tarj("Consultantes nuevos agendados",E.agendados, ter?"primera cita con esta persona":"una sola primera cita por proceso"),
+    tarj("Asistieron a su primera sesión",E.asistieron,`Asistencia inicial: <b>${rdPc(E.asistieron,den)}</b> (${E.asistieron} de ${den}${E.pendiente?`; ${E.pendiente} ${E.pendiente===1?"pendiente":"pendientes"} aparte`:""})`),
+    tarj("Alcanzaron la tercera sesión",E.h3,rdPc(E.h3,E.agendados)+" de los agendados"), tarj("Alcanzaron la quinta sesión",E.h5,rdPc(E.h5,E.agendados)+" de los agendados"),
+    tarj("Llegaron a la décima sesión",E.h10,rdPc(E.h10,E.agendados)+" de los agendados"), tarj("Más de diez sesiones",E.h11,rdPc(E.h11,E.agendados)+" de los agendados")].join("");
+  const desg=`<p class="status" style="margin:8px 0">Resultado de la primera cita: asistió en 30 días <b>${E.asistieron}</b> · canceló <b>${E.cancelo}</b> · no asistió <b>${E.no_asistio}</b> · reagendó sin asistir <b>${E.reagendo}</b> · pendiente <b>${E.pendiente}</b>${E.despues?` · de quienes no asistieron en 30 días, <b>${E.despues}</b> asistieron después`:""}.
+    ${E.transferidos?` Continuaron ${ter?"con otro terapeuta":C.nivel==="sede"?"en otra sede":"en otro lugar"}: <b>${E.transferidos}</b> (no se cuentan como interrupción).`:""}${ter&&E.recibidos?` Recibidos de otro terapeuta a mitad del proceso: <b>${E.recibidos}</b> (no se suman como nuevos).`:""}${!ter&&E.sin_conciliar?` Primeras citas con terapeutas sin cuenta conciliada: <b>${E.sin_conciliar}</b> (cuentan en la sede y en CEMEPI).`:""}</p>`;
+  const max=Math.max(1,E.agendados||0);
+  const embudo=`<ol class="rd-flujo rd-embudo" aria-label="Embudo de continuidad">${etapas.map(([t,n],j)=>`<li><span class="rd-et">${t}</span><span class="rd-barra"><span style="width:${Math.max(2,Math.round((n||0)/max*100))}%"></span></span>
+      <span class="rd-n"><b>${(n||0).toLocaleString("es-MX")}</b> · ${rdPc(n,E.agendados)} acumulado${j?` · ${rdPc(n,etapas[j-1][1])} desde la etapa anterior`:""}</span></li>`).join("")}</ol>
+    ${E.en_obs?`<p class="status" style="margin:6px 0 0"><span aria-hidden="true">⏳</span> ${E.en_obs} ${E.en_obs===1?"proceso sigue":"procesos siguen"} en observación (pendientes o activos): las etapas avanzadas todavía pueden crecer.</p>`:""}`;
+  const PM=(C.por_mes||[]).filter(r=>r.elegible);
+  const porMes=PM.length>1?`<details style="margin-top:10px"><summary>Cohortes por mes de la primera cita</summary><div class="rd-tabla-scroll"><table class="rd-coh-tabla"><thead><tr><th>Mes</th><th>Agendados</th><th>Asistieron (30 días)</th><th>1.ª sesión</th><th>3.ª</th><th>5.ª</th><th>10.ª</th><th>Más de 10</th><th>En observación</th></tr></thead>
+    <tbody>${PM.map(r=>`<tr><td>${esc(rdMesTxt(r.mes))}</td><td>${r.agendados}</td><td>${r.asistieron} (${rdPc(r.asistieron,r.agendados)})</td><td>${r.primera}</td><td>${r.h3}</td><td>${r.h5}</td><td>${r.h10}</td><td>${r.h11}</td><td>${r.en_obs}</td></tr>`).join("")}</tbody></table></div>
+    <p class="status">Las cohortes recientes tienen menos tiempo de seguimiento: es normal que sus etapas avanzadas sean menores.</p></details>`:"";
+  const PS=C.por_sede?Object.entries(C.por_sede).sort((a,b)=>a[0].localeCompare(b[0],"es")):null;
+  const porSede=PS?`<details style="margin-top:10px"><summary>Desglose por sede (${ter?"sede de la primera cita con esta persona":"sede de la primera cita"})</summary><div class="rd-tabla-scroll"><table class="rd-coh-tabla"><thead><tr><th>Sede</th><th>Agendados</th><th>Asistieron (30 días)</th><th>1.ª sesión</th><th>3.ª</th><th>5.ª</th><th>10.ª</th><th>Más de 10</th></tr></thead>
+    <tbody>${PS.map(([s,r])=>`<tr><td>${esc(s)}</td><td>${r.agendados}</td><td>${r.asistieron}</td><td>${r.primera}</td><td>${r.h3}</td><td>${r.h5}</td><td>${r.h10}</td><td>${r.h11}</td></tr>`).join("")}</tbody></table></div>
+    <p class="status">Cada consultante nuevo se cuenta una sola vez, en la sede de su primera cita.${C.nivel==="org"?" Las etapas por sede consideran todo el proceso del consultante.":""}</p></details>`:"";
+  const foco=`<h4 style="margin:16px 0 6px"><span aria-hidden="true">📊</span> ¿En qué etapa necesitamos fortalecer la continuidad?</h4>
+    <div class="rd-etapas">${(C.etapas||[]).map(e=>{ const X=RD_COHORTE_ETAPAS[e.et], es=rdCohEstado(e), [et,cl]=RD_COH_EST[es]||["—","neutro"];
+      return `<details class="rd-etapa ${cl}"${es==="revisar"?" open":""}><summary><b>${esc(X.t)}</b> <span class="rd-chip ${cl}">${esc(et)}</span>
+        <span class="rd-etapa-n">${e.tasa==null?"INFORMACIÓN INSUFICIENTE":`${rdPct1(e.tasa)} continuó (${e.alc} de ${e.alc+e.sin})`}${e.ref_tasa!=null?` · CEMEPI ${rdPct1(e.ref_tasa)}`:""}${e.tasa!=null&&e.prelim?" · preliminar":""}</span></summary>
+        <p class="status" style="margin:4px 0">${esc(X.c)}. Base: ${e.base} · alcanzaron: ${e.alc} · sin continuidad registrada: ${e.sin} · en observación: ${e.obs}${e.trans?` · continuaron en otro lugar: ${e.trans}`:""}.${e.tasa==null?" Se necesitan al menos 10 casos con resultado conocido para calcular la tasa.":""}${e.prelim&&e.tasa!=null?" Más del 20 % sigue en observación: la tasa es preliminar.":""}</p>
+        ${e.et==="A"&&ter?`<p class="status" style="margin:4px 0">Esta etapa depende sobre todo de condiciones administrativas y organizacionales (asignación, confirmación, horarios, acceso e información previa), no solo de la persona que atiende.</p>`:""}
+        ${e.et==="E"?`<p class="status" style="margin:4px 0">Dejar de asistir después de diez sesiones puede ser un cierre acordado o un objetivo cumplido: esta etapa no se marca como dificultad.</p>`:""}
+        <p style="margin:6px 0 2px"><b>Hipótesis de exploración (no son causas comprobadas):</b></p><ul>${X.f.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></details>`; }).join("")}</div>
+    <p class="status">«Conviene revisar» aparece solo cuando la tasa queda por debajo de la de CEMEPI en las mismas cohortes más allá del margen estadístico (95 %), con al menos 10 casos. Los procesos activos se cuentan como «en observación», no como interrupciones. El sistema de citas no registra si un proceso terminó por cierre acordado o por interrupción: por eso se dice «sin continuidad registrada». ${esc(RD_COHORTE_RECOMIENDA.frase)}</p>`;
+  return `<section class="note rd-coh" style="margin-top:16px" aria-label="Primeras citas y continuidad">${cab}
+    ${E.agendados?`<div class="rd-cards">${tarjetas}</div>${desg}<div class="tb-card" style="margin-top:10px"><h4>Embudo de continuidad · cohortes de ${esc(rdCohRango(C))}</h4>${embudo}</div>${porMes}${porSede}${foco}`
+      :`<p class="banner" style="display:block">Sin consultantes nuevos con primera cita en ${esc(rdCohRango(C))}${ter?" con esta persona":""}. Es un dato informativo: no indica bajo rendimiento.</p>`}</section>`;
+}
+/* Párrafo del memorándum (plantilla, sin IA) */
+function rdCohMemo(D){
+  const C=D.cohortes; if (!C||C.error||!C.embudo?.agendados) return null; const E=C.embudo, den=E.asistieron+E.cancelo+E.no_asistio+E.reagendo, ter=C.nivel==="ter";
+  const txt=`Primeras citas y continuidad (consultantes cuya primera cita fue en ${rdCohRango(C)}): ${E.agendados} consultantes nuevos agendados; ${E.asistieron} asistieron a su primera sesión en los primeros 30 días (asistencia inicial ${rdPc(E.asistieron,den)}: ${E.asistieron} de ${den}${E.pendiente?`; ${E.pendiente} ${E.pendiente===1?"pendiente":"pendientes"}`:""}); ${E.h3} alcanzaron la tercera sesión, ${E.h5} la quinta, ${E.h10} la décima y ${E.h11} más de diez.${E.en_obs?` ${E.en_obs} siguen en observación.`:""}${E.transferidos?` ${E.transferidos} continuaron ${ter?"con otro terapeuta":"en otro lugar"}.`:""}`;
+  const rev=(C.etapas||[]).filter(e=>rdCohEstado(e)==="revisar");
+  const etapas=rev.map(e=>`${RD_COHORTE_ETAPAS[e.et].c}: ${rdPct1(e.tasa)} continuó, frente a ${rdPct1(e.ref_tasa)} en CEMEPI (${e.alc+e.sin} casos). Hipótesis a explorar: ${RD_COHORTE_ETAPAS[e.et].f.join(", ").toLowerCase()}.`);
+  const rec=rev.length?[...(rev.some(e=>e.et!=="A")?[`Temas para conversar en supervisión: ${RD_COHORTE_RECOMIENDA.clinicas.join(", ").toLowerCase()}.`]:[]), ...RD_COHORTE_RECOMIENDA.organizacionales]:[];
+  return {txt, etapas, rec, frase:RD_COHORTE_RECOMIENDA.frase};
 }
 function rdHtml(){
   const R=S.rd, cab=t=>`<div class="phead">${migas()}<h1>📊 ${S.rol==="psicologo"?"Mi tablero de rendimiento":"Estadísticas por sede"}</h1></div><p class="status" style="margin:-6px 0 14px">${R?.misSedes?.length?"Estadísticas de las sedes y psicólogos autorizados: elige sedes, periodo y psicólogo sin salir del tablero.":"Visualiza tu actividad, continuidad terapéutica y evolución en los últimos tres meses."}</p>${t||""}`;
@@ -7111,11 +7199,12 @@ function rdHtml(){
   const memo=`<section class="note rd-memo" style="margin-top:16px"><div class="note-h"><h3>Memorándum de ${rdMesTxt(mes)}</h3><button class="btn sm" type="button" data-act="rdPdf">Descargar PDF</button></div>
     ${M.filtros?`<p class="status" style="margin:0 0 6px">${esc(M.filtros)}</p>`:""}<p>${M.sint.map(esc).join(" ")}</p>
     ${M.alerta?`<div class="rd-alerta" style="margin:8px 0"><p class="rd-alerta-t"><span aria-hidden="true">🔴</span> ${esc(M.alerta.t)}</p><p style="margin:0">${esc(M.alerta.x)}</p></div>`:""}
+    ${M.coh?`<h4>Primeras citas y continuidad por etapas</h4><p>${esc(M.coh.txt)}</p>${M.coh.etapas.length?`<ul>${M.coh.etapas.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`:""}${M.coh.rec.length?`<p style="margin:4px 0">Recomendaciones para explorar:</p><ul>${M.coh.rec.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`:""}<p class="status">${esc(M.coh.frase)}</p>`:""}
     ${M.crece.length?`<h4>Lo que se mantiene o creció</h4><ul>${M.crece.map(t=>`<li>${esc(t.charAt(0).toUpperCase()+t.slice(1))}.</li>`).join("")}</ul>`:""}
     <h4>Para reflexionar</h4><ul>${M.reflex.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>
     ${M.herr.length?`<h4>Herramientas sugeridas para este mes</h4><ul>${M.herr.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`:""}
     <p class="status">${esc(M.alcance)}</p></section>`;
-  return `<div class="wrap tablero rd" style="padding-block:24px">${cab()}${imp}${demo}${dir}${D.reservado&&S.rol==="superusuario"?`<p class="banner" style="display:block">Resultados reservados: solo el Superusuario y la propia persona los ven.</p>`:""}${rdPeriodoHtml(D)}
+  return `<div class="wrap tablero rd" style="padding-block:24px">${cab()}${imp}${demo}${dir}${D.reservado&&S.rol==="superusuario"?`<p class="banner" style="display:block">Resultados reservados: solo el Superusuario y la propia persona los ven.</p>`:""}${rdPeriodoHtml(D)}${rdCohortesHtml(D)}
     ${D.periodo?`<h3 style="margin:18px 0 6px">Detalle mensual</h3>`:""}<p style="margin:0 0 8px"><b>${esc(D.persona.nombre)}</b> · ${D.tipo==="sede"?`${D.terapeutas?.[i]??"—"} terapeutas con citas en ${esc(rdMesTxt(mes))}`:`${esc(D.persona.sede)} · ${esc(tipoTxt(D.persona.modalidad))}`}</p>${meses}
     ${enCurso?`<p class="status" style="margin:0 0 10px">Mes en curso: las cifras cambiarán hasta su cierre.</p>`:""}
     <section aria-label="Resumen del mes"><div class="rd-cards">${tarjetas}</div></section>
@@ -7157,6 +7246,8 @@ async function rdPdf(){
   parrafo(M.filtros||`${D.persona.nombre} · ${D.persona.sede} · ${MOD_TXT[D.persona.modalidad]||""}`,{size:10,color:gris});
   parrafo(M.sint.join(" "));
   if (M.alerta){ espacio(LH*3); y-=6; parrafo(M.alerta.t,{b:true,color:rgb(0.70,0.16,0.16)}); parrafo(M.alerta.x); }
+  if (M.coh){ espacio(LH*3); y-=6; parrafo("Primeras citas y continuidad por etapas",{b:true,color:azul}); parrafo(M.coh.txt); M.coh.etapas.forEach(t=>parrafo("- "+t,{x:Mg+10}));
+    if (M.coh.rec.length){ parrafo("Recomendaciones para explorar:"); M.coh.rec.forEach(t=>parrafo("- "+t,{x:Mg+10})); } parrafo(M.coh.frase,{size:10,color:gris}); }
   if (M.crece.length){ espacio(LH*2); y-=6; parrafo("Lo que se mantiene o creció",{b:true,color:azul}); M.crece.forEach(t=>parrafo("- "+t.charAt(0).toUpperCase()+t.slice(1)+".",{x:Mg+10})); }
   espacio(LH*2); y-=6; parrafo("Para reflexionar",{b:true,color:azul}); M.reflex.forEach(t=>parrafo("- "+t,{x:Mg+10}));
   if (M.herr.length){ espacio(LH*2); y-=6; parrafo("Herramientas sugeridas para este mes",{b:true,color:azul}); M.herr.forEach(t=>parrafo("- "+t,{x:Mg+10})); }
@@ -7171,6 +7262,8 @@ async function rdAccion(a, b){
     await rdCargar(); return rdComparativas(); }
   if (a==="rdMes"){ S.rd.mes=b.dataset.m; S.rd.comp=null; S.rd.compSedes=null; render(); return rdComparativas(); }
   if (a==="rdPer"){ S.rd.f={...S.rd.f, per:+b.dataset.n}; return rdCargar(); }
+  if (a==="rdLente"){ S.rd.lente=b.dataset.l==="hit"?"hit":"coh"; return render(); }
+  if (a==="rdAbierto"){ if (!S.rd.f) return; S.rd.f={...S.rd.f, abierto:!S.rd.f.abierto}; return rdCargar(); }
   if (a==="rdSede"){ const v=b.dataset.s, todas=S.rd.misSedes.map(x=>x.sede), sedes=v==="*"?todas:[v];
     if (S.rd.f && sedes.join("|")===S.rd.f.sedes.join("|") && !S.rd.f.perfil) return;
     S.rd.f={...S.rd.f, sedes, perfil:""}; S.rd.buscar=""; S.rd.comp=null; S.rd.compSedes=null; await rdCargar(); return rdComparativas(); }

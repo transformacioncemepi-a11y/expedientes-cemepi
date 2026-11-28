@@ -558,3 +558,19 @@ details.plegable[open]>summary::before{transform:rotate(90deg)}
 .rd-sede-btn[aria-pressed="true"] .status{color:inherit;opacity:.85}
 .rd-persona{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
 @media (max-width:600px){.rd-sedes{display:grid;grid-template-columns:1fr 1fr;gap:6px}.rd-leyenda,.rd-sede-btn[data-s="*"]{grid-column:1/-1}.rd-sede-btn{justify-content:center;white-space:normal;text-align:center}}
+/* P37 · Primeras citas y continuidad por etapas */
+.rd-coh .note-h{flex-wrap:wrap;gap:8px}.rd-coh .note-h .tabs{margin:0}
+.rd-embudo .rd-barra{height:16px}
+.rd-tabla-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+.rd-coh-tabla{border-collapse:collapse;width:100%;font-size:13px;min-width:520px}
+.rd-coh-tabla th,.rd-coh-tabla td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.rd-coh-tabla th:first-child,.rd-coh-tabla td:first-child{text-align:left}
+.rd-etapas{display:flex;flex-direction:column;gap:8px}
+.rd-etapa{border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--surface)}
+.rd-etapa.warn{border-color:var(--warn);background:var(--warn-soft)}
+.rd-etapa summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.rd-etapa ul{margin:2px 0 4px;padding-left:20px}
+.rd-etapa-n{font-size:13px;color:var(--muted);flex-basis:100%}
+.rd-chip{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--line-strong);color:var(--fg)}
+.rd-chip.ok{background:var(--ok-soft);border-color:var(--ok)}.rd-chip.warn{background:var(--warn-soft);border-color:var(--warn)}
+@media (max-width:600px){.rd-coh .note-h .tabs{width:100%;overflow-x:auto}}

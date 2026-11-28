@@ -220,3 +220,17 @@ const MANUALES = {
     "Por mensajería solo folio e iniciales. La hoja administrativa llena no se envía por mensajería."]}
   ]}
 };
+/* ===== P37 · Etapas de continuidad (sección «¿En qué etapa necesitamos fortalecer la continuidad?»).
+   Factores tomados del prompt P37 §5 y §10. Son HIPÓTESIS DE EXPLORACIÓN, no causas comprobadas por los indicadores. ===== */
+const RD_COHORTE_ETAPAS = {
+  A: {t:"Etapa A · Antes de la primera sesión", c:"De la primera cita agendada a la primera sesión", f:["Confirmación de citas","Comunicación administrativa","Disponibilidad de horarios","Facilidad de acceso","Información proporcionada al consultante","Cancelaciones","Inasistencias"]},
+  B: {t:"Etapa B · De la primera a la tercera sesión", c:"De la primera a la tercera sesión", f:["Experiencia de bienvenida","Comprensión del motivo de consulta","Escucha","Construcción de confianza","Claridad del encuadre","Acuerdos de continuidad","Posibilidad de solicitar retroalimentación","Barreras de asistencia"]},
+  C: {t:"Etapa C · De la tercera a la quinta sesión", c:"De la tercera a la quinta sesión", f:["Calidad del contacto","Relación terapéutica","Aceptación positiva incondicional","Calidez profesional","Comprensión de expectativas","Revisión conjunta del proceso","Dificultades relacionales que puedan explorarse respetuosamente"]},
+  D: {t:"Etapa D · De la quinta a la décima sesión", c:"De la quinta a la décima sesión", f:["Evolución de objetivos","Experiencia subjetiva del consultante","Continuidad de los acuerdos","Barreras contextuales","Pertinencia de las intervenciones","Participación del consultante"]},
+  E: {t:"Etapa E · Después de la décima sesión", c:"De la décima a más de diez sesiones", f:["Necesidades de continuidad","Objetivos alcanzados","Cambios en las necesidades","Autonomía","Pertinencia de profundización","Posibilidad de cierre clínico acordado"]}
+};
+const RD_COHORTE_RECOMIENDA = {
+  clinicas:["Relación terapéutica","Conexión humana","Atención genuina","Escucha profunda","Calidez","Empatía","Aceptación positiva incondicional","Reconocimiento de prejuicios","Construcción de confianza","Reparación de dificultades del vínculo","Trabajo personal del terapeuta","Supervisión profesional","Preparación académica"],
+  organizacionales:["Factores administrativos: confirmación de citas, asignación y comunicación con el consultante","Factores económicos: costo y formas de pago","Factores organizacionales: horarios disponibles, sede y continuidad del mismo terapeuta"],
+  frase:"Una interrupción no se atribuye automáticamente al desempeño del psicólogo: la continuidad depende también del consultante, de sus circunstancias y de condiciones administrativas, económicas y organizacionales."
+};

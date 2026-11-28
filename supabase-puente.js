@@ -975,7 +975,9 @@ const cemepi = {
     const mes = k => { const d = new Date(c0.getFullYear(), c0.getMonth() - k, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; };
     const per_n = [1, 3, 6, 12].includes(+f.per) ? +f.per : 3;
     const q = (d, h) => sb.rpc("rend_consulta", { p_sedes: f.perfil ? (f.sedesPersona || null) : f.sedes,   /* P36 (090): persona en la sede elegida */ p_desde: d, p_hasta: h, p_perfil: f.perfil || null });
-    const [w, per] = await Promise.all([q(mes(4), mes(0)), q(mes(per_n), mes(1))]);
+    /* P37 (091): cohortes de consultantes nuevos del mismo periodo (con el mes en curso si se pide); si la función aún no existe, el resto del tablero sigue igual */
+    const qc = () => sb.rpc("rend_cohortes", { p_sedes: f.perfil ? (f.sedesPersona || null) : f.sedes, p_desde: mes(per_n), p_hasta: f.abierto ? mes(0) : mes(1), p_perfil: f.perfil || null });
+    const [w, per, coh] = await Promise.all([q(mes(4), mes(0)), q(mes(per_n), mes(1)), qc().then(r => r, e => ({ error: e }))]);
     if (w.error) fallo(w.error); if (per.error) fallo(per.error);
     const W = w.data, P = per.data, corte = String(W.corte || "").slice(0, 10), fin = new Date(corte + "T12:00:00");
     if (!W.series?.citas?.some(x => x > 0) && !P.series?.citas?.some(x => x > 0)) return { sinDatos: true, persona: W.persona || {} };
@@ -989,6 +991,7 @@ const cemepi = {
       terapeutas: W.terapeutas, meses: W.meses, series: W.series, quinta_obs: obs, sin_horas: true,
       comisiones: W.comision.map(g => ({ generada: Math.round(Number(g) || 0), validada: 0, pagada: 0, potencial: 0, sin_estado: true })),
       continuidad: W.continuidad, continuidad_org: W.org || null, por_sede_persona: W.por_sede_persona || null,
+      cohortes: coh?.error ? { error: coh.error.message || "No disponible" } : (coh?.data ? { ...coh.data, actualizado_txt: fh(coh.data.actualizado) } : null),
       periodo: { n: per_n, meses: P.meses, series: P.series, comision: P.comision, terapeutas: P.terapeutas, unicos: P.unicos, por_sede: P.por_sede || null, jornada_h: P.jornada_atencion_h ?? null } }; },
   async rendImportarProcesos(imp, lote, primero){ const { data, error } = await sb.rpc("rend_importar_procesos", { p_imp: imp, p_lote: lote, p_primero: primero }); if (error) fallo(error); return data; },
 };
