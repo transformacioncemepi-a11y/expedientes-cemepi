@@ -1153,7 +1153,7 @@ function miInfoHtml(){
   if (!f) return envol(`<div class="banner">Tu cuenta todavía no está autorizada. Cuando la autoricen verás aquí tu información.</div>`);
   const c=f.cuenta||{}, col=f.colaborador, pu=f.puestos||[], t=S.miTab||"perfil", psi=c.rol==="psicologo";
   const sinCol=!col?`<div class="banner">Tu cuenta aún no está en el directorio de colaboradores, por eso no aparecen tu puesto ni tu equipo. La Dirección te agrega en Personas → Colaboradores.</div>`:"";
-  const tabs=`<div class="tabs" role="tablist" aria-label="Mi información">${[["perfil","Mi perfil"],["puesto","Mi puesto y sedes"],["equipo","Mi equipo"],...(col?[["ideal","Mi perfil ideal"]]:[]),...(psi||c.cedula?[["prof","Perfil profesional"]]:[])].map(([k,x])=>`<button class="tab" role="tab" type="button" data-act="miTab" data-t="${k}" aria-selected="${t===k}">${x}</button>`).join("")}</div>`;
+  const tabs=`<div class="tabs" role="tablist" aria-label="Mi información">${[["perfil","Mi perfil"],...(col?[["desarrollo","Mi desarrollo"]]:[]),["puesto","Mi puesto y sedes"],["equipo","Mi equipo"],...(col?[["ideal","Mi perfil ideal"]]:[]),...(psi||c.cedula?[["prof","Perfil profesional"]]:[])].map(([k,x])=>`<button class="tab" role="tab" type="button" data-act="miTab" data-t="${k}" aria-selected="${t===k}">${x}</button>`).join("")}</div>`;
   let cuerpo="";
   if (t==="perfil") cuerpo=`<section class="card">
       ${miFila("Nombre completo", esc(c.nombre||"")||'<span class="status">Dato pendiente de recabar</span>', 2, `<button class="btn sm" type="button" data-act="solTipo" data-t="datos" data-c="nombre">Pedir corrección</button>`)}
@@ -1181,6 +1181,7 @@ function miInfoHtml(){
       ${$("#ogBtn")&&!$("#ogBtn").hidden?`<div class="actions" style="border-top:0"><button class="btn sm" type="button" data-act="organigrama">Ver organigrama</button></div>`:""}</section>`; }
   if (t==="prof") cuerpo=perfilProfHtml();
   if (t==="ideal") cuerpo=miPerfilIdealHtml();
+  if (t==="desarrollo") cuerpo=miDesarrolloHtml(f, psi);
   return envol(`${tabs}${cuerpo}<p class="status" style="margin:0"><button class="btn sm" type="button" data-act="tourVer">Ver el recorrido de bienvenida</button></p>`);
 }
 /* Recorrido de primer ingreso: 6 pasos, se pausa y se retoma; nunca bloquea nada. El avance se guarda en el servidor. */
@@ -1221,8 +1222,8 @@ function ctxAplicar(){
   box.querySelectorAll("button").forEach(b=>{ const on=String(b.dataset.c===c); if (b.getAttribute("aria-pressed")!==on) b.setAttribute("aria-pressed", on); });
 }
 async function miAccion(a,b){
-  if (a==="miinfo"){ S.view="miinfo"; S.miTab=S.miTab||"perfil"; render(); if (S.miTab==="prof") compCargar(); if (S.miTab==="ideal") miIdealCargar(); return miCargar(); }
-  if (a==="miTab"){ S.miTab=b.dataset.t; S.compForm=null; render(); if (S.miTab==="prof") return compCargar(); if (S.miTab==="ideal") return miIdealCargar(); return; }
+  if (a==="miinfo"){ S.view="miinfo"; S.miTab=S.miTab||"perfil"; render(); if (S.miTab==="prof") compCargar(); if (S.miTab==="ideal") miIdealCargar(); if (S.miTab==="desarrollo") miDesarrolloCargar(); return miCargar(); }
+  if (a==="miTab"){ S.miTab=b.dataset.t; S.compForm=null; render(); if (S.miTab==="prof") return compCargar(); if (S.miTab==="ideal") return miIdealCargar(); if (S.miTab==="desarrollo") return miDesarrolloCargar(); return; }
   if (a==="miRecargar"){ return miCargar(); }
   if (a==="ctx"){ const c=b.dataset.c; try{ localStorage.setItem("cemepi.ctx", c); }catch{}
     ctxAplicar(); navExtras(); toast(c==="mi"?"Estás en Mi espacio: el menú muestra lo tuyo.":"Estás en Gestión. Cambiar de espacio no te da permisos nuevos.");
@@ -4148,6 +4149,48 @@ function incPerfilIdealHtml(i){
     <p style="margin:6px 0 0"><b>Esenciales:</b> ${es.map(x=>esc(catDic(x.competencia)?.nombre||x.competencia)+" ("+x.nivel_ideal+")").join(", ")||"—"}</p>
     <p class="status" style="margin:6px 0 0">Entre paréntesis, el nivel ideal (1 Inicial a 5 Referente). Los días 30, 60 y 90 acompañan estas competencias; terminar los 90 días no es una contratación ni una baja automática.</p></details>`;
 }
+/* Módulo 08 · F1 (P39): Mi espacio → Mi información → «Mi desarrollo». Reúne lo que ya existe (puesto, perfil y competencias,
+   planes, formación y, para psicólogos, su práctica) sin calificación global (D3) ni datos de otras personas. No escribe nada. */
+const PSI_POBLACION={"Primera infancia (0 a 5 años)":"PSI-01","Niñas y niños (6 a 11 años)":"PSI-01","Adolescentes (12 a 17 años)":"PSI-02",
+  "Jóvenes adultos":"PSI-02","Adultos":"PSI-02","Personas adultas mayores":"PSI-02","Parejas":"PSI-03","Familias":"PSI-04"};
+async function miDesarrolloCargar(){ const psi=S.mi?.ficha?.cuenta?.rol==="psicologo";
+  await Promise.all([miIdealCargar().catch(()=>{}), psi&&!S.comp?compCargar().catch(()=>{}):null]); render(); }
+function miDesarrolloHtml(f, psi){
+  const c=C(), col=c?.yo, pu=(f.puestos||[]).find(x=>x.principal)||(f.puestos||[])[0], ind=psi&&(S.api?.modalidad||f.cuenta?.modalidad)==="comision";
+  const tarjeta=(t,cuerpo,acc)=>`<section class="card"><h3 style="margin:0 0 6px">${t}</h3>${cuerpo}${acc?`<div class="actions" style="border-top:0">${acc}</div>`:""}</section>`;
+  const btn=(act,t,extra="")=>`<button class="btn sm" type="button" data-act="${act}"${extra}>${t}</button>`;
+  const lugar=tarjeta("Mi lugar en CEMEPI", `${miFila("Puesto", pu?`<b>${esc(pu.puesto)}</b>`:'<span class="status">Sin puesto registrado</span>', 3)}
+      ${miFila("Sedes", esc((f.sedes||[]).join(" · ")||f.colaborador?.sede_principal||"")||'<span class="status">Sin registrar</span>', 3)}
+      ${miFila("A quién acudo", f.jefe?`<b>${esc(f.jefe.nombre)}</b>${f.jefe.puesto?` <span class="status">${esc(f.jefe.puesto)}</span>`:""}`:'<span class="status">Sin registrar</span>', 3)}
+      <p class="status" style="margin:8px 0 0">Cualquier integrante puede acudir también a la Dirección General.</p>`);
+  /* Perfil y competencias: solo conteos de mi propio perfil, nunca un puntaje global */
+  let perfil;
+  if (!c||!S.catPD||S.catPD.col!==col||(!S.catPD.brechas&&!S.catPD.error)) perfil=tarjeta("Mi perfil y mis competencias", `<p class="est-carga" role="status"><span class="spin" aria-hidden="true"></span>Cargando…</p>`);
+  else { const {asig,deriv}=catPerfilesDe(col), ps=[...asig.map(a=>catPerf(a.perfil_id)),...deriv].filter(Boolean), a=S.catPD.ali||{};
+    let sug="";
+    if (psi&&!ps.some(p=>p.familia==="clinica")){ const pob=(S.comp?.lista||[]).filter(x=>x.tipo==="poblacion").map(x=>x.valor);
+      const claves=[...new Set(pob.map(v=>PSI_POBLACION[v]).filter(Boolean))], sugeridos=claves.map(k=>c.perfiles.find(p=>p.clave===k)).filter(Boolean);
+      sug=`<div class="banner" style="margin-top:8px">${sugeridos.length?`Por la población que declaraste en tu perfil profesional, tu perfil clínico sería: <b>${sugeridos.map(p=>esc(p.nombre)).join(", ")}</b>. La Subdirección lo confirma y lo asigna; mientras tanto no se te evalúa con él.`
+        :`Todavía no tienes perfil clínico. Declara en tu perfil profesional la población que atiendes (niñas y niños, adolescentes y adultos, parejas o familias) para que la Subdirección te asigne el perfil que corresponde.`}</div>`; }
+    perfil=tarjeta("Mi perfil y mis competencias", ps.length?`<p style="margin:0">${ps.map(p=>`<b>${esc(p.nombre)}</b> ${catPill(CAT_EST,p.estado)}`).join(" · ")}</p>
+        <div class="kpis" style="margin-top:8px"><div class="kpi"><span>Competencias de mi perfil</span><b>${a.competencias??0}</b></div><div class="kpi"><span>Con evidencia registrada</span><b>${a.evaluadas??0}</b></div>
+        <div class="kpi"><span>Por fortalecer</span><b>${a.por_fortalecer??0}</b></div></div>
+        <p class="status" style="margin:6px 0 0">Los niveles describen conductas observables con evidencia; no son una calificación de la persona.</p>${sug}`
+      :`<p style="margin:0">Todavía no tienes un perfil ideal asignado.</p>${sug}`,
+      `${btn("miTab","Ver mi perfil y mis brechas",' data-t="ideal"')}${psi?btn("miTab","Mi perfil profesional",' data-t="prof"'):""}`); }
+  /* Planes de desarrollo propios */
+  const acc=(c?.acciones||[]).filter(x=>x.colaborador_id===col&&!["cancelada"].includes(x.estado)), prox=acc.filter(x=>x.estado!=="completada"&&x.fecha_revision).sort((x,y)=>x.fecha_revision.localeCompare(y.fecha_revision))[0];
+  const planes=tarjeta("Mis planes de desarrollo", acc.length?`<div class="kpis"><div class="kpi"><span>En curso</span><b>${acc.filter(x=>x.estado==="en_curso").length}</b></div><div class="kpi"><span>Propuestos</span><b>${acc.filter(x=>x.estado==="propuesta").length}</b></div><div class="kpi"><span>Completados</span><b>${acc.filter(x=>x.estado==="completada").length}</b></div></div>
+      ${prox?`<p style="margin:8px 0 0">Próxima revisión: <b>${fechaTxt(prox.fecha_revision)}</b> · ${esc(prox.objetivo)}</p>`:""}`
+    :`<p style="margin:0">Aún no tienes acciones de desarrollo. Se acuerdan contigo en una conversación de desarrollo, a partir de tus fortalezas y de lo que quieras fortalecer.</p>`,
+    btn("miTab","Ver mis planes",' data-t="ideal"'));
+  const conv=tarjeta("Conversaciones y reconocimientos", `<p style="margin:0">Aquí verás las conversaciones de desarrollo, los acuerdos y los reconocimientos que recibas. Por omisión son privados: los ven tú y tu jefatura.</p><p class="status" style="margin:6px 0 0">Próximamente (Módulo 08, fase 2).</p>`);
+  const form=tarjeta("Mi formación", `<p style="margin:0">Tu manual de integración, los lineamientos y las demás formaciones, con tu avance.</p>`, btn("miintegracion","Ir a Mi integración y desarrollo"));
+  const prac=psi?tarjeta("Mi práctica", `<p style="margin:0">Tus indicadores de atención (primeras citas, continuidad, cancelaciones) como <b>contexto</b> para reflexionar sobre tu práctica. Nunca son una calificación ni una meta obligatoria.</p>`, $("#rendBtn")&&!$("#rendBtn").hidden?btn("rendimiento","Ver mis resultados"):""):"";
+  const nota=ind?`<div class="banner">Como psicóloga o psicólogo independiente, tu desarrollo es un <b>acompañamiento profesional</b>: autoevaluación, supervisión clínica y acuerdos que tú decides, al renovar tu Carta Compromiso. No hay evaluación de jefatura ni metas obligatorias.</div>`:"";
+  return `<p class="status" style="margin:0;max-width:80ch">Tu desarrollo profesional en un solo lugar: qué se espera de tu función, cómo vas y qué acuerdos tienes. Nadie más ve esta página; tu jefatura ve solo lo que corresponde a su equipo.</p>${nota}
+    <div class="org-grid">${lugar}${perfil}${planes}${conv}${form}${prac}</div>`;
+}
 /* Mi espacio → Mi información → Mi perfil ideal: qué se espera de mi función y cómo voy */
 async function miIdealCargar(){ if (!C()) await catCargar(); const yo=C()?.yo; if (yo&&(!S.catPD||S.catPD.col!==yo)) await catPerCargar(yo); else render(); }
 function miPerfilIdealHtml(){
@@ -5254,6 +5297,7 @@ const GUIAS = [
   {t:"Preparar una entrevista de selección", si:()=>!!S.rol, pasos:["Entra a Desarrollo del personal → Perfiles de puesto → pestaña «Selección».","Revisa el Flujo, el banco de Preguntas (filtra por perfil y tipo) y las Simulaciones (todas ficticias).","En «Guía de entrevista» elige el perfil y pulsa «Descargar guía (Word)»: trae requisitos indispensables, competencias críticas, preguntas con rúbrica, simulaciones y la hoja de síntesis. Se llena fuera de la app: aquí no se registran candidatos.","La decisión es humana, por escrito y con motivos; ninguna herramienta decide ni analiza rostro, voz o emociones."]},
   {t:"Recorrer los valores y sus relaciones", si:()=>!!S.rol, pasos:["Entra a Desarrollo del personal → Perfiles de puesto → pestaña «Valores y relaciones».","Busca un valor (o cambia «Ver» a principios, categorías, formación, supervisión, procesos o módulos) y pulsa «Ver relaciones»: verás su definición, conductas observables, qué no es, cautelas y con qué se conecta. Pulsa cualquier elemento para seguir recorriendo el mapa.","Los valores de «conducta» se observan solo a través de competencias; los de «orientación» nunca se evalúan en una persona. La Dirección valida o retira cada elemento (retirar pide motivo y retira sus relaciones)."]},
   {t:"Consultar el perfil ideal de un puesto", si:()=>!!S.rol, pasos:["Entra a Desarrollo del personal → Perfiles de puesto (o, desde Organización → Puestos, pulsa «Ver perfil ideal y competencias»).","Abre un perfil: Descripción (propósito, responsabilidades, límites, indicadores), Requisitos, Competencias (con su nivel ideal e importancia; pulsa una para ver su rúbrica de 5 niveles), Desarrollo y valores (habilidades, actitudes observables, valores, evidencias, formación, supervisión y ruta de desarrollo), Incorporación y Versiones.","Descargar ficha (Word) genera la ficha del puesto. El perfil describe la función: no concede permisos ni fija salario."]},
+  {t:"Mi desarrollo profesional", si:()=>!!S.rol, pasos:["En «Mi espacio» abre Mi información → pestaña «Mi desarrollo».","Ves en un solo lugar tu puesto, tus sedes y a quién acudir; tu perfil y tus competencias (sin calificación global); tus planes de desarrollo con su próxima revisión; tu formación y, si eres psicóloga o psicólogo, tus indicadores como contexto.","Psicólogos: declara en «Perfil profesional» la población que atiendes. Con eso se te sugiere tu perfil clínico (infantil, adolescentes y adultos, parejas o familias), que confirma la Subdirección.","Independientes: tu desarrollo es acompañamiento profesional; no hay evaluación de jefatura ni metas obligatorias."]},
   {t:"Mi perfil ideal y mis competencias", si:()=>!!S.rol, pasos:["Entra a Mi espacio → Mi información → «Mi perfil ideal».","Ves qué se espera de tu función, tus responsabilidades, tus competencias con su nivel ideal y cómo vas: fortalezas, lo que está por fortalecer y tu plan de desarrollo.","Puedes autoevaluarte; tu autoevaluación se guarda aparte y no cambia la evaluación de quien te acompaña. Lo no evaluado aparece como «No evaluado», nunca como cero."]},
   {t:"Editar un perfil de puesto", si:()=>["superusuario","direccion"].includes(S.rol)||(S.api?.misRoles||[]).includes("rrhh"), pasos:["Abre el perfil y pulsa «Editar (nueva versión)»: se crea un borrador; la versión vigente no cambia.","Edita el contenido (un elemento por renglón en las listas) y, en Competencias, agrega, ajusta nivel e importancia o quita competencias.","La Dirección pulsa «Publicar versión» y escribe el motivo; la anterior queda en Versiones con sus diferencias. «Validar perfil» lo deja como vigente para la organización."]},
   {t:"Evaluar competencias y proponer un plan de desarrollo", si:()=>["superusuario","direccion","admin_sede"].includes(S.rol)||(S.api?.misRoles||[]).some(r=>["rrhh","coord_clinica"].includes(r))||(S.perm&&[...S.perm].includes("supervision_clinica")), pasos:["En Perfiles de puesto → Personas abre a la persona (solo ves a quien te corresponde: tu equipo, tu supervisión clínica o tu alcance de RR. HH.).","Pulsa «Evaluar» en una competencia: elige el nivel observado con la rúbrica a la vista y describe la evidencia (qué viste, cuándo). Si no hay datos usa «No observado», «No aplicable» o «Evidencia insuficiente».","Una ausencia, incapacidad o permiso autorizado no es evidencia negativa. Las evaluaciones no se modifican: si te equivocas registra una nueva.","En una competencia por fortalecer pulsa «Plan» y define objetivo, actividad, mentor(a), recursos y fecha de revisión. La persona marca «En curso»; quien acompaña la da por completada con el resultado."]},
