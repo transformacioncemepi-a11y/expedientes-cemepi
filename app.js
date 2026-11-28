@@ -1981,7 +1981,11 @@ function organigramaHtml(){
     const rama=(c,vistos)=>{ if (vistos.has(c.id)) return ""; const vv=new Set(vistos).add(c.id); return ogLi(nodoOg(c.nombre, puestoTxt(c), {col:c.id}), hijos(c.id).map(h=>rama(h,vv))); };
     return {html: raices.map(c=>`<div class="og"><ul>${rama(c,new Set())}</ul></div>`).join(""), fuera: cols.filter(c=>!conRel.has(c.id))}; };
   let cuerpo="", nota="";
-  if (v==="jerarquia"){ const eqSede=r=>r.tema!==OG_EQUIPO; const a=arbolRel("administrativa", eqSede); cuerpo=a.html||`<p class="status">Aún no hay líneas de reporte. Regístralas en Supervisión.</p>`;
+  const D=S.org.direccion, dirNota=D?.director?`<p class="banner" style="margin:0 0 8px">Cualquier integrante de CEMEPI puede contactar directamente a la Dirección General: <b>${esc(D.director.nombre)}</b>. Las líneas de reporte ordenan el trabajo, no limitan a quién puedes acudir.</p>`:"";
+  const dirBloque=D?.director?`<div class="og"><ul>${ogLi(nodoOg(D.director.nombre, D.director.puesto||"Dirección General", {col:orgCol(D.director.id)?D.director.id:null}),
+      (D.reportes||[]).map(x=>ogLi(nodoOg(x.nombre, x.puesto||"", {col:orgCol(x.id)?x.id:null}))))}</ul></div>`:"";
+  if (v==="jerarquia"){ const eqSede=r=>r.tema!==OG_EQUIPO; const a=arbolRel("administrativa", eqSede);
+    cuerpo=dirNota+((D?.director&&orgCol(D.director.id))?"":dirBloque)+(a.html||`<p class="status">Aún no hay líneas de reporte. Regístralas en Supervisión.</p>`);
     const enEquipo=new Set(rels.filter(r=>r.tema===OG_EQUIPO).map(r=>r.a_id)), fuera=a.fuera.filter(c=>!enEquipo.has(c.id)&&c.estatus!=="baja"&&!c.vinculo_persona);
     nota=`Línea de mando del personal. Los psicólogos aparecen en «Por sede», bajo el personal administrativo de cada sede donde colaboran.${fuera.length?` Sin línea de reporte registrada: ${fuera.map(c=>esc(c.nombre)).join(", ")}.`:""}`; }
   if (v==="clinica"){ const a=arbolRel("supervision_clinica"); cuerpo=a.html||`<p class="status">Aún no hay supervisión clínica registrada. Agrégala en Supervisión.</p>`;
@@ -2005,6 +2009,7 @@ function organigramaHtml(){
         grupo("Apoyo de supervisión",apoyo,()=>"Supervisora administrativa"), ...vac].filter(Boolean);
       return `<div class="og"><ul>${ogLi(nodoOg(s.nombre, orgEntDeSede(s.id)?.nombre_corto||"", {unidad:1, ini:s.clave}),
         [ogLi(resp?nodoOg(resp.nombre,"Responsable administrativa",{col:resp.id}):nodoOg("Responsable pendiente","Asígnala en Sedes",{vac:1}), hijos)])}</ul></div>`; }).join("");
+    cuerpo=dirNota+(dirBloque?`<p class="status" style="margin:0">Dirección General</p>${dirBloque}<p class="status" style="margin:8px 0 0">Sedes</p>`:"")+cuerpo;
     nota="Cada sede: su responsable administrativa, el personal administrativo (jefatura directa de los psicólogos de esa sede) y sus psicólogos. Quien colabora en dos sedes aparece en cada una, con un solo registro. La jefatura administrativa no concede acceso a otras sedes."; }
   if (v==="coord"){ const cs=rels.filter(r=>["coordinacion","delegacion","sustitucion","responsable_sede","responsable_area"].includes(r.tipo));
     cuerpo=cs.length?`<div class="og-coord">${cs.map(r=>{ const a=orgCol(r.de_id), b=orgCol(r.a_id); return `<div class="og-fila">${a?nodoOg(a.nombre, puestoTxt(a), {col:a.id}):pendH()}<span class="pill">${REL_CORTO[r.tipo]}${r.tema?" · "+esc(r.tema):""}</span>${b?nodoOg(b.nombre, puestoTxt(b), {col:b.id}):pendH()}</div>`; }).join("")}</div>`

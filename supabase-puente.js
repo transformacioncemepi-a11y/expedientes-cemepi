@@ -654,7 +654,8 @@ const cemepi = {
     const { data: rv } = await sb.from("revisiones").select("*").order("creado_en", { ascending: false }).limit(500);
     /* P38: pendientes de la estructura (solo Superusuario y Dirección; a los demás la función les responde con error y se omite) */
     const { data: val, error: eVal } = await sb.rpc("org_validar");
-    return { validacion: eVal ? null : (val || []), sedes: sd, sedeEnt: se, entidades: en, datosFiscales: ed, areas: ar, puestos: pu, posiciones: po, autorizadas: aut, niveles, colaboradores: co, asignaciones: asg, relaciones: rel, revisiones: rv || [] }; },
+    const { data: dir } = await sb.rpc("org_direccion");   /* 094: Dirección General y quienes le reportan, visible para toda cuenta */
+    return { direccion: dir || null, validacion: eVal ? null : (val || []), sedes: sd, sedeEnt: se, entidades: en, datosFiscales: ed, areas: ar, puestos: pu, posiciones: po, autorizadas: aut, niveles, colaboradores: co, asignaciones: asg, relaciones: rel, revisiones: rv || [] }; },
   async orgSincronizarEquipos(){ const { data, error } = await sb.rpc("org_sincronizar_equipos"); if (error) fallo(error); return data; },
   /* ---------- Módulo 06 · Mi espacio (solo lo propio: las funciones no reciben identificadores) ---------- */
   async miFicha(){ const { data, error } = await sb.rpc("mi_ficha"); if (error) fallo(error); return data; },
