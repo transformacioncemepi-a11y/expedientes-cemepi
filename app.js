@@ -1982,10 +1982,14 @@ function organigramaHtml(){
     return {html: raices.map(c=>`<div class="og"><ul>${rama(c,new Set())}</ul></div>`).join(""), fuera: cols.filter(c=>!conRel.has(c.id))}; };
   let cuerpo="", nota="";
   const D=S.org.direccion, dirNota=D?.director?`<p class="banner" style="margin:0 0 8px">Cualquier integrante de CEMEPI puede contactar directamente a la Dirección General: <b>${esc(D.director.nombre)}</b>. Las líneas de reporte ordenan el trabajo, no limitan a quién puedes acudir.</p>`:"";
-  const dirBloque=D?.director?`<div class="og"><ul>${ogLi(nodoOg(D.director.nombre, D.director.puesto||"Dirección General", {col:orgCol(D.director.id)?D.director.id:null}),
-      (D.reportes||[]).map(x=>ogLi(nodoOg(x.nombre, x.puesto||"", {col:orgCol(x.id)?x.id:null}))))}</ul></div>`:"";
+  /* 094–095: Dirección General → nivel «Directivos» → Supervisión administrativa (visible para toda cuenta; respeta reservas) */
+  const ogGrupo=(t, nodos)=>`<div class="og-grupo"><span class="og-grupo-t">${esc(t)}</span><div class="og-grupo-f">${nodos.join("")}</div></div>`;
+  const nCol=x=>orgCol(x.id)?x.id:null;
+  const dirBloque=D?.director?`<div class="og"><ul>${ogLi(nodoOg(D.director.nombre, D.director.puesto||"Dirección General", {col:nCol(D.director)}),
+      (D.reportes||[]).length?[ogLi(ogGrupo("Directivos", D.reportes.map(x=>nodoOg(x.nombre, x.puesto||"", {col:nCol(x)}))),
+        (D.supervision||[]).length?[ogLi(ogGrupo("Supervisión administrativa", D.supervision.map(x=>nodoOg(x.nombre, x.sede||x.puesto||"", {col:nCol(x)}))))]:[])]:[])}</ul></div>`:"";
   if (v==="jerarquia"){ const eqSede=r=>r.tema!==OG_EQUIPO; const a=arbolRel("administrativa", eqSede);
-    cuerpo=dirNota+((D?.director&&orgCol(D.director.id))?"":dirBloque)+(a.html||`<p class="status">Aún no hay líneas de reporte. Regístralas en Supervisión.</p>`);
+    cuerpo=dirNota+(dirBloque?`${dirBloque}<p class="status" style="margin:8px 0 0">Línea de mando completa</p>`:"")+(a.html||`<p class="status">Aún no hay líneas de reporte. Regístralas en Supervisión.</p>`);
     const enEquipo=new Set(rels.filter(r=>r.tema===OG_EQUIPO).map(r=>r.a_id)), fuera=a.fuera.filter(c=>!enEquipo.has(c.id)&&c.estatus!=="baja"&&!c.vinculo_persona);
     nota=`Línea de mando del personal. Los psicólogos aparecen en «Por sede», bajo el personal administrativo de cada sede donde colaboran.${fuera.length?` Sin línea de reporte registrada: ${fuera.map(c=>esc(c.nombre)).join(", ")}.`:""}`; }
   if (v==="clinica"){ const a=arbolRel("supervision_clinica"); cuerpo=a.html||`<p class="status">Aún no hay supervisión clínica registrada. Agrégala en Supervisión.</p>`;
