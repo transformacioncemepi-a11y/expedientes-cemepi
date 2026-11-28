@@ -1965,6 +1965,7 @@ function supervisionHtml(){
 }
 
 /* ---------- Organigrama ---------- */
+const OG_EQUIPO="Equipo de sede";   /* P38: relaciones jefatura administrativa → psicólogos, mantenidas por org_sincronizar_equipos() */
 const ORG_VISTAS_OG=[["jerarquia","Por línea de reporte"],["area","Por área"],["sede","Por sede"],["clinica","Supervisión clínica"],["coord","Coordinación"]];
 function nodoOg(t, sub, o={}){
   return `<button class="og-node${o.vac?" vac":""}${o.unidad?" unidad":""}" type="button"${o.col?` data-act="verCol" data-id="${o.col}"`:" tabindex=\"-1\""}><span class="og-av">${o.vac?"?":esc(ogIni(o.ini||t))}</span><span><b>${esc(t)}</b>${sub?`<span>${esc(sub)}</span>`:""}</span></button>`;
@@ -1974,14 +1975,15 @@ function organigramaHtml(){
   if (!S.org) return orgCargando("Organigrama"); if (S.org.error) return orgError("Organigrama");
   const v=S.orgOG||"jerarquia", cols=S.org.colaboradores, rels=orgRelVig();
   const puestoTxt=c=>{ const x=orgPuestosDe(c.id)[0]; return x?`${x.pu?.nombre||""}${orgSede(x.a.sede_id)?" · "+orgSede(x.a.sede_id).clave:""}`:(c.tipo_funcion||""); };
-  const arbolRel=(tipo)=>{ const hijos=id=>rels.filter(r=>r.tipo===tipo&&r.de_id===id).map(r=>orgCol(r.a_id)).filter(Boolean);
-    const conRel=new Set(rels.filter(r=>r.tipo===tipo).flatMap(r=>[r.de_id,r.a_id]));
-    const raices=cols.filter(c=>conRel.has(c.id) && !rels.some(r=>r.tipo===tipo&&r.a_id===c.id));
+  const arbolRel=(tipo, filtro=()=>true)=>{ const rs=rels.filter(r=>r.tipo===tipo&&filtro(r)); const hijos=id=>rs.filter(r=>r.de_id===id).map(r=>orgCol(r.a_id)).filter(Boolean);
+    const conRel=new Set(rs.flatMap(r=>[r.de_id,r.a_id]));
+    const raices=cols.filter(c=>conRel.has(c.id) && !rs.some(r=>r.a_id===c.id));
     const rama=(c,vistos)=>{ if (vistos.has(c.id)) return ""; const vv=new Set(vistos).add(c.id); return ogLi(nodoOg(c.nombre, puestoTxt(c), {col:c.id}), hijos(c.id).map(h=>rama(h,vv))); };
     return {html: raices.map(c=>`<div class="og"><ul>${rama(c,new Set())}</ul></div>`).join(""), fuera: cols.filter(c=>!conRel.has(c.id))}; };
   let cuerpo="", nota="";
-  if (v==="jerarquia"){ const a=arbolRel("administrativa"); cuerpo=a.html||`<p class="status">Aún no hay líneas de reporte. Regístralas en Supervisión.</p>`;
-    if (a.fuera.length) nota=`Sin línea de reporte registrada: ${a.fuera.map(c=>esc(c.nombre)).join(", ")}. Agrégalas en Supervisión para que aparezcan en el árbol.`; }
+  if (v==="jerarquia"){ const eqSede=r=>r.tema!==OG_EQUIPO; const a=arbolRel("administrativa", eqSede); cuerpo=a.html||`<p class="status">Aún no hay líneas de reporte. Regístralas en Supervisión.</p>`;
+    const enEquipo=new Set(rels.filter(r=>r.tema===OG_EQUIPO).map(r=>r.a_id)), fuera=a.fuera.filter(c=>!enEquipo.has(c.id)&&c.estatus!=="baja"&&!c.vinculo_persona);
+    nota=`Línea de mando del personal. Los psicólogos aparecen en «Por sede», bajo el personal administrativo de cada sede donde colaboran.${fuera.length?` Sin línea de reporte registrada: ${fuera.map(c=>esc(c.nombre)).join(", ")}.`:""}`; }
   if (v==="clinica"){ const a=arbolRel("supervision_clinica"); cuerpo=a.html||`<p class="status">Aún no hay supervisión clínica registrada. Agrégala en Supervisión.</p>`;
     nota="La supervisión clínica no da acceso a expedientes: ese acceso se concede aparte."; }
   if (v==="area"){ cuerpo=S.org.areas.filter(a=>a.estatus!=="inactiva").map(a=>{ const resp=orgCol(a.responsable_id);
@@ -1989,10 +1991,21 @@ function organigramaHtml(){
         return ogLi(nodoOg(p.nombre, `${plazas.length} plaza${plazas.length===1?"":"s"}`, {unidad:1, ini:p.codigo}), plazas.map(x=>{ const c=orgOcupante(x.id);
           return ogLi(c?nodoOg(c.nombre, orgSede(x.sede_id)?.nombre||"", {col:c.id}):nodoOg(ESTADO_POS[x.estado], orgSede(x.sede_id)?.nombre||"", {vac:1})); })); });
       return `<div class="og"><ul>${ogLi(nodoOg(a.nombre, resp?`Responsable: ${resp.nombre}`:"Responsable pendiente", {unidad:1, ini:a.nombre}), puestos)}</ul></div>`; }).join(""); }
-  if (v==="sede"){ cuerpo=orgSedesVis().map(s=>{ const plazas=S.org.posiciones.filter(x=>x.sede_id===s.id&&x.estado!=="inactiva");
-      return `<div class="og"><ul>${ogLi(nodoOg(s.nombre, `${plazas.length} plaza${plazas.length===1?"":"s"} · ${orgEntDeSede(s.id)?.nombre_corto||""}`, {unidad:1, ini:s.clave}),
-        plazas.map(x=>{ const c=orgOcupante(x.id), pu=orgPuesto(x.puesto_id); return ogLi(c?nodoOg(c.nombre, pu?.nombre||"", {col:c.id}):nodoOg(pu?.nombre||"Plaza", ESTADO_POS[x.estado], {vac:1})); }))}</ul></div>`; }).join("");
-    nota="Las tarjetas punteadas son plazas sin ocupar."; }
+  if (v==="sede"){ const vig=a=>!a.hasta||a.hasta>=today(), codA=a=>orgPuesto(S.org.posiciones.find(p=>p.id===a.posicion_id)?.puesto_id)?.codigo||"";
+    const uniq=ids=>[...new Set(ids)].map(orgCol).filter(c=>c&&c.estatus!=="baja").sort((x,y)=>x.nombre.localeCompare(y.nombre,"es"));
+    const grupo=(t,lista,sub)=>lista.length?ogLi(nodoOg(t,`${lista.length} persona${lista.length===1?"":"s"}`,{unidad:1,ini:t}),lista.map(c=>ogLi(nodoOg(c.nombre,sub(c),{col:c.id})))):"";
+    cuerpo=orgSedesVis().map(s=>{ const asg=(S.org.asignaciones||[]).filter(a=>a.sede_id===s.id&&vig(a)), resp=orgCol(s.responsable_admin_id);
+      const admins=uniq(asg.filter(a=>codA(a)==="OP-02").map(a=>a.colaborador_id));
+      const psi=uniq([...rels.filter(r=>r.sede_id===s.id&&r.tema===OG_EQUIPO).map(r=>r.a_id), ...asg.filter(a=>codA(a)==="PS-01").map(a=>a.colaborador_id)]).filter(c=>!c.vinculo_persona);
+      const apoyo=uniq(asg.filter(a=>["OP-01",""].includes(codA(a))).map(a=>a.colaborador_id)).filter(c=>c.id!==resp?.id&&!admins.includes(c)&&!psi.includes(c));
+      const coord=rels.some(r=>r.sede_id===s.id&&r.tema===OG_EQUIPO&&r.tipo==="coordinacion");
+      const vac=S.org.posiciones.filter(x=>x.sede_id===s.id&&x.estado==="vacante").map(x=>ogLi(nodoOg(orgPuesto(x.puesto_id)?.nombre||"Plaza","Vacante",{vac:1})));
+      const hijos=[grupo("Administración",admins,c=>orgPuestosDe(c.id)[0]?.pu?.nombre||""),
+        grupo("Psicólogos",psi,c=>c.reservado?"Reservada (solo Superusuario)":(coord?"Coordinación con la responsable":"")),
+        grupo("Apoyo de supervisión",apoyo,()=>"Supervisora administrativa"), ...vac].filter(Boolean);
+      return `<div class="og"><ul>${ogLi(nodoOg(s.nombre, orgEntDeSede(s.id)?.nombre_corto||"", {unidad:1, ini:s.clave}),
+        [ogLi(resp?nodoOg(resp.nombre,"Responsable administrativa",{col:resp.id}):nodoOg("Responsable pendiente","Asígnala en Sedes",{vac:1}), hijos)])}</ul></div>`; }).join("");
+    nota="Cada sede: su responsable administrativa, el personal administrativo (jefatura directa de los psicólogos de esa sede) y sus psicólogos. Quien colabora en dos sedes aparece en cada una, con un solo registro. La jefatura administrativa no concede acceso a otras sedes."; }
   if (v==="coord"){ const cs=rels.filter(r=>["coordinacion","delegacion","sustitucion","responsable_sede","responsable_area"].includes(r.tipo));
     cuerpo=cs.length?`<div class="og-coord">${cs.map(r=>{ const a=orgCol(r.de_id), b=orgCol(r.a_id); return `<div class="og-fila">${a?nodoOg(a.nombre, puestoTxt(a), {col:a.id}):pendH()}<span class="pill">${REL_CORTO[r.tipo]}${r.tema?" · "+esc(r.tema):""}</span>${b?nodoOg(b.nombre, puestoTxt(b), {col:b.id}):pendH()}</div>`; }).join("")}</div>`
       :`<p class="status">Sin coordinaciones, delegaciones ni sustituciones vigentes. Regístralas en Supervisión.</p>`;
@@ -2041,9 +2054,19 @@ function orgResumenHtml(){
       <section class="note"><div class="note-h"><h3>Colaboradores por área</h3></div>${hbar(S.org.areas.map(a=>[a.nombre,cols.filter(c=>areaDe(c)===a.id).length]).filter(x=>x[1]),"colaboradores")}</section>
       <section class="note"><div class="note-h"><h3>Por entidad fiscal</h3></div>${hbar(ents.map(e=>[e.nombre_corto,cols.filter(c=>orgEntDeSede(c.sede_principal_id)?.id===e.id).length]),"colaboradores")}<p class="status" style="margin:0">Consolidación operativa; los reportes fiscales se emiten por entidad.</p></section>
       <section class="note"><div class="note-h"><h3>Alertas</h3></div><ul class="pend">${alertas.slice(0,8).map(([t,d,act])=>`<li><b>${esc(t)}</b><br><span class="status">${esc(d)}</span> <button class="btn sm" type="button" data-act="${act}">Abrir</button></li>`).join("")||`<li class="status">Sin alertas.</li>`}</ul></section>
+      ${orgValidacionHtml()}
       <section class="note"><div class="note-h"><h3>Cambios recientes de plantilla</h3></div><ul class="pend">${recientes.map(a=>{ const c=orgCol(a.colaborador_id), pos=S.org.posiciones.find(p=>p.id===a.posicion_id);
         return `<li><b>${esc(c?.nombre||"Persona")}</b> · ${esc(orgPuesto(pos?.puesto_id)?.nombre||"Plaza")}<br><span class="status">${a.hasta?"Dejó la plaza el "+fmtDate(a.hasta):"Desde "+fmtDate(a.desde)} · ${esc(orgSede(a.sede_id)?.nombre||"")}</span></li>`; }).join("")||`<li class="status">Sin movimientos.</li>`}</ul></section>
     </div>`);
+}
+/* P38: pendientes de la estructura (org_validar). Solo informa: nada se corrige por suposición. */
+function orgValidacionHtml(){
+  const v=S.org.validacion; if (!v) return "";
+  const g={}; v.forEach(x=>{ (g[x.titulo]=g[x.titulo]||[]).push(x); });
+  const filas=Object.entries(g).map(([t,l])=>`<li><b>${esc(t)}</b> <span class="pill">${l.length}</span><br><span class="status">${l.slice(0,6).map(x=>esc(x.nombre||"")).join(", ")}${l.length>6?` y ${l.length-6} más`:""}</span>${l[0].detalle?`<br><span class="status">${esc(l[0].detalle)}</span>`:""}</li>`).join("");
+  return `<section class="note"><div class="note-h"><h3>Pendientes de la estructura</h3>${orgSU()?`<button class="btn sm" type="button" data-act="orgSincronizar">Actualizar equipos de sede</button>`:""}</div>
+    ${v.length?`<ul class="pend">${filas}</ul>`:`<p class="status" style="margin:0">Sin pendientes: cada persona tiene puesto, sede y a quién reportar.</p>`}
+    <p class="status" style="margin:6px 0 0">Revisión automática de puestos, sedes, jefaturas, duplicados y ciclos. Informa; no corrige nada por su cuenta.</p></section>`;
 }
 function orgIndicadoresHtml(){
   if (!S.org) return orgCargando("Indicadores"); if (S.org.error) return orgError("Indicadores");
@@ -2073,6 +2096,7 @@ async function orgAccion(a, b){
   if (ORG_VISTAS.includes(a)){ S.view=a; S.orgEdit=null; S.orgVerPuesto=null; S.orgVerCol=null; render(); return cargarOrg(); }
   if (a==="cancelOrg"){ S.orgEdit=null; return render(); }
   if (a==="ogVista"){ S.orgOG=b.dataset.v; return render(); }
+  if (a==="orgSincronizar"){ try{ const r=await S.api.orgSincronizarEquipos(); toast(`Equipos de sede actualizados: ${r?.altas||0} relaciones nuevas y ${r?.cierres||0} cerradas.`); }catch(e){ toast(orgErrorTxt(e)); } return cargarOrg(); }
   if (a==="verCol"){ S.orgVerCol=b.dataset.id; S.orgEdit=null; if (S.view!=="colaboradores"){ S.view="colaboradores"; render(); if (!S.org) await cargarOrg(); } else render();
     setTimeout(()=>$("#fichaCol")?.scrollIntoView({block:"start",behavior:"smooth"}),40); return; }
   if (a==="cerrarCol"){ S.orgVerCol=null; S.orgEdit=null; return render(); }
@@ -2135,7 +2159,7 @@ async function orgAccion(a, b){
       if (persona!==antes) await S.api.asignarPlaza(id, persona||null); }, "Plaza guardada"); }
   return null;
 }
-const ORG_ACCIONES=new Set([...ORG_VISTAS,"cancelOrg","ogVista","verCol","cerrarCol","agregarCol","saveAgregarCol","editCol","saveCol","newRel","saveRel","endRel","newSede","editSede","saveSede","newEntidad","editEntidad","saveEntidad","newArea","editArea","saveArea","newPuesto","editPuesto","verPuesto","cerrarPuesto","savePuesto","newPosicion","editPosicion","savePosicion"]);
+const ORG_ACCIONES=new Set([...ORG_VISTAS,"orgSincronizar","cancelOrg","ogVista","verCol","cerrarCol","agregarCol","saveAgregarCol","editCol","saveCol","newRel","saveRel","endRel","newSede","editSede","saveSede","newEntidad","editEntidad","saveEntidad","newArea","editArea","saveArea","newPuesto","editPuesto","verPuesto","cerrarPuesto","savePuesto","newPosicion","editPosicion","savePosicion"]);
 function orgErrorTxt(e){ const m=e?.message||"";
   if (/duplicate|unique/i.test(m)) return "Ya existe un registro con ese nombre, clave o código.";
   if (/ciclo/i.test(m)) return "Esa relación formaría un ciclo: la otra persona ya está arriba en la línea de reporte.";
@@ -5124,6 +5148,17 @@ const GUIAS = [
     "El «Resumen del periodo» muestra citas, consultantes únicos (sin duplicar entre sedes), nuevos, primeras y segundas sesiones, quinta sesión, procesos que alcanzaron 12, 33 y 66 sesiones, cancelaciones, reagendamientos, inasistencias, comisión generada y las variaciones de cada mes. Con varias sedes aparece la comparativa, con cada tasa calculada sobre los totales de su sede.",
     "Las horas efectivas de atención solo aparecen al elegir a un psicólogo de base: se comparan con la jornada de atención registrada en Asistencia (referencia: 46 h por semana).",
     "El memorándum indica el alcance, las sedes, el periodo y la fecha de actualización; descárgalo con «Descargar PDF». Describe actividad registrada: no evalúa la calidad clínica ni señala a personas."]},
+  {t:"Ver el organigrama por sede y los pendientes de la estructura", si:()=>["superusuario","direccion","admin_sede"].includes(S.rol), pasos:[
+    "Abre Personas → Organigrama → pestaña «Por sede»: cada sede muestra a su responsable administrativa, al personal administrativo y a sus psicólogos. Quien colabora en dos sedes aparece en cada una con un solo registro.",
+    "La pestaña «Por línea de reporte» muestra la línea de mando del personal: Dirección General → Coordinación General → supervisoras administrativas → personal administrativo.",
+    "En Organización → Resumen, el recuadro «Pendientes de la estructura» lista quién no tiene puesto, sede, jefatura o responsable, y también los duplicados. Solo informa; los cambios se hacen en Colaboradores, Sedes y Supervisión.",
+    "Superusuario: después de cambiar una plaza o la sede de alguien, pulsa «Actualizar equipos de sede» para que el personal administrativo de cada sede quede como jefatura de sus psicólogos. Nunca concede acceso a otra sede.",
+    "Las personas con resultados reservados no aparecen para nadie más que el Superusuario."]},
+  {t:"Jefatura de los psicólogos de mi sede y quién gestiona los expedientes", si:()=>["superusuario","direccion","administrativo","admin_sede"].includes(S.rol), pasos:[
+    "Por decisión de la Dirección (27/11/2026), el personal administrativo de cada sede es jefatura directa de los psicólogos de esa sede: resuelve sus solicitudes en el paso de jefatura, ve su asistencia y registra evaluaciones de competencias.",
+    "Los expedientes de la sede los ve y gestiona la cuenta de Administración de sede, igual que el terapeuta: abrir, registrar datos, notas y documentos de su propia sede.",
+    "La cuenta personal del administrativo no abre expedientes, porque es una cuenta de persona y no de la sede.",
+    "Nada de esto incluye otras sedes, Bosques de Santa Fe ni a personas con resultados reservados."]},
   {t:"Dónde consultar los lineamientos de salud (consultas médicas, malestar e incapacidades)", si:()=>["superusuario","direccion","administrativo","admin_sede"].includes(S.rol)||(S.rol==="psicologo"&&S.api?.modalidad==="nomina"), pasos:[
     "Entra a Mi espacio → «Mi integración y desarrollo» → pestaña «Formación» → «Cuidarnos también es parte de nuestro compromiso». Su fuente son los Lineamientos laborales ante enfermedades, consultas médicas e incapacidades (noviembre 2026).",
     "Versión rápida: Ayuda → «Salud, consultas médicas e incapacidades»: qué hacer, a quién avisar y qué documentación entregar en cada caso. Al pedir un permiso en Mi asistencia aparece también un recuadro con la guía.",

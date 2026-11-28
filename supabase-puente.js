@@ -641,7 +641,7 @@ const cemepi = {
       sb.from("puestos").select("*").order("codigo"),
       sb.from("posiciones").select("*").order("created_at"),
       sb.rpc("sedes_autorizadas", { p_modulo: "organizacion" }),
-      sb.from("colaboradores").select("id,nombre,perfil_id,sede_principal_id,tipo_funcion,perfil_profesional,fecha_incorporacion,estatus,version_edicion").order("nombre"),
+      sb.from("colaboradores").select("id,nombre,perfil_id,sede_principal_id,tipo_funcion,perfil_profesional,fecha_incorporacion,estatus,version_edicion,reservado,vinculo_persona").order("nombre"),
       sb.from("asignaciones").select("id,colaborador_id,posicion_id,sede_id,principal,desde,hasta"),
       sb.from("relaciones").select("*").order("desde", { ascending: false })]);
     for (const r of q) if (r.error) fallo(r.error);
@@ -652,7 +652,10 @@ const cemepi = {
     await Promise.all(aut.map(async id => { const { data } = await sb.rpc("nivel_acceso", { p_modulo: "organizacion", p_sede: id }); niveles[id] = data || 0; }));
     /* Avisos por cambio de sede o puesto (migración 039): cada quien recibe solo los que le tocan */
     const { data: rv } = await sb.from("revisiones").select("*").order("creado_en", { ascending: false }).limit(500);
-    return { sedes: sd, sedeEnt: se, entidades: en, datosFiscales: ed, areas: ar, puestos: pu, posiciones: po, autorizadas: aut, niveles, colaboradores: co, asignaciones: asg, relaciones: rel, revisiones: rv || [] }; },
+    /* P38: pendientes de la estructura (solo Superusuario y Dirección; a los demás la función les responde con error y se omite) */
+    const { data: val, error: eVal } = await sb.rpc("org_validar");
+    return { validacion: eVal ? null : (val || []), sedes: sd, sedeEnt: se, entidades: en, datosFiscales: ed, areas: ar, puestos: pu, posiciones: po, autorizadas: aut, niveles, colaboradores: co, asignaciones: asg, relaciones: rel, revisiones: rv || [] }; },
+  async orgSincronizarEquipos(){ const { data, error } = await sb.rpc("org_sincronizar_equipos"); if (error) fallo(error); return data; },
   /* ---------- Módulo 06 · Mi espacio (solo lo propio: las funciones no reciben identificadores) ---------- */
   async miFicha(){ const { data, error } = await sb.rpc("mi_ficha"); if (error) fallo(error); return data; },
   async miEquipo(){ const { data, error } = await sb.rpc("mi_equipo"); if (error) fallo(error); return data; },
