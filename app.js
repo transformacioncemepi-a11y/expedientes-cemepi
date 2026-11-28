@@ -5157,6 +5157,10 @@ const GUIAS = [
     "El «Resumen del periodo» muestra citas, consultantes únicos (sin duplicar entre sedes), nuevos, primeras y segundas sesiones, quinta sesión, procesos que alcanzaron 12, 33 y 66 sesiones, cancelaciones, reagendamientos, inasistencias, comisión generada y las variaciones de cada mes. Con varias sedes aparece la comparativa, con cada tasa calculada sobre los totales de su sede.",
     "Las horas efectivas de atención solo aparecen al elegir a un psicólogo de base: se comparan con la jornada de atención registrada en Asistencia (referencia: 46 h por semana).",
     "El memorándum indica el alcance, las sedes, el periodo y la fecha de actualización; descárgalo con «Descargar PDF». Describe actividad registrada: no evalúa la calidad clínica ni señala a personas."]},
+  {t:"Completar expedientes sin sede o sin terapeuta", si:()=>["superusuario","direccion"].includes(S.rol), pasos:[
+    "En «Gestión» abre Administración → Tablero. El recuadro «Expedientes incompletos» lista por folio los que no tienen sede o terapeuta.",
+    "Sin sede, la cuenta de Administración de sede no los ve; sin terapeuta, ningún psicólogo los ve.",
+    "Pulsa «Abrir», asigna la sede y el terapeuta en «Datos del expediente» y guarda. Si se abrió por error y no tiene notas, puedes eliminarlo desde el mismo expediente."]},
   {t:"Ver el organigrama por sede y los pendientes de la estructura", si:()=>["superusuario","direccion","admin_sede"].includes(S.rol), pasos:[
     "Arriba, junto al nombre de la app, cambia de «Mi espacio» a «Gestión». Luego abre Personas → Organigrama. Al inicio verás a la Dirección General con quienes le reportan, y la nota de que cualquier integrante puede contactarla. En la pestaña «Por sede» cada sede muestra a su responsable administrativa, al personal administrativo y a sus psicólogos. Quien colabora en dos sedes aparece en cada una con un solo registro.",
     "La pestaña «Por línea de reporte» muestra la línea de mando del personal: Dirección General → Coordinación General → supervisoras administrativas → personal administrativo.",
@@ -7710,6 +7714,21 @@ function barrasMes(serie, meses, etiqueta){
 }
 const pct = (a,b) => b ? `${Math.round(100*a/b)}%` : "—";
 const tablaHtml = (cab, filas) => `<div class="tbl-wrap"><table><thead><tr>${cab.map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${filas.length?filas.map(f=>`<tr>${f.map((c,i)=>`<td${i && (typeof c==="number" || /^[\d—]/.test(String(c)))?' class="mono"':""}>${esc(String(c))}</td>`).join("")}</tr>`).join(""):`<tr><td colspan="${cab.length}">Sin datos en este periodo.</td></tr>`}</tbody></table></div>`;
+/* Auditoría 28/11 · H-029: expedientes que su equipo no ve (sin sede → la cuenta de sede no lo ve; sin terapeuta → ningún psicólogo lo ve).
+   Solo folio, sede y terapeuta; se abre el expediente para asignar o anular. No se borra nada desde aquí. */
+function tbIncompletosHtml(){
+  if (!S.esDireccion) return "";
+  const l=[...S.pacientes.values()].filter(p=>{ const f=p.ficha||{}; return !f.sede || !f.terapeutaId; })
+    .sort((a,b)=>String(a.folio||"").localeCompare(String(b.folio||"")));
+  if (!l.length) return "";
+  const filas=l.map(p=>{ const f=p.ficha||{};
+    return `<tr><td class="mono">${esc(p.folio||"Sin folio")}</td><td>${f.sede?esc(f.sede):`<span class="pill estado-suspendido">Sin sede</span>`}</td>
+      <td>${f.terapeutaId?esc(terEtiqueta(S.terapeutas.get(f.terapeutaId))):`<span class="pill estado-suspendido">Sin terapeuta</span>`}</td>
+      <td><button class="btn sm" type="button" data-act="abrirExp" data-id="${esc(p.id)}">Abrir</button></td></tr>`; }).join("");
+  return `<section class="tb-card" style="grid-column:1/-1"><h4>Expedientes incompletos (${l.length})</h4>
+    <p class="status" style="margin:0 0 8px">Sin sede, la cuenta de Administración de sede no los ve; sin terapeuta, ningún psicólogo los ve. Ábrelos para asignar sede y terapeuta en «Datos del expediente», o elimínalos si se abrieron por error.</p>
+    <div class="tbl-wrap"><table><thead><tr><th>Folio</th><th>Sede</th><th>Terapeuta</th><th></th></tr></thead><tbody>${filas}</tbody></table></div></section>`;
+}
 function tableroHtml(){
   const t=S.tb, filtros=`<div class="phead">${migas()}<h1>Tablero de indicadores</h1><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <select id="tbPer" aria-label="Periodo">${TB_PER.map(([v,l])=>`<option value="${v}"${v===S.tbPer?" selected":""}>${l}</option>`).join("")}</select>
@@ -7747,6 +7766,7 @@ function tableroHtml(){
       ${kpi("Códigos del portal activos", Po.codigos_activos??0, `${Po.compartidos??0} reportes compartidos en el periodo`)}
       ${uso?kpi("Uso de la app", fmtDur(usoTot), `${uso.length} persona${uso.length===1?"":"s"}`):""}
     </div>
+    ${tbIncompletosHtml()}
     <h3 class="sec-h">Atención</h3>
     <div class="tb-grid">
       <section class="tb-card"><h4>Expedientes nuevos por mes</h4>${barrasMes(E.nuevos_mes, meses, "expedientes nuevos")}</section>

@@ -997,7 +997,6 @@ const cemepi = {
       continuidad: W.continuidad, continuidad_org: W.org || null, por_sede_persona: W.por_sede_persona || null,
       cohortes: coh?.error ? { error: coh.error.message || "No disponible" } : (coh?.data ? { ...coh.data, actualizado_txt: fh(coh.data.actualizado) } : null),
       periodo: { n: per_n, meses: P.meses, series: P.series, comision: P.comision, terapeutas: P.terapeutas, unicos: P.unicos, por_sede: P.por_sede || null, jornada_h: P.jornada_atencion_h ?? null } }; },
-  async rendImportarProcesos(imp, lote, primero){ const { data, error } = await sb.rpc("rend_importar_procesos", { p_imp: imp, p_lote: lote, p_primero: primero }); if (error) fallo(error); return data; },
 };
 /* Redacción con Claude desde la función de Supabase "redactar" (la clave de la API vive en Supabase, no aquí).
    Si la función no está configurada, la app sigue en modo copiar/pegar con claude.ai. */
