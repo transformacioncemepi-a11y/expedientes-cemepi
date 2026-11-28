@@ -1559,7 +1559,7 @@ const ES_EMPLEADO = () => S.rol==="administrativo"; /* administrativo: solo lo s
 const tengo = k => S.rol==="superusuario" || !!S.perm?.has(k);   /* permisos adicionales otorgados por el superusuario */
 const MOD_TXT = {nomina:"Psicólogo base", comision:"Psicólogo independiente"};
 const modPill = u => u.rol!=="psicologo" ? "" : `<br><span class="pill ${u.modalidad==="comision"?"estado-pendiente":"estado-activo"}" title="Modalidad">${esc(u.modalidad?MOD_TXT[u.modalidad]:"Modalidad sin definir")}</span>`;
-const EST_TXT = {pendiente:"Pendiente", activo:"Activo", rechazado:"Rechazado", suspendido:"Suspendido"};
+const EST_TXT = {pendiente:"Pendiente", activo:"Activo", rechazado:"Rechazado", suspendido:"Suspendido", desactivado:"Desactivada", invitado:"Invitada"};
 /* Roles que cada quien puede asignar (la base de datos vuelve a validarlo) */
 const rolesAsignables = () => S.rol==="superusuario" ? ["superusuario","direccion","admin_sede","administrativo","psicologo"]
   : S.rol==="direccion" ? ["admin_sede","administrativo","psicologo"] : ["administrativo","psicologo"];
